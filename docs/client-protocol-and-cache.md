@@ -1091,11 +1091,16 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
 
 ### Session lifecycle
 
-- (a) Without map streaming (prepared packs only) a rebuild onto a level
-  above 0 is a handler error ("Live rendering above plane0 is pending"), which
-  logs the session out; walking up to such a level is a diagnostic. With
-  streaming, upper levels are drawn, but no capture or live run has had the
-  player on level 1 or above.
+- (b) Upper levels work with and without map streaming: a rebuild onto
+  level 1 to 3 (login onto it), a level change by PLAYER_INFO or
+  TELEPORT_LOCAL_PLAYER inside the scene, drawing with roofs removed per
+  level, picking the level's objects, and walking with its collision. Seen
+  live in Lumbridge castle on levels 1, 2 and 3 (`movement_session --spawn
+  X,Y,PLANE`, streamed and prepared-pack scenes). No example server moves a
+  player between levels, so the climb itself was checked by injecting the
+  server's self-teleport (the native development aid `RS09_FRAME_DUMP/inject`,
+  `game/inject.rs`); the click on "Climb-up" is sent but nothing answers it.
+  The minimap was black in those live runs on every level, level 0 included.
 - (b) The workbench's status box (a 440 x 32 rectangle at the top left
   holding `route_status`) is drawn in live frames only with
   `--workbench-keys`; a frame kept from such a run shows it behind the
@@ -1110,8 +1115,8 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
   notices at the next `Protocol.loop`.
 - (b) A handler error logs out, as the original's does, but here that also
   covers limits of this port: more than 1,024 scene spot animations or
-  projectiles (the original has no cap), an instanced rebuild without
-  streaming, and the level error above. Server varp ids are not bounded to
+  projectiles (the original has no cap) and an instanced rebuild without
+  streaming. Server varp ids are not bounded to
   the original's 3,500 entries.
 
 ### Main loop
@@ -1139,9 +1144,21 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
   frame is gone; a rebuild now writes the original's own).
 - (c) A connection lost in state 25 is noticed at once; the original notices
   at the next `Protocol.loop`.
-- (a) No drawn frame means nothing is sent: a window being dragged or a
-  hidden browser tab writes no keep-alive, and the server disconnects after
-  20 s of silence.
+- (b) The cycles run inside drawn frames, not on a thread of their own as
+  `GameShell.run` does. On Windows frames do not stop: miniquad drives
+  frames from a 10 ms timer inside the move/size and menu loops, and a
+  minimised window keeps drawing; a 35 s keyboard move loop and a 35 s
+  minimise kept the keep-alive every ~1 s on the wire. A press on the title
+  bar before the move loop starts could not be produced with posted messages
+  and is not measured. In the browser a page that is not painted gets no
+  animation frames or only about one a second; `graphics_lifecycle.js` then
+  runs each frame the page asked for from a worker's 20 ms timer once it is
+  100 ms late (at once while `document.hidden`), and from the page's own
+  timer where no worker can be made. Checked in Chrome with the tab in the
+  background and the window minimised (40 s: keep-alive gaps 1.1 s, against
+  6 s before); a tab reporting `hidden` with frames stopped outright was not
+  reproduced (Playwright never reports hidden). Such timer frames draw too,
+  into a canvas nobody sees.
 - (b) The children 97, 104 and 121 of a zone envelope are applied after the
   envelope's other children instead of interleaved; the only shared state is
   the projectile list order.
@@ -1509,7 +1526,8 @@ Collected from every stream. None blocks the others.
    JVM, or drop it as a decompilation artefact.
 7. **Diagnostic launch aids.** Keep or drop each of `--script-cursor`,
    `--minimap-all-labels`, `--loc-varbit`, `--fpson`, `--showcase-npcs`,
-   `--window-mode`, `RS09_FRAME_DUMP` (its `take` and `command` files), the
+   `--window-mode`, `RS09_FRAME_DUMP` (its `take`, `command` and `inject` files),
+   `RS09_POSTED_POINTER`, the
    browser start page's song field and its `?cursor=ID`.
 8. **World map.** (i) Leave the scene in place while the map is open, or
    clear it as the original does. (ii) Label font: a system face, or ship

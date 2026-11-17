@@ -208,8 +208,11 @@ writes its files and exits; it reads no preferences and plays no music):
 Environment variables: `RS09_CLIENT_PASSWORD` (above). With
 `RS09_FRAME_DUMP=DIR` set, creating a file named `take` in that folder makes
 the running client write the frame it just drew as `frame-N.png` there
-(`take-25` waits for a frame of the loading state), and a file named
-`command` is run as a typed `::` command without its packet.
+(`take-25` waits for a frame of the loading state), a file named
+`command` is run as a typed `::` command without its packet, and the lines
+`OPCODE HEX` of a file named `inject` are taken by the next cycle as server
+packets received (`game/inject.rs`). `RS09_POSTED_POINTER` set makes the
+client take the pointer from window messages alone, for runs that post them.
 
 ### Prepared packs (Python)
 
@@ -1567,8 +1570,7 @@ without merging duplicate IDs. Take, Examine and item-on-ground actions use the
 original wire order; walking tries the exact tile before a 1x1 access fallback.
 Ground updates use the actual network self slot and current plane, including
 PLAYER_INFO plane changes. Levels above the ground are drawn in a live
-session when the map is streamed from the cache; with prepared packs alone
-they are still an error ("Live rendering above plane0 is pending").
+session with the map streamed from the cache or from prepared packs alone.
 
 Pile support height is captured during publication, as in SceneGraph.setObjStack.
 A later scenery change does not recalculate that height until the pile is

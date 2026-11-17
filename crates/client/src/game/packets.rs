@@ -201,9 +201,6 @@ impl Game {
                                     }
                                 }
                             }
-                            if rebuild.plane != 0 && !streaming_map {
-                                return Err("Live rendering above plane0 is pending; logical scene state updated".into());
-                            }
                         }
                         225 => {
                             let base =
@@ -214,15 +211,6 @@ impl Game {
                             if workbench.ground.plane != player_state.plane {
                                 workbench.ground.plane = player_state.plane;
                                 workbench.refresh_ground(ui.as_mut())?;
-                                if player_state.plane != 0 && !streaming_map {
-                                    let message = format!(
-                                        "Live rendering above plane0 is pending (player plane{})",
-                                        player_state.plane
-                                    );
-                                    if !live_diagnostics.contains(&message) {
-                                        live_diagnostics.push(message);
-                                    }
-                                }
                             }
                             for movement in update.movements {
                                 let index = match &movement {

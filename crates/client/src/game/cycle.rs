@@ -77,13 +77,19 @@ impl Game {
         let mut input = &mut self.input;
         let mut frames = Vec::new();
         if let Some(connection) = &mut connection {
-            let incoming = match connection.poll() {
+            #[allow(unused_mut)]
+            let mut incoming = match connection.poll() {
                 Ok(frames) => frames,
                 Err(e) => {
                     connection.stop(e);
                     vec![]
                 }
             };
+            // A development aid: packets written to `RS09_FRAME_DUMP/inject`.
+            #[cfg(not(target_arch = "wasm32"))]
+            if connection.in_game() {
+                incoming.extend(super::inject::take());
+            }
             frames = cycle_driver.read(
                 incoming,
                 connection,
