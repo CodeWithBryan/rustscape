@@ -194,6 +194,30 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   default; the potion rows are the native consumables table. Nothing
   installs the libraries in `--world`. See docs/equipment-registers.md.
 
+- For the summoning familiar framework (world/familiars: FamiliarManager with
+  its FAMILIARS registry, Familiar, BurdenBeast with BurdenContainerListener,
+  Forager, FamiliarSpecial, Pet, Pets; the shared PetDetails and PetStore of
+  player/persisted/familiars.rs), run `cargo test -p rs09-server --test
+  familiars` and `cargo xtask familiars-oracle --check` with Python/JDK 11,
+  plus the canonical_player, player_save, player_state, player_death,
+  wilderness, zones, npc_classes, equipment_registers, combat_pulse and
+  world_login suites. Preserve the 565 cases. Keep the constructor order (new
+  NPC, pouch, the next id's name, the double drain per tick, a missing pouch
+  throwing unless -1), the drain only while fracDrain > 1.0 with ticks left,
+  getText, the owner's victim and the slayer task each read twice, firstCall
+  cleared after the sound, isAllowed's second pouch lookup, withdrawAll's
+  capacity per round, a refused specialMove still answering true, growth
+  compared before its update, morphPet reading the current familiar's warning
+  level, parse's v1 list replacement, `>> 16 & 0xFFFF` hashes, detached
+  details for an empty list and the familiar set before its ticks parse,
+  newInstance's partial registration with configureFamiliar per id, and
+  Pets.forId's three maps (never -1). Familiars are base NPCs (`new NPC(id,
+  null)`), not AbstractNPC classes: keep them out of npc_classes and
+  WorldClass. Objects are shared (`same` is ==), pet details are the persisted
+  objects, and no lock spans a service. Content classes, pouches, scrolls and
+  every outside call are required Host services with no default; nothing
+  installs the library in `--world`. See docs/familiars.md.
+
 - For Prayer/PrayerType/PrayerCategory, the prayer tab handler, Player
   commenceDeath/fullRestore or the combat prayer reads (world/prayer), run
   `cargo test -p rs09-server --test prayer` and `cargo xtask prayer-oracle

@@ -29,6 +29,7 @@ pub mod driver;
 pub mod drop_tables;
 pub mod entity_regions;
 pub mod equipment_registers;
+pub mod familiars;
 pub mod force_movement;
 pub mod gathering;
 pub mod global_handlers;

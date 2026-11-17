@@ -5,8 +5,10 @@
 //! `save::Host` sections from this state and forwards the rest to a caller's
 //! [`host::Remaining`], whose services stay required and have no defaults.
 //!
-//! House and familiar loading are not ported: their parse methods build rooms
-//! and familiar NPCs from content registries and stay required services.
+//! House loading is not ported: its parse method builds rooms from content
+//! registries and stays a required service. Familiar loading is
+//! `world::familiars::Manager::parse`, on this module's shared pet store; the
+//! save host forwards `parse_familiars` to it where a world installs it.
 pub mod diaries;
 pub mod emotes;
 pub mod familiars;
