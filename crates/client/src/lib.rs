@@ -81,6 +81,7 @@ pub mod sound_queue;
 pub mod spot;
 pub mod surface;
 pub mod terrain;
+pub mod texcoord;
 pub mod texture;
 pub mod tile_mesh;
 pub mod tile_shade;

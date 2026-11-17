@@ -599,7 +599,7 @@ pub fn model(
             vertex(
                 mesh,
                 point,
-                Vec2::from_array(surfaces[i].uv[j]),
+                Vec2::from_array(rs09_client::texcoord::gpu(surfaces[i].uv[j])),
                 color,
                 normal,
                 tex,

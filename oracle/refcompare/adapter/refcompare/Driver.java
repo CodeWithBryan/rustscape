@@ -43,6 +43,8 @@ import java.util.List;
  * type TEXT...                                  each char: pressed, typed, released
  * get Class.field ...                           e.g. get Camera.yawTarget client.gameState
  * aget Class.field I J ...                      an element of an array field, e.g. aget Camera.cameraPathData 3
+ * oget Class.field STEP ...                     array indices and instance fields, e.g. oget SceneGraph.tiles 0 55 44 wall
+ * call Class.method INT ...                     a static method taking ints, e.g. call LocTypeList.get 1902
  * set Class.field VALUE                         int, long, float, double or boolean fields
  * hold Class.field VALUE | unhold               re-apply a value every 5 ms until unhold
  * </pre>
@@ -201,6 +203,32 @@ public final class Driver implements Runnable {
 				}
 				return p[1] + "=" + value;
 			}
+			case "oget": {
+				// oget Class.field STEP...: each step an array index or an
+				// instance field name; prints what it reaches, an object as
+				// its instance fields.
+				Object value = field(p[1]).get(null);
+				for (int i = 2; i < p.length && value != null; i++) {
+					value = step(value, p[i]);
+				}
+				return p[1] + "=" + describe(value);
+			}
+			case "call": {
+				// call Class.method INT...: a static method taking ints.
+				int dot = p[1].lastIndexOf('.');
+				Class<?> type = Class.forName("rt4." + p[1].substring(0, dot));
+				for (java.lang.reflect.Method method : type.getDeclaredMethods()) {
+					if (method.getName().equals(p[1].substring(dot + 1)) && method.getParameterCount() == p.length - 2) {
+						Object[] args = new Object[p.length - 2];
+						for (int i = 0; i < args.length; i++) {
+							args[i] = Integer.parseInt(p[i + 2]);
+						}
+						method.setAccessible(true);
+						return p[1] + "=" + describe(method.invoke(null, args));
+					}
+				}
+				return "NO METHOD " + p[1];
+			}
 			case "set":
 				assign(field(p[1]), p[2]);
 				return "set " + p[1] + "=" + read(p[1]);
@@ -302,6 +330,52 @@ public final class Driver implements Runnable {
 			return sb.append(n > 64 ? ",...]" : "]").toString();
 		}
 		return String.valueOf(value);
+	}
+
+	private static Object step(Object value, String step) throws Exception {
+		if (Character.isDigit(step.charAt(0))) {
+			return Array.get(value, Integer.parseInt(step));
+		}
+		for (Class<?> type = value.getClass(); type != null; type = type.getSuperclass()) {
+			try {
+				Field next = type.getDeclaredField(step);
+				next.setAccessible(true);
+				return next.get(value);
+			} catch (NoSuchFieldException ex) {
+				// look in the superclass
+			}
+		}
+		throw new NoSuchFieldException(step);
+	}
+
+	private static String shortValue(Object value) {
+		if (value == null || !value.getClass().isArray()) {
+			return String.valueOf(value);
+		}
+		int n = Array.getLength(value);
+		StringBuilder sb = new StringBuilder("[");
+		for (int i = 0; i < Math.min(n, 16); i++) {
+			Object element = Array.get(value, i);
+			sb.append(i == 0 ? "" : ",").append(element != null && element.getClass().isArray() ? "[.." + Array.getLength(element) + "]" : String.valueOf(element));
+		}
+		return sb.append(n > 16 ? ",..(" + n + ")]" : "]").toString();
+	}
+
+	private static String describe(Object value) throws Exception {
+		if (value == null || value instanceof Number || value instanceof Boolean || value instanceof String || value.getClass().isArray()) {
+			return shortValue(value);
+		}
+		StringBuilder sb = new StringBuilder(value.getClass().getSimpleName()).append('{');
+		for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+			for (Field f : type.getDeclaredFields()) {
+				if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
+					continue;
+				}
+				f.setAccessible(true);
+				sb.append(f.getName()).append('=').append(shortValue(f.get(value))).append(' ');
+			}
+		}
+		return sb.append('}').toString();
 	}
 
 	private static void assign(Field field, String value) throws Exception {

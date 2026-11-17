@@ -149,6 +149,26 @@ start servers and clients with `Start-RcServer`, `Start-RcOrig`,
 `Login-RcOrig` and `Start-RcRust -Login -Extra @('--pack','none.pack')`, and
 call `Pair-Now NAME NOTE`.
 
+A second run (2026-11-17, pairs `v3-*`) checked the fixes for what the first
+one found. The driver gained `oget` (array indices and instance fields from
+a static field, an object printed with its fields) and `call` (a static
+method taking ints, e.g. `LocTypeList.get`), with which the original's
+`roofVisibility`, tile walls and location types were read back; its roof
+mask was equal to this client's at every tile of four levels around the
+player, so roof removal was not the cause of the missing wall tops. They
+were faces of texture 147 whose texture coordinate is NaN (see
+`texcoord.rs`): 714 location types of the pinned cache have such faces, all
+of which were undrawn. After the fix the kitchen pairs' viewport mean
+difference fell from 6.5 to 3.6 (default camera) and from 6.5 to 4.0
+(pitch max) per channel, and the per-cell darkening of 1 to 14 levels in the
+kitchen disappeared (cells now differ by 0 to 1). Character shadows are now
+drawn before the scenery, and the title scene's unseen player has none. The
+cache-built pack now names the `floorshadows` sprites. Still open: the
+character shadow is darker in this client (its innermost ring darkens the
+floor to about 0.6 of its value, the original's to 0.77, which is what the
+model's alpha of 82/255 with its colour of about 19 gives); the model itself
+matches the JVM (`tests/oracle.rs`), and the extra darkness was not traced.
+
 ## Start-up and cache download
 
 - The JS5 update client is ported: request queue, connect and back-off rules
@@ -1157,10 +1177,14 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
 
 - (b) Reproduced by depth bias and pass order, not by per-tile draw order:
   ties on one layer go to chunk order, not to the original's later draw;
-  character shadows and hint arrows are drawn after all static scenery;
-  a translucent face does not hide things the original draws later behind
-  it; translucent faces of actors and animated locations are drawn in the
-  dynamic pass, not interleaved with the map's.
+  character shadows and hint arrows are drawn after every floor and light
+  mesh and before all scenery (`game/redraw.rs`, `deferred_scenery`), so
+  scenery covers them wherever it is in front, as in the original, but a
+  shadow does not cover scenery the original's tile walk draws before the
+  actor within the shadow's 150-unit bias (the same tile's earlier
+  scenery); a translucent face does not hide things the original draws
+  later behind it; translucent faces of actors and animated locations are
+  drawn in the dynamic pass, not interleaved with the map's.
 - (b)(d) The level used for a layer is the level a tile is drawn on, not
   `Tile.level`; the 201 and 200.5 floor layers are not told apart; the shadow
   map is a shader multiply, not a pass on layer 101.5.

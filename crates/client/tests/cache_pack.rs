@@ -154,8 +154,10 @@ fn whole_cache_pack_serves_every_entry_of_the_prepared_packs() {
                     .get(entry)
                     .unwrap_or_else(|e| panic!("{name}: {entry}: {e}")),
             );
-            if entry == "overhead/assets" {
-                // Older packs list fewer named sprites; shared names must agree.
+            if entry == "overhead/assets" || entry == "minimap/assets" {
+                // Older packs list fewer named sprites (the cache pack's
+                // minimap entry also names `floorshadows`, as `world_pack`'s
+                // does); shared names must agree.
                 let old: serde_json::Value = serde_json::from_slice(old).unwrap();
                 let new: serde_json::Value = serde_json::from_slice(new).unwrap();
                 for (key, id) in old.as_object().unwrap() {

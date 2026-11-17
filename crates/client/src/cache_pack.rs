@@ -515,6 +515,11 @@ pub fn cache_pack_from(source: &Source, server_commit: &str) -> Result<crate::pa
                     "compass",
                     "hint_mapmarkers",
                     "hint_mapedge",
+                    // Not a minimap sprite: the floor-shadow masks
+                    // (`ShadowManager.addFloorShadow`), which `world_pack`
+                    // also lists here; without them the floors of the upper
+                    // levels cast no shadow in a scene built from the cache.
+                    "floorshadows",
                 ],
             )?,
         ),

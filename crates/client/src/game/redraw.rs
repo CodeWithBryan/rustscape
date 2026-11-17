@@ -455,7 +455,17 @@ impl Game {
                 shadows: shadows_enabled,
             },
         );
+        // The tile walk that follows the floors draws each actor's shadow
+        // with the actor (`Player.java:436-448`, `Npc.java:73-76`), so the
+        // scenery drawn after it covers a shadow it stands in front of: the
+        // scenery pass waits until the shadows are drawn (`deferred_scenery`).
+        let mut deferred_scenery = Vec::new();
+        let scenery_plane = plane;
         for (pass, chunks) in [floor_chunks, scenery_chunks].into_iter().enumerate() {
+            if pass == 1 {
+                deferred_scenery = chunks;
+                continue;
+            }
             if let Some(renderer) = &static_renderer {
                 renderer.draw(
                     &mut workbench,
@@ -495,23 +505,7 @@ impl Game {
                 gl_use_material(&material);
             }
         }
-        if frame >= 20 {
-            render_profile_started.get_or_insert(get_time());
-            static_submission_seconds += get_time() - submission_start;
-        }
-        if connection.is_some() || npc_replay.is_some() {
-            last_render_metrics = serde_json::json!({"frame":frame,"frustum_culling":frustum_culling,"static_gpu":static_renderer.as_ref().map(static_render::Renderer::statistics),"eligible_chunks":eligible_chunks,"visible_chunks":visible_chunks,"eligible_static_triangles":eligible_triangles,"submitted_static_triangles":submitted_triangles,"frames_after_warmup":frame.saturating_sub(20),"seconds_after_warmup":render_profile_started.map(|start|get_time()-start),"static_submission_seconds":static_submission_seconds});
-        }
-        for (index, mesh) in locations.iter().enumerate() {
-            let layer = workbench.roofs.animated_layers.get(index).copied();
-            material.set_uniform("DepthBias", Vec2::from(layer.unwrap_or_default()));
-            draw_mesh(mesh);
-        }
-        material.set_uniform(
-            "DepthBias",
-            Vec2::from(rs09_client::depth_layers::offset::NONE),
-        );
-        ground_renderer.draw(plane, position);
+        let floor_seconds = get_time() - submission_start;
         workbench.slot_views.borrow_mut().clear();
         for error in workbench.sync_npc_palette(&ui_vm.recolor) {
             if live_diagnostics.len() < 32 && !live_diagnostics.contains(&error) {
@@ -902,7 +896,12 @@ impl Game {
                 camera.target,
             );
             gl_use_material(&character_shadow_material);
-            draw_mesh(&character_shadow);
+            // Player.render draws the shadow only for a player in the scene:
+            // not the title screen's unseen local player (drawn below
+            // under the same condition as its body).
+            if !workbench.actor_scene.own_thinned {
+                draw_mesh(&character_shadow);
+            }
             draw_mesh(&npc_shadows);
             for (_, (_, shadow, _)) in &player_meshes {
                 draw_mesh(shadow);
@@ -924,6 +923,44 @@ impl Game {
             draw_mesh(&foot_arrows);
             gl_use_material(&material);
         }
+        // The scenery after the shadows (see `deferred_scenery`).
+        let scenery_start = get_time();
+        if let Some(renderer) = &static_renderer {
+            renderer.draw(
+                &mut workbench,
+                &deferred_scenery,
+                &[],
+                static_render::View {
+                    camera: &camera,
+                    atmosphere: params,
+                    direction: light_direction,
+                    time: world_ticks as f32,
+                    shadows: shadows_enabled,
+                },
+            );
+        } else {
+            for index in deferred_scenery {
+                workbench.draw_chunk(index, [&material, &character_shadow_material]);
+            }
+        }
+        gl_use_material(&material);
+        if frame >= 20 {
+            render_profile_started.get_or_insert(get_time());
+            static_submission_seconds += floor_seconds + (get_time() - scenery_start);
+        }
+        if connection.is_some() || npc_replay.is_some() {
+            last_render_metrics = serde_json::json!({"frame":frame,"frustum_culling":frustum_culling,"static_gpu":static_renderer.as_ref().map(static_render::Renderer::statistics),"eligible_chunks":eligible_chunks,"visible_chunks":visible_chunks,"eligible_static_triangles":eligible_triangles,"submitted_static_triangles":submitted_triangles,"frames_after_warmup":frame.saturating_sub(20),"seconds_after_warmup":render_profile_started.map(|start|get_time()-start),"static_submission_seconds":static_submission_seconds});
+        }
+        for (index, mesh) in locations.iter().enumerate() {
+            let layer = workbench.roofs.animated_layers.get(index).copied();
+            material.set_uniform("DepthBias", Vec2::from(layer.unwrap_or_default()));
+            draw_mesh(mesh);
+        }
+        material.set_uniform(
+            "DepthBias",
+            Vec2::from(rs09_client::depth_layers::offset::NONE),
+        );
+        ground_renderer.draw(scenery_plane, position);
         for mesh in &world_spot_meshes {
             draw_mesh(mesh);
         }
