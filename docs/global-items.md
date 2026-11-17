@@ -3,8 +3,8 @@
 `crates/server/src/world/global_items/` ports the general-purpose item
 handlers of `content/global/handlers/item` a playable world needs. This pass
 covers the teleport items (the first of the three groups of the slice); the
-everyday item options and the item-on-object basics are not ported yet (see
-the end of this page).
+everyday item options and the item-on-object basics are `world/global_items2`
+(docs/global-items2.md).
 
 Each Kotlin lambda and OptionHandler the original registers is a typed native
 value (`registry::Interaction`, `registry::OptionPlugin`,
@@ -192,14 +192,9 @@ so no case can hold a time equal to it; the port keeps `>`.
 
 ## Not ported or not joined
 
-- The rest of the slice: the everyday item options (EmptyOptionListener,
-  LightSourceListeners, the spade, caskets, bird nests, XP lamps, the starter
-  pack, ItemQuestRequirementListener, MorphItemListener, RingUnchargePlugin,
-  EnchantedGemListener, the newspaper, rune packs, herb boxes, cadava potion,
-  blamish oil, toys and pet rock, the global books) and the item-on-object
-  basics (water and sand sources, chest keys, the hat stand, sack on hay, the
-  brawling gloves and Fist of Guthix gloves managers). PickupPlugin is
-  already native (`world/pickup.rs`).
+- The rest of the slice (the everyday item options and the item-on-object
+  basics) is `world/global_items2` (docs/global-items2.md), except the global
+  books. PickupPlugin is already native (`world/pickup.rs`).
 - The content services named above (slayer, construction, runecrafting,
   magic alchemy, quest requirement tables).
 - Nothing installs the library in `rs09-server --world` yet (see above for

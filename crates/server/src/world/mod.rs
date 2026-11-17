@@ -28,6 +28,7 @@ pub mod force_movement;
 pub mod gathering;
 pub mod global_handlers;
 pub mod global_items;
+pub mod global_items2;
 pub mod grand_exchange;
 pub mod ground_action;
 pub mod ground_item;

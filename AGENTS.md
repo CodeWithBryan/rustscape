@@ -356,8 +356,39 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   array read. Every outside call is a required Host service with no default;
   slayer, construction, runecrafting, alchemy and quest tables are named
   content services. The everyday item options and item-on-object basics of
-  the slice are not ported; nothing installs the library in `--world` (the
-  binding is described in docs/global-items.md).
+  the slice are world/global_items2 (next bullet); nothing installs the
+  library in `--world` (the binding is described in docs/global-items.md).
+- For the everyday item handlers (world/global_items2: EmptyOptionListener
+  with EmptyItem and the potion products, LightSourceListeners, the spade
+  with SpadeDigListener and DigSpadeHandler, CasketListener, BirdNestScript,
+  BirdNestPlugin and BirdNest, LampPlugin and Lamps, StarterPackPlugin,
+  RingUnchargePlugin, RunePackPlugin, HerbBoxPlugin, NewspaperListener,
+  CadavaPotionListener, DrinkBlamishOilListener, ItemQuestRequirementListener,
+  MorphItemListener, ToyListeners, ToyHorseListener, EnchantedGemListener and
+  PetRock with their dialogue files, toys/ (Diango, the snow globe),
+  withobject/ water, sand, chest key, hat stand and sack on hay, the brawling
+  and Fist of Guthix gloves and their registrations), run `cargo test -p
+  rs09-server --test global_items2` and `cargo xtask global-items2-oracle
+  --check` with Python/JDK 11, plus global_items, global_handlers,
+  packet_handlers, item_option_registry, interaction_listeners, dialogue_dsl,
+  inventory, equipment, consumables and skills. Preserve the 1,430 cases and
+  the three generators' raw states after every operation (RandomFunction.RANDOM,
+  Collections.shuffle's generator, the thread's ThreadLocalRandom, which is
+  also Kotlin's `random()`). Keep EmptyItem's list order (rows, potion
+  products, then the case-sensitive name scan of the definitions in their
+  HashMap walk; blamish oil is a potion), HatStand's missing slot counting as
+  the head, WaterVessel's HashMap key walk with the unvalidated array
+  `onUseWith`, the shared non-capturing lambdas, the casket table's insertion
+  draws at class initialisation, `getChanceItem`'s draw before its shuffle,
+  DigSpadeHandler's lookup before the animation and lock and its listener
+  first, the lamp's default `Item(2528)` built first, the herb box's removal
+  before the lock, the brawling gloves' default manager and stale-count
+  message, the FOG cap written before the test, `ITEMS` growing on every
+  DiangoReclaimInterface `newInstance`. Every outside call is a required Host
+  service with no default; quests, slayer, POH storage, random reachable
+  locations and the dig callbacks are named content services. The global
+  books (they need BookInterface) are not ported; nothing installs the
+  library in `--world` (the binding is described in docs/global-items2.md).
 - For eating and drinking (world/consumables: Consumable, Food, Drink, Potion,
   Cake, HalfableFood, BarbarianMix, FakeConsumable, ConsumableEffect, the
   Consumables table, the 34 effect classes and ConsumableListener), run
