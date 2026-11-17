@@ -1,8 +1,9 @@
 //! Original communication data, account/legacy-column parsing and serialization.
-//! Social actions, packets, clan repositories and loot-share pulses await world state.
+//! Social actions, packets, clan repositories and loot share are in world::social.
 use super::{Error, Result};
 use crate::auth::account::UserAccountInfo;
-use rs09_game_core::{java_map::StringKeyOrder, java_string::parse_i32};
+use crate::world::repository::JavaHashMap;
+use rs09_game_core::java_string::parse_i32;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -93,30 +94,56 @@ impl Contact {
         }
     }
 }
+/// The contact `HashMap<String, Contact>`: put, get, remove, clear and the
+/// walk keep the JDK 11 table (world::repository::JavaHashMap).
 #[derive(Default)]
 pub struct Contacts {
-    order: StringKeyOrder,
-    values: Vec<Contact>,
+    order: JavaHashMap<Option<String>, usize>,
+    values: Vec<Option<Contact>>,
 }
 impl Contacts {
     pub fn insert(&mut self, key: String, value: Contact) {
-        let index = self.order.insert(key);
-        if index == self.values.len() {
-            self.values.push(value);
+        let key = Some(key);
+        if let Some(&index) = self.order.get(&key) {
+            self.values[index] = Some(value);
         } else {
-            self.values[index] = value;
+            self.values.push(Some(value));
+            self.order.put(key, self.values.len() - 1);
         }
     }
     pub fn get(&self, key: &str) -> Option<&Contact> {
-        self.order.get(key).map(|index| &self.values[index])
+        let index = *self.order.get(&Some(key.to_owned()))?;
+        self.values[index].as_ref()
     }
     pub fn get_mut(&mut self, key: &str) -> Option<&mut Contact> {
-        self.order.get(key).map(|index| &mut self.values[index])
+        let index = *self.order.get(&Some(key.to_owned()))?;
+        self.values[index].as_mut()
+    }
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.order.contains_key(&Some(key.to_owned()))
+    }
+    pub fn remove(&mut self, key: &str) -> Option<Contact> {
+        let index = self.order.remove(&Some(key.to_owned()))?;
+        self.values[index].take()
+    }
+    /// `clear()`: the table keeps its length, as the JDK's does.
+    pub fn clear(&mut self) {
+        self.order.clear();
+        self.values.clear();
+    }
+    pub fn len(&self) -> usize {
+        self.order.len() as usize
+    }
+    pub fn is_empty(&self) -> bool {
+        self.order.is_empty()
     }
     pub fn iter(&self) -> impl Iterator<Item = (&str, &Contact)> {
-        self.order
-            .iter()
-            .map(|(index, key)| (key, &self.values[index]))
+        self.order.iter().map(|(key, &index)| {
+            (
+                key.as_deref().expect("contact keys are not null"),
+                self.values[index].as_ref().expect("live contact"),
+            )
+        })
     }
 }
 pub const MAX_LIST_SIZE: usize = 200;

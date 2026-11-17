@@ -61,9 +61,10 @@ test tools only; runtime metadata loading is Rust.
 
 ## Remaining work
 
-Social actions and their packets/management messages, clan repositories,
-loot-share pulses, Rights player attributes, UID debug messages and arbitrary
-Java Map mutations remain pending. Actual player ownership, duplicate admission,
+Social actions, their packets and management messages, clan repositories and
+loot share are now world::social (docs/social.md); contacts there keep the JDK
+HashMap table through put, remove and clear. Rights player attributes and UID
+debug messages remain pending. Actual player ownership, duplicate admission,
 daily-account limits, profile parsing/saving, region streaming, tick ordering and
 world entry remain pending. Accepted, well-formed account metadata still receives
 LoginServerOffline (8); malformed metadata receives UnexpectedError (0), matching

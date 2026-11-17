@@ -858,6 +858,21 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   Throwable versus Exception catches. Every outside call is a required
   service; never answer one from native state. A library: nothing installs
   it, and the example's index search is not this port. See docs/repository.md.
+- For friends/ignores, private messages, clans, ManagementEvents, GlobalChat,
+  public ChatMessage state or the social packets (world/social), run
+  `cargo test -p rs09-server --test social` and `cargo xtask social-oracle
+  --check` with Python/JDK 11, plus the player, player_save, repository,
+  settings and update_masks suites. Preserve all 166 cases. Packets are
+  queued when sent and built at the flush (late contact/clan/pm_index reads);
+  the management queue drains only when the host pumps it, in queue order;
+  Kotlin assignments of clan join/kick requirements run the cleaning/updating
+  Java setters; private messages ignore privacy and ignores; the pinned world
+  has no management server (chat settings always send the "unavailable"
+  message and ignore the private setting). Contacts are a JavaHashMap: keep
+  put/remove/clear order. Clock reads and unseeded Random seeds are recorded
+  host inputs; every other system is a required service with no default.
+  A library: nothing installs it; MessageLog, quick chat and inter-world
+  networking are not ported. See docs/social.md.
 - For the world-trace oracle (oracle/world-trace, fixtures/world-trace), run
   `cargo test -p rs09-server --test world_trace` and `cargo xtask
   world-trace-oracle --check` with Python/JDK 11 and the pinned cache. It
