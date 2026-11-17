@@ -1,0 +1,111 @@
+{
+  "caseCount": 846,
+  "coverage": {
+    "actions": 2893,
+    "errors": {
+      "Binding": 298,
+      "Null": 71
+    },
+    "events": {
+      "active": 5251,
+      "animate": 962,
+      "disabled_ticks": 790,
+      "exception": 17,
+      "location": 1475,
+      "lock": 628,
+      "register_mask": 743,
+      "submit": 600,
+      "teleport_location": 455,
+      "unlock": 298,
+      "update_region": 511
+    },
+    "failureCases": 298,
+    "groups": {
+      "constructors": 272,
+      "directions": 3,
+      "instance-speeds": 25,
+      "lifecycle": 15,
+      "nulls": 10,
+      "sequences": 40,
+      "setters": 13,
+      "shared": 2,
+      "speeds": 144,
+      "static-run": 322
+    },
+    "operations": {
+      "construct": 319,
+      "direction": 656,
+      "get": 143,
+      "pulse": 4,
+      "run": 594,
+      "runEntity": 41,
+      "runSelf": 43,
+      "runWith": 139,
+      "set": 28,
+      "setAnimation": 1,
+      "setCommenceSpeed": 1,
+      "setDestination": 5,
+      "setDirection": 2,
+      "setEndAnimation": 6,
+      "setEntity": 3,
+      "setPathSpeed": 1,
+      "setStart": 5,
+      "setStartAnim": 1,
+      "start": 98,
+      "stop": 185,
+      "update": 5,
+      "updates": 613
+    },
+    "recordedCalls": 11730
+  },
+  "fixtureSha256": "97859a149f5956c1bcf50067fb3ec0446dea0832add470a7d91e10b1da2f4a21",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "locale": "en-US",
+  "scope": "Unchanged ForceMovement.java with Pulse.java, Direction.java, Point.java, ClipMaskSupplier.java, Animation.java, ForceMoveCtx.kt and EntityFlag.kt on JDK 11 with Kotlin 1.8.20 and JSON-simple 1.1.1. Original text inserted into adapters at generation time: Location's LocationHash packing, constructors, x/y/z properties, create, getDistance (both) and getDelta; Animator.Priority. Everything else is a recording adapter answering from the case: the entity location, animate (with the animation object and its priority at the call), setDisabledTicks, the update mask registration with the ForceMoveCtx fields, WalkingQueue.updateRegion, setTeleportLocation, lock, unlock, GameWorld.Pulser.submit and the Pulse node check (isActive). Printed stack traces are recorded by exception class. WALK_ANIMATION is one static object; each case starts from its initialiser's priority (MID). Not driven: Direction.canMove/RegionManager and Animation.getDuration.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/force-movement/Support.kt": "6a43e27ad9fe3d823b99e81c678260b89bf4d29c8fc311966baa3136bc4cbaac",
+    "oracle/force-movement/adapters.py": "19035b5eee00c94c74595d2a932e7929762f45ec7f8b636ff34800c4551814ac",
+    "oracle/force-movement/cases.py": "7aab1fc353cfe53e0d9c8d1502bd0814da1e6563891db8d556fe0f6475f182ec",
+    "oracle/force-movement/generate.py": "7e9fa6de5e86b7037edb34d739d4d54a43050a8196f2566a12fc5398204a108c",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
+    "reference/server/Server/src/main/core/game/node/entity/impl/ForceMovement.java": "654dd8044c43d9047199fc5c7120390307ea20228cb585da927f184c76079bbd",
+    "reference/server/Server/src/main/core/game/system/task/Pulse.java": "f2c9520364843507678e2859478abf48fbabc9538a59569b64f96729a2c2bf52",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/Point.java": "97f4db2276053947fdcabd78ae1207ea7fa6a630b235458d0b579fa100b8314b",
+    "reference/server/Server/src/main/core/game/world/map/path/ClipMaskSupplier.java": "93eddf62306b1f5a373dac01d149abcf6727b1e4ccd17c72c07d60709e97fa1b",
+    "reference/server/Server/src/main/core/game/world/update/flag/EntityFlag.kt": "10c523b9e816fbfc2a2318ca99d8122c8eb2d4ec10c33f8b45d8e4ced2251163",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Animation.java": "73320e2e4c356dccb6f446683d18dd5bfe1be8eee41eaba540e01acdb174aded",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/ForceMoveCtx.kt": "d8b29138c208ce636f72338767f43631e31b9a32fa3ef1c1b7df48e7d337e3e3",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unchanged": [
+    "core/game/node/entity/impl/ForceMovement.java",
+    "core/game/system/task/Pulse.java",
+    "core/game/world/map/Direction.java",
+    "core/game/world/map/Point.java",
+    "core/game/world/map/path/ClipMaskSupplier.java",
+    "core/game/world/update/flag/context/Animation.java",
+    "core/game/world/update/flag/context/ForceMoveCtx.kt",
+    "core/game/world/update/flag/EntityFlag.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

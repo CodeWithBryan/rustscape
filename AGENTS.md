@@ -256,6 +256,40 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   library in `--world`. The dragon classes and behaviours, Sheep, Chinchompa,
   stray dogs, cow milking, decanting and QuestTabUtils are not ported. See
   docs/npc-classes.md.
+  QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
+  ShopNPC are not ported; nothing installs the libraries in `--world` (the
+  binding is described in docs/global-handlers.md).
+- For eating and drinking (world/consumables: Consumable, Food, Drink, Potion,
+  Cake, HalfableFood, BarbarianMix, FakeConsumable, ConsumableEffect, the
+  Consumables table, the 34 effect classes and ConsumableListener), run
+  `cargo test -p rs09-server --test consumables --test consumables_timers`
+  and `cargo xtask consumables-oracle --check` with Python/JDK 11, plus the content_timers,
+  prayer, skills, settings, inventory, item_option_registry,
+  interaction_listeners and packet_handlers suites. Preserve the 3,867 cases.
+  Keep getConsumableById's first-declared row per id (CHOCOLATE_BOMB is
+  VEG_BALL), the effect looked up again by the item's id, Item.getId's
+  `& 0xFFFF` (the last id's -1 becomes 65535 and empties the slot),
+  replaceSlot's remove/DUPE_ALERT/equipment fallback, the option read before
+  the clock gates and the item check after them, every separate
+  GameWorld.ticks read, delayAttack's fixed 3, the potion's SOFT two-tick
+  script with stopExecuting's double active-script read, the halves' and
+  drinks' name stripping with Java trim, and each effect's int truncation,
+  draw order and messages. Skills and run energy are native; every other
+  call is a required Host service with no default; consumables::join answers
+  the timer services from timers::content. Nothing installs the handler in
+  `--world` yet. See docs/consumables.md.
+- For ForceMovement (world/force_movement), run `cargo test -p rs09-server
+  --test force_movement` and `cargo xtask force-movement-oracle --check`
+  with Python/JDK 11, plus the pulses, update_masks and prepared_masks
+  suites. Preserve the 846 cases. Keep run's VERY_HIGH priority written on
+  the animation objects (the shared WALK_ANIMATION included), the location
+  read before the start is checked, start's ceil(distance / (speed * 0.1))
+  ticks with Java's infinite/NaN casts, the instance run's own commence
+  ticks and path-speed swap, run(e, start, dest)'s direction from the
+  entity, the strictly-larger axis of the packed delta, ForceMoveCtx's null
+  direction after the impact handler call, and Pulse.update's catch and
+  stop. The pulse base is the native pulses::Pulse; every outside call is a
+  required Host service with no default. See docs/force-movement.md.
 - For commands, quick chat or abuse reports (world/commands: CommandSystem,
   Command, CommandMapping, the legacy CommandSet enum, CommandPlugin's
   helpers, sets.CommandSet, the registration table and the Moderation,
