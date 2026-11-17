@@ -20,6 +20,8 @@ use rs09_protocol::game::players::RawAppearance;
 mod cycle;
 mod frame;
 mod packets;
+#[cfg(not(target_arch = "wasm32"))]
+mod pose_dump;
 mod redraw;
 
 /// The window mode, canvas, left margin and frame last reported on stderr.

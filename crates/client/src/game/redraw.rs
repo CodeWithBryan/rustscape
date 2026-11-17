@@ -148,6 +148,18 @@ impl Game {
             player: motion.fine,
         }
         .camera(&mut camera_script, true);
+        #[cfg(not(target_arch = "wasm32"))]
+        super::pose_dump::answer(super::pose_dump::Frame {
+            pose: &camera_pose,
+            follow: &follow,
+            view: &scene_view,
+            view_distance,
+            player_local: scene_camera::local(motion.fine, origin),
+            origin,
+            plane: workbench.ground.plane as usize,
+            locked: camera_script.locked,
+            spline: camera_script.spline.as_ref(),
+        });
         // A newly built scene: `LoginManager` takes the sun from the chunk
         // the player stands in.
         if lit_scene != workbench.point_lights.revision {

@@ -84,8 +84,8 @@ scripts (login, reconnect, JS5). The peer's behaviour is transcribed.
 **4. Captures and live runs.** Screenshots looked at by whoever ported the
 part, and runs of the release client against the Rust `player_session`
 example or `rs09-server`, some through a recording proxy. These were single
-runs, not automated, and were not repeated for this record. No comparison
-with a frame of the original client exists for any part.
+runs, not automated, and were not repeated for this record. Before the frame
+comparison below (5) no frame of the original client had been compared.
 
 Three checks are independent of the transcription:
 
@@ -96,6 +96,57 @@ Three checks are independent of the transcription:
   original `PACKET_LENGTHS` table, which is separate from the read order.
 - The cache-backed asset source is compared byte for byte with every entry of
   eight packs that the original Python packers wrote from the same cache.
+
+**5. Frame comparison with the original client** (2026-11-17, one manual
+run; the scripts are in `oracle/refcompare/`). The original rev-530 client is
+compiled with `javac` alone from the unchanged `reference/client` sources
+(`build-original.ps1`; the JOGL and gson jars come out of the reference
+repository's own git objects, the one Kotlin interface is replaced by a Java
+transcription in `oracle/refcompare/adapter/plugin`). It is started by
+`oracle/refcompare/adapter/refcompare/Driver.java`, which calls
+`rt4.client.main` unchanged and, from a second thread, runs commands from a
+file: input sent straight to the canvas's AWT listeners, and reads and writes
+of the client's static fields by reflection (`run-original.ps1`; its cache,
+preferences and temporary files stay under `runs/refcompare/`). Both clients
+run against the same example server (`npc_session --gameframe`, one instance
+each with the same arguments and `--spawn`, so neither sees the other's
+player), with the same preference bytes (window mode, brightness, lighting
+detail). The Rust client runs with `--pack <missing file>` (the cache-built
+scene; the default `assets/visual/demo.pack` drops the session when an NPC
+outside its catalog appears). Each pair is taken at the same camera: the Rust
+client writes the pose it draws with when a file `pose` appears in its
+`RS09_FRAME_DUMP` folder (`crates/client/src/game/pose_dump.rs`, native only,
+inert without the variable and the request), and the driver holds the
+original's follow-camera fields (targets, drift, offsets, orbit point,
+`Camera.ZOOM`) or, on the title screen, its spline segment and progress with
+both speeds 0, or its locked camera with every speed 0, to those values. The
+original's own `Camera.render*`, `cameraPitch` and `cameraYaw` are then read
+back and logged; they were equal in every in-game and spline pair. The Rust
+client is driven with posted window messages; `RS09_POSTED_POINTER` stops it
+from replacing the posted pointer with the real one each frame
+(`input/platform.rs`), without which hover text, menus and the click cross
+never appear in a driven run. `launch.ps1` starts servers and clients and
+stops exactly the processes it started; `session.ps1` has `Pair-Now`
+(in game), `Pair-Title` (title scene) and `Pair-Ui` (no camera), which write
+original | Rust | difference ×4 images and the statistics of the canvas and
+the 512×334 viewport; `title-match.ps1` restarts the Rust title until its
+first title place is the one the original shows. Compared: the title menu
+layer, title scene (pinned), login form empty, typed and failed, the login
+sequence, the kitchen at several pitches and yaws, all four gameframe tabs,
+typed chat, hover text, object and floor menus, the click cross, walking and
+running (unpinned sequences), the castle courtyard, the river by the bridge,
+Draynor Village with world NPCs, standard-detail lighting, brightness 1 with
+`Camera.ZOOM` 400, and resizable mode at 1024×768. Not compared: underwater
+scenes, fog over long distances, health bars and overhead names (the example
+servers send none), full screen, the software renderer, sound. The evidence
+and the ranked list of differences are outside the repository (the
+coordinator's scratchpad `refcompare-evidence/`). To repeat: build the
+original once (`build-original.ps1 -Copy <root>`), build
+`rs09-client` and the `npc_session` example in release, then dot-source
+`session.ps1`, `image.ps1` and `launch.ps1` with `$Copy` and `$Evidence` set,
+start servers and clients with `Start-RcServer`, `Start-RcOrig`,
+`Login-RcOrig` and `Start-RcRust -Login -Extra @('--pack','none.pack')`, and
+call `Pair-Now NAME NOTE`.
 
 ## Start-up and cache download
 

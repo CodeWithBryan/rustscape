@@ -476,6 +476,13 @@ fn pointer_in_window(scale: f32) -> Pointer {
     unsafe extern "system" {
         fn GetCurrentThreadId() -> u32;
     }
+    // The frame comparison with the original (oracle/refcompare) drives the
+    // client with posted window messages while the real pointer is elsewhere:
+    // with RS09_POSTED_POINTER set, the poll reports nothing.
+    static POSTED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *POSTED.get_or_init(|| std::env::var_os("RS09_POSTED_POINTER").is_some()) {
+        return Pointer::Unknown;
+    }
     let mut point = Point::default();
     let mut area = Rect::default();
     // SAFETY: plain user32 queries with valid out-pointers. miniquad creates
