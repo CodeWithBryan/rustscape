@@ -1,6 +1,6 @@
 //! Four of the six zones of `core.game.world.map.zone.impl`: BankZone,
-//! KaramjaZone, ModeratorZone and MultiwayCombatZone. WildernessZone and
-//! DarkZone are not ported, so ZoneBuilder.startup is not either.
+//! KaramjaZone, ModeratorZone and MultiwayCombatZone. WildernessZone (with
+//! ZoneBuilder.startup) is in `wilderness_zone.rs`, DarkZone in `dark_zone.rs`.
 //!
 //! Inventory, interface, packet, teleport, rights, combat-property and local
 //! entity requests are required `Host` services in the original order; none

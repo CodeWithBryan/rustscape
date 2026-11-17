@@ -53,8 +53,9 @@ This is a library. Nothing installs it: no session, example or world owns a
 
 There is no combat check and no wilderness-level check in TeleportManager. The
 wilderness rule lives in WildernessZone.teleport, a zone the monitor walks
-(WildernessZone is not ported, see docs/zones.md); a combat check, where one
-exists, is in the content that calls `send`.
+(`world/wilderness_zone.rs`, see docs/wilderness.md: with the INSTANCE
+registered, `zones::Monitor::teleport` reaches it natively); a combat check,
+where one exists, is in the content that calls `send`.
 
 After the checks: for a non-forced player the script delay becomes
 `ticks + 12` and the dialogue closes; a `true` "tablet-spell" attribute turns
@@ -189,8 +190,8 @@ full run energy and no walking path.
 
 The content that calls `send` (spell handlers, teleport tabs, jewellery,
 obelisks, fairy rings, minigame portals, the home teleport pulse, the
-`::tele` commands, which set the teleport location directly), WildernessZone
-and every other content zone's `teleport` rule, the random-event body that
+`::tele` commands, which set the teleport location directly), every content
+zone's `teleport` rule other than the six core zones', the random-event body that
 `fireRandom` once had, and Player.isTeleporting's callers.
 
 ## What a real binding needs

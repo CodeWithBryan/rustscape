@@ -8,7 +8,9 @@ not hold: the active flag, the viewing players, the activity pulse with its
 inactivity and unload decisions, Region.add/remove of region zones, the music
 fields, and RegionChunk.clear as unloading uses it. `world/zone_impls.rs`
 ports four of the six concrete zones: BankZone, KaramjaZone, ModeratorZone and
-MultiwayCombatZone.
+MultiwayCombatZone. The other two, WildernessZone and DarkZone, and
+ZoneBuilder.startup are in world/wilderness_zone.rs and world/dark_zone.rs,
+verified by their own corpus (docs/wilderness.md).
 
 These are libraries. Nothing installs them: no example, alpha or session uses
 them, and the three fabricated answers named below are still in the examples.
@@ -146,13 +148,14 @@ stored owner to Player before recording the call; the native recording host
 does the same. Region.load is driven only to its archive lookup (no map
 archive exists in this corpus); its body is verified by the region-load
 corpus. ZoneBuilder compiles against placeholder WildernessZone and DarkZone
-classes; startup() is not run.
+classes; startup() is not run here (the wilderness corpus runs it with the
+real zones).
 
 ## Not ported
 
-WildernessZone and DarkZone (they need skull, familiar, aggression, combat
-pulse, ground item, news, light source, overlay, event-hook and script
-systems), so ZoneBuilder.startup is not ported either. MapZone.cleanItems.
+MapZone.cleanItems. (WildernessZone, DarkZone and ZoneBuilder.startup are
+ported in world/wilderness_zone.rs and world/dark_zone.rs; see
+docs/wilderness.md.)
 Region's assemble lists, getBaseLocation, the DynamicRegion paths,
 RegionManager.apply/addRegion/removeRegion. Every concrete content zone
 elsewhere in the server.

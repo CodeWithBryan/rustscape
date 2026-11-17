@@ -1096,8 +1096,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   active again, and Region.add skipping only null players. Music, messages,
   combat state, NPCs, repository and every other outside system are required
   services with no defaults; a DynamicRegion fails explicitly. getRandomLoc's
-  unseeded draws are compared only by draw-independent facts. WildernessZone,
-  DarkZone, ZoneBuilder.startup and cleanItems are not ported, and nothing
+  unseeded draws are compared only by draw-independent facts. cleanItems is
+  not ported (WildernessZone, DarkZone and ZoneBuilder.startup: see the
+  wilderness entry below), and nothing
   binds these libraries to a session: the examples' check_inactive,
   zone_update and ZoneMove answers are still fabricated. See docs/zones.md.
 - For TeleportManager, TeleportType, TeleportPulse or Entity.isTeleporting
@@ -1120,6 +1121,29 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   zones::is_tele_blocked. Every other call is a required service with no
   default; the per-tick driver is an oracle input. No content reaches send
   and nothing installs the library. See docs/teleport.md.
+- For WildernessZone, DarkZone, LightSource or ZoneBuilder.startup
+  (world/wilderness_zone.rs, world/dark_zone.rs), run `cargo test -p
+  rs09-server --test wilderness` and `cargo xtask wilderness-oracle --check`
+  with Python/JDK 11, plus the zones, teleport, combat_pulse, combat_swing
+  and npc_behaviour suites and zones-oracle. Preserve all 696 cases. Keep
+  the level formula (truncating division, the 6400 split), isInZone's unused
+  first location read over the INSTANCE borders the world keeps, show's
+  order (overlay, level, line read back, attack option only with PvP, flag),
+  leave closing a fresh component 381 (the manager's overlay field stays),
+  the artificial player's flag-then-level, the lower skull level read twice,
+  wrapping range tests, the revenant name test only for NPC targets, the
+  teleport item name read twice for slaying, the loot's id/name re-reads,
+  draw order (glove roll, byte-cast random(1, 14), seventeen gear rolls,
+  random(15, 50)), the deep halving, the glove name lower-cased but a null
+  gear name printed, and death returning false. DarkZone: the light source
+  read before the perk, no hook for a perk player, the running-pulse early
+  return before the component opens, the pulse stopped only after a close,
+  updateOverlay's two overlay reads and SOFT glow script, the first DarkZone
+  only in checkDarkArea. SkullManager, the InterfaceManager overlay, familiars,
+  aggression, names, ground items, news, scripts, tasks, hooks and the impact
+  handler are required services with no defaults; the insect pulse is a
+  native pulse dispatched by identity. Nothing installs the libraries. See
+  docs/wilderness.md.
 - For aggression, NPCBehavior hooks or the NPC/Entity/Player combat members
   (world/npc_behaviour: AggressiveHandler/AggressiveBehavior, setDefaultBehavior,
   configureBossData, isInvisible/isHidden, isAttackable, continueAttack,
