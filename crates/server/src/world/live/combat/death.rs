@@ -95,12 +95,16 @@ pub fn death_pulse(live: &mut Live, task: &Task) -> std::result::Result<bool, St
     let done = npc_death::task_pulse(live, task);
     let result = match done {
         Ok(false) => Ok(false),
-        Ok(true) => match npc_death::task_stop(live, task) {
+        Ok(true) => match npc_death::task_stop_with(
+            live,
+            task,
+            super::super::subclasses::npc_finalize_death,
+        ) {
             Ok(()) => Ok(true),
             Err(error) => {
                 live.inner
                     .log_line(format!("DeathTask printStackTrace {error:?}"));
-                npc_death::task_stop(live, task)
+                npc_death::task_stop_with(live, task, super::super::subclasses::npc_finalize_death)
                     .map(|_| true)
                     .map_err(|e| format!("{e:?}"))
             }
@@ -108,7 +112,7 @@ pub fn death_pulse(live: &mut Live, task: &Task) -> std::result::Result<bool, St
         Err(error) => {
             live.inner
                 .log_line(format!("DeathTask printStackTrace {error:?}"));
-            npc_death::task_stop(live, task)
+            npc_death::task_stop_with(live, task, super::super::subclasses::npc_finalize_death)
                 .map(|_| true)
                 .map_err(|e| format!("{e:?}"))
         }
@@ -741,8 +745,9 @@ impl npc_death::Host for Live {
         self.with_timers(&p, |natives, manager| manager.death(&mut (), natives))
             .map_err(binding)
     }
-    fn transform(&mut self, _: &NodeHandle, _: i32) -> Result<()> {
-        refused("NPC.transform (the Loar shade)")
+    fn transform(&mut self, npc: &NodeHandle, id: i32) -> Result<()> {
+        // NPC.transform(id) (world/live/runtime_npcs.rs).
+        self.npc_transform(npc.node, id).map_err(binding)
     }
     fn npc_state(&mut self, npc: &NodeHandle) -> Result<npc::State> {
         self.inner
@@ -761,6 +766,11 @@ impl npc_death::Host for Live {
             .map(|r| r.definition.clone()))
     }
     fn npc_original_id(&mut self, npc: &NodeHandle) -> Result<i32> {
+        // originalId: kept from the NPC's first transform (until then its
+        // id is the original).
+        if let Some(original) = self.content.spawning.original.get(&npc.node) {
+            return Ok(*original);
+        }
         drop::Host::npc_id(self, npc)
     }
     fn npc_respawns(&mut self, npc: &NodeHandle) -> Result<bool> {
@@ -771,8 +781,10 @@ impl npc_death::Host for Live {
         );
         Ok(respawn)
     }
-    fn npc_clear(&mut self, _: &NodeHandle) -> Result<()> {
-        refused("NPC.clear (NPCs that do not respawn are content)")
+    fn npc_clear(&mut self, npc: &NodeHandle) -> Result<()> {
+        // NPC.clear() (world/live/runtime_npcs.rs).
+        let npc = self.handle(npc).0;
+        Live::npc_clear(self, &npc).map_err(binding)
     }
     fn on_death_started(&mut self, npc: &NodeHandle, killer: &NodeHandle) -> Result<()> {
         let (npc, killer) = (self.handle(npc), self.handle(killer));
@@ -783,11 +795,6 @@ impl npc_death::Host for Live {
     }
     fn on_death_finished(&mut self, npc: &NodeHandle, killer: &NodeHandle) -> Result<()> {
         let (npc, killer) = (self.handle(npc), self.handle(killer));
-        if self.npc_row(&npc).is_some_and(|row| row.class.is_some()) {
-            self.inner.not_ported.skip(
-                "NPC class overrides (npc_classes: swing_handler and the other members are not installed; the base NPC member runs)",
-            );
-        }
         let behaviour = crate::world::npc_behaviour::behaviour(self, &npc).map_err(binding)?;
         behaviour
             .on_death_finished(self, &npc, &killer)

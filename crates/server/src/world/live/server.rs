@@ -114,6 +114,9 @@ pub struct Running {
     pub store: rs09_cache::store::Store,
     pub stats: Arc<Stats>,
     pub boot: boot::Report,
+    /// The account storage `Auth.configure` made (a test registers an
+    /// account in it before its first login, as `AccountRegister` would).
+    pub accounts: Arc<dyn crate::auth::storage::AccountStorage>,
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<()>>,
     saver: Option<JoinHandle<()>>,
@@ -163,6 +166,7 @@ pub fn start(options: Options) -> Result<Running, String> {
         store,
         report,
     } = boot::boot(&options, saves)?;
+    let accounts = live.inner.storage.clone();
     let (joins, admissions) = std_mpsc::channel();
     let gate = Arc::new(Gate {
         joins: Mutex::new(joins),
@@ -182,6 +186,7 @@ pub fn start(options: Options) -> Result<Running, String> {
         store,
         stats,
         boot: report,
+        accounts,
         stop,
         worker: Some(worker),
         saver: Some(saver),

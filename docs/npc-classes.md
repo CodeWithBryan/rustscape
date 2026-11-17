@@ -108,8 +108,11 @@ NPC options. Dispatch an InteractionListeners function holding an
 `handler_walks`. Run `classes::init` where the NPC's `init` runs (BankerNPC
 needs the regions around its spawn loaded first), `classes::tick` and
 `tick_actions` in the NPC tick, `finalize_death`, `on_attack`, `on_impact`
-and `swing_handler` from combat and death. The live world is another slice's
-(`world/live`); nothing here installs the library there yet.
+and `swing_handler` from combat and death. `rs09-server --world` installs
+`classes` this way (world/live/subclasses.rs, docs/live-world.md: `init`,
+`tick`, `finalize_death` through `npc_death::task_stop_with`, `on_attack`,
+`on_impact`, `swing_handler` with MonkNPC's `CombatAction`); the listeners,
+`talk`, `banker` and `idle` bodies are not installed there.
 
 ## Reference tests
 
@@ -186,4 +189,6 @@ HairCutPlugin's `isWalk`): every one fails the replay.
   regions hold objects and spells (see above); NPCTalkListener, BankerNPC's
   listeners and the two option handlers are not registered there (the
   start-up world has no InteractionListeners registry).
-- Nothing installs the libraries in `rs09-server --world` yet.
+- `rs09-server --world` installs `classes` only (see above); the
+  listeners, the talk listener, the banker bodies and idle NPCs are not
+  installed.

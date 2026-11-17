@@ -458,7 +458,6 @@ const NOT_PORTED_SEGMENTS: &[(&str, usize)] = &[
     // native; the other 103 are the registered quests' configs and
     // updateVarps (content; the live registry is empty).
     ("QuestRepository.syncronizeTab", 103),
-    ("LoginValidationPlugin", 1),
 ];
 
 #[test]
@@ -502,6 +501,7 @@ fn live_world_logs_in_walks_shows_two_players_logs_out_and_saves() {
         .unwrap(),
     );
     let stats = running.stats.clone();
+    let accounts = running.accounts.clone();
     let tokio = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(4)
         .enable_all()
@@ -523,7 +523,7 @@ fn live_world_logs_in_walks_shows_two_players_logs_out_and_saves() {
             .await
             .unwrap();
         let address = server.tcp;
-        drive(address, &saves).await;
+        drive(address, &saves, Some(&accounts)).await;
         server.shutdown().await.unwrap();
     });
     let ticks = stats.ticks.load(Ordering::Relaxed);
@@ -544,7 +544,11 @@ fn live_world_logs_in_walks_shows_two_players_logs_out_and_saves() {
 /// `address` whose saves directory is `saves`: a new character, its login
 /// tick against the world trace, a walk, a second character, both logouts,
 /// the saves and a returning login.
-async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
+async fn drive(
+    address: std::net::SocketAddr,
+    saves: &std::path::Path,
+    accounts: Option<&Arc<dyn rs09_server::auth::storage::AccountStorage>>,
+) {
     // A new character.
     let (code, one) = Client::login(address, "traceone").await;
     assert_eq!(code, 2, "login reply");
@@ -622,30 +626,14 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         |hex: &str| u8::from_str_radix(&hex[..2], 16).is_ok_and(|op| COUNTER_OPCODES.contains(&op));
     let mut exact = 0;
     let mut counter_only = 0;
-    let mut debug_suffix = 0;
     for (n, ((original, stack), native)) in kept[..reinit].iter().zip(&mine).enumerate() {
         if original == native {
             exact += 1;
             continue;
         }
-        // MusicPlayer.play's track name: the original's new character is in
-        // debug mode (LoginValidationPlugin's Player.toggleDebug, content
-        // not ported here), so its name carries " (id)". The rest of the
-        // String packet is the same except its size and the counter.
-        let played = stack
-            .as_ref()
-            .is_some_and(|s| s.iter().any(|f| f.contains("MusicPlayer.play")));
-        let suffix = hex(b" (62)");
-        if played && original.contains(&suffix) {
-            let stripped = original.replacen(&suffix, "", 1);
-            if stripped.len() == native.len()
-                && stripped[..2] == native[..2]
-                && stripped[6..stripped.len() - 2] == native[6..native.len() - 2]
-            {
-                debug_suffix += 1;
-                continue;
-            }
-        }
+        // LoginValidationPlugin is native: the new character's debug mode
+        // (Player.toggleDebug) gives MusicPlayer.play's track name its " (id)"
+        // as the original's has it, so no entry differs by text.
         assert!(
             counted(original) && original[..2] == native[..2] && original.len() == native.len(),
             "login tick entry {n}: native {native}, original {original} from {:?}",
@@ -653,10 +641,7 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         );
         counter_only += 1;
     }
-    assert_eq!(
-        debug_suffix, 1,
-        "the one track name that differs by the debug suffix"
-    );
+
     let original_varps: Vec<&String> = kept[reinit..]
         .iter()
         .take_while(|(h, _)| h.starts_with("3c") || h.starts_with("e2"))
@@ -872,10 +857,34 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         "traceone's saved location"
     );
 
+    // RS09_LIVE_SCENARIOS=a,b runs only the named scenarios after the first
+    // character's save (a shortcut while working on one of them).
+    if let Some(list) = std::env::var_os("RS09_LIVE_SCENARIOS") {
+        for name in list.to_string_lossy().split(',') {
+            match name.trim() {
+                "items" => items_scenario(address, saves).await,
+                "wilderness" => wilderness_scenario(address, saves).await,
+                "scenery" => scenery_scenario(address, saves).await,
+                "combat" => combat_scenario(address, saves).await,
+                "aggression" => aggression_scenario(address, saves).await,
+                "death" => death_scenario(address, saves).await,
+                "grave" => grave_scenario(address, saves, accounts).await,
+                "subclass" => subclass_scenario(address, saves).await,
+                "dragon" => dragon_scenario(address, saves).await,
+                "ranged" => ranged_scenario(address, saves).await,
+                "special" => special_scenario(address, saves).await,
+                other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
+            }
+        }
+        return;
+    }
     if std::env::var_os("RS09_LIVE_COMBAT_ONLY").is_some() {
         combat_scenario(address, saves).await;
         aggression_scenario(address, saves).await;
         death_scenario(address, saves).await;
+        grave_scenario(address, saves, accounts).await;
+        subclass_scenario(address, saves).await;
+        dragon_scenario(address, saves).await;
         ranged_scenario(address, saves).await;
         special_scenario(address, saves).await;
         return;
@@ -902,6 +911,9 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
     combat_scenario(address, saves).await;
     aggression_scenario(address, saves).await;
     death_scenario(address, saves).await;
+    grave_scenario(address, saves, accounts).await;
+    subclass_scenario(address, saves).await;
+    dragon_scenario(address, saves).await;
     ranged_scenario(address, saves).await;
     special_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
@@ -994,6 +1006,151 @@ async fn death_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
         "an administrator keeps its items"
     );
     one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A regular player's death leaves a grave: `graveone` (an account
+/// registered as a regular player before its first login, one hitpoint,
+/// `tutorial:complete`, six items) is killed by a giant rat. The three most
+/// valuable items are kept; the other three go into a grave
+/// (`GraveController.allowGenerate`, `produceGrave`, `Grave.initialize`):
+/// a grave NPC made at runtime (`new Grave()`, `transform`, `init`) stands
+/// where it died, the lost items lie there as ground items private to it
+/// (with the bones), it is told how long the grave lasts and gets the hint
+/// icon from `Grave.tick`; `gravewatch`, standing nearby, sees the grave NPC
+/// (id 6565, MEM_PLAQUE) added and none of the private items. Needs the
+/// in-process world's account storage (`None` against a running server).
+async fn grave_scenario(
+    address: std::net::SocketAddr,
+    saves: &std::path::Path,
+    accounts: Option<&Arc<dyn rs09_server::auth::storage::AccountStorage>>,
+) {
+    let Some(accounts) = accounts else {
+        eprintln!("SKIPPED: the grave scenario registers a regular player's account in-process");
+        return;
+    };
+    let players = saves.join("players");
+    let at = [3196, 3206, 0];
+    // Bronze dagger, sword, axe, pickaxe, wooden shield, bowl.
+    let items = [1205, 1277, 1351, 1265, 1171, 1923];
+    let inventory: Vec<(i32, i32, i32)> = items
+        .iter()
+        .enumerate()
+        .map(|(slot, id)| (slot as i32, *id, 1))
+        .collect();
+    write_save_with(&players, "traceone", "graveone", at, &inventory, |save| {
+        save["skills"][3]["lifepoints"] = Value::String("1".into());
+        let list = save
+            .as_object_mut()
+            .unwrap()
+            .entry("attributes")
+            .or_insert_with(|| Value::Array(vec![]));
+        list.as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"key": "tutorial:complete", "type": "bool", "value": true}));
+    });
+    write_save(&players, "traceone", "gravewatch", [3199, 3209, 0], &[]);
+    {
+        let mut account = rs09_server::auth::account::UserAccountInfo::create_default(0);
+        account.username = "graveone".into();
+        account.rights = 0;
+        accounts
+            .store(account.shared())
+            .expect("graveone's account");
+    }
+    let (code, watch) = Client::login(address, "gravewatch").await;
+    assert_eq!(code, 2, "gravewatch's login");
+    let mut watch = watch.unwrap();
+    watch
+        .until(Duration::from_secs(10), "gravewatch in the world", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let (code, one) = Client::login(address, "graveone").await;
+    assert_eq!(code, 2, "graveone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "graveone's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    one.send(button(378, 140)).await;
+    one.until(Duration::from_secs(10), "graveone in the game world", |c| {
+        !c.updates.is_empty()
+    })
+    .await;
+    let started = Instant::now();
+    let mut ping = Instant::now();
+    let mut died_at = one.position();
+    while !one
+        .messages
+        .iter()
+        .any(|(_, m)| m == "Oh dear, you are dead!")
+    {
+        assert!(
+            started.elapsed() < Duration::from_secs(120),
+            "graveone was not killed"
+        );
+        died_at = one.position();
+        if ping.elapsed() > Duration::from_secs(5) {
+            one.send(frame(93, &[])).await;
+            watch.send(frame(93, &[])).await;
+            ping = Instant::now();
+        }
+        one.pump(Duration::from_millis(100)).await;
+        watch.pump(Duration::from_millis(100)).await;
+    }
+    let notice = "<col=ff0000>Because of your current gravestone, you have 2 minutes to get your items back.</col> ";
+    one.until(Duration::from_secs(10), "the grave's notice", |c| {
+        c.messages.iter().any(|(_, m)| m == notice)
+    })
+    .await;
+    // The kept items are the three most valuable; the other three and the
+    // bones lie on the grave's tile, private to graveone.
+    one.until(Duration::from_secs(10), "the grave's items", |c| {
+        let ground = c.ground_ids(died_at);
+        ground.contains(&526) && ground.len() >= 4
+    })
+    .await;
+    let kept: Vec<i32> = one
+        .containers
+        .get(&93)
+        .map(|c| c.values().map(|(id, _)| *id).collect())
+        .unwrap_or_default();
+    let ground = one.ground_ids(died_at);
+    assert_eq!(kept.len(), 3, "three items kept: {kept:?}");
+    for id in items {
+        assert!(
+            kept.contains(&id) || ground.contains(&id),
+            "item {id} is neither kept nor in the grave (kept {kept:?}, ground {ground:?})"
+        );
+    }
+    // Grave.tick: the owner's hint icon on the grave NPC (HintIcon 217,
+    // slot 0, an NPC target).
+    one.until(Duration::from_secs(10), "the grave's hint icon", |c| {
+        c.frames
+            .iter()
+            .any(|f| f.opcode == 217 && f.payload.first() == Some(&1))
+    })
+    .await;
+    // gravewatch sees the grave NPC (MEM_PLAQUE, 6565) and not the items.
+    watch
+        .until(Duration::from_secs(10), "the grave NPC", |c| {
+            c.npcs.actors.values().any(|n| n.type_id == 6565)
+        })
+        .await;
+    assert!(
+        watch
+            .ground_ids(died_at)
+            .iter()
+            .all(|id| !items.contains(id)),
+        "gravewatch sees graveone's private grave items"
+    );
+    eprintln!(
+        "graveone died at {died_at:?} after {:.1} s: kept {kept:?}, grave items {ground:?}, the grave NPC 6565 seen by gravewatch",
+        started.elapsed().as_secs_f64()
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    watch.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
@@ -1336,6 +1493,140 @@ async fn combat_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
+/// Attacks the nearest NPC of `ids` (option 2, Attack) until one takes a
+/// hit, trying up to four; answers its index.
+async fn attack_nearest(one: &mut Client, ids: &[i32], what: &str) -> usize {
+    let base = one.base.unwrap();
+    let here = one.position();
+    let mut found: Vec<(usize, [i32; 3])> = one
+        .npcs
+        .actors
+        .iter()
+        .filter(|(_, n)| ids.contains(&n.type_id))
+        .map(|(i, n)| (*i, [base[0] + n.tile[0], base[1] + n.tile[1], base[2]]))
+        .collect();
+    found.sort_by_key(|(_, t)| (t[0] - here[0]).abs() + (t[1] - here[1]).abs());
+    let hits_from = one.npc_hits.len();
+    for (index, tile) in found.into_iter().take(4) {
+        eprintln!("{}: attacks {what} {index} at {tile:?}", one.name);
+        one.send(frame(3, &[&la16(index as i32)])).await;
+        let end = Instant::now() + Duration::from_secs(20);
+        while Instant::now() < end
+            && !one.npc_hits[hits_from..]
+                .iter()
+                .any(|(i, _, _)| *i == index)
+        {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if one.npc_hits[hits_from..]
+            .iter()
+            .any(|(i, _, _)| *i == index)
+        {
+            return index;
+        }
+        one.send(frame(93, &[])).await;
+    }
+    panic!("{}: no hit mark on a {what}", one.name);
+}
+
+/// NPC subclasses: `ratone` kills a rat (47) west of Draynor, a `RatNPC`
+/// the start-up constructed, with Witch's Potion started in its save (stage
+/// 10): the death task's stop reaches RatNPC's `finalizeDeath`
+/// (world/npc_classes through the live world's virtual dispatch: the base
+/// death with its drop, then the quest check against the persisted quest
+/// stage) and the rat tail (300) lies where the rat died.
+async fn subclass_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3077, 3281, 0];
+    write_save_with(&players, "traceone", "ratone", at, &[], |save| {
+        for skill in [0, 2] {
+            save["skills"][skill]["static"] = Value::String("40".into());
+            save["skills"][skill]["dynamic"] = Value::String("40".into());
+            save["skills"][skill]["experience"] = Value::String("37224.0".into());
+        }
+        // Witch's Potion (quest index 31) started: stage 10.
+        save["quests"]["questStages"] = serde_json::json!([{"questId": "31", "questStage": "10"}]);
+    });
+    let (code, one) = Client::login(address, "ratone").await;
+    assert_eq!(code, 2, "ratone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "ratone's rats", |c| {
+        c.base.is_some() && c.npcs.actors.values().any(|n| n.type_id == 47)
+    })
+    .await;
+    let started = Instant::now();
+    let index = attack_nearest(&mut one, &[47], "rat").await;
+    let base = one.base.unwrap();
+    let mut last = [0, 0, 0];
+    let end = Instant::now() + Duration::from_secs(90);
+    let mut ping = Instant::now();
+    loop {
+        if let Some(n) = one.npcs.actors.get(&index) {
+            last = [base[0] + n.tile[0], base[1] + n.tile[1], base[2]];
+        }
+        if one.ground_ids(last).contains(&300) {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "ratone: no rat tail where the rat died"
+        );
+        if ping.elapsed() > Duration::from_secs(5) {
+            one.send(frame(93, &[])).await;
+            ping = Instant::now();
+        }
+        one.pump(Duration::from_millis(200)).await;
+    }
+    eprintln!(
+        "ratone: the rat (RatNPC) died after {:.1} s; RatNPC's rat tail (300) with Witch's Potion at stage 10, ground at {last:?}: {:?}",
+        started.elapsed().as_secs_f64(),
+        one.ground_ids(last)
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Dragons: `dragonone` (Hitpoints, Defence, Attack and Strength 99) attacks
+/// a green dragon of the west wilderness (2982,3618; a ChromaticDragonNPC
+/// the start-up constructed). The dragon's swing handler is its
+/// `combatAction` (MultiSwingHandler, world/dragonfire); when it picks the
+/// dragonfire attack the breath's maximum is `calculateDragonfireMaxHit`
+/// and the player reads "You are horribly burnt by the fiery breath."
+async fn dragon_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [2980, 3615, 0];
+    write_save_with(&players, "traceone", "dragonone", at, &[], |save| {
+        for skill in [0, 1, 2, 3] {
+            save["skills"][skill]["static"] = Value::String("99".into());
+            save["skills"][skill]["dynamic"] = Value::String("99".into());
+            save["skills"][skill]["experience"] = Value::String("13034431.0".into());
+        }
+        save["skills"][3]["lifepoints"] = Value::String("99".into());
+    });
+    let (code, one) = Client::login(address, "dragonone").await;
+    assert_eq!(code, 2, "dragonone's login");
+    let mut one = one.unwrap();
+    let green = [941, 4677, 4678, 4679, 4680];
+    one.until(Duration::from_secs(10), "dragonone's green dragons", |c| {
+        c.base.is_some() && c.npcs.actors.values().any(|n| green.contains(&n.type_id))
+    })
+    .await;
+    let started = Instant::now();
+    attack_nearest(&mut one, &green, "green dragon").await;
+    let burnt = "You are horribly burnt by the fiery breath.";
+    one.until_pinging(Duration::from_secs(120), "the dragon's breath", |c| {
+        c.messages.iter().any(|(_, m)| m == burnt)
+    })
+    .await;
+    eprintln!(
+        "dragonone: the green dragon breathed fire after {:.1} s (hitpoints {:?})",
+        started.elapsed().as_secs_f64(),
+        one.skills.get(&3)
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 /// NPC aggression: a saved character (combat level 3) next to the giant
 /// rats (86, aggressive, combat 3) of the Lumbridge swamp:
 /// `AggressiveHandler.selectTarget` picks it and the rat's combat pulse
@@ -1492,7 +1783,7 @@ fn running_server_scenario() {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(drive(address, std::path::Path::new(&saves)));
+        .block_on(drive(address, std::path::Path::new(&saves), None));
     eprintln!("scenario finished in {} ms", started.elapsed().as_millis());
 }
 

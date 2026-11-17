@@ -16,7 +16,10 @@
 - content/global/handlers/npc/ChromaticDragonNPC.java, MetalDragonNPC.java and
   ChromaticDragonBehavior.kt (`dragons`).
 
-It is a library: nothing in a session or `--world` installs it yet (see
+It is a library. `rs09-server --world` installs the dragons' handlers
+(each dragon's MultiSwingHandler with its class's DragonfireSwingHandler,
+the protection checks; world/live/dragons.rs, docs/live-world.md); the
+dragonfire shield's handler and listener are not installed there (see
 Joins). The other global creature classes and the equipment registers are
 `world::creatures` and `world::equipment_registers`
 (docs/equipment-registers.md).

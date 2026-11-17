@@ -6,8 +6,11 @@ or the ground), the grave with its timer, blessing, repair, reading and
 demolition, the server-store copy of active graves, and the death-screen
 button. They are libraries; `rs09-server --world` installs `commenceDeath`,
 `finalizeDeath`, `getContainers` and the death screen
-(world/live/combat/player_death.rs, docs/live-world.md); graves refuse there
-by name (no grave NPC is built at runtime). Java is only the test oracle.
+(world/live/combat/player_death.rs, docs/live-world.md) and graves: the grave
+NPC made at runtime, `GraveController.tick` as a tick listener, `Grave.tick`
+with the hint icon, the four options' listeners and `hasGraveAt`
+(world/live/graves.rs); the server-store copy of graves is not read or
+written there. Java is only the test oracle.
 
 | Original | Rust | Scope |
 | --- | --- | --- |

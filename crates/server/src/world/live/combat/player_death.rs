@@ -351,8 +351,13 @@ impl pd::Host for Live {
     fn location_field(&mut self, node: &NodeHandle) -> Result<Option<Location>> {
         self.inner.state.node_location(node.node).map_err(binding)
     }
-    fn set_location_field(&mut self, _: &NodeHandle, _: Option<Location>) -> Result<()> {
-        refused("Grave's location field (graves are not ported in the live world)")
+    fn set_location_field(&mut self, node: &NodeHandle, location: Option<Location>) -> Result<()> {
+        // Kotlin's `this.location = ...` in Grave (world/live/runtime_npcs.rs).
+        if !self.inner.npcs.rows.contains_key(&node.node) {
+            return refused("the location field of a node that is not an NPC");
+        }
+        self.npc_set_location_field(node.node, location);
+        Ok(())
     }
     fn repository_news(&mut self, _: &str) -> Result<()> {
         self.inner
@@ -514,23 +519,30 @@ impl pd::Host for Live {
         result
     }
 
-    // Graves: `new Grave()` makes an AbstractNPC at runtime (the grave NPC
-    // with its tick, hint icon and options). The live world does not build
-    // NPCs after the start-up, so every grave service refuses by name.
+    // Graves (world/live/graves.rs): the grave is an NPC made at runtime
+    // (world/live/runtime_npcs.rs), ticked by GraveController and its own
+    // Grave.tick.
     fn new_grave(&mut self) -> Result<pd::grave::Handle> {
-        refused("new Grave() (grave NPCs are not built in the live world)")
+        self.new_grave_npc()
     }
-    fn set_respawn(&mut self, _: &NodeHandle, _: bool) -> Result<()> {
-        refused("the grave NPC's setRespawn (graves)")
+    fn set_respawn(&mut self, npc: &NodeHandle, value: bool) -> Result<()> {
+        // NPC.setRespawn: read back by the death task's isRespawn().
+        self.inner
+            .set_attribute(npc.node, "npc:no-respawn", super::Attr::Bool(!value));
+        Ok(())
     }
-    fn set_walks(&mut self, _: &NodeHandle, _: bool) -> Result<()> {
-        refused("the grave NPC's setWalks (graves)")
+    fn set_walks(&mut self, npc: &NodeHandle, value: bool) -> Result<()> {
+        let row = self.inner.npcs.rows.get(&npc.node).ok_or(Error::Null)?;
+        row.brain.fields.write().walks = value;
+        Ok(())
     }
-    fn set_never_walks(&mut self, _: &NodeHandle, _: bool) -> Result<()> {
-        refused("the grave NPC's setNeverWalks (graves)")
+    fn set_never_walks(&mut self, npc: &NodeHandle, value: bool) -> Result<()> {
+        let row = self.inner.npcs.rows.get(&npc.node).ok_or(Error::Null)?;
+        row.brain.fields.write().never_walks = value;
+        Ok(())
     }
-    fn npc_init(&mut self, _: &NodeHandle) -> Result<()> {
-        refused("the grave NPC's init (graves)")
+    fn npc_init(&mut self, npc: &NodeHandle) -> Result<()> {
+        Live::npc_init(self, npc.node).map_err(binding)
     }
     fn uid_map(&mut self, uid: i32) -> Result<Option<NodeHandle>> {
         Ok(self
@@ -540,34 +552,63 @@ impl pd::Host for Live {
             .find(|s| s.uid == uid)
             .map(|s| s.canonical.owner.clone()))
     }
-    fn register_hint_icon(&mut self, _: &NodeHandle, _: &NodeHandle) -> Result<()> {
-        refused("registerHintIcon for a grave (graves; HintIconManager not installed)")
+    fn register_hint_icon(&mut self, player: &NodeHandle, node: &NodeHandle) -> Result<()> {
+        let p = self.dp(player)?;
+        Live::register_hint_icon(self, &p, node).map_err(binding)
     }
-    fn clear_hint_icon(&mut self, _: &NodeHandle) -> Result<()> {
-        refused("clearHintIcon for a grave (graves; HintIconManager not installed)")
+    fn clear_hint_icon(&mut self, player: &NodeHandle) -> Result<()> {
+        let p = self.dp(player)?;
+        Live::clear_hint_icon(self, &p).map_err(binding)
     }
-    fn set_varbit(&mut self, _: &NodeHandle, _: i32, _: i32) -> Result<()> {
-        refused("setVarbit from a grave (graves)")
+    fn set_varbit(&mut self, player: &NodeHandle, id: i32, value: i32) -> Result<()> {
+        // ContentAPI.setVarbit(player, id, value) (save false).
+        let p = self.dp(player)?;
+        crate::world::login::Host::set_varbit(self, &p, id, value, false).map_err(binding)
     }
-    fn open_interface(&mut self, _: &NodeHandle, _: i32) -> Result<()> {
-        refused("openInterface from a grave (graves)")
+    fn open_interface(&mut self, player: &NodeHandle, id: i32) -> Result<()> {
+        // ContentAPI.openInterface: interfaceManager.open(new Component(id)).
+        pd::Host::open_component(self, player, id)
     }
-    fn interface_text(&mut self, _: &NodeHandle, _: &str, _: i32, _: i32) -> Result<()> {
-        refused("setInterfaceText from a grave (graves)")
+    fn interface_text(
+        &mut self,
+        player: &NodeHandle,
+        text: &str,
+        iface: i32,
+        child: i32,
+    ) -> Result<()> {
+        let p = self.dp(player)?;
+        self.inner.text(&p, text, iface, child).map_err(binding)
     }
-    fn play_audio(&mut self, _: &NodeHandle, _: i32) -> Result<()> {
-        refused("playAudio from a grave (graves)")
+    fn play_audio(&mut self, player: &NodeHandle, id: i32) -> Result<()> {
+        // ContentAPI.playAudio(player, id): delay 0, one loop, no location.
+        let p = self.dp(player)?;
+        self.inner
+            .queue_native(&p, rs09_protocol::game::updates::synth_sound(id, 1, 0));
+        Ok(())
     }
-    fn animate(&mut self, _: &NodeHandle, _: i32) -> Result<()> {
-        refused("animate from a grave (graves)")
+    fn animate(&mut self, entity: &NodeHandle, id: i32) -> Result<()> {
+        // ContentAPI.animate(entity, id): animator.animate(new Animation(id)).
+        let p = P(entity.clone());
+        self.entity_visualize(&p, Some(crate::world::animation::Animation::new(id)), None)
+            .map_err(binding)
     }
-    fn prayer_points(&mut self, _: &NodeHandle) -> Result<f64> {
-        refused("prayer points from a grave (graves)")
+    fn prayer_points(&mut self, player: &NodeHandle) -> Result<f64> {
+        let p = self.dp(player)?;
+        self.inner
+            .with_profile(&p, |profile| profile.skills.prayer_points)
+            .map_err(binding)
     }
-    fn set_prayer_points(&mut self, _: &NodeHandle, _: f64) -> Result<()> {
-        refused("prayer points from a grave (graves)")
+    fn set_prayer_points(&mut self, player: &NodeHandle, value: f64) -> Result<()> {
+        // Kotlin's `skills.prayerPoints = value`: setPrayerPoints (the
+        // prayer skill packet).
+        let p = self.dp(player)?;
+        self.with_skills(&p, |skills, ctx| skills.set_prayer(value, ctx))
+            .map_err(binding)?
+            .map_err(binding)
     }
     fn store_archive(&mut self, _: &str) -> Result<()> {
-        refused("ServerStore.getArchive for graves (graves)")
+        refused(
+            "ServerStore.getArchive for graves (the server store's grave archive is not read or written by the live world)",
+        )
     }
 }

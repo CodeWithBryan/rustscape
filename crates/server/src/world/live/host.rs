@@ -112,6 +112,9 @@ pub struct Live {
     pub item_actions: super::items::ItemActions,
     /// Region zones and the players' SkullManagers ([`super::region_zones`]).
     pub zones: super::region_zones::RegionZones,
+    /// Runtime NPCs, graves, hint icons and the systems installed after
+    /// combat ([`super::content`]).
+    pub content: super::content::ContentWorld,
 }
 
 pub fn fail(e: impl std::fmt::Debug) -> driver::Error {
@@ -1161,10 +1164,14 @@ impl login::Host<P> for Live {
     fn login_plugins(&mut self) -> Vec<String> {
         self.login_plugins.clone()
     }
-    fn login_plugin(&mut self, _: &str, _: &P) -> login::Result<()> {
+    fn login_plugin(&mut self, class: &str, p: &P) -> login::Result<()> {
+        // The global handlers' LoginValidationPlugin (super::global).
+        if let Some(result) = self.global_login_plugin(class, p) {
+            return result.map_err(|e| login::Error::Exception(format!("{class}: {e:?}")));
+        }
         self.inner
             .not_ported
-            .skip("LoginConfiguration.LOGIN_PLUGINS (content plugins by class name)");
+            .skip("LoginConfiguration.LOGIN_PLUGINS (content plugins by class name other than LoginValidationPlugin)");
         Ok(())
     }
     fn appearance_sync(&mut self, p: &P) -> login::Result<()> {
@@ -1457,9 +1464,11 @@ impl driver::Host<P> for Live {
         // The canonical state's runner (movement pulses) is the rest of
         // GameWorld.Pulser.updateAll: run here, right after the world runner.
         self.with_walk(|world| world.pulses()).map_err(fail)?;
-        self.inner
-            .not_ported
-            .skip("GameWorld.tickListeners (content tick listeners)");
+        // GameWorld.tickListeners: the installed ones (super::content).
+        self.content_tick_listeners().map_err(fail)?;
+        self.inner.not_ported.skip(
+            "GameWorld.tickListeners (the content tick listeners other than those installed)",
+        );
         Ok(())
     }
     fn managers_tick(&mut self) -> driver::Result<()> {
@@ -1486,7 +1495,12 @@ impl driver::Host<P> for Live {
         })
     }
     fn npc_tick(&mut self, npc: &P) -> driver::Result<()> {
-        self.npc_tick_of(npc).map_err(fail)
+        // A subclass whose tick replaces NPC.tick (the grave's Grave.tick).
+        if let Some(result) = self.grave_npc_tick(npc) {
+            return result.map_err(fail);
+        }
+        // NPC.tick() with a subclass's override (super::subclasses).
+        self.npc_class_tick(npc).map_err(fail)
     }
     fn npc_reset(&mut self, npc: &P) -> driver::Result<()> {
         self.npc_reset_of(npc).map_err(fail)

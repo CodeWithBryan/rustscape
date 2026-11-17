@@ -80,6 +80,12 @@ struct AttackListener;
 impl NativeObject for AttackListener {}
 const ATTACK_LISTENER: &str = "content.global.skill.AttackListener";
 
+/// GraveController's `on(GraveType.ids, IntType.NPC, option)` listeners
+/// (super::graves).
+struct GraveListener(super::graves::GraveOption);
+impl NativeObject for GraveListener {}
+const GRAVE_CONTROLLER: &str = "core.game.node.entity.combat.graves.GraveController";
+
 /// `AttackListener`'s body: the Lumbridge dummies' style checks, the
 /// killerwatt's aggression (content, refused), then `player.attack(npc)`.
 /// Ported from the pinned AttackListener.kt; it has no differential corpus.
@@ -879,13 +885,9 @@ impl drop::Context for Ctx<'_> {
     fn summon(&mut self, _: &Node, _: &Node, _: bool, _: bool) -> Result<()> {
         refused("FamiliarManager.summon")
     }
-    fn has_grave_at(&mut self, _: Option<[i32; 3]>) -> Result<bool> {
-        // GraveController.hasGraveAt: no grave is ever created in this world
-        // (player death is not installed).
-        self.0.inner.not_ported.default_answer(
-            "GraveController.hasGraveAt (no graves: player death not installed: false)",
-        );
-        Ok(false)
+    fn has_grave_at(&mut self, at: Option<[i32; 3]>) -> Result<bool> {
+        // GraveController.hasGraveAt over the active graves (super::graves).
+        Ok(self.0.has_grave_at(at))
     }
     fn close_all_interfaces(&mut self, player: &Node) -> Result<()> {
         let p = self.player_of(player)?;
@@ -1261,6 +1263,12 @@ impl listeners::Context for Ctx<'_> {
         if f.value::<AttackListener>().is_some() {
             return attack_listener(self, p, n).map_err(lerr);
         }
+        if let Some(option) = f.value::<GraveListener>().map(|g| g.0) {
+            let (Node::Player(player), Node::Npc(npc)) = (p, n) else {
+                return Err(listeners::Error::Type);
+            };
+            return self.0.grave_option(option, player, npc).map_err(lerr);
+        }
         match f.value::<Registered>().map(|r| r.0) {
             Some(Listener::Drop) => drop::drop(self, p, n).map_err(lerr),
             Some(Listener::Equip) => {
@@ -1327,7 +1335,22 @@ impl Live {
                 Kind::Npc.ordinal(),
                 function,
             )
-            .map_err(err)
+            .map_err(err)?;
+        // GraveController.defineListeners: read, bless, repair, demolish.
+        let ids = crate::world::player_death::GraveType::ids();
+        for (option, name) in super::graves::GraveOption::ALL {
+            let function = Function::new(FunctionKind::On, GRAVE_CONTROLLER, GraveListener(option));
+            registry
+                .add_ids(
+                    &mut Ctx(self),
+                    &ids,
+                    Kind::Npc.ordinal(),
+                    &[text(name)],
+                    function,
+                )
+                .map_err(err)?;
+        }
+        Ok(())
     }
     /// The routed packet handlers of `world::packet_handlers`.
     pub fn item_packet(&mut self, player: &P, action: &ClientAction) -> Result<()> {

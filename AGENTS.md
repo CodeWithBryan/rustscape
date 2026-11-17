@@ -157,7 +157,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   as mutable state. Every outside call is a required Host service with no
   default. DragonClass implements npc_classes::Abstract but is not in
   npc_classes::Class; the start-up registers it through
-  creatures::classes::WorldClass; nothing installs the library in `--world`.
+  creatures::classes::WorldClass; `rs09-server --world` installs the
+  dragons' handlers (world/live/dragons.rs; not the shield's handler and
+  listener).
   The other creature listeners and the equipment registers are the next
   bullet. See docs/dragonfire.md.
 
@@ -362,8 +364,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   `banker::talk_to`), random event, holiday, barcrawl and gnome cooking
   content are named services. The
   start-up world registers only STARTUP_NPC_CLASSES (not BankerNPC or
-  DarkWizardNPC: no region objects or spells there); nothing installs the
-  library in `--world`. The dragon classes and ChromaticDragonBehavior are
+  DarkWizardNPC: no region objects or spells there); `rs09-server --world`
+  installs `classes` (init, tick, finalize_death through
+  npc_death::task_stop_with, on_attack, on_impact, swing_handler with
+  MonkNPC's CombatAction; world/live/subclasses.rs), not the listeners,
+  talk, banker or idle bodies. The dragon classes and ChromaticDragonBehavior are
   world/dragonfire/dragons.rs (an Abstract outside Class, registered at
   start-up through creatures::classes::WorldClass); Sheep, Chinchompa,
   stray dogs, cow milking and decanting are world/creatures; QuestTabUtils
@@ -1340,8 +1345,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   input. Permadeath.kt, GravePurchaseInterface and the forcegravedeath
   command are not ported; `rs09-server --world` installs commenceDeath,
   finalizeDeath, getContainers and the death screen
-  (world/live/combat/player_death.rs); graves refuse there by name (the grave
-  NPC is not built at runtime). See docs/player-death.md.
+  (world/live/combat/player_death.rs) and graves over a grave NPC made at
+  runtime (world/live/graves.rs: GraveController.tick as a tick listener,
+  Grave.tick, the options' listeners, hasGraveAt; not the server-store
+  copy). See docs/player-death.md.
 - For NodeList, Repository, DisconnectionQueue or Player.clear/finishClear/
   allowRemoval (world/repository, world/disconnection), run
   `cargo test -p rs09-server --test repository` and `cargo xtask
@@ -1488,7 +1495,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   masks, aggression, NPC death and drops, prayer, a player's death,
   projectiles, ammunition use, poison from swings, special attacks), the
   lobby (sendLobbyScreen, LastLoginInfo, the welcome screen's play button),
-  the worker loop and the saver), run
+  runtime NPCs, graves, the NPC class overrides, the dragons,
+  LoginValidationPlugin, the worker loop and the saver), run
   `cargo test -p rs09-server --test live_world` (needs assets/cache and
   runs/startup-loaders-oracle/template; it prints SKIPPED without them, and a
   skip establishes nothing) plus world_login, tick_driver, tick, world_update,
@@ -1501,9 +1509,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   content_timers, global_handlers, scenery_action, wield_requirements,
   combat_pulse, combat_swing, prayer, npc_behaviour, npc_death, drop_tables,
   update_masks, prepared_masks, special_attacks, player_death, projectile,
-  dragonfire and npc_masks. Keep the libraries
-  unchanged: a host answers through them (prepared_masks gained the player
-  hit encoders and queue_impact).
+  dragonfire, npc_masks, npc_classes and equipment_registers. Keep the
+  libraries unchanged: a host answers through them (prepared_masks gained
+  the player hit encoders and queue_impact; npc_death gained task_stop_with,
+  DeathTask.stop with the caller's NPC finalizeDeath).
   `zones::Host` is `Live` itself (a monitor per entity); NPCs keep the
   start-up's slots, store and generators; regions are never unloaded (named).
   Combat (world/live/combat): the live world is combat_swing::Host,
@@ -1537,15 +1546,25 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   table; DropListener's soft script runs at the player's next tick; the
   appearance body is the canonical prepareBodyData copied into the prepared
   data. A player's death is player_death over the live world (the dying
-  player's containers answer through its context; graves refuse); a
+  player's containers answer through its context); a
   projectile is a foreign chunk flag written as ProjectileUpdateFlag at the
   chunk update and dropped by resetAll (ported without a corpus of its own);
   the special handlers are HandlerSlots with their Special, their settings
   calls recorded and made after the combat call, their pulses dispatched by
-  identity. Content, graves, NPC class overrides (their quest and diary
-  content), spells, teleports, NPC timers, the dialogue interpreter,
-  component use-with (spells), continue and input handlers, the login plugin
-  and region unloading remain open. See docs/live-world.md.
+  identity. NPCs made after start-up go through the start-up's npc_init
+  context with the live repository, region move and renderable list
+  (runtime_npcs.rs; the two NPC lists keep the same slots). A grave is that
+  NPC, kept by node (graves.rs; Grave.tick replaces its NPC.tick,
+  GraveController.tick is a tick listener; the server-store copy is not
+  kept). NPC subclasses dispatch through npc_classes::classes where the
+  original's virtual calls are (subclasses.rs; quest and diary reads from
+  the persisted state, quest content refused); dragon and MonkNPC handler
+  instances are handler slots whose subclass answers Host::overrides
+  (dragons.rs). LoginValidationPlugin runs as the login plugin. Content, NPC
+  timers, spells, teleports, the dialogue interpreter, component use-with
+  (spells), continue and input handlers, the bank, shops, trade,
+  consumables, ForceMovement, commands, the Grand Exchange and region
+  unloading remain open. See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,
@@ -1678,7 +1697,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   service whose bodies call back skull::set_skull_icon, answers::set_skulled
   and skull::reset; skull::answers answers the wilderness, zones, combat,
   NPC and death skull services. Every other call is a required service with
-  no default; nothing installs the libraries. See docs/player-managers.md.
+  no default; `rs09-server --world` installs SkullManager, HintIconManager
+  (graves) and the diary's isComplete/updateTask (the NPC class overrides).
+  See docs/player-managers.md.
 - For aggression, NPCBehavior hooks or the NPC/Entity/Player combat members
   (world/npc_behaviour: AggressiveHandler/AggressiveBehavior, setDefaultBehavior,
   configureBossData, isInvisible/isHidden, isAttackable, continueAttack,

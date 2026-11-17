@@ -105,26 +105,17 @@ impl Live {
 }
 
 /// `NPC.getSwingHandler(swing)`: the runtime class's override when the NPC
-/// was constructed as a subclass (not installed: refused by name), else the
-/// combat pulse style's handler offered to the behaviour.
+/// was constructed as a subclass (MonkNPC, the dragons:
+/// super::super::subclasses), else the combat pulse style's handler offered
+/// to the behaviour. The base member does not read `swing`.
 pub fn npc_swing_handler(live: &mut Live, npc: &P) -> Result<usize> {
-    if live.npc_row(npc).is_some_and(|row| row.class.is_some()) {
-        live.inner.not_ported.skip(
-            "NPC class overrides (npc_classes: swing_handler and the other members are not installed; the base NPC member runs)",
-        );
-    }
-    nb::combat::npc_swing_handler(live, npc)
+    super::super::subclasses::swing_handler(live, npc, true)
 }
 
-/// `entity.onAttack(target)`: `Entity`'s empty body; content NPC classes
-/// override it (not installed).
-pub fn on_attack(live: &mut Live, entity: &P, _: &P) -> Result<()> {
-    if live.npc_row(entity).is_some_and(|row| row.class.is_some()) {
-        live.inner.not_ported.skip(
-            "NPC class overrides (npc_classes: swing_handler and the other members are not installed; the base NPC member runs)",
-        );
-    }
-    Ok(())
+/// `entity.onAttack(target)`: `Entity`'s empty body, or a subclass's
+/// override (HighwayManNPC: super::super::subclasses).
+pub fn on_attack(live: &mut Live, entity: &P, target: &P) -> Result<()> {
+    super::super::subclasses::on_attack(live, entity, target)
 }
 
 impl nb::Host for Live {

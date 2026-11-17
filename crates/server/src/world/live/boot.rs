@@ -327,6 +327,17 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     let item_options = std::mem::take(&mut world.item_options);
     // RangedConfigLoader's maps, for combat (super::combat).
     let ranged = std::mem::take(&mut world.ranged);
+    // Runtime NPCs (super::runtime_npcs): the start-up's NPC definition table
+    // with its configurations, the NPC archive and the timer registry.
+    let spawning = super::runtime_npcs::Spawning::new(
+        std::mem::take(&mut world.npcs),
+        Some(Arc::new(
+            Archive::open(store.clone(), 18, None, Limits::default())
+                .map_err(|e| format!("{e:?}"))?,
+        )),
+        std::mem::take(&mut world.timers),
+        constant_bool(&configuration, "HOLIDAY_EVENT_RANDOMS")?,
+    );
     let inner = Inner {
         state,
         frames: BTreeMap::new(),
@@ -415,6 +426,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             wild_pvp: value_bool("wild_pvp_enabled")?,
             ..Default::default()
         },
+        content: super::content::ContentWorld::new(spawning),
     };
     // The start-up's NPCs in the live repository and the scene's chunks;
     // the tab content's component plugins and interface listeners.
@@ -441,6 +453,8 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     // The special attack handlers' newInstance (CombatSwingHandler.register).
     live.inner.combat.osrs_dragon_axe = constant_bool(&configuration, "DRAGON_AXE_USE_OSRS_SPEC")?;
     live.install_specials()?;
+    // DragonfireSwingHandler's ServerConstants.BETTER_DFS (super::dragons).
+    live.content.dragons.better_dfs = constant_bool(&configuration, "BETTER_DFS")?;
     Ok(Booted {
         live,
         configuration,

@@ -52,10 +52,10 @@ fn location_of(at: [i32; 3]) -> Location {
 
 impl Live {
     /// The NPC row of an entity, if it is an NPC.
-    pub(super) fn npc_row(&self, p: &P) -> Option<&crate::startup::npcs::Npc> {
+    pub(crate) fn npc_row(&self, p: &P) -> Option<&crate::startup::npcs::Npc> {
         self.inner.npcs.rows.get(&p.node())
     }
-    pub(super) fn ckind(&self, p: &P) -> Kind {
+    pub(crate) fn ckind(&self, p: &P) -> Kind {
         if self.inner.is_npc_node(p.node()) {
             Kind::Npc
         } else if self.inner.is_player_node(p.node()) {
@@ -64,12 +64,12 @@ impl Live {
             Kind::Other
         }
     }
-    pub(super) fn cloc(&self, p: &P) -> Option<Location> {
+    pub(crate) fn cloc(&self, p: &P) -> Option<Location> {
         self.inner.state.node_location(p.node()).ok().flatten()
     }
     /// A player's Skills with its context, taken out of the profile for the
     /// call and put back after it.
-    pub(super) fn with_skills<T>(
+    pub(crate) fn with_skills<T>(
         &mut self,
         p: &P,
         f: impl FnOnce(&mut Skills, &mut SkillsContext<'_>) -> T,
@@ -142,7 +142,7 @@ impl Live {
         Ok(())
     }
     /// `Entity.animate`/`graphics`/`visualize` through the animator.
-    pub(super) fn entity_visualize(
+    pub(crate) fn entity_visualize(
         &mut self,
         e: &P,
         animation: Option<Animation>,
@@ -668,8 +668,11 @@ impl cp::Host for Live {
         // A special attack instance's overriding members
         // (world::special_attacks, combat/specials.rs); the three
         // CombatStyle singletons override nothing. NPC subclasses (dragons,
-        // world::dragonfire) are not installed: an NPC's swing handler is a
-        // singleton (combat/behaviour.rs).
+        // world::dragonfire) and MonkNPC's CombatAction are answered by
+        // super::super::dragons.
+        if let Some(overrides) = self.content_overrides(handler) {
+            return Some(overrides);
+        }
         self.inner
             .combat
             .handlers
@@ -937,7 +940,8 @@ impl cp::Host for Live {
         attacker: Option<&P>,
         state: &mut BattleState<Self>,
     ) -> Result<()> {
-        npc_behaviour::combat::on_impact(self, victim, attacker, state)
+        // NPC.onImpact with a subclass's override (super::super::subclasses).
+        super::super::subclasses::on_impact(self, victim, attacker, state)
     }
     fn send_impact(&mut self, entity: &P, _: &mut BattleState<Self>) -> Result<()> {
         npc_behaviour::combat::send_impact(self, entity)

@@ -740,13 +740,26 @@ impl gh::Host for GHost<'_> {
         Ok(false)
     }
     fn valid_login(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("valid_login")
+        // SystemManager.getSystemConfig().validLogin(player): true.
+        self.player(player)?;
+        Ok(true)
     }
     fn dev_mode(&mut self) -> Result<bool> {
         Ok(self.live.inner.settings.dev_mode)
     }
     fn toggle_debug(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("toggle_debug")
+        // Player.toggleDebug: the debug attribute flipped, then the message.
+        let p = self.player(player)?;
+        let attributes = self.live.inner.canonical(&p).player.attributes();
+        let debug = attributes.boolean("debug", false).map_err(bind)?;
+        attributes.set_value(
+            "debug",
+            Some(crate::player::attributes::AttributeValue::Bool(!debug)),
+        );
+        self.live
+            .inner
+            .message(&p, &format!("Your debug mode is toggled to {}.", !debug))
+            .map_err(bind)
     }
     fn is_admin(&mut self, player: &Self::Node) -> Result<bool> {
         let p = self.player(player)?;
@@ -853,19 +866,45 @@ impl gh::Host for GHost<'_> {
         refuse("has_timer")
     }
     fn dragon_slayer_attribute(&mut self, player: &Self::Node, name: &str) -> Result<bool> {
-        refuse("dragon_slayer_attribute")
+        // getSavedData().getQuestData().getDragonSlayerAttribute(name).
+        let p = self.player(player)?;
+        self.live
+            .inner
+            .with_profile(&p, |profile| {
+                profile
+                    .saved
+                    .quest
+                    .dragon_slayer_attribute(crate::player::saved_data::QuestName::Literal(name))
+            })
+            .map_err(bind)
     }
     fn loot_share_delay(&mut self, player: &Self::Node) -> Result<i64> {
-        refuse("loot_share_delay")
+        let p = self.player(player)?;
+        self.live
+            .inner
+            .with_profile(&p, |profile| profile.saved.global.loot_share_delay)
+            .map_err(bind)
     }
     fn set_loot_share_delay(&mut self, player: &Self::Node, value: i64) -> Result<()> {
-        refuse("set_loot_share_delay")
+        let p = self.player(player)?;
+        self.live
+            .inner
+            .with_profile(&p, |profile| profile.saved.global.loot_share_delay = value)
+            .map_err(bind)
     }
     fn loot_share_points(&mut self, player: &Self::Node) -> Result<i32> {
-        refuse("loot_share_points")
+        let p = self.player(player)?;
+        self.live
+            .inner
+            .with_profile(&p, |profile| profile.saved.global.loot_share_points)
+            .map_err(bind)
     }
     fn set_loot_share_points(&mut self, player: &Self::Node, value: i32) -> Result<()> {
-        refuse("set_loot_share_points")
+        let p = self.player(player)?;
+        self.live
+            .inner
+            .with_profile(&p, |profile| profile.saved.global.loot_share_points = value)
+            .map_err(bind)
     }
     fn set_disable_death_screen(&mut self, player: &Self::Node, value: bool) -> Result<()> {
         let p = self.player(player)?;
@@ -876,7 +915,14 @@ impl gh::Host for GHost<'_> {
         refuse("activity_start")
     }
     fn set_varp(&mut self, player: &Self::Node, index: i32, value: i32, save: bool) -> Result<()> {
-        refuse("set_varp")
+        // ContentAPI.setVarp(player, index, value, save).
+        let p = self.player(player)?;
+        self.live
+            .inner
+            .variables(&p, |ctx, owner| {
+                crate::player::variables::set_varp(ctx, Some(owner), index, value, save)
+            })
+            .map_err(bind)
     }
     fn set_varbit(&mut self, player: &Self::Node, id: i32, value: i32, save: bool) -> Result<()> {
         refuse("set_varbit")
@@ -1233,7 +1279,16 @@ impl gh::Host for GHost<'_> {
         refuse("quest_complete")
     }
     fn has_completed_all(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("has_completed_all")
+        // QuestRepository.hasCompletedAll over the live quest registry (empty:
+        // quest classes are content; see docs/live-world.md).
+        let p = self.player(player)?;
+        let registry = self.live.inner.world.quests.clone();
+        self.live
+            .inner
+            .with_profile(&p, |profile| {
+                profile.persisted.quests.has_completed_all(&registry)
+            })
+            .map_err(bind)
     }
     fn diary_for_child(&mut self, child: i32) -> Result<Option<usize>> {
         refuse("diary_for_child")
@@ -1650,6 +1705,25 @@ impl Live {
     ) -> Result<bool> {
         let player = GNode::Entity(P(p.clone()));
         registry::run_open(&mut GHost { live: self }, listener, &player, component)
+    }
+    /// `plugin.newInstance(player)` of a LOGIN plugin these handlers added
+    /// (`LoginConfiguration.getLoginPlugins()`), by its class name; `None`
+    /// when no registered login plugin has that name.
+    pub fn global_login_plugin(&mut self, class: &str, p: &P) -> Option<Result<()>> {
+        let plugin = self
+            .global
+            .login_plugins
+            .iter()
+            .copied()
+            .find(|plugin| match plugin {
+                registry::LoginPlugin::Validation => {
+                    class == "content.global.handlers.player.LoginValidationPlugin"
+                }
+            })?;
+        let player = GNode::Entity(p.clone());
+        let result = registry::run_login(&mut GHost { live: self }, plugin, &player);
+        self.inner.drain(p);
+        Some(result)
     }
     /// A ComponentPlugin of these handlers.
     pub fn global_plugin(

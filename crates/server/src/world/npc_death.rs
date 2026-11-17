@@ -451,6 +451,17 @@ pub const TASK_REMOVE_FOR: bool = false;
 
 /// The pulse's `stop()`: the base stop, then `DeathTask.stop`.
 pub fn task_stop<H: Host>(host: &mut H, task: &Task) -> Result<()> {
+    task_stop_with(host, task, npc_finalize_death)
+}
+
+/// [`task_stop`] with the NPC's `finalizeDeath(killer)` given by the caller:
+/// a host whose NPCs have subclasses overriding the member passes its
+/// virtual dispatch (which reaches [`npc_finalize_death`] as `super`).
+pub fn task_stop_with<H: Host>(
+    host: &mut H,
+    task: &Task,
+    npc_finalize: impl FnOnce(&mut H, &NodeHandle, &NodeHandle) -> Result<()>,
+) -> Result<()> {
     pulses::stop_base(&task.pulse);
     let (entity, killer) = (&task.entity, &task.killer);
     host.remove_attribute(entity, STATE_DEATH)?;
@@ -460,7 +471,7 @@ pub fn task_stop<H: Host>(host: &mut H, task: &Task) -> Result<()> {
     host.set_teleport_location(entity, spawn.as_ref())?;
     host.unlock(entity)?;
     if host.is_npc(entity) {
-        npc_finalize_death(host, entity, killer)?;
+        npc_finalize(host, entity, killer)?;
     } else {
         host.player_finalize_death(entity, killer)?;
     }

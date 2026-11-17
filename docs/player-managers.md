@@ -12,8 +12,10 @@
 | `diary/AchievementDiaryManager`, `diary/AchievementDiary` | `diary.rs` over `player/persisted/diaries.rs` |
 | `diary/DiaryType` (task tables, rewards, NPCs, info) | `diary_data.rs` (data, written by `oracle/player-managers/port_diary_data.py`) |
 
-These are libraries. Nothing installs them in a session: no example, alpha,
-`--world` server or login path calls them yet. Every system they reach
+These are libraries. `rs09-server --world` installs the SkullManager, the
+HintIconManager (graves) and the AchievementDiaryManager's `isComplete`/
+`updateTask` (the NPC class overrides; docs/live-world.md); no example or
+alpha calls them. Every system they reach
 outside these classes is a required service of the module's `Host`, called
 in the original order with the original arguments; none has a default and no
 borrow of manager state is held across a service call. This is not a
