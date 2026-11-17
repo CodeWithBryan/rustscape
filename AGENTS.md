@@ -59,8 +59,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   Prayer, perk, slayer, familiar, equipment, spell, audio/graphics/message and
   pulse members are required services with no defaults. What runs around and
   after a swing is world/combat_pulse (next entry). Other bolt effects and
-  RangedConfigLoader are not ported; the library is not bound to a session and
-  the alpha stand-in in examples/common/combat.rs is not this port. See
+  RangedConfigLoader are not ported here; `rs09-server --world` installs the
+  library (world/live/combat, docs/live-world.md); the alpha stand-in in
+  examples/common/combat.rs is not this port. See
   docs/combat-swing.md.
 
 - For CombatPulse, ImpactHandler or the handler members around a swing
@@ -93,8 +94,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   the special attacks (next bullet, joined through Host::overrides),
   MultiSwingHandler, spell effects, DeathTask, graves, prayer
   drain, poison, degradation, Entity.onImpact/isAttackable and
-  auto-retaliation. Nothing is bound to canonical actors, server::pulses,
-  skills, equipment or a session. See docs/combat-pulse.md.
+  auto-retaliation. `rs09-server --world` installs it over the canonical
+  actors, their pulse managers, the world runner, skills and equipment
+  (world/live/combat, docs/live-world.md). See docs/combat-pulse.md.
 
 - For weapon special attacks (world/special_attacks: the 34 special handler
   classes with their registration, Player.getSwingHandler's lookup, fireEvent
@@ -135,8 +137,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   clearing the head icon a tick later, and getFormattedHit's truncating int
   multiply. Points, levels and healing are native Skills; every other call is
   a required service. ConstLib 1.4.28 supplies the sound names. Training,
-  SkillRestore hooks, protect-item death and every session binding are not
-  ported. See docs/prayer.md.
+  SkillRestore hooks and protect-item death are not ported; `rs09-server
+  --world` installs the library with the prayer tab and the drain
+  (world/live/combat/prayer.rs). See docs/prayer.md.
 
 - For the spell framework (world/spells: Runes, CombinationRune, MagicStaff,
   SpellUtils.hasRunes, MagicSpell/CombatSpell/DefaultCombatSpell, SpellType,
@@ -1212,9 +1215,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   expose a public field named like a Kotlin getter property (`username` did
   and bypassed getUsername). A player's own death and DeathTask.getContainers
   are the next bullet's; the rest of handleImpact, NPC.clear, real Properties/attributes/zones/
-  behaviours/plugins/clans/prices and any session or alpha binding are not
-  ported; the en-US locale, entity hashes and the tick driver are oracle
-  inputs. See docs/npc-death.md.
+  behaviours/plugins/clans/prices and any alpha binding are not ported;
+  `rs09-server --world` installs the NPC death and the drop
+  (world/live/combat/death.rs); the en-US locale, entity hashes and the tick
+  driver are oracle inputs. See docs/npc-death.md.
 - For a player's death, kept items or graves (world/player_death:
   getContainers, Player.commenceDeath/finalizeDeath, Grave, GraveController,
   GraveType, BarrowsEquipment's grave rules, DeathInterface, the active-graves
@@ -1365,7 +1369,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   use-with, slot switch and scenery packets with DropListener and
   EquipHandler, EquipmentContainer and the appearance body, the region zones
   of ZoneBuilder.startup with SkullManager, the engine timers, the global
-  handlers, the worker loop and the saver), run
+  handlers, combat (combat_pulse/combat_swing, ImpactHandler, NPC update
+  masks, aggression, NPC death and drops, prayer), the worker loop and the
+  saver), run
   `cargo test -p rs09-server --test live_world` (needs assets/cache and
   runs/startup-loaders-oracle/template; it prints SKIPPED without them, and a
   skip establishes nothing) plus world_login, tick_driver, tick, world_update,
@@ -1375,11 +1381,22 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   scene, packet_handlers, ground_manager, ground_spawn, ground_spawn_loader,
   ground_options, ground_target, ground_runtime, pickup, wilderness,
   player_managers, equipment, inventory, interaction_listeners, timers,
-  content_timers, global_handlers, scenery_action and wield_requirements.
-  Keep the libraries unchanged: a host answers through them.
+  content_timers, global_handlers, scenery_action, wield_requirements,
+  combat_pulse, combat_swing, prayer, npc_behaviour, npc_death, drop_tables,
+  update_masks, prepared_masks and special_attacks. Keep the libraries
+  unchanged: a host answers through them (prepared_masks gained the player
+  hit encoders and queue_impact).
   `zones::Host` is `Live` itself (a monitor per entity); NPCs keep the
-  start-up's slots, store and generators; regions are never unloaded and
-  NPC update masks are not written (both named). The engine timers run on
+  start-up's slots, store and generators; regions are never unloaded (named).
+  Combat (world/live/combat): the live world is combat_swing::Host,
+  combat_pulse::Host, npc_behaviour::Host, npc_death::Host/drop::Host and,
+  per call, prayer::Host; one combat pulse and impact handler per entity in
+  Inner.combat; the combat pulse is a Class::Combat pulse object current in
+  the entity's canonical manager (STANDARD) and submitted to GameWorld.Pulser,
+  dispatched by identity like every combat and death pulse; a walk's clear
+  stops it right after the walking call. NPC masks are update_masks::Masks
+  with the NPCFlags530 encoders, prepared after the NPC's tick when it
+  reached Entity.tick; selectTarget runs right after the NPC's tick kernel. The engine timers run on
   the canonical profile's timer manager (its lists aliased, never copied)
   through `timers::content::Natives` with world/live/timers.rs as the host
   (`Saving` while a save is written or parsed); processTimers runs right
@@ -1401,9 +1418,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   on file I/O. Ground items join the start-up's manager, spawns and option
   table; DropListener's soft script runs at the player's next tick; the
   appearance body is the canonical prepareBodyData copied into the prepared
-  data. Content, combat, teleports, NPC timers, the dialogue interpreter,
-  component use-with (spells), continue and input handlers, the login
-  plugin and region unloading remain open. See docs/live-world.md.
+  data. Content, a player's death (player_death), NPC class overrides,
+  special attacks, spells, projectiles, poison from swings, teleports, NPC
+  timers, the dialogue interpreter, component use-with (spells), continue
+  and input handlers, the login plugin and region unloading remain open.
+  See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,
@@ -1530,8 +1549,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (the combat pulse included) is a required service with no default. No
   corpus runs a whole fight through the real CombatPulse/ImpactHandler/
   DeathTask with these members; AbstractNPC and IdleAbstractNPC are not
-  ported here (they are world/npc_classes); nothing installs the library.
-  See docs/npc-behaviour.md.
+  ported here (they are world/npc_classes); `rs09-server --world` installs
+  the library with the live world as its host (aggression, the combat members;
+  world/live/combat/behaviour.rs). See docs/npc-behaviour.md.
 - For requests or trading (world/trade: RequestManager, RequestType,
   TradeModule, TradeContainer, TradeCloseEvent, TradeInterfacePlugin), run
   `cargo test -p rs09-server --test trade` and `cargo xtask trade-oracle

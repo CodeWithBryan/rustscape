@@ -5,8 +5,9 @@ switching a prayer on and off, the conflicts between prayers, the drain each
 tick, the head icon, the varps and sounds, the reset, and the redemption and
 retribution effects. `world::prayer::combat` answers the prayer reads of the
 combat slices (`world::combat_swing`, `world::combat_pulse`) from the same
-native state. It is a library. Nothing in a session or the alpha calls it
-yet; it is not playable prayer in a world.
+native state. It is a library; `rs09-server --world` installs it with the prayer tab,
+the drain in `Player.tick` and the combat reads (world/live/combat/prayer.rs,
+docs/live-world.md). The alpha does not call it.
 
 The source is the pinned `Prayer.java`, `PrayerType.java`,
 `PrayerCategory.java`, `PrayerTabInterface.kt` (the prayer tab's button

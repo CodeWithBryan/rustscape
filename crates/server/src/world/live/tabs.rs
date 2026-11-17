@@ -272,6 +272,7 @@ impl<'a> Tabs<'a> {
             not_ported,
             npcs,
             generators,
+            combat,
             ..
         } = &mut *self.inner;
         let mut lines = Vec::new();
@@ -285,6 +286,7 @@ impl<'a> Tabs<'a> {
             npcs,
             random: generators,
             npc_views: None,
+            combat,
         };
         let result = state.context(&mut host).clear_pulses(node).map_err(binding);
         for line in lines {
@@ -450,11 +452,10 @@ impl tab_weapon::Host for Tabs<'_> {
         self.profile(|profile| profile.properties.attack_animation = Some(animation))
     }
     fn update_style(&mut self) -> player_tabs::Result<()> {
-        // CombatPulse.updateStyle sets the combat pulse's style field; the
-        // combat pulse is not installed and nothing reads it here.
-        self.inner
-            .not_ported
-            .skip("CombatPulse.updateStyle (combat pulse not installed)");
+        // CombatPulse.updateStyle: the style field is set from the attack
+        // style (or a spell) at the next read of the combat pulse
+        // (super::combat), which only combat reads.
+        self.inner.combat.style_updates.insert(self.p.node());
         Ok(())
     }
     fn is_npc(&mut self) -> player_tabs::Result<bool> {
@@ -606,12 +607,8 @@ impl tab_emotes::Host for Tabs<'_> {
             .map_err(binding)
     }
     fn is_attacking(&mut self) -> player_tabs::Result<bool> {
-        // CombatPulse.isAttacking: the combat pulse is not installed, so no
-        // player is ever attacking.
-        self.inner
-            .not_ported
-            .default_answer("CombatPulse.isAttacking (combat pulse not installed: false)");
-        Ok(false)
+        // CombatPulse.isAttacking (super::combat).
+        Ok(self.inner.combat_is_attacking(self.p.node()))
     }
     fn in_combat(&mut self) -> player_tabs::Result<bool> {
         // Entity.inCombat: the "combat-time" attribute against the clock.

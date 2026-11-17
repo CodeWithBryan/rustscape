@@ -142,6 +142,7 @@ impl Live {
             not_ported,
             npcs,
             generators,
+            combat,
             ..
         } = &mut self.inner;
         let mut lines = Vec::new();
@@ -155,6 +156,7 @@ impl Live {
             npcs,
             random: generators,
             npc_views: Some(&self.npc_views),
+            combat,
         };
         let result = f(state, &mut host);
         for line in lines {
@@ -204,6 +206,22 @@ impl Live {
                 }
                 Deferred::RegionMove(node, from, to) => Some(
                     self.region_move(&node, from, to)
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
+                ),
+                Deferred::SelectTarget(node) => self.combat_entity(node).map(|npc| {
+                    self.npc_select_target(&npc)
+                        .map(|_| ())
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}")))
+                }),
+                Deferred::ImpactDisabled(node, ticks) => self.combat_entity(node).map(|npc| {
+                    let result =
+                        crate::world::combat_pulse::impact::set_disabled_ticks(self, &npc, ticks)
+                            .map_err(|e| interfaces::Error::Binding(format!("{e:?}")));
+                    self.sync_combat();
+                    result
+                }),
+                Deferred::CombatStop(node) => Some(
+                    self.combat_stop_of(node)
                         .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
                 ),
             };
@@ -1355,6 +1373,10 @@ impl driver::Host<P> for Live {
             .packet_count(increment))
     }
     fn pulse_body(&mut self, pulse: &pulses::Handle) -> driver::Result<bool> {
+        // Combat pulses, impact pulses and death tasks (super::combat).
+        if let Some(result) = self.combat_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // The global handlers' submitted bodies (super::global).
         if let Some(result) = self.global_pulse_body(pulse) {
             return result.map_err(fail);
@@ -1399,6 +1421,8 @@ impl driver::Host<P> for Live {
         // Node.isActive() of a pulse's checked node (the tab pulses' player).
         match self.inner.players.get(&node) {
             Some(slot) => Ok(slot.active),
+            // An NPC checked by a combat or death pulse.
+            None if self.inner.npcs.rows.contains_key(&node) => Ok(self.inner.node_active(node)),
             None => Err(driver::Error::Native(format!(
                 "a world pulse checks node {node}, which is not a live player"
             ))),
@@ -1424,7 +1448,8 @@ impl driver::Host<P> for Live {
         Ok(())
     }
     fn clear_minimap_packet(&mut self, p: &P) -> Option<Sent> {
-        let session = self.inner.session_of(p)?;
+        // A lobby entry whose player already left has no slot (and no session).
+        let session = self.inner.players.get(&p.node())?.session?;
         Some(Sent {
             session,
             class: "ClearMinimapFlag",
@@ -1451,6 +1476,9 @@ impl driver::Host<P> for Live {
         self.with_walk(|world| world.entity_before_masks(node))
             .map_err(fail)?;
         self.process_timers_of(p).map_err(fail)?;
+        // updateMasks.prepare polls the ImpactHandler's queue: the impacts
+        // the prepared masks will poll this tick, with their health ratio.
+        self.hand_impacts_to_masks(p);
         self.with_walk(|world| world.prepare_masks(node))
             .map_err(fail)?;
         let Inner { state, players, .. } = &mut self.inner;
@@ -1463,7 +1491,9 @@ impl driver::Host<P> for Live {
             .map_err(fail)?;
         self.inner
             .not_ported
-            .skip("Player.tick potion timers, prayer drain, wealth, off-map check (not ported)");
+            .skip("Player.tick potion timers, wealth, off-map check (not ported)");
+        // getPrayer().tick(): the prayer drain (world::prayer).
+        self.prayer_tick(p).map_err(fail)?;
         Ok(())
     }
     fn update_scene_graph_flag(&mut self, p: &P) -> driver::Result<bool> {

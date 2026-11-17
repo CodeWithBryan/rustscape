@@ -88,6 +88,8 @@ struct Client {
     skill_log: Vec<(usize, i32, i32)>,
     /// Game messages (70) as text, with their frame numbers.
     messages: Vec<(usize, String)>,
+    /// Hit marks in NPC update mask blocks: (NPC index, damage, type).
+    npc_hits: Vec<(usize, i32, i32)>,
 }
 
 /// Item metadata for the ground reducer: the test reads lists, not piles.
@@ -157,6 +159,7 @@ impl Client {
                 skills: HashMap::new(),
                 skill_log: Vec::new(),
                 messages: Vec::new(),
+                npc_hits: Vec::new(),
             }),
         )
     }
@@ -207,10 +210,25 @@ impl Client {
                 }
                 32 => {
                     let tile = self.players.self_player().tile();
+                    // Only this update's mask blocks count as hits.
+                    for npc in self.npcs.actors.values_mut() {
+                        npc.last_mask = Default::default();
+                    }
                     self.npcs
                         .decode(&frame, tile, n as i32)
                         .unwrap_or_else(|e| panic!("{}: NPC update {n}: {e:?}", self.name));
                     self.npc_updates += 1;
+                    for (index, npc) in &self.npcs.actors {
+                        if npc.last_seen != n as i32 {
+                            continue;
+                        }
+                        for hit in [&npc.last_mask.primary, &npc.last_mask.secondary]
+                            .into_iter()
+                            .flatten()
+                        {
+                            self.npc_hits.push((*index, hit.damage, hit.kind));
+                        }
+                    }
                 }
                 _ => {
                     if self.base.is_some() {
@@ -830,6 +848,11 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         "traceone's saved location"
     );
 
+    if std::env::var_os("RS09_LIVE_COMBAT_ONLY").is_some() {
+        combat_scenario(address, saves).await;
+        aggression_scenario(address, saves).await;
+        return;
+    }
     // traceone returns: the native parser loads the save at login.
     let (code, again) = Client::login(address, "traceone").await;
     assert_eq!(code, 2, "returning login");
@@ -849,7 +872,213 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
     items_scenario(address, saves).await;
     wilderness_scenario(address, saves).await;
     scenery_scenario(address, saves).await;
+    combat_scenario(address, saves).await;
+    aggression_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
+}
+
+/// Combat against an NPC: a saved character in the
+/// Lumbridge chicken pen toggles Thick Skin on the prayer tab (interface
+/// 271, button 5: varp 83 = 1), then uses Attack (NPC option 2, opcode 3)
+/// on the nearest chicken: AttackListener, CombatPulse with the melee swing
+/// handler, the impact pulse and ImpactHandler; the hit marks arrive in the
+/// NPC update's mask blocks, the chicken dies (DeathTask) and its drop table
+/// leaves bones (526) on the ground where it died.
+async fn combat_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3232, 3294, 0];
+    // Attack and strength 40 (the kill takes a few swings, not minutes).
+    write_save_with(&players, "traceone", "fightone", at, &[], |save| {
+        for skill in [0, 2] {
+            save["skills"][skill]["static"] = Value::String("40".into());
+            save["skills"][skill]["dynamic"] = Value::String("40".into());
+            save["skills"][skill]["experience"] = Value::String("37224.0".into());
+        }
+    });
+    let (code, one) = Client::login(address, "fightone").await;
+    assert_eq!(code, 2, "fightone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "fightone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty() && !c.npcs.actors.is_empty()
+    })
+    .await;
+    // The prayer tab: Thick Skin.
+    let mut payload = ((271i32 << 16) | 5).to_be_bytes().to_vec();
+    payload.extend((-1i16).to_be_bytes());
+    let thick_skin = {
+        let mut wire = vec![];
+        updates::varp(83, 1)
+            .write(Direction::ServerToClient, None, &mut wire)
+            .unwrap();
+        wire
+    };
+    let from = one.frames.len();
+    one.send(Frame {
+        opcode: 155,
+        payload,
+    })
+    .await;
+    one.until(Duration::from_secs(10), "Thick Skin's varp", |c| {
+        c.frames[from..].iter().any(|f| {
+            let mut wire = vec![];
+            f.write(Direction::ServerToClient, None, &mut wire).unwrap();
+            wire == thick_skin
+        })
+    })
+    .await;
+    eprintln!("fightone: Thick Skin toggled on (varp 83 = 1)");
+    // The nearest chickens, in order: a chicken the pen's fence keeps out of
+    // reach times the combat pulse out, and the next one is tried.
+    let base = one.base.unwrap();
+    let here = one.position();
+    let mut chickens: Vec<(usize, i32, [i32; 3])> = one
+        .npcs
+        .actors
+        .iter()
+        .filter(|(_, n)| n.type_id == 41 || n.type_id == 1017)
+        .map(|(i, n)| {
+            (
+                *i,
+                n.type_id,
+                [base[0] + n.tile[0], base[1] + n.tile[1], base[2]],
+            )
+        })
+        .collect();
+    chickens.sort_by_key(|(_, _, t)| (t[0] - here[0]).abs() + (t[1] - here[1]).abs());
+    let started = Instant::now();
+    let hits_from = one.npc_hits.len();
+    let mut chosen = None;
+    for (index, id, tile) in chickens.into_iter().take(4) {
+        eprintln!("fightone at {here:?} attacks chicken {index} ({id}) at {tile:?}");
+        one.send(frame(3, &[&la16(index as i32)])).await;
+        let end = Instant::now() + Duration::from_secs(20);
+        while Instant::now() < end
+            && !one.npc_hits[hits_from..]
+                .iter()
+                .any(|(i, _, _)| *i == index)
+        {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if one.npc_hits[hits_from..]
+            .iter()
+            .any(|(i, _, _)| *i == index)
+        {
+            chosen = Some((index, id));
+            break;
+        }
+        one.send(frame(93, &[])).await;
+    }
+    let (index, id) = chosen.expect("a hit mark on a chicken");
+    let first = one.npc_hits[hits_from..]
+        .iter()
+        .find(|(i, _, _)| *i == index)
+        .copied()
+        .unwrap();
+    eprintln!(
+        "fightone: hit mark on chicken {index} ({id}) after {:.1} s: damage {} type {}",
+        started.elapsed().as_secs_f64(),
+        first.1,
+        first.2
+    );
+    // The chicken dies (the NPC update removes it while it waits to
+    // respawn); the last tile it stood on holds the drop (bones always).
+    let mut last = [0, 0, 0];
+    let end = Instant::now() + Duration::from_secs(90);
+    let mut ping = Instant::now();
+    loop {
+        if let Some(n) = one.npcs.actors.get(&index) {
+            last = [base[0] + n.tile[0], base[1] + n.tile[1], base[2]];
+        }
+        if one.ground_ids(last).contains(&526) {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "fightone: no bones where the chicken died"
+        );
+        if ping.elapsed() > Duration::from_secs(5) {
+            one.send(frame(93, &[])).await;
+            ping = Instant::now();
+        }
+        one.pump(Duration::from_millis(200)).await;
+    }
+    let hits: Vec<_> = one.npc_hits[hits_from..]
+        .iter()
+        .filter(|(i, _, _)| *i == index)
+        .map(|(_, d, k)| (*d, *k))
+        .collect();
+    eprintln!(
+        "fightone: the chicken died after {:.1} s; hit marks {hits:?}; bones (526) on the ground at {last:?}: {:?}",
+        started.elapsed().as_secs_f64(),
+        one.ground_ids(last)
+    );
+    // Hitpoints experience (hit * 1.33) above a new character's 1154.
+    let hitpoints_xp = one.skills.get(&3).map(|s| s.1).unwrap_or(0);
+    eprintln!("fightone: hitpoints experience {hitpoints_xp} after the kill");
+    assert!(hitpoints_xp > 1154, "hitpoints experience from the hits");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// NPC aggression: a saved character (combat level 3) next to the giant
+/// rats (86, aggressive, combat 3) of the Lumbridge swamp:
+/// `AggressiveHandler.selectTarget` picks it and the rat's combat pulse
+/// hits it; the hit mark arrives in the player's own update (a miss: the
+/// character has not completed the tutorial, so `handleImpact` queues MISS).
+async fn aggression_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3196, 3206, 0];
+    // The test accounts are administrators (the development configuration):
+    // AggressiveHandler passes an administrator over unless the
+    // allow_admin_aggression attribute is set.
+    write_save_with(&players, "traceone", "ratbait", at, &[], |save| {
+        let list = save
+            .as_object_mut()
+            .unwrap()
+            .entry("attributes")
+            .or_insert_with(|| Value::Array(vec![]));
+        list.as_array_mut().unwrap().push(
+            serde_json::json!({"key": "allow_admin_aggression", "type": "bool", "value": true}),
+        );
+    });
+    let (code, one) = Client::login(address, "ratbait").await;
+    assert_eq!(code, 2, "ratbait's login");
+    let mut one = one.unwrap();
+    let started = Instant::now();
+    one.until(Duration::from_secs(10), "ratbait's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    // The local player's own mask block (the decoder's SELF entry).
+    let me = players::SELF;
+    one.until_pinging(Duration::from_secs(90), "a hit mark on ratbait", |c| {
+        c.updates.iter().any(|(_, u)| {
+            u.extended.iter().any(|e| {
+                e.index == me
+                    && e.fields
+                        .iter()
+                        .any(|f| matches!(f, players::Field::Hit { .. }))
+            })
+        })
+    })
+    .await;
+    let hit = one
+        .updates
+        .iter()
+        .flat_map(|(_, u)| &u.extended)
+        .filter(|e| e.index == me)
+        .flat_map(|e| &e.fields)
+        .find_map(|f| match f {
+            players::Field::Hit { damage, kind, bar } => Some((*damage, *kind, *bar)),
+            _ => None,
+        })
+        .unwrap();
+    eprintln!(
+        "ratbait: attacked by an aggressive NPC after {:.1} s: hit mark {hit:?}",
+        started.elapsed().as_secs_f64()
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// A scenery option: a saved character next to the ladder (36768) east of

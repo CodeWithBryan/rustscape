@@ -3,8 +3,8 @@
 `world::combat_swing` ports the calculations a combat swing makes before
 anything is sent or applied: accuracy, defence and maximum hit for the melee,
 range and magic handlers, the hit decision, and the `swing` bodies that fill a
-`BattleState`. It is a library. Nothing in the controlled sessions calls it yet;
-the alpha's hand-written melee stand-in in `examples/common/combat.rs` is
+`BattleState`. It is a library; `rs09-server --world` installs it (world/live/combat,
+docs/live-world.md). The controlled sessions do not call it; the alpha's hand-written melee stand-in in `examples/common/combat.rs` is
 unchanged and is not this port.
 
 The source is the pinned `CombatSwingHandler.kt`, `MeleeSwingHandler.kt`,
@@ -177,9 +177,9 @@ animation, graphics and projectile fields of the range tables. `DeathTask`,
 graves, `MultiSwingHandler`, special attack handlers, spell effects, prayer
 drain, poison and degradation are outside both slices.
 
-Binding `Host` to the canonical player, NPC, equipment, skills and prayer
-state, choosing the world's two generators, and joining the result to the
-alpha are the next steps. Until then this establishes the
-tested calculations only: not playable combat, not ranged or magic combat in a
-session, and no performance claim. All source inventory rows remain
+`rs09-server --world` binds `Host` to the canonical player, NPC, equipment,
+skills and prayer state with the world's `Math.random` and
+`RandomFunction.RANDOM` generators (world/live/combat/host.rs); ranged and
+magic swings there stop at their projectile and spell services, which are not
+installed. Joining the result to the alpha remains; no performance claim. All source inventory rows remain
 `not_replaced`.

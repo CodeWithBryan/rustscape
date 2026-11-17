@@ -640,12 +640,17 @@ impl gh::Host for GHost<'_> {
         refuse("face_location")
     }
     fn in_combat(&mut self, entity: &Self::Node) -> Result<bool> {
-        // CombatPulse.isInCombat: the combat pulse is not installed (false).
-        self.live
-            .inner
-            .not_ported
-            .default_answer("CombatPulse.isInCombat (combat pulse not installed: false)");
-        Ok(false)
+        // CombatPulse.isInCombat: the combat-attacker attribute's pulse is
+        // attacking (super::combat).
+        let p = self.player(entity)?;
+        Ok(
+            match self.live.inner.attribute(p.node(), "combat-attacker") {
+                Some(super::combat::Attr::Entity(attacker)) => {
+                    self.live.inner.combat_is_attacking(attacker.node())
+                }
+                _ => false,
+            },
+        )
     }
     fn lock_all(&mut self, entity: &Self::Node) -> Result<()> {
         refuse("lock_all")
@@ -808,13 +813,19 @@ impl gh::Host for GHost<'_> {
         refuse("is_skulled")
     }
     fn prayer_active(&mut self, player: &Self::Node, prayer: PrayerType) -> Result<bool> {
-        refuse("prayer_active")
+        // player.prayer.get(type) (world::prayer, super::combat::prayer).
+        let p = self.player(player)?;
+        let state = self.live.prayer_state(&p).map_err(bind)?;
+        Ok(state.get(prayer))
     }
     fn prayer_type(&mut self, button: i32) -> Result<Option<PrayerType>> {
-        refuse("prayer_type")
+        // PrayerType.get(buttonID).
+        Ok(PrayerType::for_button(button))
     }
     fn prayer_toggle(&mut self, player: &Self::Node, prayer: PrayerType) -> Result<bool> {
-        refuse("prayer_toggle")
+        // player.prayer.toggle(type).
+        let p = self.player(player)?;
+        self.live.prayer_toggle(&p, prayer).map_err(bind)
     }
     fn has_familiar(&mut self, player: &Self::Node) -> Result<bool> {
         refuse("has_familiar")

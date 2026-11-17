@@ -3,7 +3,8 @@
 `world/npc_death` and `world/drop_tables/drop` port the path from a lethal hit
 on an NPC to its items on the ground: who the kill is credited to, the death
 task, the end of the death, the roll, and `createDrop` for every rolled item.
-They are libraries. No example or alpha installs them, and the stand-in in
+They are libraries; `rs09-server --world` installs them for NPCs
+(world/live/combat/death.rs, docs/live-world.md). No example or alpha installs them, and the stand-in in
 `examples/common/combat.rs` is not this port. Java is a test oracle; nothing
 here runs it.
 
@@ -180,8 +181,9 @@ them in their own run directories.
 
 ## Remaining work
 
-Binding these libraries to a live world: real `Properties`, attributes, locks,
-masks and audio; `ImpactHandler.handleImpact` and combat; a player's death;
+`rs09-server --world` binds them for NPCs (properties, attributes, locks,
+masks, audio, `handleImpact` and combat, the drop through the ground manager,
+skills experience). Still open: a player's death;
 `NPC.clear` and the repository; behaviours, zones and item plugins; clans,
 loot-share points and the Grand Exchange price; skills experience; the
 statistics counter; the bot repository; the loader start-up order that decides

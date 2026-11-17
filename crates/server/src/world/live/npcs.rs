@@ -34,6 +34,27 @@ fn locked(state: &mut State, node: Node, kind: action_locks::Kind) -> npc::Resul
         .map_err(nerror)
 }
 
+impl WalkHost<'_> {
+    /// `CombatPulse.isAttacking()` of an entity from the combat state.
+    fn is_attacking(&self, node: Node) -> bool {
+        let active = |n: Node| {
+            self.players
+                .get(&n)
+                .map(|s| s.active)
+                .or_else(|| self.npcs.rows.get(&n).map(|r| r.active))
+                .unwrap_or(false)
+        };
+        self.combat.entities.get(&node).is_some_and(|entry| {
+            entry.state.running
+                && entry
+                    .state
+                    .victim
+                    .as_ref()
+                    .is_some_and(|victim| active(victim.node()))
+        })
+    }
+}
+
 impl npc_walk::Services for WalkHost<'_> {
     fn brain(&self, node: Node) -> npc::Result<npc::State> {
         self.npcs
@@ -63,21 +84,31 @@ impl npc_walk::Services for WalkHost<'_> {
             npc::Query::InteractionLocked => locked(state, node, action_locks::Kind::Interaction)?,
             npc::Query::MovementLocked => locked(state, node, action_locks::Kind::Movement)?,
             npc::Query::Attacking => {
-                self.not_ported.default_answer(
-                    "CombatPulse.isAttacking for NPCs (combat pulse not installed: false)",
-                );
-                false
+                // CombatPulse.isAttacking: a victim that is active and a
+                // running pulse.
+                self.is_attacking(node)
             }
             npc::Query::InCombat => {
-                self.not_ported.default_answer(
-                    "CombatPulse.isInCombat for NPCs (combat pulse not installed: false)",
-                );
-                false
+                // CombatPulse.isInCombat: the combat-attacker attribute's
+                // pulse is attacking.
+                match self
+                    .combat
+                    .attrs
+                    .get(&node)
+                    .and_then(|a| a.get("combat-attacker"))
+                {
+                    Some(super::combat::Attr::Entity(attacker)) => {
+                        self.is_attacking(attacker.node())
+                    }
+                    _ => false,
+                }
             }
             npc::Query::SelectTarget => {
-                self.not_ported.skip(
-                    "AggressiveHandler.selectTarget (NPC aggression not installed: no target)",
-                );
+                // AggressiveHandler.selectTarget needs the whole world: it
+                // runs right after this tick's kernel returns; the kernel
+                // continues as if no target was selected.
+                self.deferred
+                    .push(super::walk::Deferred::SelectTarget(node));
                 false
             }
             npc::Query::WaterNpc => {
@@ -121,10 +152,19 @@ impl npc_walk::Services for WalkHost<'_> {
                     .map_err(nerror)
             }
             npc::Event::Inactivity => super::npc_life::on_region_inactivity(state, self, node),
-            npc::Event::BehaviorRespawn
-            | npc::Event::Respawn
-            | npc::Event::Restore
-            | npc::Event::PauseAggression(_) => {
+            npc::Event::Restore => {
+                // Entity.fullRestore(): skills.restore() (every level back to
+                // its static level, lifepoints to the maximum), then the
+                // poison timers' removal (NPC timers are not installed: an
+                // NPC has none).
+                let row = self.npcs.rows.get_mut(&node).ok_or(npc::Error::Null)?;
+                row.levels = row.static_levels;
+                row.lifepoints = row.static_levels[3];
+                self.not_ported
+                    .default_answer("NPC timer queries (none: no NPC timer is registered)");
+                Ok(())
+            }
+            npc::Event::BehaviorRespawn | npc::Event::Respawn | npc::Event::PauseAggression(_) => {
                 // Through npc_behaviour with the start-up's NPC store.
                 let owned = npc_behaviour::tick::event(&mut *self.npcs, &node, &event)
                     .map_err(npc_behaviour::tick::npc_error)?;
@@ -136,14 +176,14 @@ impl npc_walk::Services for WalkHost<'_> {
                     )))
                 }
             }
-            npc::Event::ImpactDisabled(_) => {
-                self.not_ported
-                    .skip("ImpactHandler.setDisabledTicks for NPCs (combat not installed)");
+            npc::Event::ImpactDisabled(ticks) => {
+                // Run with the whole world right after this walk call.
+                self.deferred
+                    .push(super::walk::Deferred::ImpactDisabled(node, ticks));
                 Ok(())
             }
             npc::Event::StopCombat => {
-                self.not_ported
-                    .skip("CombatPulse.stop for NPCs (combat not installed)");
+                self.deferred.push(super::walk::Deferred::CombatStop(node));
                 Ok(())
             }
             npc::Event::Attribute(_) => {
@@ -151,9 +191,30 @@ impl npc_walk::Services for WalkHost<'_> {
                     .skip("NPC attributes (return-to-spawn, lastForceTalk: not stored)");
                 Ok(())
             }
-            npc::Event::Chat(_) => {
-                self.not_ported
-                    .skip("NPC.sendChat (NPC update masks not joined: force talk not shown)");
+            npc::Event::Chat(text) => {
+                // Entity.sendChat(text): the force chat mask.
+                let text = text.ok_or(npc::Error::Null)?;
+                let masks = self
+                    .combat
+                    .npc_masks
+                    .entry(node)
+                    .or_insert_with(|| {
+                        crate::world::update_masks::Masks::new(
+                            node,
+                            crate::world::update_masks::Kind::Npc,
+                        )
+                    })
+                    .clone();
+                masks
+                    .register(
+                        &mut super::combat::masks::Registry,
+                        crate::world::update_masks::Flag::ForceChat,
+                        Some(super::combat::masks::Payload::Chat(
+                            String::from_utf16_lossy(&text),
+                        )),
+                        false,
+                    )
+                    .map_err(nerror)?;
                 Ok(())
             }
             other => Err(npc::Error::Binding(format!(
@@ -223,7 +284,26 @@ impl Live {
     /// `NPC.tick()`.
     pub fn npc_tick_of(&mut self, p: &P) -> npc::Result<()> {
         let node = p.node();
+        // NPC.tick reaches Entity.tick (and updateMasks.prepare) unless its
+        // region is inactive or it waits for its respawn tick.
+        let reaches_entity_tick = {
+            let location = self.inner.state.node_location(node).ok().flatten();
+            let active = location.is_some_and(|l| {
+                let region = self.walk.scene.region(super::walk::region_id(&l));
+                region_activity::is_active(&region)
+            });
+            let waiting = self
+                .inner
+                .npcs
+                .rows
+                .get(&node)
+                .is_some_and(|row| row.brain.fields.read().respawn_tick > self.inner.ticks);
+            active && !waiting
+        };
         let result = self.with_walk_host(|state, host| npc_walk::tick(state, host, node));
+        if result.is_ok() && reaches_entity_tick {
+            self.npc_prepare_masks(node).map_err(nerror)?;
+        }
         self.project_npc(node);
         result
     }
@@ -263,20 +343,22 @@ impl Live {
         v.walk_dir = walk;
         v.run_dir = run;
         v.aggressive = aggressive;
-        // NPC update masks are not joined: no mask block is written.
-        v.masks_required = false;
+        drop(v);
+        // UpdateMasks.isUpdateRequired of the NPC's masks.
+        let required = self.npc_masks_required(node);
+        view.write().masks_required = required;
     }
 
     /// `NPC.reset()`: `Entity.reset` (masks, teleporting).
     pub fn npc_reset_of(&mut self, p: &P) -> npc::Result<()> {
         let actor = self.inner.state.actor(p.node()).map_err(nerror)?;
         actor.queue.state.write().entity.teleporting = false;
+        self.npc_reset_masks(p.node());
         if let Some(view) = self.npc_views.get(&p.node()) {
-            view.write().teleporting = false;
+            let mut v = view.write();
+            v.teleporting = false;
+            v.masks_required = false;
         }
-        self.inner
-            .not_ported
-            .skip("NPC update masks reset (NPC masks not joined)");
         Ok(())
     }
 
@@ -365,14 +447,22 @@ impl npc_render::Context for Render<'_> {
     }
     fn masks(
         &mut self,
-        _: &player_render::Handle,
-        _: &npc_render::Handle,
-        _: &mut Vec<u8>,
-        _: bool,
+        local: &player_render::Handle,
+        npc: &npc_render::Handle,
+        out: &mut Vec<u8>,
+        sync: bool,
     ) -> npc_render::Result<()> {
-        Err(player_render::Error::Binding(
-            "not ported in the live world: NPC update masks".into(),
-        ))
+        // NPCRenderer.writeMaskUpdates over the NPC's UpdateMasks.
+        let node = self.node_of(npc).ok_or(player_render::Error::Null)?;
+        let viewer = self
+            .live
+            .inner
+            .by_render(local)
+            .map(|p| p.node())
+            .ok_or(player_render::Error::Null)?;
+        self.live
+            .write_npc_masks(node, viewer, out, sync)
+            .map_err(rerror)
     }
     fn remove_tolerance(&mut self, _: &npc_render::Handle, _: i32) -> npc_render::Result<()> {
         self.live

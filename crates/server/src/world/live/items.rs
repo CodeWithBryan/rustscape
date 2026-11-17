@@ -74,6 +74,56 @@ pub struct Interaction {
 struct Registered(Listener);
 impl NativeObject for Registered {}
 
+/// `content.global.skill.AttackListener`'s `on(IntType.NPC, "attack")`
+/// function (`flagInstant()`).
+struct AttackListener;
+impl NativeObject for AttackListener {}
+const ATTACK_LISTENER: &str = "content.global.skill.AttackListener";
+
+/// `AttackListener`'s body: the Lumbridge dummies' style checks, the
+/// killerwatt's aggression (content, refused), then `player.attack(npc)`.
+/// Ported from the pinned AttackListener.kt; it has no differential corpus.
+fn attack_listener(ctx: &mut Ctx<'_>, player: &Node, npc: &Node) -> Result<bool> {
+    use crate::world::combat_pulse::Host as _;
+    let p = ctx.player_of(player)?;
+    let Node::Npc(handle) = npc else {
+        return Err(Error::Cast);
+    };
+    let target = P(handle.clone());
+    let id = ctx
+        .0
+        .inner
+        .npcs
+        .rows
+        .get(&handle.node)
+        .map(|r| r.id)
+        .ok_or(Error::Null)?;
+    let style = |ctx: &mut Ctx<'_>| -> Result<Option<crate::world::combat_swing::CombatStyle>> {
+        let handler = ctx.0.swing_handler(&p, false).map_err(err)?;
+        Ok(ctx.0.handler(&handler).style)
+    };
+    use crate::world::combat_swing::CombatStyle;
+    if id == 4474 && style(ctx)? != Some(CombatStyle::Magic) {
+        ctx.0
+            .inner
+            .message(&p, "You can only attack this with magic.")
+            .map_err(err)?;
+        return Ok(true);
+    }
+    if id == 7891 && style(ctx)? != Some(CombatStyle::Melee) {
+        ctx.0
+            .inner
+            .message(&p, "You must use the training sword to attack this.")
+            .map_err(err)?;
+        return Ok(true);
+    }
+    if id == 3201 || id == 3202 {
+        return refused("KillerwattBehavior.aggressUponKillerwatt (content)");
+    }
+    ctx.0.combat_attack(&p, &target).map_err(err)?;
+    Ok(true)
+}
+
 /// The packet handlers' state in the live world.
 #[derive(Default)]
 pub struct ItemActions {
@@ -1208,6 +1258,9 @@ impl listeners::Context for Ctx<'_> {
         lrefused("the movement pulse of a content listener")
     }
     fn invoke_on(&mut self, f: Function, p: &Node, n: &Node) -> listeners::Result<bool> {
+        if f.value::<AttackListener>().is_some() {
+            return attack_listener(self, p, n).map_err(lerr);
+        }
         match f.value::<Registered>().map(|r| r.0) {
             Some(Listener::Drop) => drop::drop(self, p, n).map_err(lerr),
             Some(Listener::Equip) => {
@@ -1258,7 +1311,23 @@ impl Live {
     /// DropListener and EquipHandler's `defineListeners`, at start-up.
     pub fn define_item_listeners(&mut self) -> Result<()> {
         drop::define(&mut Ctx(self))?;
-        equip::define(&mut Ctx(self))
+        equip::define(&mut Ctx(self))?;
+        // AttackListener.defineListeners: flagInstant(), then
+        // on(IntType.NPC, "attack").
+        let registry = self.item_actions.listeners.clone();
+        registry
+            .instant_classes
+            .write()
+            .insert(ATTACK_LISTENER.to_owned());
+        let function = Function::new(FunctionKind::On, ATTACK_LISTENER, AttackListener);
+        registry
+            .add_generics(
+                &mut Ctx(self),
+                &[text("attack")],
+                Kind::Npc.ordinal(),
+                function,
+            )
+            .map_err(err)
     }
     /// The routed packet handlers of `world::packet_handlers`.
     pub fn item_packet(&mut self, player: &P, action: &ClientAction) -> Result<()> {

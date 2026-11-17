@@ -175,6 +175,8 @@ pub struct Inner {
     /// The timer registry, the entities' event hooks and the calls of
     /// timers registered by a parse ([`super::timers`]).
     pub timers: super::timers::TimerWorld,
+    /// Combat, deaths, NPC masks and prayer ([`super::combat`]).
+    pub combat: super::combat::CombatWorld,
 }
 
 pub fn native<E: std::fmt::Debug>(e: E) -> crate::world::login::Error {
@@ -993,22 +995,44 @@ impl skills::Context for SkillsContext<'_> {
         _: f64,
         _: f64,
     ) -> skills::Result<bool> {
-        Err(skills::Error::Binding)
+        // getExtension(AssistSession.class): nobody assists in this world.
+        self.inner
+            .not_ported
+            .default_answer("AssistSession (no assist sessions: none)");
+        Ok(false)
     }
     fn brawling_present(&mut self) -> skills::Result<bool> {
-        Err(skills::Error::Binding)
+        // BrawlingGlovesManager.GloveCharges: the manager is not ported and
+        // holds no charges here.
+        self.inner
+            .not_ported
+            .default_answer("BrawlingGlovesManager.GloveCharges (manager not ported: empty)");
+        Ok(false)
     }
     fn brawling_for_skill(&mut self, _: i32) -> skills::Result<Option<i32>> {
         Err(skills::Error::Binding)
     }
-    fn equipment_contains(&mut self, _: i32) -> skills::Result<bool> {
-        Err(skills::Error::Binding)
+    fn equipment_contains(&mut self, id: i32) -> skills::Result<bool> {
+        // equipment.containsItem(new Item(id)).
+        let items = self.inner.canonical(&self.p).player.equipment().items();
+        let found = items
+            .read()
+            .iter()
+            .flatten()
+            .any(|item| item.read().id() == id);
+        Ok(found)
     }
     fn brawling_bonus(&mut self) -> skills::Result<f64> {
         Err(skills::Error::Binding)
     }
     fn tutorial_complete(&mut self) -> skills::Result<bool> {
-        Err(skills::Error::Binding)
+        // getAttribute("tutorial:complete", false).
+        self.inner
+            .canonical(&self.p)
+            .player
+            .attributes()
+            .boolean("tutorial:complete", false)
+            .map_err(|_| skills::Error::Binding)
     }
     fn artificial(&mut self) -> skills::Result<bool> {
         Ok(false)
@@ -1021,6 +1045,51 @@ impl skills::Context for SkillsContext<'_> {
     }
     fn effect(&mut self, state: &mut Skills, effect: Effect) -> skills::Result<()> {
         match effect {
+            Effect::XpPlugins { .. } => {
+                self.inner
+                    .not_ported
+                    .skip("XPGainPlugins.run (content experience plugins)");
+                Ok(())
+            }
+            Effect::XpEvent { .. } => {
+                self.inner
+                    .not_ported
+                    .skip("XPGainEvent dispatch (entity event hooks not ported)");
+                Ok(())
+            }
+            Effect::XpLog(_) => {
+                self.inner
+                    .not_ported
+                    .skip("PlayerMonitor.logXpGains (player monitor not ported)");
+                Ok(())
+            }
+            Effect::News(_) => {
+                self.inner
+                    .not_ported
+                    .skip("Repository.sendNews (200m experience news)");
+                Ok(())
+            }
+            Effect::Appearance => {
+                // player.updateAppearance(): Appearance.sync.
+                let p = self.p.clone();
+                self.inner
+                    .appearance_sync(&p)
+                    .map(|_| ())
+                    .map_err(|_| skills::Error::Binding)
+            }
+            Effect::LevelUp { skill, amount } => {
+                // LevelUp.levelup(player, slot, amount), native.
+                crate::world::player_tabs::level_up::levelup(
+                    &mut super::tabs::Tabs::new(self.inner, self.p.clone()),
+                    skill,
+                    amount,
+                )
+                .map_err(|e| {
+                    self.inner
+                        .log_line(format!("LevelUp.levelup failed: {e:?}"));
+                    skills::Error::Binding
+                })
+            }
             Effect::Packet(skill) => {
                 let level = match skill {
                     5 => state.prayer_points.ceil() as i32,

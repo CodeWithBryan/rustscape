@@ -21,18 +21,27 @@ the zones and the SkullManager), the global handlers
 interfaces, the game-frame interfaces, the ladder, look-at and search option
 handlers), the scenery option packet (`world::scenery_action` through
 `world::scenery_runtime`), use-with (`processUseWith`) and the slot switch
-(`processSlotSwitch`). A client logs in, enters the world,
-walks, sees NPCs, players and ground items, uses its weapon, emote and music
-tabs, takes, drops, moves, uses and wields items, examines, uses an NPC's
-option, climbs a ladder, enters the wilderness, regains hitpoints over time,
-logs out, and its character is saved and loaded again.
+(`processSlotSwitch`), and combat (`world::combat_pulse` and
+`world::combat_swing` for every entity, `ImpactHandler` with hit marks in the
+player and NPC update masks, the NPC update masks themselves, NPC aggression
+through `world::npc_behaviour`, NPC death and drops through `world::npc_death`
+and `world::drop_tables`, prayer through `world::prayer` with its tab, and the
+engine timers' poison and disease hits; `combat.rs` and `combat/`). A client
+logs in, enters the world, walks, sees NPCs, players and ground items, uses
+its weapon, emote and music tabs, takes, drops, moves, uses and wields items,
+examines, uses an NPC's option, climbs a ladder, enters the wilderness,
+regains hitpoints over time, toggles a prayer, attacks an NPC and kills it
+(hit marks, the death, the drop on the ground), is attacked by an aggressive
+NPC, logs out, and its character is saved and loaded again.
 
 This is a playable engine slice, **not a complete server**: content (login
-listeners and plugins, quests, tutorial, NPC combat, content item, NPC and
-scenery handlers other than the global handlers, dialogue, banking, shops,
-prayer, trade), combat, teleports, the dialogue interpreter, input prompts,
-component use-with (spells) and every handler listed below as refused are
-not installed, and every such call is answered by name below.
+listeners and plugins, quests, tutorial, content item, NPC and scenery
+handlers other than the global handlers, dialogue, banking, shops, trade), a
+player's death (`world/player_death`), the NPC class overrides
+(`world/npc_classes`), special attacks, spells and projectiles, teleports,
+the dialogue interpreter, input prompts, component use-with (spells) and
+every handler listed below as refused are not installed, and every such call
+is answered by name below.
 
 ```powershell
 cargo build --release -p rs09-server
@@ -78,6 +87,11 @@ modes of `rs09-server` are unchanged.
 | global handlers | `ClassScanner` of the global handler classes, `InterfaceListeners`, `ComponentDefinition` plugins, OptionHandlers, `ClimbActionHandler` | `global.rs`: `registry::register_scanned` over the live InterfaceListeners, the interface definitions' plugins, the native InteractionListeners and the scenery option defaults at boot; the per-definition scenery handlers bound into the scenery definitions; buttons, open and close listeners and component plugins dispatched through `run_button`, `run_open` and `run_plugin` (`buttons.rs`); scenery OptionHandlers through `run_handler` and `handler_destination` (`destination.rs`, over the scene); the bodies' `Task`s submitted to `GameWorld.Pulser` and run with `run_task`; `GHost` is the handlers' `Host` (attributes, messages, interface text, the weapon, emote and music tabs, settings toggles, locks, the animator, the teleport location, scenery geometry, SpecialLadders) |
 | scenery options | `processSceneryAction`, scenery `InteractPlugin` | `scenery.rs`: `world::scenery_runtime` (the legacy walk and arrival, `world::scenery_action`) over the cache scene's objects, `scenery_options::Registry` (the scenery tables and handler arena with the global handlers' defaults), `Scenery.getChild` over the scene's definitions, the InteractionListeners lookup for scenery |
 | use-with, slot switch | `processUseWith`, `processSlotSwitch` | `items/use_with.rs`, `items/slots.rs`: `world::packet_handlers::use_with` (zone monitor, `InteractionListeners.run_use`, PluginInteractionManager, `UseWithHandler.HANDLERS`, `runUnhandledAction`) and `slot_switch` over the canonical inventory |
+| combat | `CombatPulse`, the melee/range/magic `CombatSwingHandler`s, `ImpactHandler`, `Entity.attack`/`onImpact`/`isAttackable`/`checkImpact`/`sendImpact`, `AttackListener` | `combat.rs`, `combat/host.rs`, `combat/behaviour.rs`: the live world is `combat_swing::Host`, `combat_pulse::Host` and `npc_behaviour::Host`; one combat pulse and impact handler per entity that fought (`Inner.combat`); the combat pulse is a `Class::Combat` pulse object current in the entity's canonical pulse manager (STANDARD) and submitted to `GameWorld.Pulser`, whose body is `combat_pulse::pulse::update`; impact, second-arrow and delayed-hit pulses on the same runner, dispatched by identity; NPC option "attack" through the native `InteractionListeners` (`AttackListener`, flagInstant, ported from the pinned AttackListener.kt); auto-retaliation, the NPC's swing handler and attackability through `npc_behaviour::combat`; experience through the native Skills (`LevelUp.levelup` on a level gained) |
+| hit marks, NPC masks | `UpdateMasks.prepare`'s impact poll, `NPCFlags530`, `PlayerFlags530.PrimaryHit/SecondaryHit`, NPC `Animator` | `combat/masks.rs`: an `update_masks::Masks` per NPC with the NPCFlags530 providers and encoders (hits, animation, face entity, spot animation, type swap, force chat, animation sequence, face location), prepared at the end of the NPC's `Entity.tick` and written by `NPCRenderer`; the NPC's animator over them; a player's impacts handed to its prepared masks before `prepare` (`prepared_masks::queue_impact`, the hit encoders added there) |
+| aggression | `AggressiveHandler.selectTarget` from `NPC.handleTickActions` | `combat/behaviour.rs`: the NPC's live `Ai` (made from the start-up's: DEFAULT, or WILDERNESS for the NPCs `ZoneBuilder.startup` gave it, with the start-up's radius, chance, tolerance and pause), `Region.isTolerated` over the scene regions' tolerances |
+| NPC death, drops | `DeathTask`, `NPC.finalizeDeath`, `NPCDropTables`, the seven shared drop tables | `combat/death.rs`: `npc_death` and `drop` with the live world as host and the ground manager (`ground_items::World`) for `createDrop`; the death task a STRONG pulse of the entity's pulse manager on `GameWorld.Pulser`; the drop tables of the start-up's `DropTableParser`; the shared tables loaded at boot from `<config>/shared_tables` |
+| prayer | `Prayer`, `PrayerTabInterface`, `Player.tick`'s `prayer.tick()` | `combat/prayer.rs`: `world::prayer` per player (`PrayerState` in `Inner.combat`), the global handlers' prayer tab services, the drain each `Player.tick`, the combat reads (bonuses, protection, smite, redemption) |
 | region zones | `ZoneBuilder.startup` (a StartupListener), `SkullManager` | `region_zones.rs`: `wilderness_zone::startup` at boot (after the NPCs join, as the start-up runs startup listeners after NPCSpawner) registers WildernessZone, MultiwayCombatZone, ModeratorZone, DarkZone, KaramjaZone and BankZone in the scene's regions, where the zone monitors find them (entities already in a region enter, aggressive wilderness NPCs get the WILDERNESS AggressiveHandler); `Live` is `zone_impls::Host`, `dark_zone::Host` and `wilderness_zone::Host`; each player's `SkullManager` (`world::player_managers::skull`) answers the skull services; overlays through the interface manager |
 
 ## Deviations from the original
@@ -116,8 +130,35 @@ modes of `rs09-server` are unchanged.
 - The live world's own CombatTab, Emote and Music button bodies are replaced
   by the global handlers' (their services answer through the same tab
   libraries).
-- NPC update masks are not joined: `masks_required` is false for every NPC,
-  so no NPC mask block is written (force talk, animations, facing).
+- An NPC's masks are prepared after its tick kernel returns when the tick
+  reached `Entity.tick` (its region active and its respawn tick passed).
+- `AggressiveHandler.selectTarget` needs the whole world: it runs right after
+  the NPC's tick kernel returns (after that tick's walking step), and the
+  kernel's query is answered false, so an NPC that just selected a target
+  still reaches its force talk that tick. `ImpactHandler.setDisabledTicks`
+  and `CombatPulse.stop` from an NPC's tick, and `CombatPulse.stop` from a
+  pulse manager (a walk clears the pulses), run right after the walking call
+  that asked for them returns.
+- The combat pulse's private `MovementPulse.updatePath()` is a path to
+  `DestinationFlag.ENTITY`'s tile beside the victim, found with the mover's
+  pathfinder and walked, unless the last path went toward the victim's same
+  tile and steps remain; the movement pulse's interrupt, truncation and face
+  steps are not run.
+- `CombatPulse.updateStyle()` from the weapon tab is applied at the next read
+  of that player's combat pulse (only combat reads the style).
+- A player's hit mark carries the health ratio read when the impact is
+  handed to the masks (the end of its `Player.tick`), not when the mask is
+  written in the update phase; nothing changes the player's lifepoints in
+  between. An NPC's hit mark reads it when written, as the original does.
+- `npc_death`'s view of the damage logs is made from the combat pulse's
+  `ImpactHandler` at the start of each death call and written back (disabled
+  ticks, cleared logs) when it returns.
+- `Object.hashCode()` of an entity (the NPC damage log's order) is its node id.
+- `playHurtAudio`'s Kotlin `Random.Default` draw comes from a generator of
+  the live world's own (not one of the modelled Java generators).
+- The seven shared drop tables are loaded at boot after the start-up (the
+  original's StartupListeners run inside it): the rare table's positions are
+  drawn from the shared generator at that point.
 - The canonical state's collection (the native stand-in for the JVM's
   garbage collector) runs every 100 ticks: it traces every retained node,
   the joined NPCs included (about 0.8 s in a debug build).
@@ -155,12 +196,11 @@ modes of `rs09-server` are unchanged.
 Skipped (the original runs content or a system without a port; nothing is
 sent or changed; the first call of each is logged with `--verbose`):
 `addAutoTimers`' GrandExchangeTimer and HolidayRandoms,
-`AggressiveHandler.selectTarget` (no target) and its tolerance calls,
+`AggressiveHandler`'s tolerance calls from the NPC renderer,
 `Appearance.setAnimations`, the Attack and Follow player option handlers
 (registered by the global handlers; their binding to the player option
 table is not ported), `ButtonClickEvent` dispatch, `checkForWealthUpdate`,
-`CombatPulse.updateStyle`, `CombatPulse.stop` and `ImpactHandler.setDisabledTicks`
-for NPCs, `CombatPulse.stop` before an interaction, `Commands.define`,
+`CombatPulse.stop` before an interaction, `Commands.define`,
 `ComponentPlugin.open`, `Discord.postPlayerAlert`, entity tick event hooks,
 `Entity.hook(UsedWith)`/`unhook` of DarkZone, `Entity.scripts.removeWeakScripts`
 in `InteractionListeners.run`, the equip listeners' `removeWeakScripts` and
@@ -173,9 +213,15 @@ LoginConfiguration's per-item equipment hooks, `LoginConfiguration.LOGIN_PLUGINS
 (the global handlers register LoginValidationPlugin; its services, the
 activities, loot share, quest point items and debug toggle, are not bound,
 and it is not run), `Managers.tick`, NPC attributes (return-to-spawn,
-lastForceTalk), `NPC.sendChat`, NPC update masks (reset and blocks), NPC
-timers' `processTimers`, `Player.tick`'s potion timers, prayer drain, wealth
-and off-map check, `PlayerMonitor.log`/`logChat`/`logPrivateChat`,
+lastForceTalk), NPC timers' `processTimers`, `Player.tick`'s potion timers,
+wealth and off-map check, `PlayerMonitor.log`/`logChat`/`logPrivateChat`/
+`logXpGains`, the NPC class overrides (`world/npc_classes`: an NPC the
+start-up constructed as a subclass runs the base NPC members:
+`swing_handler`, `on_attack`, `finalize_death` and the others are not
+installed), `XPGainPlugins.run`, `XPGainEvent`, `PrayerActivatedEvent`/
+`PrayerDeactivatedEvent`, `SelfDeathEvent` and `NPCKillEvent` dispatch,
+`PlayerStatsCounter.incrementKills`/`incrementRareDrop`, `core.api.sendNews`
+(rare drops) and `Repository.sendNews` (200m experience),
 `Properties.updateDefenceAnimation`, the region activity pulse (no unloading),
 `RulesAndInfo.openFor`, ServerStore `daily-accounts` `addToList`,
 `WalkingQueue.reset` at logout; in saves:
@@ -183,9 +229,12 @@ and off-map check, `PlayerMonitor.log`/`logChat`/`logPrivateChat`,
 persist-player content hooks.
 
 The original's answer with no content registered: `AssistSession` (none),
-`CombatPulse.isAttacking`/`isInCombat` (false: the combat pulse is not
-installed), `DeathTask.isDead` (false: nothing starts a death),
+`BrawlingGlovesManager.GloveCharges` (empty: the manager is not ported),
 `DialogueInterpreter.close` (true), `DialogueInterpreter.getDialogue` (null),
+`SlayerManager.getTask` (no task), `NPC.getTask` (null: `Tasks.forId` is not
+ported), `DegradableEquipment.checkWeaponDegrades`/`checkArmourDegrades`/
+`degrade` (nothing: no degradable equipment registered),
+`ClueScrollPlugin.ORGANIZED` in a drop roll (none registered),
 `Entity.isTeleporting` (false: no teleport pulse runs),
 `FamiliarManager.hasFamiliar` (false), `InterfaceListeners.runClose` (true),
 the Marathon perk (false), `Player.logoutListeners` (empty),
@@ -227,8 +276,7 @@ removal, teleports from zones, `restoreTabs`, NPC walk/stacking, familiars
 (hasPet, getFamiliar, transform), `NPC.reTransform`, `CombatPulse.attack`,
 wilderness loot and news, the player Attack option (wild PvP), the
 deep-wilderness listener and risk value; the timers' services without a
-port: `ImpactHandler.manualHit` (poison and disease hits: combat is not
-installed), `NPC.isPoisonImmune`, NPC names, skills and settings in timers,
+port: NPC names, skills and settings in timers,
 `Entity.scripts.removeWeakScripts` from a timer, NPC slayer tasks,
 familiars, SpellbookSwap's logout listener, weapon interface, autocast,
 spell book tab and varbit (Lunar spells are not ported), the random event
@@ -236,7 +284,7 @@ content of AntiMacro's run (`RandomEvents`), and while a save is written or
 parsed every service but uids, ticks, the generator and the log; the global
 handlers' services without a binding (each `GHost` method named "global
 handler service NAME": dialogues, banks and deposit boxes, quests and
-diaries, clans, assist, familiars, activities, prayer, spells and special
+diaries, clans, assist, familiars, activities, spells and special
 attacks, interfaces the tabs open other than through the tab libraries,
 movement pulses (Follow), requests, the settings toggles other than
 retaliate and the special bar, item containers' other calls); scenery:
@@ -249,14 +297,32 @@ ground items) and item-on-item Pulse with handlers, `UseWithHandler.handle`;
 the slot switch's bank calls; content NPC clipping suppliers;
 special attack handlers (`instant_spec`), `DialogueInterpreter.sendDialogue`
 (a locked emote), the SALUTE, GOBLIN_BOW and GIVE_THANKS emotes,
-`AchievementDiary.updateTask`, level-up rewards (no experience is gained),
-tutorial content, reconnect (opcode 18), `sendLastLoginInfo` (the lobby), a
+`AchievementDiary.updateTask`, tutorial content, reconnect (opcode 18), `sendLastLoginInfo` (the lobby), a
 saved spawn location or `login_type` attribute, the loot-share pulse, the
 management-server session, account creation from social, familiars, region
 NPC queries (`Repository.findNPC(location)`), the deferred login world
 configuration of CloseIface, an NPC's dialogue player, the zone services of
-combat and teleports, the scene's scenery services (doors, audio), content
-script invocation.
+teleports, the scene's scenery services (doors, audio), content script
+invocation; combat's services without a port: a player's death
+(`Player.commenceDeath`/`finalizeDeath`, `timers.onEntityDeath` for a
+player: `world/player_death` is not installed), `applyPoison` from a swing
+(the Poison timer spawn is not bound), `Projectile.send` (ranged and magic
+swings, retribution), spells (a selected or autocast spell,
+`selectAutoSpell`, the combat spell members), special attack handlers (a
+toggled special bar; `combat_pulse::Host::overrides` answers None: only the
+three style handlers exist), the chinchompa and salamander handlers,
+`BoltEffect` overrides other than DIAMOND, `equipment.replace` from combat
+(ammunition use, black mask charges), the duel arena's ammunition list,
+familiars (`Familiar.getOwner`, `getAttackStyle`, the pet test),
+`EnchantedJewellery.RING_OF_LIFE`, `settings.updateRunEnergy` from combat
+and `Player.fullRestore`, `sendDialogue` from prayer, `Player.sendChat`
+(force chat on a player, Vengeance), the safespot rule's `Pathfinder.find`/
+`walk`/`moveStep`, `NPC.clear` and `NPC.transform` after a death, item
+plugins' `createDrop`/`getItem`, loot share (clan, points,
+`Communication.isLootShare`), `GrandExchange.getRecommendedPrice` in a drop,
+`AIRepository.addItem`, `KillerwattBehavior.aggressUponKillerwatt`, NPC
+chunk moves, the return pulse, `removeRenderableNPC` and NPC timers outside
+the NPC tick.
 
 ## Verification
 
@@ -328,19 +394,38 @@ the client-side player and NPC update decoders):
   100 ticks after login (SkillRestore from `addAutoTimers`; the client's
   hitpoints skill packet goes from 5 to 6; measured 61.3 to 61.9 s); it runs
   beside the other scenarios and sends PING (93) every five seconds.
+- `fightone` (a save in the Lumbridge chicken pen at 3232,3294 with attack
+  and strength 40) toggles Thick Skin on the prayer tab (IfAction on
+  271:5, the global handlers' PrayerTabInterface over `world::prayer`: varp
+  83 = 1), then uses Attack (NPC option 2, opcode 3) on the nearest chicken
+  (41 or 1017; a chicken the fence keeps out of reach times the combat pulse
+  out, and the next is tried): AttackListener, the combat pulse, the melee
+  swing, the impact pulse and `ImpactHandler`; the hit marks are read back
+  from the NPC update's mask blocks (the RT4 client's reader in
+  `rs09_protocol::game::npcs`), the chicken dies (DeathTask) and the tile it
+  last stood on holds its drop (bones 526 and raw chicken 2138, through
+  `NPCDropTables` and the ground manager); hitpoints experience rises above
+  1154.
+- `ratbait` (a save next to the Lumbridge swamp's giant rats, 86, aggressive;
+  the save sets `allow_admin_aggression`, as the test accounts are
+  administrators) is selected by `AggressiveHandler.selectTarget`, and the
+  rat's hit mark arrives in its own player update (a miss: the character has
+  not completed the tutorial, so `handleImpact` queues MISS).
+- `RS09_LIVE_COMBAT_ONLY` runs only the two combat scenarios after the first
+  character's save (a shortcut while working on combat).
 - At least ten ticks, a mean interval between 590 and 700 ms.
 
 `running_server_scenario` (ignored) drives the same client against a
 running `rs09-server --world` (`RS09_LIVE_ADDRESS`, `RS09_LIVE_SAVES`).
 
-Measured (2026-11-17, this machine, with the timers, the global handlers,
-scenery, use-with and the slot switch installed): in-process debug test 132
-ticks, mean work 42.5 ms, maximum 1,533 ms (the first login: lazy definition
-loading in a debug build), mean interval 608.3 ms, 12 saves written (87.7 s:
-the hitpoint restoration waits about a minute). Release binary
-(`rs09-server --world`, start-up 907 ms, 13,709 NPCs joined), the ignored
-scenario against it (79.0 s, every step above), then idle: 299 ticks, mean
-work 5.45 ms, maximum 187.8 ms, mean interval 600.3 ms.
+Measured (2026-11-17, this machine, with combat installed as well): in-process
+debug test 132 ticks, mean work 47.6 ms, maximum 1,699 ms (the first login:
+lazy definition loading in a debug build), mean interval 611.7 ms, 15 saves
+written (88.8 s: the hitpoint restoration waits about a minute). Release
+binary (`rs09-server --world`, start-up 931 ms, 13,709 NPCs joined), the
+ignored scenario against it (78.6 s, every step above, combat included),
+then idle: 399 ticks, mean work 5.75 ms, maximum 147.0 ms, mean interval
+600.3 ms.
 The world-login, tick-driver and world-trace comparisons of the libraries
 are unchanged (their tests bind the same libraries with replayed
 stand-ins); this test checks the production binding end to end.
@@ -353,19 +438,19 @@ stand-ins); this test checks the production binding end to end.
   dialogue service are refused), `ZoneMonitor.interact`/`useWith` for items
   inside a zone, hint icons and warning messages, the DarkZone's overlay and
   light sources and the multiway overlay.
-- Combat (CombatPulse and swings, NPC aggression, impact and hitsplats in
-  the update masks, prayer and its tab, special attacks, NPC death with drop
-  tables, player death), NPC update masks, NPC timers (poison or freezing an
-  NPC), teleports (`teleport::Manager`, the spell book teleports, the
-  wilderness rule), the global handlers' login plugin (LoginValidationPlugin)
-  and the Attack and Follow player options.
+- The rest of combat: a player's death (`world/player_death`: commenceDeath,
+  finalizeDeath, kept items, graves), the NPC class overrides
+  (`world/npc_classes`), special attacks (`world/special_attacks`), spells and
+  projectiles (ranged and magic swings stop at them), poison from swings,
+  NPC timers (poison or freezing an NPC), teleports (`teleport::Manager`, the
+  spell book teleports, the wilderness rule), the global handlers' login
+  plugin (LoginValidationPlugin) and the Attack and Follow player options.
 - The per-player or per-world libraries behind other buttons and options:
   the bank, trade and requests, shops (`shops::World`, its tick listener),
   gathering listeners, quests and diaries, clans; content listeners and
   doors.
 - The full appearance flag writer (`appearance_writer`) instead of the
-  prepared data; region unloading, NPC aggression's target selection and
-  NPC update masks; the climb animation (828) was not seen in the player
+  prepared data; region unloading; the climb animation (828) was not seen in the player
   update by the test (the climb itself is).
 - An NPC tick that fails stops the rest of that tick's update sequence (the
   original's `handleTickActions` catch): a refusal reached by every tick (as

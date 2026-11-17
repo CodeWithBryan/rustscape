@@ -325,6 +325,8 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     // handler table the start-up's GroundSpawnLoader filled.
     let ground_items = std::mem::take(&mut world.ground);
     let item_options = std::mem::take(&mut world.item_options);
+    // RangedConfigLoader's maps, for combat (super::combat).
+    let ranged = std::mem::take(&mut world.ranged);
     let inner = Inner {
         state,
         frames: BTreeMap::new(),
@@ -355,6 +357,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         npcs: npc_store,
         generators,
         timers: Default::default(),
+        combat: Default::default(),
     };
     let names = |section: &str| -> Vec<String> {
         startup::scan::section(section)
@@ -433,6 +436,8 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     // DropListener and EquipHandler (InteractionListeners, ITEM).
     live.define_item_listeners()
         .map_err(|e| format!("item listeners: {e:?}"))?;
+    // Combat: the ranged tables and the shared drop tables.
+    live.install_combat_tables(ranged, &config_path, value_bool("isPvp")?);
     Ok(Booted {
         live,
         configuration,

@@ -25,7 +25,10 @@ enum Payload {
     Spot(Graphics),
     FaceLocation(Location),
     FaceEntity(FaceTarget),
-    Hit(Handle, i32, i32),
+    /// `HitMark(amount, type, entity)`: the entity, the amount, the hitsplat
+    /// ordinal and the health ratio read when the impact was handed over.
+    #[allow(dead_code)]
+    Hit(Handle, i32, i32, i32),
     MeleeHit {
         damage: i32,
         kind: i32,
@@ -54,6 +57,9 @@ impl FaceTarget {
 struct Impact {
     damage: i32,
     kind: i32,
+    /// `lifepoints * 255 / maximum` (255 at full health), read by the owner
+    /// when it queued the impact.
+    ratio: i32,
 }
 #[derive(Clone)]
 pub struct PreparedMasks {
@@ -182,6 +188,20 @@ impl PreparedMasks {
             delay,
             Some(super::animation::Priority::Mid),
         ))
+    }
+    /// `ImpactHandler.impactQueue.add(impact)` as `prepare` polls it: the
+    /// amount, the hitsplat ordinal and the health ratio the HitMark encoder
+    /// writes (read by the caller when it hands the impact over).
+    pub fn queue_impact(&self, damage: i32, kind: i32, ratio: i32) {
+        self.impacts.write().push_back(Impact {
+            damage,
+            kind,
+            ratio,
+        });
+    }
+    /// Impacts queued and not yet polled by `prepare`.
+    pub fn queued_impacts(&self) -> usize {
+        self.impacts.read().len()
     }
     /// Register one impact against canonical health after the swing applies.
     pub fn melee_hit(&self, damage: i32, ratio: i32) -> masks::Result<bool> {
@@ -384,11 +404,23 @@ impl<F: FnMut() -> i64> masks::Writer<Handle, Payload> for Context<'_, F> {
                 out.p1sub(ratio);
                 buffer.extend(out.into_vec());
             }
-            (flag, Some(Payload::Hit(entity, damage, kind))) => {
-                return Err(masks::Error::Binding(format!(
-                    "prepared {flag:?} encoder requires actual combat skills: owner={} damage={damage} type={kind}",
-                    entity.read().index
-                )));
+            // PlayerFlags530.PrimaryHit: psmarts(damage), p1add(type),
+            // p1sub(ratio).
+            (Flag::PrimaryHit, Some(Payload::Hit(_, damage, kind, ratio))) => {
+                let mut out = rs09_protocol::buffer::Writer::default();
+                out.psmarts(damage)
+                    .map_err(|e| masks::Error::Binding(e.to_string()))?;
+                out.p1add(kind);
+                out.p1sub(ratio);
+                buffer.extend(out.into_vec());
+            }
+            // PlayerFlags530.SecondaryHit: psmarts(damage), p1sub(type).
+            (Flag::SecondaryHit, Some(Payload::Hit(_, damage, kind, _))) => {
+                let mut out = rs09_protocol::buffer::Writer::default();
+                out.psmarts(damage)
+                    .map_err(|e| masks::Error::Binding(e.to_string()))?;
+                out.p1sub(kind);
+                buffer.extend(out.into_vec());
             }
             (flag, _) => {
                 return Err(masks::Error::Binding(format!(
@@ -412,6 +444,6 @@ impl<F: FnMut() -> i64> masks::Impacts<Handle, Payload> for Context<'_, F> {
         Ok(handler.write().pop_front())
     }
     fn hit_payload(&self, entity: Handle, impact: Impact) -> Payload {
-        Payload::Hit(entity, impact.damage, impact.kind)
+        Payload::Hit(entity, impact.damage, impact.kind, impact.ratio)
     }
 }

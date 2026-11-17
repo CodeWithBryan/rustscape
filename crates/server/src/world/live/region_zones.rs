@@ -613,6 +613,10 @@ impl wilderness_zone::Host for Live {
         );
         let ai = self.inner.npcs.ai.get_mut(&npc.node).ok_or(Error::Null)?;
         ai.handler = Some(handler);
+        // The live world's own AI (super::combat::behaviour) takes the
+        // WILDERNESS behaviour for this NPC.
+        self.inner.combat.wilderness_aggressors.insert(npc.node);
+        self.inner.combat.ai.remove(&npc.node);
         Ok(())
     }
     fn npc_name(&mut self, npc: &NodeHandle) -> Result<Option<String>> {
@@ -629,8 +633,10 @@ impl wilderness_zone::Host for Live {
             .with_profile(&p, |profile| profile.properties.combat_level)
             .map_err(zerr)
     }
-    fn combat_pulse_attack(&mut self, _: &NodeHandle, _: &NodeHandle) -> Result<()> {
-        refused("CombatPulse.attack (combat is not installed)")
+    fn combat_pulse_attack(&mut self, entity: &NodeHandle, target: &NodeHandle) -> Result<()> {
+        // getProperties().getCombatPulse().attack(target) (super::combat).
+        self.combat_attack(&P(entity.clone()), &P(target.clone()))
+            .map_err(|e| Error::Binding(format!("{e:?}")))
     }
     fn item_name(&mut self, id: i32) -> Result<Option<String>> {
         Ok(self.inner.items.for_id(id).read().name.clone())

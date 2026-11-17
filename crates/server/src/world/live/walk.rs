@@ -142,6 +142,13 @@ pub enum Deferred {
     /// A global handler's OptionHandler reached by an interaction
     /// (`InteractPlugin.handle`), run with the whole world.
     Handler(super::global::HandlerCall),
+    /// `AggressiveHandler.selectTarget()` of an NPC's tick, run with the
+    /// whole world right after the tick's kernel returns.
+    SelectTarget(Node),
+    /// `ImpactHandler.setDisabledTicks(ticks)` from an NPC's tick.
+    ImpactDisabled(Node, i32),
+    /// `CombatPulse.stop()` from a pulse manager or an NPC's tick.
+    CombatStop(Node),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -159,6 +166,8 @@ pub struct WalkHost<'a> {
     pub random: &'a mut crate::startup::generators::WorldGenerators,
     /// The NPC renderer's views (facing an NPC), when the caller holds them.
     pub npc_views: Option<&'a std::collections::HashMap<Node, crate::world::npc_render::Handle>>,
+    /// The combat state (combat pulses, attributes) the NPC tick queries.
+    pub combat: &'a mut super::combat::CombatWorld,
 }
 
 impl WalkHost<'_> {
@@ -189,6 +198,49 @@ fn binding_debug(e: impl std::fmt::Debug) -> player_walk::Error {
 }
 
 impl player_walk::Services for WalkHost<'_> {
+    fn external_stop(
+        &mut self,
+        _: &mut State,
+        pulse: &crate::pulses::Handle,
+    ) -> crate::pulses::Result<()> {
+        // A combat pulse current in a pulse manager: its base stops now,
+        // CombatPulse.stop() runs right after this walk call returns.
+        let (class, node) = {
+            let p = pulse.read();
+            (p.class.clone(), p.node(0).ok().flatten())
+        };
+        match (class, node) {
+            (crate::pulses::Class::Combat, Some(node)) => {
+                crate::pulses::stop_base(pulse);
+                self.deferred.push(Deferred::CombatStop(node));
+                Ok(())
+            }
+            _ => Err(crate::pulses::Error::Binding(
+                "unregistered external stop".into(),
+            )),
+        }
+    }
+    fn external_inactive(
+        &mut self,
+        _: &mut State,
+        pulse: &crate::pulses::Handle,
+    ) -> crate::pulses::Result<bool> {
+        let (class, node) = {
+            let p = pulse.read();
+            (p.class.clone(), p.node(0).ok().flatten())
+        };
+        match (class, node) {
+            (crate::pulses::Class::Combat, Some(node)) => Ok(!self
+                .players
+                .get(&node)
+                .map(|s| s.active)
+                .or_else(|| self.npcs.rows.get(&node).map(|r| r.active))
+                .unwrap_or(false)),
+            _ => Err(crate::pulses::Error::Binding(
+                "unregistered external checks".into(),
+            )),
+        }
+    }
     fn query(&mut self, state: &mut State, query: Query<'_>) -> player_walk::Result<bool> {
         Ok(match query {
             Query::Locked(n) => {

@@ -4,8 +4,8 @@
 combat swing: whether a swing may happen, the per-tick `CombatPulse`, what a
 swing does to the battle state, experience, ammunition and visuals, the impact
 pulse, and `ImpactHandler`. The swing calculation itself stays in
-`world::combat_swing` (docs/combat-swing.md). It is a library. Nothing in the
-controlled sessions calls it; the alpha's hand-written melee stand-in in
+`world::combat_swing` (docs/combat-swing.md). It is a library; `rs09-server --world` installs it
+(world/live/combat, docs/live-world.md). The controlled sessions do not call it; the alpha's hand-written melee stand-in in
 `examples/common/combat.rs` is unchanged and is not this port.
 
 The source is the pinned `CombatSwingHandler.kt`, `MeleeSwingHandler.kt`,
@@ -214,9 +214,10 @@ spell effects and spell visuals; `DeathTask` and graves; prayer drain (now
 `world::prayer`, docs/prayer.md), poison and degradation themselves; `Entity.onImpact`, `sendImpact`, `checkImpact`,
 `isAttackable` and auto-retaliation; `RangedConfigLoader`.
 
-Binding `Host` to the canonical actors, the native pulse manager and runner
-(`server::pulses`), skills, equipment, attributes, locks and movement, sending
-the queued impacts through the update masks, and replacing the alpha stand-in
-are the next steps. Until then this establishes the tested decisions and call
-orders only: not playable combat in a session, and no performance claim. All
-source inventory rows remain `not_replaced`.
+`rs09-server --world` binds `Host` to the canonical actors, their pulse
+managers and the world runner, skills, equipment, attributes, locks and
+movement, and sends the queued impacts through the player and NPC update
+masks (world/live/combat, docs/live-world.md, with its deviations and named
+answers). Replacing the alpha stand-in remains. The live binding has no corpus
+of its own beyond the live-world test; all source inventory rows remain
+`not_replaced`.

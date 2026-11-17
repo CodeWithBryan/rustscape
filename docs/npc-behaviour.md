@@ -6,8 +6,10 @@
 `NPC.java` members `tick` leaves to its callers, and the members of
 `NPC.java`, `Entity.java` and `Player.java` on the combat path (attackability,
 `continueAttack`, `checkImpact`, `onImpact` with auto-retaliation,
-`sendImpact`, `inCombat`, the NPC's swing handler). It is a library. No
-example, alpha or session installs it, and the alpha's combat stand-in in
+`sendImpact`, `inCombat`, the NPC's swing handler). It is a library;
+`rs09-server --world` installs it with the live world as its host
+(aggression, the combat members; world/live/combat/behaviour.rs,
+docs/live-world.md). No example or alpha installs it, and the alpha's combat stand-in in
 `examples/common/combat.rs` is not this port. This is not a complete NPC,
 Entity or Player class and not playable combat.
 

@@ -403,16 +403,32 @@ impl zones::Host for Live {
             .get_mut(&npc.node)
             .ok_or(zones::Error::Null)?;
         ai.invisible = invisible;
+        if let Some(ai) = self.inner.combat.ai.get_mut(&npc.node) {
+            ai.invisible = invisible;
+        }
         Ok(())
     }
     fn entity_continue_attack(
         &mut self,
-        _: &NodeHandle,
-        _: &NodeHandle,
+        entity: &NodeHandle,
+        target: &NodeHandle,
         _: Option<&()>,
-        _: bool,
+        message: bool,
     ) -> zones::Result<bool> {
-        refused("Entity.continueAttack (combat is not installed)")
+        // entity.continueAttack(target, style, message) by runtime class;
+        // the style is the one of the isAttackable call in progress.
+        let style = self.inner.combat.zone_style;
+        let (e, t) = (P(entity.clone()), P(target.clone()));
+        let result = if self.inner.is_npc_node(entity.node) {
+            crate::world::npc_behaviour::combat::npc_continue_attack(self, &e, &t, style, message)
+        } else if self.inner.is_player_node(entity.node) {
+            crate::world::npc_behaviour::combat::player_continue_attack(
+                self, &e, &t, style, message,
+            )
+        } else {
+            Ok(true)
+        };
+        result.map_err(|e| zones::Error::Binding(format!("{e:?}")))
     }
     fn skull_wilderness(&mut self, player: &NodeHandle) -> zones::Result<bool> {
         // skullManager.isWilderness(), the player's SkullManager.
@@ -452,21 +468,42 @@ impl zones::Host for Live {
     fn now_millis(&mut self) -> zones::Result<i64> {
         Ok(super::now_millis())
     }
-    fn multi_zone(&mut self, _: &NodeHandle) -> zones::Result<bool> {
-        refused("multi-combat zones (combat is not installed)")
+    fn multi_zone(&mut self, entity: &NodeHandle) -> zones::Result<bool> {
+        // properties.isMultiZone().
+        crate::world::npc_behaviour::Host::is_multi_zone(self, &P(entity.clone()))
+            .map_err(|e| zones::Error::Binding(format!("{e:?}")))
     }
-    fn entity_ignore_multi(&mut self, _: &NodeHandle, _: &NodeHandle) -> zones::Result<bool> {
-        refused("multi-combat zones (combat is not installed)")
+    fn entity_ignore_multi(
+        &mut self,
+        entity: &NodeHandle,
+        victim: &NodeHandle,
+    ) -> zones::Result<bool> {
+        // Entity.isIgnoreMultiBoundaries(victim).
+        crate::world::npc_behaviour::combat::is_ignore_multi_boundaries(
+            self,
+            &P(entity.clone()),
+            &P(victim.clone()),
+        )
+        .map_err(|e| zones::Error::Binding(format!("{e:?}")))
     }
     fn familiar_owner(&mut self, _: &NodeHandle) -> zones::Result<Option<NodeHandle>> {
         refused("familiars")
     }
-    fn combat_attacker(&mut self, _: &NodeHandle) -> zones::Result<Option<NodeHandle>> {
-        refused("the combat-attacker attribute (combat is not installed)")
+    fn combat_attacker(&mut self, entity: &NodeHandle) -> zones::Result<Option<NodeHandle>> {
+        // getAttribute("combat-attacker") (super::combat).
+        Ok(match self.inner.attribute(entity.node, "combat-attacker") {
+            Some(super::combat::Attr::Entity(p)) => Some(p.0),
+            _ => None,
+        })
     }
     fn combat_time(&mut self, entity: &NodeHandle) -> zones::Result<Option<i64>> {
         let Some(slot) = self.inner.players.get(&entity.node) else {
-            return refused("NPC attributes");
+            // An NPC's combat-time attribute (super::combat).
+            return match self.inner.attribute(entity.node, "combat-time") {
+                None => Ok(None),
+                Some(super::combat::Attr::Long(v)) => Ok(Some(v)),
+                Some(_) => Err(zones::Error::ClassCast),
+            };
         };
         match slot.canonical.player.attributes().get("combat-time") {
             None => Ok(None),
