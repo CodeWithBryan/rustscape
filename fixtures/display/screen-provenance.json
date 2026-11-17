@@ -1,0 +1,37 @@
+{
+  "cases": 9,
+  "fixtureSha256": "1e125ae698c37715e412c55422883c5ffd7ad61eb87924c6640c03a8a5bb6bb2",
+  "format": 1,
+  "input": {
+    "fixtures/display/screen-modes.json": "31a5d3491a058c1af4f2b9d230d79b4676289bffb601d2ddd1b1649c20c35edd"
+  },
+  "scope": "The unchanged DisplayMode, ArrayUtils, ThreadUtils and PrivilegedRequest over the adapters of the display oracle, with the screen's answer to getDisplayModes taken from input (the list one monitor gave the unchanged signlink FullScreenManager.getDisplayModes in a JVM). For three frame sizes and each remembered mode: mainLoad's setWindowMode, the list as ScriptRunner opcodes 5302, 5303 and 5305 read it, then opcode 5300 at every listed size (each followed by the list again, and opcode 5301 after every third), 5300 at a size the screen lacks, ::wm3's setWindowMode(false, 3, 1024, 768) and 5301. Recorded after each call as in fixtures/display/oracle.jsonl. The full-screen frame is a java.awt.Frame sized to the mode and never shown; the screen is not changed.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/display/adapters/plugin/PluginRepository.java": "c89328cb26c0b421b851ac48d66d57444dcb5100c8ff4ef0ca639a811aa5ab09",
+    "oracle/display/adapters/rt4/Adapters.java": "741d38fe09d14d72e3b2fb7bbc2ce515a0c37f8404b673fa2035d2dbbd86532e",
+    "oracle/display/adapters/rt4/GameShell.java": "84746ca6a0d4625a7fadff2db20043ad73cf0fce18276f930b117071f21c554a",
+    "oracle/display/adapters/rt4/OracleLog.java": "160e01e7c181b9ca8d3d6328a27c4279134e980e340dac1638bf3bfa6219d210",
+    "oracle/display/rt4/DisplayOracle.java": "9c1c727e7ca36001a064176754aee4b97f2de57ac3eb2e6345f62cb4dafd2503",
+    "oracle/display/rt4/ScreenOracle.java": "74ae69b39e392df6342f976d2972b4e797562a7cc07f3a7e9b7b8085227132ba",
+    "reference/client/client/src/main/java/rt4/ArrayUtils.java": "c9fbdbb9632ef900366df75723443b9706cd7b7a12fee3f3e2c32a72fe6b4aab",
+    "reference/client/client/src/main/java/rt4/DisplayMode.java": "149d4f38f63bef0f0d40f087fe1599223ee2923e0d2682033fc663700e811ea8",
+    "reference/client/client/src/main/java/rt4/ThreadUtils.java": "ec9cdd36dcfd968aa20066f6a6566e76a0517735321e8210d8b0634d280bbd63",
+    "reference/client/signlink/src/main/java/rt4/PrivilegedRequest.java": "c7887d1b16da4faf7a30d085a974e836e9662d3b373a62096860dc35501d8343"
+  },
+  "steps": 567,
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

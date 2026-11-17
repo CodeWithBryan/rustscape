@@ -86,9 +86,51 @@ fn the_unchanged_display_mode_class_is_reproduced() {
         .map(|line| serde_json::from_str(line).unwrap())
         .collect();
     assert_eq!(cases.len(), 600);
+    let (steps, modes_seen, full_screens, fallbacks, negative_margins) = replay(&cases);
+    // The corpus reaches every mode, full screen and both retries.
+    assert!(steps > 5000, "{steps}");
+    assert!(
+        modes_seen.iter().all(|&count| count > 300),
+        "{modes_seen:?}"
+    );
+    assert!(full_screens > 100, "{full_screens}");
+    assert!(fallbacks > 100, "{fallbacks}");
+    assert!(negative_margins > 100, "{negative_margins}");
+}
+
+#[test]
+fn a_real_monitors_modes_are_listed_and_entered_as_the_original_does() {
+    // `fixtures/display/screen.jsonl`: the unchanged class over the mode
+    // list one monitor gave the unchanged `FullScreenManager` (177 modes,
+    // 25 listed), full screen entered at every listed size.
+    let cases: Vec<Value> = include_str!("../../../fixtures/display/screen.jsonl")
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert_eq!(cases.len(), 9);
+    let (steps, _, full_screens, fallbacks, _) = replay(&cases);
+    assert_eq!(steps, 567);
+    // Every listed size entered (nine cases of 25 sizes, each after a 5301
+    // or from another size), and one size the screen lacks per case.
+    assert!(full_screens >= 9 * 9, "{full_screens}");
+    assert!(fallbacks >= 9, "{fallbacks}");
+    // The list the client's own screen query gives, recorded beside the
+    // JVM's from the same monitor, is the same list.
+    let recorded: Value =
+        serde_json::from_str(include_str!("../../../fixtures/display/screen-modes.json")).unwrap();
+    assert_eq!(recorded["jvm"], recorded["rust"]);
+    assert_eq!(ints(&cases[0]["modes"]), ints(&recorded["jvm"]));
+    assert_eq!(this_client_differs_only_in_mode_zero(&cases), steps);
+}
+
+/// Replays `cases` against the fixture, step by step: the calls in order,
+/// the result, the state and the letterbox. Returns the steps run, the
+/// steps ending in each mode, entries into full screen, retries and steps
+/// ending with a negative margin.
+fn replay(cases: &[Value]) -> (usize, [usize; 4], usize, usize, usize) {
     let (mut steps, mut full_screens, mut fallbacks, mut negative_margins) = (0, 0, 0, 0);
     let mut modes_seen = [0usize; 4];
-    for case in &cases {
+    for case in cases {
         let id = &case["id"];
         let modes = case["modes"].as_array().map(|_| {
             ints(&case["modes"])
@@ -243,27 +285,27 @@ fn the_unchanged_display_mode_class_is_reproduced() {
             negative_margins += usize::from(display.left_margin < 0);
         }
     }
-    // The corpus reaches every mode, full screen and both retries.
-    assert!(steps > 5000, "{steps}");
-    assert!(
-        modes_seen.iter().all(|&count| count > 300),
-        "{modes_seen:?}"
-    );
-    assert!(full_screens > 100, "{full_screens}");
-    assert!(fallbacks > 100, "{fallbacks}");
-    assert!(negative_margins > 100, "{negative_margins}");
+    (steps, modes_seen, full_screens, fallbacks, negative_margins)
 }
 
 #[test]
 fn this_client_differs_from_the_original_only_in_mode_zero() {
-    // The same corpus under `System::software` false: wherever the original
-    // ends in a hardware mode the client is in the same state, and wherever
-    // it ends in mode 0 the client is in mode 1 on the same canvas. Cases
-    // whose hardware renderer fails to start are left out: this client's
-    // always starts.
+    let cases: Vec<Value> = include_str!("../../../fixtures/display/oracle.jsonl")
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    let compared = this_client_differs_only_in_mode_zero(&cases);
+    assert!(compared > 4000, "{compared}");
+}
+
+/// The corpus under `System::software` false: wherever the original ends in
+/// a hardware mode the client is in the same state, and wherever it ends in
+/// mode 0 the client is in mode 1 on the same canvas. Cases whose hardware
+/// renderer fails to start are left out: this client's always starts.
+/// Returns the steps compared.
+fn this_client_differs_only_in_mode_zero(cases: &[Value]) -> usize {
     let mut compared = 0;
-    for line in include_str!("../../../fixtures/display/oracle.jsonl").lines() {
-        let case: Value = serde_json::from_str(line).unwrap();
+    for case in cases {
         if !case["starts"].as_bool().unwrap() {
             continue;
         }
@@ -347,5 +389,5 @@ fn this_client_differs_from_the_original_only_in_mode_zero() {
             compared += 1;
         }
     }
-    assert!(compared > 4000, "{compared}");
+    compared
 }

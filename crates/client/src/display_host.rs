@@ -16,17 +16,23 @@
 //! What differs from the original:
 //! - Full screen is the window without its frame over the primary screen at
 //!   the desktop's size (miniquad's `set_fullscreen`, Windows only). The
-//!   screen's mode is never changed, so the one size on offer is the
-//!   desktop's and a request for any other fails as the original's does for
-//!   a mode the screen lacks. In the browser the canvas element is put in
-//!   full screen through the Fullscreen API, again at the screen's own size
-//!   only; the browser grants it only just after a click or key press and
-//!   can end it by itself (see [`full_screen_lost`]). Other native systems
-//!   offer no mode at all.
+//!   modes on offer are the screen's own, as the original lists them
+//!   (`rs09_client::full_screen::screen_modes`), but the screen's mode is
+//!   never changed: a mode other than the desktop's is drawn the way the
+//!   monitor would show it, the canvas at the mode's size scaled into the
+//!   centre of the window with black bars around it, and mouse positions
+//!   are mapped back to the mode's pixels (`rs09_client::full_screen::Fit`).
+//!   The game sees the mode's size. In the browser the canvas element is put
+//!   in full screen through the Fullscreen API at the screen's own size,
+//!   the one size listed there (a page cannot list or choose modes); the
+//!   browser grants it only just after a click or key press and can end it
+//!   by itself (see [`full_screen_lost`]). Other native systems offer no
+//!   mode at all.
 //! - The renderer is never restarted. The sample count is fixed when the
 //!   window is made (see [`samples`]).
 use macroquad::{camera::Camera, prelude as mq};
 use rs09_client::display::{Display, Effect, Mode, System};
+use rs09_client::full_screen::Fit;
 use std::cell::Cell;
 
 /// The canvas as last placed: frame, canvas and margins, in the interface's
@@ -37,12 +43,22 @@ struct Placement {
     canvas: [i32; 2],
     left: i32,
     top: i32,
+    /// The frame is the full-screen one: the screen mode's size.
+    full_screen: bool,
 }
 
 impl Placement {
     /// The canvas is not the whole window.
     fn offset(&self) -> bool {
         self.left != 0 || self.top != 0 || self.canvas != self.frame
+    }
+
+    /// A full-screen mode other than the window's size, as the screen would
+    /// show it in the window as it is now.
+    fn fit(&self) -> Option<Fit> {
+        self.full_screen
+            .then(|| Fit::new(self.frame, window()))
+            .flatten()
     }
 }
 
@@ -54,10 +70,22 @@ thread_local! {
     /// Full screen was just left: the size the window still has until the
     /// window system has put it back, and the frames that may take.
     static LEAVING: Cell<Option<([i32; 2], u32)>> = const { Cell::new(None) };
+    /// The window was last asked to be full screen.
+    static FULL_SCREEN: Cell<bool> = const { Cell::new(false) };
 }
 
 fn placement() -> Option<Placement> {
-    PLACEMENT.with(Cell::get).filter(Placement::offset)
+    PLACEMENT
+        .with(Cell::get)
+        .filter(|placement| placement.offset() || placement.fit().is_some())
+}
+
+/// The full-screen mode's picture in the window while it is not the
+/// window's size; None otherwise.
+pub fn fit() -> Option<Fit> {
+    PLACEMENT
+        .with(Cell::get)
+        .and_then(|placement| placement.fit())
 }
 
 /// The window's client area in the interface's pixels: the container
@@ -95,6 +123,7 @@ pub fn place(display: &Display) {
             canvas: display.canvas,
             left: display.left_margin,
             top: display.top_margin,
+            full_screen: display.full_screen(),
         }))
     });
 }
@@ -121,6 +150,11 @@ pub fn screen_height() -> f32 {
 /// canvas report it.
 pub fn mouse_position() -> (f32, f32) {
     let (x, y) = mq::mouse_position();
+    if let Some(fit) = fit() {
+        // The mode's pixel under the pointer, as the input events map it.
+        let [x, y] = fit.to_mode([x.floor() as i32, y.floor() as i32]);
+        return (x as f32, y as f32);
+    }
     match placement() {
         Some(placement) => (x - placement.left as f32, y - placement.top as f32),
         None => (x, y),
@@ -149,6 +183,10 @@ fn corner() -> (i32, i32) {
 /// The canvas's corner in physical pixels from the window's top-left.
 pub fn corner_px() -> (i32, i32) {
     let scale = mq::screen_dpi_scale();
+    if let Some(fit) = fit() {
+        let (x, y, ..) = fit.surface_rect((0, 0, 0, 0), scale);
+        return (x, y);
+    }
     let (left, top) = corner();
     (
         (left as f32 * scale).round() as i32,
@@ -187,10 +225,59 @@ impl Camera for Canvas2D {
     }
 }
 
+/// The pixel camera of a full-screen mode shown scaled: the mode's pixels
+/// over its picture in the window, and nothing drawn outside it.
+struct Scaled {
+    mode: [i32; 2],
+    /// The picture in the surface's pixels from its bottom-left corner.
+    viewport: (i32, i32, i32, i32),
+}
+
+impl Camera for Scaled {
+    fn matrix(&self) -> mq::Mat4 {
+        mq::Mat4::orthographic_rh_gl(0., self.mode[0] as f32, self.mode[1] as f32, 0., -1., 1.)
+    }
+
+    fn depth_enabled(&self) -> bool {
+        false
+    }
+
+    fn render_pass(&self) -> Option<mq::RenderPass> {
+        None
+    }
+
+    fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
+        Some(self.viewport)
+    }
+}
+
+/// A rectangle given on the scaled full-screen canvas, as a GL viewport: in
+/// the surface's pixels from its bottom-left corner.
+fn scaled_viewport(fit: &Fit, rect: (i32, i32, i32, i32)) -> (i32, i32, i32, i32) {
+    let (x, y, width, height) = fit.surface_rect(rect, mq::screen_dpi_scale());
+    let surface = mq::miniquad::window::screen_size().1 as i32;
+    (x, surface - y - height, width, height)
+}
+
+/// The scene view's rectangle `[left, top, width, height]` on the canvas,
+/// in the surface's pixels from its top-left corner, while a full-screen
+/// mode is shown scaled (the scene camera's scissor and viewport); None
+/// otherwise.
+pub fn scaled_view_px(rect: [f32; 4]) -> Option<(i32, i32, i32, i32)> {
+    let fit = fit()?;
+    let [left, top, width, height] = rect.map(|n| n as i32);
+    Some(fit.surface_rect((left, top, width, height), mq::screen_dpi_scale()))
+}
+
 /// The 2D camera of the canvas: `set_default_camera()` wherever the canvas
 /// is the window.
 pub fn camera() {
-    if placement().is_some() {
+    if let Some(fit) = fit() {
+        mq::set_camera(&Scaled {
+            mode: fit.mode,
+            viewport: scaled_viewport(&fit, (0, 0, fit.mode[0], fit.mode[1])),
+        });
+    } else if placement().is_some() {
         let (left, top) = corner_px();
         mq::set_camera(&Canvas2D { left, top });
     } else {
@@ -214,13 +301,15 @@ fn surface_rect((x, y, width, height): (i32, i32, i32, i32), scale: f32) -> (i32
 pub fn scissor(clip: Option<(i32, i32, i32, i32)>) {
     let (left, top) = corner();
     let scale = mq::screen_dpi_scale();
+    let fit = fit();
     // SAFETY: the macroquad context exists whenever a frame is drawn.
     unsafe {
-        mq::get_internal_gl().quad_gl.scissor(
-            clip.map(|(x, y, width, height)| {
-                surface_rect((x + left, y + top, width, height), scale)
-            }),
-        );
+        mq::get_internal_gl()
+            .quad_gl
+            .scissor(clip.map(|(x, y, width, height)| match &fit {
+                Some(fit) => fit.surface_rect((x, y, width, height), scale),
+                None => surface_rect((x + left, y + top, width, height), scale),
+            }));
     }
 }
 
@@ -228,6 +317,9 @@ pub fn scissor(clip: Option<(i32, i32, i32, i32)>) {
 /// model renderer sets it (`GlRenderer.setViewportBounds` over the canvas):
 /// in the surface's pixels from its bottom-left corner.
 pub fn canvas_viewport(size: [i32; 2]) -> (i32, i32, i32, i32) {
+    if let Some(fit) = fit() {
+        return scaled_viewport(&fit, (0, 0, size[0], size[1]));
+    }
     let (left, bottom) = placement().map_or((0, 0), |placement| {
         (placement.left, placement.frame[1] - placement.top - size[1])
     });
@@ -242,12 +334,17 @@ pub fn letterbox() {
     let Some(placement) = placement() else {
         return;
     };
-    let bands = rs09_client::display::letterbox(
-        placement.frame,
-        placement.canvas,
-        placement.left,
-        placement.top,
-    );
+    // A scaled full-screen mode: the screen around its picture is black, as
+    // a monitor shows it.
+    let bands = match fit() {
+        Some(fit) => fit.bars(),
+        None => rs09_client::display::letterbox(
+            placement.frame,
+            placement.canvas,
+            placement.left,
+            placement.top,
+        ),
+    };
     if bands.iter().all(Option::is_none) {
         return;
     }
@@ -312,8 +409,17 @@ fn desktop() -> Option<[i32; 2]> {
 }
 
 /// What this window system offers `DisplayMode`: the hardware renderer
-/// only, and one full-screen mode, the desktop as it is.
+/// only, and the screen's modes. On Windows those are the monitor's own, in
+/// the order the original's `GraphicsDevice.getDisplayModes()` gets them
+/// (`DisplayMode.getDisplayModes` filters and sorts them as the original
+/// does); elsewhere, or if the monitor gives no list, the one mode is the
+/// desktop as it is.
 pub fn system() -> System {
+    #[cfg(target_os = "windows")]
+    if let Some(modes) = rs09_client::full_screen::screen_modes().filter(|modes| !modes.is_empty())
+    {
+        return System::client(modes);
+    }
     System::client(
         desktop()
             .map(|[width, height]| Mode {
@@ -401,13 +507,29 @@ pub fn full_screen_lost() -> bool {
 /// stops nor starts.
 pub fn carry_out(display: &mut Display) -> bool {
     let mut reported = false;
+    // The last of the full-screen requests decides. The window is the same
+    // for every mode, so leaving one mode for another (an exit and an entry
+    // in one call) keeps it as it is, and the size it had before full
+    // screen stays remembered.
+    let mut full_screen = None;
     for effect in std::mem::take(&mut display.effects) {
         match effect {
-            Effect::EnterFullScreen { .. } => enter_full_screen(),
-            Effect::ExitFullScreen => exit_full_screen(),
+            Effect::EnterFullScreen { .. } => full_screen = Some(true),
+            Effect::ExitFullScreen => full_screen = Some(false),
             Effect::WindowStatus => reported = true,
             _ => {}
         }
+    }
+    match full_screen {
+        Some(true) if !FULL_SCREEN.with(Cell::get) => {
+            FULL_SCREEN.with(|full| full.set(true));
+            enter_full_screen();
+        }
+        Some(false) if FULL_SCREEN.with(Cell::get) => {
+            FULL_SCREEN.with(|full| full.set(false));
+            exit_full_screen();
+        }
+        _ => {}
     }
     reported
 }

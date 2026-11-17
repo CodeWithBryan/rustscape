@@ -4050,7 +4050,8 @@ async fn main() {
     // in mode 2 or, with `--root 548`, the fixed one in mode 1 on the fixed
     // canvas. `--window-mode N` pairs either frame with the other mode, and
     // `--window-mode 3` asks for full screen at the screen's largest mode
-    // (CS2 5300), which the first frame then carries out.
+    // or at the listed mode `--full-screen WxH` names (CS2 5300), which the
+    // first frame then carries out.
     ui_vm.display =
         rs09_client::display::Display::new(display_host::window(), display_host::system());
     let fixed_root = option("--root").as_deref() == Some("548");
@@ -4058,7 +4059,19 @@ async fn main() {
         let mode = option("--window-mode")
             .and_then(|mode| mode.parse().ok())
             .unwrap_or(if fixed_root { 1 } else { 2 });
-        let largest = ui_vm.display.display_modes().last().copied();
+        // `--full-screen WxH` picks another listed mode than the largest.
+        let size = option("--full-screen").and_then(|size| {
+            let (width, height) = size.split_once('x')?;
+            Some((width.parse::<i32>().ok()?, height.parse::<i32>().ok()?))
+        });
+        let modes = ui_vm.display.display_modes();
+        let largest = match size {
+            Some((width, height)) => modes
+                .iter()
+                .find(|mode| (mode.width, mode.height) == (width, height))
+                .copied(),
+            None => modes.last().copied(),
+        };
         match largest.filter(|_| mode == 3) {
             Some(screen) => {
                 ui_vm.display.script_full_screen(

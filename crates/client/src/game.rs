@@ -226,6 +226,7 @@ fn display_effects(
     ui_vm.window_mode = ui_vm.display.window_mode();
     display_host::place(&ui_vm.display);
     input_events.canvas.rect = display_host::canvas_rect();
+    input_events.canvas.fit = display_host::fit();
     display_host::camera();
     // Outside capture runs the client says where its canvas is, once
     // per change.

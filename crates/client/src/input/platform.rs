@@ -223,6 +223,10 @@ pub struct Canvas {
     /// `[left, top, width, height]` within the window; None when the canvas
     /// is the whole window.
     pub rect: Option<[i32; 4]>,
+    /// A full-screen mode shown scaled in the window: positions are the
+    /// mode's pixels (`crate::full_screen::Fit`), and the bars around its
+    /// picture are beside the canvas. It goes before `rect`.
+    pub fit: Option<crate::full_screen::Fit>,
     /// Buttons whose press fell outside the canvas; their release is not
     /// the canvas's either.
     elsewhere: Held,
@@ -231,6 +235,11 @@ pub struct Canvas {
 impl Canvas {
     /// A window position as the canvas sees it, and whether it is on it.
     pub fn point(&self, x: i32, y: i32) -> ([i32; 2], bool) {
+        if let Some(fit) = &self.fit {
+            let point = fit.to_mode([x, y]);
+            let on = (0..2).all(|axis| point[axis] >= 0 && point[axis] < fit.mode[axis]);
+            return (point, on);
+        }
         match self.rect {
             None => ([x, y], true),
             Some([left, top, width, height]) => {
@@ -1016,5 +1025,61 @@ mod tests {
             (2, 5, 6)
         );
         assert_eq!(inside, None);
+    }
+
+    #[test]
+    fn a_scaled_full_screen_mode_gets_positions_in_its_own_pixels() {
+        // Transcription test (crate::full_screen): with the screen switched
+        // to 1024 by 768 the original's canvas is the screen and its
+        // listeners see the mode's pixels. Here the mode is drawn into a
+        // 5120 by 2160 window at x 1120, 2.8125 window pixels a mode pixel.
+        let fit = crate::full_screen::Fit::new([1024, 768], [5120, 2160]).unwrap();
+        let mut canvas = Canvas {
+            rect: Some([0, 0, 1024, 768]),
+            fit: Some(fit),
+            ..Canvas::default()
+        };
+        assert_eq!(canvas.point(1120, 0), ([0, 0], true));
+        assert_eq!(canvas.point(3999, 2159), ([1023, 767], true));
+        assert_eq!(canvas.point(4000, 100), ([1024, 35], false));
+        assert_eq!(canvas.point(1119, 100), ([-1, 35], false));
+        let mut input = Input::default();
+        let mut translator = Translator::new(Host::Native);
+        let mut inside = None;
+        // The middle of the mode: (512 * 2.8125 + 1120, 384 * 2.8125).
+        canvas.motion(&mut translator, &mut input, &mut inside, 2560, 1080);
+        canvas.down(
+            &mut translator,
+            &mut input,
+            MouseButton::Left,
+            2560,
+            1080,
+            100,
+        );
+        input.cycle();
+        let mouse = &input.mouse;
+        assert_eq!(
+            (mouse.click_button, mouse.click_x, mouse.click_y),
+            (1, 512, 384)
+        );
+        canvas.up(&mut translator, &mut input, MouseButton::Left);
+        // The bars are beside the canvas: the pointer leaves, and a press
+        // there is not the canvas's.
+        canvas.motion(&mut translator, &mut input, &mut inside, 500, 1080);
+        canvas.down(
+            &mut translator,
+            &mut input,
+            MouseButton::Left,
+            500,
+            1080,
+            200,
+        );
+        canvas.up(&mut translator, &mut input, MouseButton::Left);
+        input.cycle();
+        assert_eq!(input.mouse.click_button, 0);
+        assert_eq!(
+            (input.mouse.last_mouse_x, input.mouse.last_mouse_y),
+            (-1, -1)
+        );
     }
 }

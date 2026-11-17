@@ -28,6 +28,7 @@ pub mod floor_blend;
 pub mod follow_camera;
 pub mod frame_dump;
 pub mod frustum;
+pub mod full_screen;
 pub mod game_cycle;
 pub mod gl_tile;
 pub mod ground_geometry;

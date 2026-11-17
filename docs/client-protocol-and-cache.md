@@ -353,8 +353,9 @@ the server is down stays on the loading bar. The pinned client's world hop
 is broken (the request overflows its buffer) and is reproduced as it is.
 The SD buttons (main menu and Graphics Options) end on the scripts' "unable
 to enter the chosen display mode" message, because mode 0 is carried out as
-mode 1 (see Display modes), and the full-screen list offers the desktop's own
-size only, where the original lists every screen mode from 800 by 600 up.
+mode 1 (see Display modes). The full-screen list offers the monitor's own
+modes from 800 by 600 up, as the original lists them, on Windows; the
+browser lists the screen's size only.
 
 ## Session lifecycle
 
@@ -568,8 +569,9 @@ Known differences:
 
 - 4004 and 4005 use a fixed xorshift generator rather than `Math.random`.
 - 4104 formats in UTC; the original uses the JVM's default time zone.
-- 5302, 5303 and 5305 list one full-screen mode, the screen's own size, on
-  Windows and in the browser, and none elsewhere.
+- 5302, 5303 and 5305 list the monitor's modes on Windows (filtered and
+  sorted as the original's `DisplayMode.getDisplayModes` does), one mode,
+  the screen's own size, in the browser, and none elsewhere.
 - 6121 answers 1 on the desktop and 0 in the browser.
 - Preferences. These take effect: brightness, fog, flickering effects,
   character shadows, scenery shadows (0, 1, 2), ground decorations, the two
@@ -656,21 +658,56 @@ camera drift.
 the fixed modes the canvas is 765 x 503, centred across the window at its
 top, with black around it; in the resizable mode it is the window. A live
 client opens a 1024 x 768 window and opens the title in the mode its
-preference file remembers. Full screen exists on Windows only, as a
-borderless window at the desktop's size.
+preference file remembers.
 
-Verified by `display-oracle`. Captures cover the fixed and resizable frames
-at several sizes; one live run recorded each 243. Not run: a 243 in mode 3
-and the 6016 canvas replacement. In a browser the fixed and resizable modes
-were looked at, not recorded on the wire (see "The browser build as run").
-In the browser, full screen is the canvas element in the browser's own full
-screen (the Fullscreen API), again at the screen's size only.
+Full screen. The original lists the screen's modes
+(`FullScreenManager.getDisplayModes`, then `DisplayMode.getDisplayModes`:
+at least 800 x 600 and 24 bits, one per size, in its own quicksort's order
+by area) and switches the screen to the chosen one. On Windows this client
+lists the same modes (`full_screen::screen_modes`: `EnumDisplaySettings` of
+the primary monitor, each width, height, depth and refresh rate once) but
+never changes the screen's mode: full screen is a borderless window at the
+desktop's size, and a mode of another size is drawn as the monitor would
+show it (`full_screen::Fit`): the canvas at the mode's size, scaled by one
+factor into the largest centred rectangle of the mode's proportions, black
+bars around it (the default of Windows' GPU scaling; some monitors and
+driver settings stretch instead). Mouse positions are mapped back to the
+mode's pixels (the one whose scaled area holds the pointer's pixel centre);
+the bars are outside the canvas. The game sees the mode's size everywhere:
+`GameShell.canvasWidth/Height`, the layout and packet 243. Leaving restores
+the window; changing from one mode to another keeps the window full screen.
+
+Verified by `display-oracle`, which now also runs the unchanged
+`DisplayMode` over one real monitor's 177 modes (25 listed) and enters full
+screen at each (`fixtures/display/screen.jsonl`, `tests/display.rs`).
+`cargo run -p rs09-client --example screen_modes` compares this client's mode
+list with the unchanged `FullScreenManager`'s in a JVM on the machine it
+runs on (equal on the machine it was written on; `--record` rewrites
+`fixtures/display/screen-modes.json`). The scaling and the mouse mapping
+have transcription tests (`full_screen.rs`, `input/platform.rs`). Captures
+cover the fixed and resizable frames at several sizes and full screen at
+1024 x 768, 1280 x 1024 and 1920 x 1080 on a 5120 x 2160 desktop
+(`--window-mode 3 --full-screen WxH`); one live run recorded each 243, and a
+second chose 1280 x 1024 in the title's Graphics Options, confirmed the
+"keep this setting?" box through the scaled canvas, logged in
+(`243 03 0500 0400 00`), clicked (`75` at the mode's pixel), took `::wm3`
+(`243 03 0400 0300 00`) and left (`243 02 0400 0300 00`, the window back at
+1024 x 768). Not run: the 6016 canvas replacement. In a browser the fixed and
+resizable modes were looked at, not recorded on the wire (see "The browser
+build as run"). In the browser, full screen is the canvas element in the
+browser's own full screen (the Fullscreen API), at the screen's size only:
+a page can neither list nor choose modes, so that is the one size listed and
+the scaled path, which is shared, is not reached there.
 
 Differences: there is one renderer, so the original's software mode 0 is
 carried out, and reported to the server and to scripts, as mode 1. Full
-screen never changes the screen's mode, so only the desktop's size is
-listed, and `::wm3` (1024 x 768) falls back to the remembered mode on any
-other desktop. In the browser, full screen is granted only shortly after a
+screen never changes the screen's mode: a mode other than the desktop's is
+drawn at the panel's resolution and scaled geometry (the scene is rendered
+sharper than a monitor's scaler would show it, sprites and text are scaled
+by their textures' filter), and the pointer can reach the bars, where the
+original's could not leave the screen. Linux and macOS offer no full
+screen. In the browser `::wm3` (1024 x 768) falls back to the remembered
+mode unless the screen is that size. In the browser, full screen is granted only shortly after a
 click or key press, and the answer arrives after `setWindowMode` has
 returned: the client takes mode 3 at once (CS2 5300 pushes 1, the size is
 saved, packet 243 reports mode 3) and, if the browser refuses or later ends
@@ -1581,10 +1618,12 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
 - (b) A frame's interface walks all run before its camera updates, so a
   second walk in the frame where a script unlocks the camera reads the
   spline-finished flag one cycle late.
-- (a)(d) Full screen is Windows and browser only, never changes the screen's
-  mode and offers one size. Nothing corrects a surface that differs from the
-  listed size. In the browser it needs a click or key press just before
-  and is entered optimistically (see Display modes); a real grant was not
+- (a)(d) Full screen is Windows and browser only and never changes the
+  screen's mode. On Windows it offers the monitor's modes and shows one
+  other than the desktop's scaled into the desktop-sized window with black
+  bars, as a monitor keeping the aspect ratio would (see Display modes); the
+  browser offers the screen's size only. In the browser it needs a click or
+  key press just before and is entered optimistically; a real grant was not
   seen in the test browser.
 - (b) A first browser visit opens the title on the fixed 765 x 503 canvas at
   the top centre of the page, as the applet does in a page larger than its
@@ -1910,7 +1949,9 @@ Collected from every stream. None blocks the others.
     worker (it would need the cache and the prepared scene to cross between
     modules). Whether `::wm3` should, in a browser, scale a 1024 x 768
     canvas to the screen (the nearest thing to the original's mode change)
-    instead of falling back.
+    instead of falling back. The scaled drawing exists (`full_screen::Fit`,
+    used on Windows); what the browser lacks is a list of sizes to offer,
+    since a page cannot read the screen's modes.
 33. **Styled menu.** Leave CS2 5424's menu undrawn (no cached script uses
     it) or port `drawB`.
 34. **Error reports.** Post the original's reports to `clienterror.ws` or

@@ -246,6 +246,9 @@ impl SceneCamera {
     /// corner, for a scissor. The view is given on the canvas, which the
     /// fixed window modes place inside a larger window.
     pub(crate) fn scissor(&self) -> (i32, i32, i32, i32) {
+        if let Some(scaled) = crate::display_host::scaled_view_px(self.rect) {
+            return scaled;
+        }
         let scale = screen_dpi_scale();
         let [left, top, width, height] = self.rect.map(|n| (n * scale) as i32);
         let (canvas_left, canvas_top) = crate::display_host::corner_px();

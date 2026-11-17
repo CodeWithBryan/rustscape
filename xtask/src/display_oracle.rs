@@ -122,5 +122,98 @@ pub fn generate(root: &Path, check: bool) -> Result<()> {
         )?;
         println!("Generated {cases} JVM display cases, {total} steps: {steps:?}");
     }
+    screen(root, check, &upstream)
+}
+
+/// The driver of the screen cases, compiled with the classes above.
+const SCREEN_DRIVER: &str = "oracle/display/rt4/ScreenOracle.java";
+/// One monitor's modes as the unchanged `FullScreenManager` listed them,
+/// recorded by `cargo run -p rs09-client --example screen_modes -- --record`.
+const SCREEN_MODES: &str = "fixtures/display/screen-modes.json";
+
+/// `fixtures/display/screen.jsonl`: the unchanged `DisplayMode` over the
+/// recorded mode list of a real monitor, full screen entered at every size
+/// it lists (`ScreenOracle`).
+fn screen(root: &Path, check: bool, upstream: &Value) -> Result<()> {
+    let mut sources: Vec<String> = UNCHANGED
+        .iter()
+        .chain(ADAPTERS)
+        .chain(&[SCREEN_DRIVER])
+        .map(|path| (*path).to_owned())
+        .collect();
+    sources.sort();
+    let hash = |path: &str| -> Result<String> {
+        Ok(format!(
+            "{:x}",
+            Sha256::digest(normalized(&fs::read(root.join(path))?))
+        ))
+    };
+    let mut hashes = BTreeMap::new();
+    for source in &sources {
+        hashes.insert(source.clone(), hash(source)?);
+    }
+    let classes = root.join("runs/display-oracle/screen-classes");
+    if classes.exists() {
+        fs::remove_dir_all(&classes)?;
+    }
+    fs::create_dir_all(&classes)?;
+    run(Command::new("javac")
+        .current_dir(root)
+        .args(["--release", "8", "-encoding", "UTF-8", "-nowarn"])
+        .arg("-sourcepath")
+        .arg("reference/client/deob-annotations/src/main/java")
+        .arg("-d")
+        .arg(&classes)
+        .args(&sources))?;
+    let output = run(Command::new("java")
+        .current_dir(root)
+        .arg("-cp")
+        .arg(&classes)
+        .arg("rt4.ScreenOracle")
+        .arg(SCREEN_MODES))?;
+    let fixture = normalized(&output.stdout);
+    let (mut cases, mut steps) = (0usize, 0usize);
+    for line in fixture.split(|&b| b == b'\n').filter(|l| !l.is_empty()) {
+        let value: Value = serde_json::from_slice(line)?;
+        cases += 1;
+        steps += value["steps"].as_array().map_or(0, Vec::len);
+    }
+    let mut input = serde_json::Map::new();
+    input.insert(SCREEN_MODES.to_owned(), Value::from(hash(SCREEN_MODES)?));
+    let provenance = json!({
+        "format": 1,
+        "upstream": upstream,
+        "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+        "sources": hashes,
+        "input": input,
+        "fixtureSha256": format!("{:x}", Sha256::digest(&fixture)),
+        "cases": cases,
+        "steps": steps,
+        "scope": "The unchanged DisplayMode, ArrayUtils, ThreadUtils and PrivilegedRequest over the adapters of the display oracle, with the screen's answer to getDisplayModes taken from input (the list one monitor gave the unchanged signlink FullScreenManager.getDisplayModes in a JVM). For three frame sizes and each remembered mode: mainLoad's setWindowMode, the list as ScriptRunner opcodes 5302, 5303 and 5305 read it, then opcode 5300 at every listed size (each followed by the list again, and opcode 5301 after every third), 5300 at a size the screen lacks, ::wm3's setWindowMode(false, 3, 1024, 768) and 5301. Recorded after each call as in fixtures/display/oracle.jsonl. The full-screen frame is a java.awt.Frame sized to the mode and never shown; the screen is not changed.",
+    });
+    let directory = root.join("fixtures/display");
+    let (fixture_path, provenance_path) = (
+        directory.join("screen.jsonl"),
+        directory.join("screen-provenance.json"),
+    );
+    if check {
+        if normalized(&fs::read(&fixture_path)?) != fixture {
+            return Err(
+                "display oracle screen output differs from the committed fixture; review before regenerating"
+                    .into(),
+            );
+        }
+        if serde_json::from_slice::<Value>(&fs::read(&provenance_path)?)? != provenance {
+            return Err("display oracle screen provenance is stale; review source changes".into());
+        }
+        println!("{cases} JVM screen-mode cases ({steps} steps) reproduced with matching sources.");
+    } else {
+        fs::write(&fixture_path, &fixture)?;
+        fs::write(
+            &provenance_path,
+            format!("{}\n", serde_json::to_string_pretty(&provenance)?),
+        )?;
+        println!("Generated {cases} JVM screen-mode cases, {steps} steps.");
+    }
     Ok(())
 }
