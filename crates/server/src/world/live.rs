@@ -29,10 +29,16 @@
 //! listeners, plugins, quests, music, emotes, NPC behaviour, tutorial) is not
 //! ported and is answered by name. See docs/live-world.md.
 pub mod boot;
+pub mod buttons;
+pub mod ground;
 pub mod host;
 pub mod inner;
 pub mod not_ported;
+pub mod npc_life;
+pub mod npcs;
+pub mod regions;
 pub mod server;
+pub mod tabs;
 pub mod walk;
 
 use super::player_walk::NodeHandle;

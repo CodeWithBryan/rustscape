@@ -59,6 +59,10 @@ pub struct Canonical {
     pub render: player_render::Handle,
     pub client: ClientInfo,
     pub weapon: Option<interfaces::Handle>,
+    /// The player's `WeaponInterface` extension object.
+    pub weapon_tab: Option<crate::world::player_tabs::weapon::WeaponInterface>,
+    /// MusicPlayer's current track, playing and looping fields.
+    pub music: crate::world::player_tabs::music::Playback,
     pub friends: Option<interfaces::Handle>,
     pub options: interaction_options::Handle,
     /// Entity.animator over the player's prepared masks and clocks.
@@ -163,6 +167,12 @@ pub struct Inner {
     /// Log lines (`core.tools.Log`), echoed when verbose.
     pub log: Vec<String>,
     pub verbose: bool,
+    /// The start-up's NPCs: rows (definition, brain, active), AI and the
+    /// behaviour registry, joined to the live repository.
+    pub npcs: crate::startup::npcs::Npcs,
+    /// The world's generators from the start-up (`RandomFunction.RANDOM` is
+    /// `shared`), continued.
+    pub generators: crate::startup::generators::WorldGenerators,
 }
 
 pub fn native<E: std::fmt::Debug>(e: E) -> crate::world::login::Error {
@@ -347,6 +357,9 @@ pub fn interaction_option(index: i32, name: &str) -> Frame {
 fn ui_error(e: impl std::fmt::Display) -> interfaces::Error {
     interfaces::Error::Binding(e.to_string())
 }
+fn ui_error_debug(e: impl std::fmt::Debug) -> interfaces::Error {
+    interfaces::Error::Binding(format!("{e:?}"))
+}
 
 impl interfaces::Context for Inner {
     fn validate_manager(&mut self, manager: &interfaces::Manager) -> interfaces::Result<()> {
@@ -424,9 +437,10 @@ impl interfaces::Context for Inner {
             .as_ref()
             .is_some_and(|f| f.same(c));
         if weapon {
-            self.not_ported
-                .skip("WeaponInterface.open (core, not ported: attack tab not sent)");
-            return Ok(());
+            // WeaponInterface.open(player), native.
+            return super::tabs::Tabs::new(self, p)
+                .weapon(|tabs, weapon| weapon.open(tabs))
+                .map_err(ui_error_debug);
         }
         if friends {
             self.not_ported
@@ -452,8 +466,17 @@ impl interfaces::Context for Inner {
         Ok(self.canonical(&p).weapon.clone())
     }
     fn create_weapon(&mut self) -> interfaces::Result<interfaces::Handle> {
-        let handle = self.registry.component(92);
+        // new WeaponInterface(player): super(92), then the player's extension.
+        use crate::world::player_tabs::weapon;
+        let handle = self.registry.component(weapon::WEAPON_FISTS_SEL);
         handle.write().weapon = true;
+        let p = self.current()?;
+        let created = weapon::WeaponInterface::new(
+            &mut super::tabs::Tabs::new(self, p.clone()),
+            handle.clone(),
+        )
+        .map_err(ui_error_debug)?;
+        self.slot_mut(&p).canonical.weapon_tab = Some(created);
         Ok(handle)
     }
     fn add_weapon(&mut self, component: interfaces::Handle) -> interfaces::Result<()> {
@@ -679,17 +702,31 @@ impl social::Host<P> for Inner {
         }
         Ok(())
     }
-    fn is_locked(&mut self, _: &P, key: &str) -> social::Result<bool> {
-        // Player.getLocks() keyed locks: nothing in this world sets one.
-        self.not_ported
-            .default_answer("ActionLocks keyed lock query (no content sets keyed locks)");
-        let _ = key;
-        Ok(false)
+    fn is_locked(&mut self, p: &P, key: &str) -> social::Result<bool> {
+        // Player.getLocks().isLocked(key): the canonical actor's keyed locks.
+        let owner = self.canonical(p).owner.clone();
+        let locks = self.state.locks(&owner).map_err(host_error)?;
+        locks
+            .is_locked(
+                &Some(key.encode_utf16().collect()),
+                &mut self.state,
+                &mut crate::world::action_locks::Clock,
+            )
+            .map_err(host_error)
     }
-    fn lock(&mut self, _: &P, _: &str, _: i32) -> social::Result<()> {
-        Err(social::Error::Host(
-            "not ported: keyed action locks in the live world".into(),
-        ))
+    fn lock(&mut self, p: &P, key: &str, ticks: i32) -> social::Result<()> {
+        let owner = self.canonical(p).owner.clone();
+        let locks = self.state.locks(&owner).map_err(host_error)?;
+        locks
+            .lock_custom(
+                Some(key.encode_utf16().collect()),
+                ticks,
+                None,
+                &mut self.state,
+                &mut crate::world::action_locks::Clock,
+            )
+            .map(|_| ())
+            .map_err(host_error)
     }
     fn register_chat(
         &mut self,
@@ -922,11 +959,17 @@ impl skills::Context for SkillsContext<'_> {
                 self.inner.queue_native(&self.p, frame);
                 Ok(())
             }
-            Effect::FlashingIcons(_) => {
-                self.inner
-                    .not_ported
-                    .skip("LevelUp.sendFlashingIcons (core, not ported)");
-                Ok(())
+            Effect::FlashingIcons(slot) => {
+                // LevelUp.sendFlashingIcons, native.
+                crate::world::player_tabs::level_up::send_flashing_icons(
+                    &mut super::tabs::Tabs::new(self.inner, self.p.clone()),
+                    slot,
+                )
+                .map_err(|e| {
+                    self.inner
+                        .log_line(format!("LevelUp.sendFlashingIcons failed: {e:?}"));
+                    skills::Error::Binding
+                })
             }
             Effect::Combat(level) => {
                 self.inner
@@ -1302,10 +1345,10 @@ impl equipment::Context for EquipmentContext<'_> {
         Ok(self.inner.canonical(&self.p).weapon.as_ref().map(|_| ()))
     }
     fn update_weapon(&mut self, _: ()) -> inventory::Result<()> {
-        self.inner
-            .not_ported
-            .skip("WeaponInterface.updateInterface (core, not ported)");
-        Ok(())
+        // WeaponInterface.updateInterface, native.
+        super::tabs::Tabs::new(self.inner, self.p.clone())
+            .weapon(|tabs, weapon| weapon.update_interface(tabs))
+            .map_err(binding)
     }
     fn defence_animation(&mut self, _: ()) -> inventory::Result<()> {
         self.inner

@@ -13,8 +13,10 @@ use super::{
         native, placeholder_skills,
     },
     now_millis,
+    tabs::Tabs,
     walk::{self, Deferred, Walk, WalkHost},
 };
+use crate::world::player_tabs::emotes as tab_emotes;
 use crate::{
     definitions::item::Shared,
     inventory::{
@@ -97,6 +99,14 @@ pub struct Live {
     pub deferred: Vec<Deferred>,
     pub online: Arc<Mutex<HashSet<String>>>,
     pub saved: u64,
+    /// Entity regions, zone monitors and viewports ([`super::regions`]).
+    pub regions: super::regions::Regions,
+    /// The NPC renderer's view of each NPC, by node ([`super::npcs`]).
+    pub npc_views: std::collections::HashMap<Node, crate::world::npc_render::Handle>,
+    /// The tab buttons' one-tick world pulses ([`super::buttons`]).
+    pub tab_pulses: Vec<(pulses::Handle, super::buttons::TabPulse)>,
+    /// `InterfaceListeners` of the installed content ([`super::buttons`]).
+    pub listeners: crate::world::interface_listeners::Registry,
 }
 
 pub fn fail(e: impl std::fmt::Debug) -> driver::Error {
@@ -113,12 +123,20 @@ impl Live {
         &mut self,
         f: impl FnOnce(&mut player_walk::World<'_, WalkHost<'_>>) -> T,
     ) -> T {
+        self.with_walk_host(|state, host| f(&mut state.context(host)))
+    }
+    /// The canonical state and the walk services, then what they deferred.
+    pub fn with_walk_host<T>(
+        &mut self,
+        f: impl FnOnce(&mut player_walk::State, &mut WalkHost<'_>) -> T,
+    ) -> T {
         let Inner {
             state,
             frames,
             players,
             not_ported,
-            log,
+            npcs,
+            generators,
             ..
         } = &mut self.inner;
         let mut lines = Vec::new();
@@ -129,9 +147,10 @@ impl Live {
             not_ported,
             deferred: &mut self.deferred,
             log: &mut lines,
+            npcs,
+            random: generators,
         };
-        let result = f(&mut state.context(&mut host));
-        let _ = log;
+        let result = f(state, &mut host);
         for line in lines {
             self.inner.log_line(line);
         }
@@ -168,6 +187,15 @@ impl Live {
                         })
                         .map_err(|e| interfaces::Error::Binding(e.to_string()))
                 }),
+                Deferred::RemoveRenderable(node) => {
+                    let repository = self.repository.clone();
+                    repository.remove_renderable_npc(self, &P(node));
+                    None
+                }
+                Deferred::RegionMove(node, from, to) => Some(
+                    self.region_move(&node, from, to)
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
+                ),
             };
             if let Some(Err(error)) = result {
                 self.inner
@@ -384,25 +412,22 @@ impl repository::Host<P> for Live {
             .map_err(rfail)
     }
     fn entity_clear(&mut self, p: &P) -> repository::Result<()> {
-        // Entity.clear: active = false, then the pulse manager (the
-        // canonical actor's movement pulses). Region chunk membership and
-        // tolerances are not joined (entity regions are not bound).
+        // Entity.clear: active = false, the chunk's player list and the
+        // region's tolerance, then the pulse manager (the canonical actor's
+        // movement pulses).
         self.inner.slot_mut(p).active = false;
         self.render(p).write().active = false;
+        self.region_clear(&p.0).map_err(rfail)?;
         let node = p.node();
         self.with_walk(|world| world.disconnect(node))
             .map_err(rfail)?;
         self.walk.maps.players.remove(&node);
-        self.inner
-            .not_ported
-            .skip("Entity.clear region chunk and tolerances (entity regions not joined)");
         Ok(())
     }
-    fn zone_monitor_clear(&mut self, _: &P) -> repository::Result<()> {
-        self.inner
-            .not_ported
-            .default_answer("ZoneMonitor.clear (no zones registered)");
-        Ok(())
+    fn zone_monitor_clear(&mut self, p: &P) -> repository::Result<()> {
+        // ZoneMonitor.clear: the player's zones and music zones.
+        let monitor = self.monitor(&p.0);
+        monitor.clear(self).map(|_| ()).map_err(rfail)
     }
     fn house_leave(&mut self, _: &P) -> repository::Result<()> {
         self.inner
@@ -507,8 +532,12 @@ impl repository::Host<P> for Live {
             slot.renderable = renderable;
         }
     }
-    fn npc_id(&mut self, _: &P) -> i32 {
-        -1
+    fn npc_id(&mut self, npc: &P) -> i32 {
+        self.inner
+            .npcs
+            .rows
+            .get(&npc.node())
+            .map_or(-1, |row| row.id)
     }
     fn region_chunk_npcs(&mut self, _: &()) -> repository::Result<Vec<P>> {
         Err(repository::Error::Exception(
@@ -700,6 +729,8 @@ impl login::Host<P> for Live {
                     render,
                     client,
                     weapon: None,
+                    weapon_tab: None,
+                    music: Default::default(),
                     friends: None,
                     options: interaction_options::Table::new(Some(node)),
                     animator,
@@ -1057,17 +1088,18 @@ impl login::Host<P> for Live {
             .skip("FamiliarManager.login (summoning not ported)");
         Ok(())
     }
-    fn quest_synchronize_tab(&mut self, _: &P) -> login::Result<()> {
-        self.inner
-            .not_ported
-            .skip("QuestRepository.syncronizeTab (quest tab not installed in this world)");
-        Ok(())
+    fn quest_synchronize_tab(&mut self, p: &P) -> login::Result<()> {
+        // QuestRepository.syncronizeTab, native over the profile's stages
+        // and the world's registry (empty: quest classes are content).
+        Tabs::new(&mut self.inner, p.clone())
+            .quest_tab()
+            .map_err(native)
     }
-    fn emote_refresh(&mut self, _: &P) -> login::Result<()> {
-        self.inner
-            .not_ported
-            .skip("EmoteManager.refresh (emote tab not installed in this world)");
-        Ok(())
+    fn emote_refresh(&mut self, p: &P) -> login::Result<()> {
+        // EmoteManager.refresh, native over the profile's persisted emotes.
+        Tabs::new(&mut self.inner, p.clone())
+            .emotes(|tabs, manager| tab_emotes::refresh(tabs, manager))
+            .map_err(native)
     }
     fn login_plugins(&mut self) -> Vec<String> {
         self.login_plugins.clone()
@@ -1094,18 +1126,15 @@ impl login::Host<P> for Live {
         Ok(())
     }
     fn region_move(&mut self, p: &P) -> login::Result<()> {
+        // RegionManager.move(player, null, player.getLocation()).
         let location = self.inner.slot(p).location.clone();
-        self.walk.activate(&location).map_err(native)?;
-        self.inner
-            .not_ported
-            .skip("RegionManager.move entity regions, zones and music zones (not joined)");
-        Ok(())
+        Live::region_move(self, &p.0, None, location).map_err(native)
     }
-    fn music_init(&mut self, _: &P) -> login::Result<()> {
-        self.inner
-            .not_ported
-            .skip("MusicPlayer.init (music player not installed in this world)");
-        Ok(())
+    fn music_init(&mut self, p: &P) -> login::Result<()> {
+        // MusicPlayer.init, native over the profile's persisted songs.
+        Tabs::new(&mut self.inner, p.clone())
+            .music(|tabs, player| player.init(tabs))
+            .map_err(native)
     }
     fn update_appearance(&mut self, p: &P) -> login::Result<()> {
         self.inner
@@ -1126,15 +1155,21 @@ impl login::Host<P> for Live {
         self.inner
             .with_profile(p, |profile| profile.saved.global.player_test_stage)
     }
-    fn safety_first_unlocked(&mut self, _: &P) -> login::Result<bool> {
-        Err(login::Error::Exception(
-            "not ported: the emote manager in the live world".into(),
-        ))
+    fn safety_first_unlocked(&mut self, p: &P) -> login::Result<bool> {
+        self.inner.with_profile(p, |profile| {
+            profile
+                .persisted
+                .emotes
+                .is_unlocked(tab_emotes::Emote::SafetyFirst.ordinal())
+        })
     }
-    fn unlock_safety_first(&mut self, _: &P) -> login::Result<()> {
-        Err(login::Error::Exception(
-            "not ported: the emote manager in the live world".into(),
-        ))
+    fn unlock_safety_first(&mut self, p: &P) -> login::Result<()> {
+        Tabs::new(&mut self.inner, p.clone())
+            .emotes(|tabs, manager| {
+                tab_emotes::unlock(tabs, manager, tab_emotes::Emote::SafetyFirst)
+            })
+            .map(|_| ())
+            .map_err(native)
     }
     fn attack_style_index(&mut self, p: &P) -> login::Result<i32> {
         Ok(self
@@ -1239,12 +1274,6 @@ impl player_render::Context for Render<'_> {
     }
 }
 
-fn within(a: &Location, b: &Location) -> bool {
-    let [x, y, z] = a.coordinates();
-    let [xx, yy, zz] = b.coordinates();
-    z == zz && (x - xx).abs() <= 15 && (y - yy).abs() <= 15
-}
-
 impl driver::Host<P> for Live {
     type Outgoing = Sent;
     fn clock_millis(&mut self) -> i64 {
@@ -1318,6 +1347,9 @@ impl driver::Host<P> for Live {
             .packet_count(increment))
     }
     fn pulse_body(&mut self, pulse: &pulses::Handle) -> driver::Result<bool> {
+        if let Some(at) = self.tab_pulses.iter().position(|(h, _)| h.same(pulse)) {
+            return self.tab_pulse_body(at);
+        }
         let Some(at) = self.logins.iter().position(|(h, _)| h.same(pulse)) else {
             return Err(driver::Error::Native(
                 "a world pulse this world did not submit".into(),
@@ -1342,10 +1374,14 @@ impl driver::Host<P> for Live {
         }
         Ok(done)
     }
-    fn pulse_node_active(&mut self, _: pulses::Node) -> driver::Result<bool> {
-        Err(driver::Error::Native(
-            "no world pulse of this world checks nodes".into(),
-        ))
+    fn pulse_node_active(&mut self, node: pulses::Node) -> driver::Result<bool> {
+        // Node.isActive() of a pulse's checked node (the tab pulses' player).
+        match self.inner.players.get(&node) {
+            Some(slot) => Ok(slot.active),
+            None => Err(driver::Error::Native(format!(
+                "a world pulse checks node {node}, which is not a live player"
+            ))),
+        }
     }
     fn tick_listeners(&mut self) -> driver::Result<()> {
         // The canonical state's runner (movement pulses) is the rest of
@@ -1378,15 +1414,11 @@ impl driver::Host<P> for Live {
             at: self.inner.queue.len(),
         })
     }
-    fn npc_tick(&mut self, _: &P) -> driver::Result<()> {
-        Err(driver::Error::Native(
-            "not ported: NPCs are not joined to the live repository".into(),
-        ))
+    fn npc_tick(&mut self, npc: &P) -> driver::Result<()> {
+        self.npc_tick_of(npc).map_err(fail)
     }
-    fn npc_reset(&mut self, _: &P) -> driver::Result<()> {
-        Err(driver::Error::Native(
-            "not ported: NPCs are not joined to the live repository".into(),
-        ))
+    fn npc_reset(&mut self, npc: &P) -> driver::Result<()> {
+        self.npc_reset_of(npc).map_err(fail)
     }
     fn player_tick(&mut self, p: &P) -> driver::Result<()> {
         let node = p.node();
@@ -1399,9 +1431,13 @@ impl driver::Host<P> for Live {
         if let Some(slot) = players.get_mut(&node) {
             walk::project(state, node, slot).map_err(fail)?;
         }
-        self.inner.not_ported.skip(
-            "Player.tick music, potion timers, prayer drain, wealth, off-map check (not ported)",
-        );
+        // musicPlayer.tick(), native.
+        Tabs::new(&mut self.inner, p.clone())
+            .music(|tabs, player| player.tick(tabs))
+            .map_err(fail)?;
+        self.inner
+            .not_ported
+            .skip("Player.tick potion timers, prayer drain, wealth, off-map check (not ported)");
         Ok(())
     }
     fn update_scene_graph_flag(&mut self, p: &P) -> driver::Result<bool> {
@@ -1420,16 +1456,17 @@ impl driver::Host<P> for Live {
             .location
             .clone()
             .ok_or_else(|| fail("no location"))?;
+        // RegionManager.getLocalPlayers(player, 15): the chunks around the
+        // player, x then y, each chunk's players in list order.
         let mut candidates = Vec::new();
-        for (_, other) in self.repository.players().occupied() {
-            let Some(slot) = self.inner.players.get(&other.node()) else {
+        let nodes = self
+            .local(here, 15, crate::world::entity_regions::Select::Players)
+            .map_err(fail)?;
+        for other in nodes {
+            let Some(slot) = self.inner.players.get(&other.node) else {
                 continue;
             };
-            let render = slot.canonical.render.clone();
-            let there = render.read().location.clone();
-            if there.is_some_and(|l| within(&here, &l)) {
-                candidates.push(Some(render));
-            }
+            candidates.push(Some(slot.canonical.render.clone()));
         }
         let mut ctx = Render {
             inner: &self.inner,
@@ -1445,17 +1482,11 @@ impl driver::Host<P> for Live {
         }
         Ok(())
     }
-    fn render_npcs(&mut self, _: &P) -> driver::Result<()> {
-        self.inner
-            .not_ported
-            .skip("NPCRenderer.render (NPCs not joined: no NPC update is sent)");
-        Ok(())
+    fn render_npcs(&mut self, p: &P) -> driver::Result<()> {
+        self.render_npcs_of(p).map_err(fail)
     }
-    fn render_map_chunks(&mut self, _: &P) -> driver::Result<()> {
-        self.inner
-            .not_ported
-            .skip("MapChunkRenderer.render (chunk synchronisation not joined)");
-        Ok(())
+    fn render_map_chunks(&mut self, p: &P) -> driver::Result<()> {
+        self.render_map_chunks_of(p).map_err(fail)
     }
     fn entity_reset(&mut self, p: &P) -> driver::Result<()> {
         // Entity.reset: updateMasks.reset() and setTeleporting(false).
@@ -1510,9 +1541,8 @@ impl driver::Host<P> for Live {
         Ok(())
     }
     fn reset_chunks(&mut self) -> driver::Result<()> {
-        self.inner
-            .not_ported
-            .skip("ChunkUpdateTracker.resetAll (chunk synchronisation not joined)");
+        // ChunkUpdateTracker.resetAll: every flagged chunk's update list.
+        self.walk.scene.clear_updates();
         Ok(())
     }
     fn ground_items_pulse(&mut self) -> driver::Result<()> {

@@ -124,6 +124,10 @@ pub enum Deferred {
     CloseInterfaces(Node),
     CloseChatbox(Node),
     RunToggled(Node, bool),
+    /// `RegionManager.move(entity, from, to)` from the walking queue.
+    RegionMove(NodeHandle, Option<Location>, Location),
+    /// `Repository.removeRenderableNPC(npc)` from `onRegionInactivity`.
+    RemoveRenderable(NodeHandle),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -135,6 +139,10 @@ pub struct WalkHost<'a> {
     pub not_ported: &'a mut NotPorted,
     pub deferred: &'a mut Vec<Deferred>,
     pub log: &'a mut Vec<String>,
+    /// The start-up's NPC store (rows, AI, behaviours).
+    pub npcs: &'a mut crate::startup::npcs::Npcs,
+    /// The world's generators (`RandomFunction.RANDOM` is `shared`).
+    pub random: &'a mut crate::startup::generators::WorldGenerators,
 }
 
 impl WalkHost<'_> {
@@ -159,6 +167,9 @@ impl WalkHost<'_> {
 
 fn binding(e: impl std::fmt::Display) -> player_walk::Error {
     player_walk::Error::Binding(e.to_string())
+}
+fn binding_debug(e: impl std::fmt::Debug) -> player_walk::Error {
+    player_walk::Error::Binding(format!("{e:?}"))
 }
 
 impl player_walk::Services for WalkHost<'_> {
@@ -235,12 +246,14 @@ impl player_walk::Services for WalkHost<'_> {
                     },
                 );
             }
-            Event::RegionMove(_, _, Some(l)) => {
+            Event::RegionMove(n, from, Some(l)) => {
+                // RegionManager.move needs the whole world (zones, the
+                // repository): it runs right after this walking call returns.
                 self.walk
                     .activate(&l)
                     .map_err(player_walk::Error::Binding)?;
-                self.not_ported
-                    .skip("RegionManager.move entity regions, zones and music zones (not joined)");
+                let owner = state.retain_node(n)?;
+                self.deferred.push(Deferred::RegionMove(owner, from, l));
             }
             Event::RegionMove(_, _, None) => return Err(player_walk::Error::Null),
             Event::Exception(text) => self.log.push(format!("walk exception: {text}")),
@@ -333,6 +346,43 @@ impl player_walk::Services for WalkHost<'_> {
             .context(&mut self.walk.maps)
             .water_clipping(Some(&Location::new(x, y, z)))
             .map_err(|e| player_walk::Error::Binding(e.0))
+    }
+    fn npc_finder(&mut self, _: &mut State, node: Node) -> player_walk::Result<Option<usize>> {
+        // behavior.getPathfinderOverride(npc), through npc_behaviour.
+        use crate::world::npc_behaviour::{self as nb, Finder};
+        let behaviour = nb::behaviour(&mut *self.npcs, &node).map_err(binding_debug)?;
+        let finder = behaviour
+            .pathfinder_override(&mut *self.npcs, &node)
+            .map_err(binding_debug)?;
+        Ok(finder.map(|f| match f {
+            Finder::Smart => crate::world::movement::SMART,
+            Finder::Dumb => crate::world::movement::DUMB,
+        }))
+    }
+    fn npc_supplier(
+        &mut self,
+        _: &mut State,
+        node: Node,
+    ) -> player_walk::Result<Option<crate::world::pathfinding::dispatch::Supplier>> {
+        // behavior.getClippingSupplier(npc), through npc_behaviour.
+        use crate::world::npc_behaviour::{self as nb, ClipSupplier};
+        let behaviour = nb::behaviour(&mut *self.npcs, &node).map_err(binding_debug)?;
+        let supplier = behaviour
+            .clipping_supplier(&mut *self.npcs, &node)
+            .map_err(binding_debug)?;
+        match supplier {
+            None => Ok(None),
+            Some(ClipSupplier::Standard) => {
+                Ok(Some(crate::world::pathfinding::dispatch::Supplier::World))
+            }
+            Some(ClipSupplier::Other(_)) => Err(player_walk::Error::Binding(
+                "not ported in the live world: a content clipping supplier".into(),
+            )),
+        }
+    }
+    fn npc_arrival(&mut self, state: &mut State, node: Node) -> player_walk::Result<bool> {
+        // The return-to-spawn pulse's arrival body (npc_walk::arrive).
+        crate::world::npc_walk::arrive(state, self, node).map_err(binding_debug)
     }
     fn now_millis(&mut self) -> i64 {
         super::now_millis()

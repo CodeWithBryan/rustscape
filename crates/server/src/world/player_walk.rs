@@ -1155,6 +1155,20 @@ impl<S: Services> World<'_, S> {
     pub fn prepare_masks(&mut self, node: Node) -> Result<()> {
         self.emit(Event::Masks(node))
     }
+    /// `entity.getPulseManager().clear()`: the actor's current manager,
+    /// without disconnect's flags.
+    pub fn clear_pulses(&mut self, node: Node) -> Result<()> {
+        let manager = self.state.actor(node)?.manager.clone();
+        manager
+            .clear(
+                self.state,
+                &mut PulseBridge {
+                    services: self.services,
+                    owner: Some(node),
+                },
+            )
+            .map_err(Error::Pulse)
+    }
     pub fn disconnect(&mut self, node: Node) -> Result<()> {
         {
             let a = self.state.actor_mut(node)?;

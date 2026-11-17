@@ -483,6 +483,8 @@ fn collect(live: &mut Live) {
                 .remove(&slot.name);
             live.walk.maps.players.remove(&node);
             live.inner.frames.remove(&node);
+            live.regions.monitors.remove(&node);
+            live.regions.viewports.remove(&node);
             live.inner.log_line(format!("{} left the world", slot.name));
         }
     }
@@ -497,7 +499,13 @@ fn collect(live: &mut Live) {
             || s.link.pending.is_some()
             || (s.active && s.object.is_none() && s.link.output.is_some())
     });
-    live.inner.state.collect();
+    // The canonical state's collection (the native stand-in for the JVM's
+    // garbage collector) traces every retained node, the ~22k joined NPCs
+    // included: it runs every 100 ticks (a departed player's nodes are
+    // released then).
+    if live.inner.ticks % 100 == 0 {
+        live.inner.state.collect();
+    }
 }
 
 /// The worker loop's checks after `handleTickActions`: the 20-second ping
@@ -598,6 +606,33 @@ pub fn handle(
             interfaces::switch_window_mode(&mut live.inner, &manager, *window_mode)
                 .map_err(super::host::fail)
         }
+        (
+            Handler::IfAction,
+            dispatch::Packet::Action {
+                player,
+                action:
+                    rs09_protocol::game::ClientAction::IfAction {
+                        opcode,
+                        opt_index,
+                        iface,
+                        child,
+                        slot,
+                        item_id,
+                    },
+                ..
+            },
+        ) => live.if_action(
+            player,
+            crate::world::interface_packets::Action {
+                iface: *iface,
+                child: *child,
+                slot: *slot,
+                item: *item_id,
+                opcode: *opcode,
+                opt_index: *opt_index,
+            },
+        ),
+        (Handler::CloseIface, dispatch::Packet::Action { player, .. }) => live.close_iface(player),
         (handler, packet) => {
             // A routed handler whose library is ported but not installed in
             // this world: refused, logged and recorded, never a success.
@@ -637,7 +672,7 @@ pub fn run(
     );
     let running = start(options)?;
     println!(
-        "World booted in {} ms: start-up complete = {}, {} steps partly ported or refused, {} NPCs spawned (not joined to the live world).",
+        "World booted in {} ms: start-up complete = {}, {} steps partly ported or refused, {} NPCs joined to the live world.",
         running.boot.millis,
         running.boot.complete,
         running.boot.partial_steps.len(),

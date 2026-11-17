@@ -304,7 +304,17 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         std::mem::take(&mut world.doors),
     );
     let clock: Arc<Clock> = Arc::new(crate::runtime::wall_clock);
-    let npcs = world.entities.rows.len();
+    let npc_store = std::mem::replace(&mut world.entities, crate::startup::npcs::Npcs::new()?);
+    let generators = std::mem::replace(
+        &mut world.generators,
+        crate::startup::generators::WorldGenerators::new(Seeds {
+            shared: 0,
+            math: 0,
+            shuffle: 0,
+            thread_local: 0,
+        }),
+    );
+    let loaded_regions = std::mem::take(&mut world.regions);
     let inner = Inner {
         state,
         frames: BTreeMap::new(),
@@ -332,6 +342,8 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         storage,
         log: Vec::new(),
         verbose: options.verbose,
+        npcs: npc_store,
+        generators,
     };
     let names = |section: &str| -> Vec<String> {
         startup::scan::section(section)
@@ -339,7 +351,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             .map(str::to_owned)
             .collect()
     };
-    let live = Live {
+    let mut live = Live {
         inner,
         social: social::Social::new(),
         driver: Driver::new(repository.clone()),
@@ -365,7 +377,15 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         deferred: Vec::new(),
         online: Arc::new(Mutex::new(HashSet::new())),
         saved: 0,
+        regions: super::regions::Regions::new(loaded_regions),
+        npc_views: Default::default(),
+        tab_pulses: Vec::new(),
+        listeners: Default::default(),
     };
+    // The start-up's NPCs in the live repository and the scene's chunks;
+    // the tab content's component plugins and interface listeners.
+    let npcs = super::npcs::join(&mut live)?;
+    super::buttons::register(&mut live)?;
     Ok(Booted {
         live,
         configuration,

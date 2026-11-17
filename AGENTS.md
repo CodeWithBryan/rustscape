@@ -149,8 +149,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   call is a required service; quest getConfig overrides and updateVarps,
   Skillcape.trim and the SALUTE, GOBLIN_BOW and GIVE_THANKS plays are
   content services. world_login joins these libraries to the canonical
-  player (only the quest tab stays replayed); nothing installs them in a
-  live session. See docs/player-tabs.md.
+  player (only the quest tab stays replayed); world/live/tabs.rs installs
+  them in `rs09-server --world` (next to the live-world bullet). See
+  docs/player-tabs.md.
 - For the engine timers (timers/content: SkillRestore, Poison, PoisonImmunity,
   Disease, Frozen, FrozenImmunity, Teleblock, Skulled, HealOverTime, Miasmic,
   MiasmicImmunity, DragonFireImmunity, SpellbookSwap, AntiMacro's timer and the
@@ -193,7 +194,7 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   is a service here (its body is inventory/equipment, not run with
   EquipHandler by any corpus); content listeners, plugins and
   UseWithHandler subclasses stay content. Nothing binds the libraries in a
-  live world; the --world server binds the routed handlers. See
+  live world yet. See
   docs/packet-handlers.md.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
@@ -1107,12 +1108,19 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   scenarios reach no client input, NPCs or lobby. See docs/tick-driver.md.
 - For the live world (world/live: `rs09-server --world`, its boot, the
   production login/driver/repository/social hosts, walking, the player
-  update with prepared masks, the worker loop and the saver), run
+  update with prepared masks, the player tabs and their buttons, NPCs,
+  entity regions, zone monitors and music zones, region activation, the map
+  chunk renderer, the worker loop and the saver), run
   `cargo test -p rs09-server --test live_world` (needs assets/cache and
   runs/startup-loaders-oracle/template; it prints SKIPPED without them, and a
   skip establishes nothing) plus world_login, tick_driver, tick, world_update,
-  repository, pulses, social, world_trace, canonical_player, startup and
-  world_session. Keep the libraries unchanged: a host answers through them.
+  repository, pulses, social, world_trace, canonical_player, startup,
+  world_session, player_tabs, npc_walk, npc_behaviour, npc_render, zones,
+  entity_regions, chunk_sync, map_chunk_render, player_walk, action_locks and
+  scene. Keep the libraries unchanged: a host answers through them.
+  `zones::Host` is `Live` itself (a monitor per entity); NPCs keep the
+  start-up's slots, store and generators; regions are never unloaded and
+  NPC update masks are not written (both named).
   Every call into a system without a port is a named answer in
   world/live/not_ported.rs (skipped, or the original's empty answer when that
   is what it does with no content) or a refusal; list each in
@@ -1122,9 +1130,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   counter-carrying packets by opcode and length, reinitVarps as a subset); a
   segment that becomes native must be taken off the list. Saves are built on
   the worker thread and written by the saver thread; nothing blocks the tick
-  on file I/O. Content, NPCs in the live repository, entity regions, chunk
-  sync, ground items and the not-installed handlers remain open. See
-  docs/live-world.md.
+  on file I/O. Content, ground items, worn equipment in the appearance
+  block, region zones (ZoneBuilder) and the not-installed handlers remain
+  open. See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

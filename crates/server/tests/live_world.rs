@@ -19,7 +19,7 @@
 //! without them the test prints SKIPPED and checks nothing.
 use rs09_net::{Chunk, Reader, Writer, login::LoginPeer};
 use rs09_protocol::{
-    game::{self, Direction, Frame, actions, players},
+    game::{self, Direction, Frame, actions, npcs, players, updates},
     login::{LoginRequest, RsaKey},
     profile::RS09_REVISION_530,
 };
@@ -74,6 +74,9 @@ struct Client {
     /// Absolute coordinates of the last rebuild's scene base.
     base: Option<[i32; 3]>,
     closed: bool,
+    /// The client-side NPC list from the NPC updates (32).
+    npcs: npcs::State,
+    npc_updates: usize,
 }
 
 impl Client {
@@ -116,6 +119,8 @@ impl Client {
                 updates: Vec::new(),
                 base: None,
                 closed: false,
+                npcs: npcs::State::default(),
+                npc_updates: 0,
             }),
         )
     }
@@ -135,6 +140,13 @@ impl Client {
                         .decode_frame(&frame, n as i32)
                         .unwrap_or_else(|e| panic!("{}: player update {n}: {e:?}", self.name));
                     self.updates.push((n, update));
+                }
+                32 => {
+                    let tile = self.players.self_player().tile();
+                    self.npcs
+                        .decode(&frame, tile, n as i32)
+                        .unwrap_or_else(|e| panic!("{}: NPC update {n}: {e:?}", self.name));
+                    self.npc_updates += 1;
                 }
                 _ => {}
             }
@@ -266,15 +278,13 @@ const COUNTER_OPCODES: [u8; 16] = [
 
 const NOT_PORTED_SEGMENTS: &[(&str, usize)] = &[
     ("CropCircleController.login", 1),
-    ("WeaponInterface", 24),
     ("FriendsListInterface.open", 2),
-    ("LevelUp.sendFlashingIcons", 1),
     ("FamiliarManager.login", 3),
-    ("QuestRepository.syncronizeTab", 104),
-    ("EmoteManager.refresh", 6),
+    // The first entry of syncronizeTab (the quest points varp 101) is
+    // native; the other 103 are the registered quests' configs and
+    // updateVarps (content; the live registry is empty).
+    ("QuestRepository.syncronizeTab", 103),
     ("LoginValidationPlugin", 1),
-    ("RegionManager.move", 23),
-    ("MusicPlayer.init", 22),
 ];
 
 #[test]
@@ -390,12 +400,20 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         })
     };
     let mut removed: HashMap<&str, usize> = HashMap::new();
+    // Native leading entries of a segment (the quest tab's points varp).
+    let native_first = |m: &str| usize::from(m == "QuestRepository.syncronizeTab");
+    let mut seen: HashMap<&str, usize> = HashMap::new();
     // The login reply is the transport's (checked above by code and index).
     let kept: Vec<(String, Option<Vec<String>>)> = original
         .iter()
         .skip(1)
         .filter(|(_, stack)| match marker_of(stack) {
             Some((m, _)) => {
+                let n = seen.entry(m).or_insert(0);
+                *n += 1;
+                if *n <= native_first(m) {
+                    return true;
+                }
                 *removed.entry(m).or_insert(0) += 1;
                 false
             }
@@ -430,10 +448,29 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         |hex: &str| u8::from_str_radix(&hex[..2], 16).is_ok_and(|op| COUNTER_OPCODES.contains(&op));
     let mut exact = 0;
     let mut counter_only = 0;
+    let mut debug_suffix = 0;
     for (n, ((original, stack), native)) in kept[..reinit].iter().zip(&mine).enumerate() {
         if original == native {
             exact += 1;
             continue;
+        }
+        // MusicPlayer.play's track name: the original's new character is in
+        // debug mode (LoginValidationPlugin's Player.toggleDebug, content
+        // not ported here), so its name carries " (id)". The rest of the
+        // String packet is the same except its size and the counter.
+        let played = stack
+            .as_ref()
+            .is_some_and(|s| s.iter().any(|f| f.contains("MusicPlayer.play")));
+        let suffix = hex(b" (62)");
+        if played && original.contains(&suffix) {
+            let stripped = original.replacen(&suffix, "", 1);
+            if stripped.len() == native.len()
+                && stripped[..2] == native[..2]
+                && stripped[6..stripped.len() - 2] == native[6..native.len() - 2]
+            {
+                debug_suffix += 1;
+                continue;
+            }
         }
         assert!(
             counted(original) && original[..2] == native[..2] && original.len() == native.len(),
@@ -442,6 +479,10 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         );
         counter_only += 1;
     }
+    assert_eq!(
+        debug_suffix, 1,
+        "the one track name that differs by the debug suffix"
+    );
     let original_varps: Vec<&String> = kept[reinit..]
         .iter()
         .take_while(|(h, _)| h.starts_with("3c") || h.starts_with("e2"))
@@ -488,6 +529,74 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         .count();
     assert!(steps >= 3, "walking steps in player updates: {steps}");
     eprintln!("traceone walked from {start:?} to {target:?} in {steps} steps");
+
+    // NPCs: NPC updates (32) arrive and add NPCs near the player.
+    one.until(
+        Duration::from_secs(10),
+        "an NPC added near the player",
+        |c| {
+            let base = c.base.unwrap();
+            let here = c.position();
+            c.npcs.actors.values().any(|n| {
+                let [x, y] = [base[0] + n.tile[0], base[1] + n.tile[1]];
+                (x - here[0]).abs() <= 15 && (y - here[1]).abs() <= 15
+            })
+        },
+    )
+    .await;
+    let near: Vec<i32> = one.npcs.actors.values().map(|n| n.type_id).collect();
+    eprintln!(
+        "traceone: {} NPC updates, {} local NPCs (ids {:?})",
+        one.npc_updates,
+        one.npcs.local_ids.len(),
+        &near[..near.len().min(8)]
+    );
+
+    // The tabs' buttons (IfAction, opcode 155: hash, slot).
+    let button = |iface: i32, child: i32| {
+        let mut payload = ((iface << 16) | child).to_be_bytes().to_vec();
+        payload.extend((-1i16).to_be_bytes());
+        Frame {
+            opcode: 155,
+            payload,
+        }
+    };
+    let wire = |f: &Frame| {
+        let mut wire = vec![];
+        f.write(Direction::ServerToClient, None, &mut wire).unwrap();
+        wire
+    };
+    // The weapon tab (CombatTabInterface, interface 92): button 3 selects
+    // slot 1 through WeaponInterface.setAttackStyle; Settings sends varp 43.
+    let style = wire(&updates::varp(43, 1));
+    let from = one.frames.len();
+    one.send(button(92, 3)).await;
+    one.until(Duration::from_secs(10), "the attack style varp", |c| {
+        c.frames[from..].iter().any(|f| wire(f) == style)
+    })
+    .await;
+    // The music tab (MusicTabInterface, 187): button 11 toggles looping, varp 19.
+    let looping = wire(&updates::varp(19, 1));
+    let from = one.frames.len();
+    one.send(button(187, 11)).await;
+    one.until(Duration::from_secs(10), "the music looping varp", |c| {
+        c.frames[from..].iter().any(|f| wire(f) == looping)
+    })
+    .await;
+    // The emote tab (EmoteTabInterface, 464): button 2 is YES, animation 855.
+    let from = one.updates.len();
+    one.send(button(464, 2)).await;
+    one.until(Duration::from_secs(10), "the YES emote's animation", |c| {
+        c.updates[from..].iter().any(|(_, u)| {
+            u.extended.iter().any(|e| {
+                e.fields
+                    .iter()
+                    .any(|f| matches!(f, players::Field::Animation { id: 855, .. }))
+            })
+        })
+    })
+    .await;
+    eprintln!("traceone: weapon tab style, music looping and the YES emote answered natively");
 
     // A second character sees the first, and the first sees it.
     let (code, two) = Client::login(address, "tracetwo").await;
