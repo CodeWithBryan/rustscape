@@ -72,6 +72,7 @@ pub mod scenery_options;
 pub mod scenery_runtime;
 pub mod script_runtime;
 pub mod session;
+pub mod shops;
 pub mod social;
 pub mod spells;
 pub mod tick;

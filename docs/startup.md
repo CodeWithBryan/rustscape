@@ -131,7 +131,9 @@ kept. None of them catches anything, as in the original.
   definitions.
 - `shops` (`ShopParser`): the pinned body only counts array elements (the
   shop construction is commented out in the original). Shops are built by the
-  `core.game.shops.Shops` start-up listener, which is content and not ported.
+  `core.game.shops.Shops` start-up listener, now a separate library
+  (`world::shops::controller::startup`, docs/shops.md) that this sequence
+  does not run: it belongs to the refused start-up listener step.
 - `music` (`MusicConfigLoader`): `DataMap` (cache index 17) decoding with
   `CP1252` types and the original string reader that widens bytes above 127 as
   signed (U+FF80..U+FFFF); songs from maps 1351/1345 in `HashMap<Integer,…>`

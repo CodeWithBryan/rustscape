@@ -1,0 +1,1 @@
+package core.net.packet;public class PacketRepository{public static void send(Class cls,Context c){OutgoingPacket p;try{p=(OutgoingPacket)cls.getDeclaredConstructor().newInstance();}catch(Exception e){throw new RuntimeException(e);}p.send(c);}}

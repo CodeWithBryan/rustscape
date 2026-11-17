@@ -1,0 +1,1 @@
+package core.game.interaction;public class OptionHandler{public String name;public OptionHandler(String name){this.name=name;}}

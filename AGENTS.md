@@ -1098,6 +1098,26 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   Offer-X without m. The alert pulse body is ported; its scheduling, the
   real InventoryListener and every content service are not. Nothing installs
   the library in a session. See docs/trade.md.
+- For shops (world/shops: Shop, ShopItem, ShopListener, Shops' start-up,
+  tick, NPC, destination and 620/621 interface listeners), run
+  `cargo test -p rs09-server --test shops` and `cargo xtask shops-oracle
+  --check` with Python/JDK 11, plus the inventory, container_ownership,
+  container_listeners, interfaces, input_prompt, ironman, owned_player,
+  bank_interface, item_definitions, item_config, startup and trade suites.
+  Preserve all 634 cases and their frame bytes; the 245 pinned rows are
+  compared in 12 of them. Keep the joins (native containers and listener
+  objects, InterfaceManager, typed callbacks in the InterfaceListeners
+  registry, input prompt with AmountScript, Ironman, definitions) and every
+  other call a required Host service in the original order with no default.
+  Keep the quirks: the per-use personalized read, needsUpdate never cleared,
+  duplicate listeners from repeated tabs, the buy price computed on every 620
+  button, last-match getStockSlot and the note slot beyond the stock array,
+  4067 sellable but refused by the value message, the shared general stock's
+  "too full" check for every shop, wrapping and clamping amounts, tick 0
+  clearing the player stock and an interval of 0 failing every tick. Item
+  definitions in the corpus are authored inputs. Nothing installs the
+  library; ShoppingPlugin.java is commented out in the pinned source. See
+  docs/shops.md.
 - For interface metadata, component open/close/plugin lookup, gameframe/tab/chat
   orchestration or window-mode changes, run interfaces and game_packets tests,
   both movement_session/npc_session examples and fresh interfaces-oracle and

@@ -1,0 +1,1 @@
+package core.cache.crypto;public class ISAACCipher{public int getNextValue(){return 0;}}

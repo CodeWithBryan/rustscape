@@ -1,0 +1,1 @@
+package core.cache.misc.buffer;public class ByteBufferUtils{public static String getString(java.nio.ByteBuffer b){throw new UnsupportedOperationException();}public static int packGJString2(int a,byte[]b,String s){throw new UnsupportedOperationException();}}

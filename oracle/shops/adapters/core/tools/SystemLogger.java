@@ -1,0 +1,1 @@
+package core.tools;public class SystemLogger{}

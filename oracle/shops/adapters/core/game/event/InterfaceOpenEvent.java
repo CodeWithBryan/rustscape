@@ -1,0 +1,1 @@
+package core.game.event;public class InterfaceOpenEvent{public core.game.component.Component component;public InterfaceOpenEvent(core.game.component.Component c){component=c;}}
