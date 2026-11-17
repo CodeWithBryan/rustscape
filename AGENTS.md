@@ -197,6 +197,35 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   NPC, player, examine and track-finished handlers (docs/live-world.md);
   use-with, component use-with and slot switch are not bound there yet. See
   docs/packet-handlers.md.
+- For the global handlers (world/global_handlers: AttackOptionPlugin,
+  FollowOptionPlugin and its pulse, RequestOption, LoginValidationPlugin, the
+  tab interfaces, MainGame/Login/Death/CharacterDesign/WorldMap/Experience/
+  FriendsList/Rules/Scroll/GenericItemSelect/AutocastSelect/Teleother/
+  RequestAssist/BankDepositBox/BankCharge interfaces, the bank booth, chest
+  and deposit-box listeners, LookAt/Search/Ladder option handlers,
+  ClimbActionHandler with ClimbDialogue and SpecialLadders, NPCDeposit and
+  DummyAttack, and their registrations), run `cargo test -p rs09-server
+  --test global_handlers` and `cargo xtask global-handlers-oracle --check`
+  with Python/JDK 11, plus `oracle/global-handlers/port_special_ladders.py
+  --check` and the interaction_listeners, legacy_interaction,
+  interaction_options, interaction_runtime, bank_interface, trade, shops,
+  prayer, player_tabs, player_managers, packet_handlers, doors,
+  scenery_options and scenery_action suites. Preserve the 1,766 cases. Keep
+  each class's registration order and objects (one ComponentPlugin per
+  newInstance for all its ids, CombatTab's final 92, one MagicTab callback
+  per book, the booth's use-with only with BANK_BOOTH_NOTE_ENABLED) and the
+  start-up manifest order of register_scanned; Java/Kotlin casts where the
+  original assigns (getExtension, the item-select callback, skillMenu,
+  rules:pin, the bank action); the eager random before rules:pin; the double
+  unlocked read; the clan requirement read twice and the MS rename before the
+  null clan; Teleother answering close(); the first NPC ending the banker
+  search and the square on plane 0; the note free-slot rule; the climbing
+  plane `(z + dz) % 4`, findLadder x outer, the negative-rotation swap, Java
+  walk-flag shifts and at most three turns. Every outside call is a required
+  Host service with no default; the classes' names are metadata only.
+  QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
+  ShopNPC are not ported; nothing installs the libraries in `--world` (the
+  binding is described in docs/global-handlers.md).
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790
