@@ -3871,21 +3871,19 @@ async fn main() {
     let mut world_picker = world_pick::Picker::default();
     // A comparison aid: draw and pick as if the scene had no occluders.
     world_picker.occlusion_off = std::env::args().any(|arg| arg == "--no-occlusion");
-    let minimap = if workbench.pack.get("minimap/assets").is_ok() {
-        Some(
-            minimap_render::Renderer::new(
-                &workbench,
-                if capture {
-                    0
-                } else {
-                    (miniquad::date::now() * 1000.0) as i64
-                },
-            )
-            .expect("minimap assets and shader"),
-        )
-    } else {
-        None
-    };
+    // The minimap reads its sprite names, map scenes and floors from the
+    // cache when one is open (`minimap::source`).
+    let minimap = minimap_render::Renderer::new(
+        &workbench,
+        ui.as_ref().filter(|_| from_cache).map(|ui| &ui.pack),
+        if capture {
+            0
+        } else {
+            (miniquad::date::now() * 1000.0) as i64
+        },
+    )
+    .map_err(|error| eprintln!("Minimap unavailable: {error}"))
+    .ok();
     // The world map list (the original's main load state 130) is read from
     // the cache; the browser build has none and keeps the map empty.
     #[cfg(not(target_arch = "wasm32"))]

@@ -135,17 +135,36 @@ pub struct Renderer {
     text: crate::minimap_labels::Text,
     /// Raster calls the labels of the last drawn frame made.
     pub label_draws: usize,
+    /// Whether the UI pack `prepare` is given reads the cache.
+    cache_backed: bool,
+    /// The mask texture last bound to `material` (see `quad`).
+    bound_mask: std::cell::Cell<Option<macroquad::miniquad::TextureId>>,
+    /// Morph children no source defines, and how many were reported.
+    unknown: std::collections::BTreeSet<u32>,
+    reported_unknown: usize,
     /// Times the map raster has been built, for captures.
     pub rasters: u32,
 }
 impl Renderer {
-    pub fn new(workbench: &crate::Workbench, seed: i64) -> Result<Self, String> {
+    /// `cache` is the cache-backed pack when the client opened a cache; the
+    /// sprite names, map scenes and floors are then read from it
+    /// (`minimap::source`).
+    pub fn new(
+        workbench: &crate::Workbench,
+        cache: Option<&Pack>,
+        seed: i64,
+    ) -> Result<Self, String> {
         use macroquad::miniquad::{
             BlendFactor, BlendState, BlendValue, Equation, PipelineParams, UniformDesc, UniformType,
         };
         let pack = &workbench.pack;
-        let assets: BTreeMap<String, i32> =
-            serde_json::from_slice(pack.get("minimap/assets")?).map_err(|e| e.to_string())?;
+        let minimap::source::Tables {
+            assets,
+            mapscenes,
+            underlays,
+            overlays,
+            origins,
+        } = minimap::source::tables(cache, pack)?;
         let material = load_material(
             ShaderSource::Glsl {
                 vertex: VERTEX,
@@ -165,30 +184,19 @@ impl Renderer {
             },
         )
         .map_err(|e| e.to_string())?;
+        eprintln!(
+            "Minimap: sprite names from {:?}, map scenes from {:?}, floors from {:?}",
+            origins[0], origins[1], origins[2]
+        );
+        // The starting scene's locations; a streamed scene's are the
+        // workbench's own, kept here as their icons need them.
         let mut definitions = BTreeMap::new();
-        let mut mapscenes = BTreeMap::new();
-        let mut underlays = vec![floor::Underlay::default(); 256];
-        let mut overlays = vec![floor::Overlay::default(); 256];
         for name in pack.manifest.files.keys() {
             if let Some(id) = name.strip_prefix("loc/") {
                 definitions.insert(
                     id.parse().map_err(|_| "Minimap location ID")?,
                     LocationType::decode(pack.get(name)?).map_err(|e| e.to_string())?,
                 );
-            }
-            if let Some(id) = name.strip_prefix("mapscene/") {
-                mapscenes.insert(
-                    id.parse().map_err(|_| "Minimap mapscene ID")?,
-                    MapScene::decode(pack.get(name)?).map_err(|e| e.to_string())?,
-                );
-            }
-            if let Some(id) = name.strip_prefix("underlay/") {
-                underlays[id.parse::<usize>().map_err(|_| "Minimap underlay ID")?] =
-                    floor::Underlay::decode(pack.get(name)?).map_err(|e| e.to_string())?;
-            }
-            if let Some(id) = name.strip_prefix("overlay/") {
-                overlays[id.parse::<usize>().map_err(|_| "Minimap overlay ID")?] =
-                    floor::Overlay::decode(pack.get(name)?).map_err(|e| e.to_string())?;
             }
         }
         let mut random = JavaRandom::new(seed);
@@ -253,6 +261,10 @@ impl Renderer {
             text: crate::minimap_labels::Text::new()?,
             label_draws: 0,
             rasters: 0,
+            cache_backed: cache.is_some(),
+            bound_mask: Default::default(),
+            unknown: Default::default(),
+            reported_unknown: 0,
         })
     }
     /// `LightingManager.minimapRenderedPlane = -1`: draw the map image again
@@ -403,10 +415,7 @@ impl Renderer {
         })?;
         Some((
             loc,
-            workbench
-                .location_types
-                .get(&(loc.id as u32))
-                .or_else(|| self.definitions.get(&(loc.id as u32)))?,
+            minimap::source::location(loc.id as u32, &workbench.location_types, &self.definitions)?,
         ))
     }
     pub fn prepare(
@@ -417,6 +426,27 @@ impl Renderer {
     ) -> Result<(), String> {
         self.origin = workbench.navigation.origin;
         let view_plane = workbench.ground.plane.clamp(0, 3) as usize;
+        // Morph children an older prepared pack left out, from the cache.
+        for id in minimap::source::missing_children(
+            self.definitions.values(),
+            &workbench.location_types,
+            &self.definitions,
+        ) {
+            if self.unknown.contains(&id) {
+                continue;
+            }
+            match self
+                .cache_backed
+                .then(|| minimap::source::cached_location(&ui.pack, id))
+            {
+                Some(Ok(definition)) => {
+                    self.definitions.insert(id, definition);
+                }
+                _ => {
+                    self.unknown.insert(id);
+                }
+            }
+        }
         self.selected.clear();
         for (&id, d) in &self.definitions {
             if d.children.is_some() {
@@ -515,13 +545,14 @@ impl Renderer {
                 if let Some(children) = &d.children {
                     for &child in children {
                         if child != -1 {
-                            let child = workbench
-                                .location_types
-                                .get(&(child as u32))
-                                .or_else(|| self.definitions.get(&(child as u32)))
-                                .ok_or_else(|| {
-                                    format!("Minimap location child{child} unavailable")
-                                })?;
+                            // A child no source defines (`unknown`) is passed over.
+                            let Some(child) = minimap::source::location(
+                                child as u32,
+                                &workbench.location_types,
+                                &self.definitions,
+                            ) else {
+                                continue;
+                            };
                             if child.map_function >= 0 {
                                 function = child.map_function;
                                 break;
@@ -582,22 +613,11 @@ impl Renderer {
         }
         // Streamed regions can refer to map functions absent from the startup
         // pack. Retain their definitions for the later UI draw pass.
-        for &(id, _) in &self.functions {
-            if let Some(definition) = workbench.location_types.get(&id) {
-                if let Some(children) = &definition.children {
-                    for child in children.iter().filter_map(|id| u32::try_from(*id).ok()) {
-                        if let Some(variant) = workbench.location_types.get(&child) {
-                            self.definitions
-                                .entry(child)
-                                .or_insert_with(|| variant.clone());
-                        }
-                    }
-                }
-                self.definitions
-                    .entry(id)
-                    .or_insert_with(|| definition.clone());
-            }
-        }
+        minimap::source::retain(
+            &mut self.definitions,
+            &workbench.location_types,
+            self.functions.iter().map(|&(id, _)| id),
+        );
         let colors = [
             (((self.random.next_double() * 20.0) as u32 + 228) << 8)
                 + (((self.random.next_double() * 20.0) as u32 + 228) << 16)
@@ -673,6 +693,14 @@ impl Renderer {
         self.map_pixels = pixels;
         self.revision = Some((workbench.scene_revision, origin, view_plane));
         self.rasters += 1;
+        if self.unknown.len() > self.reported_unknown {
+            self.reported_unknown = self.unknown.len();
+            return Err(format!(
+                "no definition of morph children {:?} in the scene pack and no cache open; \
+                 their map functions are not drawn",
+                self.unknown
+            ));
+        }
         Ok(())
     }
     fn quad(
@@ -683,6 +711,15 @@ impl Renderer {
         mask: &Sprite,
         mask_origin: [i32; 2],
     ) {
+        // Macroquad binds a material's textures when the batch is drawn, not
+        // per queued call (uniforms are per call): geometry queued under
+        // another mask (the map's, then the compass's) is drawn first, or it
+        // would all be cut by the last mask set.
+        let id = mask.texture.raw_miniquad_id();
+        if self.bound_mask.replace(Some(id)) != Some(id) {
+            // SAFETY: the macroquad context exists whenever a frame is drawn.
+            unsafe { get_internal_gl().flush() };
+        }
         self.material
             .set_texture("MaskTexture", mask.texture.clone());
         self.material.set_uniform(
@@ -818,17 +855,24 @@ impl Renderer {
             .and_then(|labels| labels.for_origin(self.origin))
         {
             let mask = &self.masks[&c.sprite_id].sprite;
-            self.label_draws = self.text.draw(
-                &ui.pack,
-                pack,
-                list,
-                self.view,
-                size,
-                self.origin,
-                local,
-                at,
-                (&mask.texture, mask.power),
-            )?;
+            self.label_draws = self
+                .text
+                .draw(
+                    &ui.pack,
+                    pack,
+                    list,
+                    self.view,
+                    size,
+                    self.origin,
+                    local,
+                    at,
+                    (&mask.texture, mask.power),
+                )
+                // Reported once (the fonts stay off); the icons are still drawn.
+                .unwrap_or_else(|e| {
+                    eprintln!("Minimap: {e}");
+                    0
+                });
         }
         for (id, tile) in self.functions.clone() {
             let d = self
@@ -837,9 +881,11 @@ impl Renderer {
                 .ok_or("Minimap location metadata unavailable")?;
             let d = if d.children.is_some() {
                 if let Some(Some(child)) = self.selected.get(&id) {
-                    self.definitions
-                        .get(child)
-                        .ok_or("Minimap selected location unavailable")?
+                    // Absent only when no source defines it (`unknown`).
+                    let Some(child) = self.definitions.get(child) else {
+                        continue;
+                    };
+                    child
                 } else {
                     continue;
                 }

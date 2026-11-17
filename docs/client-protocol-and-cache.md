@@ -614,6 +614,46 @@ rebuild or plane change, and text labels. Verified by `minimap-oracle`.
 The pinned cache flags none of its 211 labels for the minimap, so the label
 path draws nothing with it; `--minimap-all-labels` shows it.
 
+Where its cache data comes from (`minimap/source.rs`): the sprite group IDs
+(`minimap/assets`: `mapfunction`, `mapdots`, `mapflag`, `compass`,
+`hint_mapmarkers`, `hint_mapedge`, plus `floorshadows`), the map scene
+definitions (config group 34) and the floors (groups 1 and 4) are each read
+from the first of
+
+1. the cache, whenever the client has one open (`--cache`, the default cache
+   a run without a UI pack falls back to, the browser's downloaded cache);
+2. the starting-scene pack (the cache-built `world_pack` scene and packs from
+   the current `prepare_visual.py` carry them);
+3. tables compiled in from the pinned cache (`PINNED_SPRITES`,
+   `PINNED_MAPSCENES`, checked against `assets/cache` by a test), for a
+   prepared pack whose manifest names the pinned cache but which predates
+   those entries: the recorded `demo.pack` and the tour packs.
+
+The run prints which one it used (`Minimap: sprite names from ...`). Before
+this, the renderer read only the starting-scene pack, so with the recorded
+`demo.pack` (the default whenever it exists, live `--cache` runs included)
+the minimap was black and the compass missing. Sprites themselves come from
+the starting-scene pack, which holds every sprite in all three cases.
+Locations: a streamed region's types (and their morph children) come from
+the cache with the scene and are kept for the icon pass; morph children an
+older prepared pack lacks are read from the cache when one is open. Without
+a cache those children are unknown: their map functions are not drawn and a
+diagnostic names them (166 in the recorded `demo.pack`; at the Lumbridge
+start the minimap is pixel-identical with and without them).
+
+Drawing: the map, its icons and the compass go through one material whose
+`MaskTexture` macroquad binds when the batch is drawn, not per queued call.
+Until 2026-11-17 the compass's 33 x 33 mask, set last, therefore cut the map
+too (a 132-pixel circle in the map's top-left, with four-pixel steps).
+`minimap_render::Renderer::quad` now draws what is queued before it binds a
+different mask. Compared with the original in the same pose (the original's
+camera, `MiniMap.compassAngleOffset` and `zoomOffset` pinned to the Rust
+client's, and the original's floor and map-scene colour jitters handed to the
+Rust client): walls, floors, map scenes, orientation, zoom and the compass
+match to within a pixel; map-function icons differ in place because both
+clients walk each one up to ten random steps (`Math.random`), and their
+colours by the unmatched `Sprites.load` jitter.
+
 ## World map
 
 Interface 755 opens: `world_map/` is the map itself (lists, pan and zoom,
@@ -783,7 +823,9 @@ rules, the world map's label lists and the underwater map files.
 The recorded `demo.pack` has none of those later entries. A client started
 from it (the default when the file exists) therefore draws no floor shadows
 and no underwater scene (the water keeps a plain stand-in backdrop), and
-draws multiloc children only where the cache can supply their models.
+draws multiloc children only where the cache can supply their models. Its
+minimap takes the missing sprite IDs and map scenes from the cache or the
+pinned tables (see Minimap).
 Starting with `--pack` naming a file that does not exist uses the cache-built
 scene instead.
 
@@ -968,8 +1010,9 @@ Not seen or not working there:
   nothing, and after it the menu no longer answers the mouse (Enter still
   opens the login form). Not compared with the desktop: clicks posted to the
   desktop window did not reach it.
-- With the prepared packs the minimap is black and there is no compass,
-  on the desktop as well.
+- With the prepared packs the minimap was black and there was no compass,
+  on the desktop as well; fixed (see Minimap): the recorded packs now get
+  the minimap's sprite IDs and map scenes from the pinned tables.
 
 ## Still missing
 
@@ -1336,8 +1379,9 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
   255. The browser's drawing buffer has no alpha channel, so the page does
   not show through there. On the desktop a frame kept for game state 25 or
   28 still carries that alpha and is drawn blended over the frame beneath.
-- (b) In the cache-built Lumbridge scene the minimap shows the 3D scene
-  through tiles of unloaded neighbouring regions.
+- (b) In the cache-built Lumbridge scene the minimap showed black (or the
+  scene) over part of its circle. Captures since the mask fix (see Minimap)
+  show the whole circle; tiles outside the loaded regions stay black.
 - (c) Mipmap mode 1 (674 textures are mode 2, 6 are mode 0, none mode 1); a
   model or underlay with a water texture (none exists); opcode 98 `dynamic`
   locations (0 of 42,004 types); animated or multiloc underwater locations
@@ -1511,7 +1555,9 @@ Collected from every stream. None blocks the others.
 23. **Prepared packs.** Rebuild `demo.pack` and the web packs to carry floor
     shadows, underwater maps, world-map labels, multiloc children's models
     and `p12_full`; whether `floorshadows` stays in `minimap/assets` or gets
-    its own entry. Adding models needs the `world_pack` test to allow new
+    its own entry. A rebuilt `demo.pack` (from `world_pack`) also carries
+    `minimap/assets`, the map scenes and every morph child, after which the
+    minimap's pinned tables are no longer used by it. Adding models needs the `world_pack` test to allow new
     `model/` entries.
 24. **Capture alpha.** Write captures opaque, or make the world pipelines
     keep destination alpha. The browser's drawing buffer is now made without

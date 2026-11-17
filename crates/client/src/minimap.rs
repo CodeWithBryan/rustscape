@@ -11,6 +11,7 @@ pub use state::{Hint, HintPosition, State, hints_visible};
 mod dots;
 mod drift;
 pub mod labels;
+pub mod source;
 pub use dots::{player_dot, username_key};
 pub use drift::{Drift, Redraw, redraw};
 pub use labels::{LabelFont, Labels};

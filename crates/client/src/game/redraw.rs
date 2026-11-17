@@ -1345,7 +1345,11 @@ impl Game {
                     }
                     for npc in &workbench.npcs {
                         if let Ok(Some(id)) = workbench.npc_choice(npc.id, &ui_vm, Some(ui)) {
-                            let d = &workbench.npc_definitions[&id];
+                            // A morph child the scene did not load (the
+                            // title scene loads base types only) has no dot.
+                            let Some(d) = workbench.npc_definitions.get(&id) else {
+                                continue;
+                            };
                             if d.minimap_display && d.interactive {
                                 map.markers.push(minimap_render::Marker {
                                     group: if d.minimap_marker == -1 {
