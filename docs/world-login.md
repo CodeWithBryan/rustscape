@@ -32,7 +32,9 @@ class name, as an input list in the original's registration order), content
 hooks, timers, ServerStore, Discord, PlayerMonitor, FamiliarManager,
 QuestRepository, EmoteManager, MusicPlayer, RegionManager, WeaponInterface,
 interface listeners and component plugins, quest requirements, RulesAndInfo,
-the update sequence's renderable list and update masks.
+the update sequence's renderable list and update masks. The test binding
+answers the WeaponInterface, LevelUp, EmoteManager and MusicPlayer calls
+with the native world::player_tabs libraries (docs/player-tabs.md).
 
 The world pulse that finishes a login is submitted through
 `Host::submit_login_pulse`; the tick driver ([tick-driver.md](tick-driver.md))
@@ -89,7 +91,8 @@ two-characters, returning-character):
 - **Every entry the original handed to the session during the login ticks,
   byte for byte and in order**: nothing at the login block's tick, then 395,
   395, 396 and 371 entries at the tick the pulse runs (tick 1, 1, 6 and 1).
-- **206 of them are written by native code in each login**: the login reply,
+- **282 of them are written by native code in each new character's login,
+  258 in the returning character's**: the login reply,
   the rebuild (162) and the chat settings (232) written at once; the windows
   pane; the chatbox (three interfaces and varp 334); 24 tab openings over the
   two `openDefaultTabs` (tabs 1 to 6 and 9 to 14 in each); the welcome
@@ -97,8 +100,13 @@ two-characters, returning-character):
   texts; the 24 skill levels; `Settings.update` (14 varps and run energy);
   the three player options; run energy; both `config` texts; the five info
   bars; the interface config of 226; the spell book's tab and varbit 357;
-  and `reinitVarps` (116 varps, in the original's HashMap order, after a
-  load for the returning character).
+  `reinitVarps` (116 varps, in the original's HashMap order, after a
+  load for the returning character); and through `world::player_tabs`:
+  `WeaponInterface.open` in both `openDefaultTabs` (9 each) and its
+  equipment refresh (6), the flashing skill icons (1),
+  `EmoteManager.refresh` (6 with its nested skillcape unlock, 3 for the
+  returning character), the music zone entered from `RegionManager.move`
+  (23, 2 for the returning character) and `MusicPlayer.init` (22).
 - **The repository** after the login block and after the login tick: slot,
   index (1, 1, 5 and 1), name, location, playing and active of every
   character.
@@ -116,31 +124,37 @@ canonical variable store, without sending (what `setVarp` does besides
 sending). This is a test input, not a port; the native packets that follow
 each replayed segment are compared exactly, which checks the counter and the
 varp map. The test pins every segment by name and size, and the number of
-stand-in calls (61 per login); a gap that closes or a new difference fails
+stand-in calls (54 per login); a gap that closes or a new difference fails
 it.
 
 | Segment | Entries | Why |
 | --- | --- | --- |
 | `ManagementEvents.handleEvent` | 2 (197, 126) | the handlers of the events social published; not joined in this test |
 | login listeners | 1 (2 for tracetwo) | content: CropCircleController, ShootingStarPlugin messages |
-| `WeaponInterface.open` (twice) | 9 + 9 | core, not ported: tab 0's interface, access masks and weapon name |
 | `FriendsListInterface.open` | 2 | content component |
-| `WeaponInterface` (equipment refresh) | 6 | core, not ported |
-| `LevelUp.sendFlashingIcons` | 1 | core, not ported |
 | `FamiliarManager.login` | 3 | content |
-| `QuestRepository.syncronizeTab` | 104 | core repository with content `updateVarps` |
-| `EmoteManager.refresh` | 6 (3 returning) | core, not ported |
-| `LoginValidationPlugin` | 1 | content login plugin |
-| `RegionManager.move` | 23 (2 returning) | entity regions and zones not joined; ZoneMonitor's music zone |
-| `MusicPlayer.init` | 22 | core, not ported |
+| `QuestRepository.syncronizeTab` | 104 | the repository is native (`world::player_tabs::quests`), but each quest's configs, `getConfig` override and content `updateVarps` are not inputs of this test, and its varbits need the varbit archive |
+| `LoginValidationPlugin` | 1 | content login plugin; its one state effect a native system reads later, `toggleDebug`'s `debug` attribute (carried by its message), is applied as replayed varps are |
+
+`WeaponInterface.open` (twice) and its equipment refresh, `LevelUp.sendFlashingIcons`,
+`EmoteManager.refresh` and `MusicPlayer.init` are native (`world::player_tabs`).
+`RegionManager.move` is native as far as the music zone: entity regions and
+ZoneMonitor are not joined, so which music zone the player entered (its music
+id, read from the MusicPacket the original queued there) is a stand-in input;
+`MusicZone.enter` and the MusicPlayer it reaches run natively and are compared.
 
 Other stand-ins answer state queries for systems that are not ported:
 ServerStore's flagged IPs (empty), `SystemManager.isUpdating` (false),
 `hasFamiliar` (false), `hasRequirement` (false: these characters have
 started no quest and the original wrote no varbit 3909), and the varbit 357
 definition, pinned as the cache defines it (varp 439, bits 0..1;
-`pinned_varbit_matches_the_cache` checks it when `assets/cache` is present).
-Set `RS09_WORLD_LOGIN_VERBOSE=1` to print the save differences field by field.
+`pinned_varbit_matches_the_cache` checks it when `assets/cache` is present),
+and item 0's name, "Dwarf remains" (WeaponInterface compares the empty
+weapon slot's `getNew(3)` name with two staff names;
+`pinned_item_zero_matches_the_cache` checks it against the cache). The
+combat pulse's `updateStyle` (WeaponInterface) is recorded, not run.
+Set `RS09_WORLD_LOGIN_VERBOSE=1` to print the native call sites and the save
+differences field by field.
 Auto timers, appearance synchronisation, the renderable list, update masks
 and the content hooks' parse are recorded, not run.
 
@@ -155,11 +169,11 @@ The canonical player's save right after the native login is compared with
 the original's save written at logout (tick 22, 28 for tracetwo: 21 or 22
 ticks after the login tick). The top-level
 keys that differ are pinned: for new characters `attributes`, `barCrawl`,
-`core_data`, `emoteData`, `ge-history`, `globalData`, `slayer`,
-`treasureTrails`, `unlockedMusic`; for the returning character `barCrawl`,
+`core_data`, `ge-history`, `globalData`, `slayer`, `treasureTrails`;
+for the returning character `barCrawl`,
 `core_data`, `ge-history`, `slayer`, `treasureTrails`. They come from content
 hooks that write nothing here, attributes set by content and the wealth
-check, the emote and music state of replayed calls, the AntiMacro timer
+check, the AntiMacro timer
 and a saved varp 442 set during the ticks, and the loot-share delay; the
 original's file is written after ticks the native world does not run.
 
@@ -203,6 +217,9 @@ login tick is compared here: the tick driver's test compares the later ticks
 - The update sequence (renderable list, rebuild flag, appearance), entity
   regions and zones (`RegionManager.move`), timers (`addAutoTimers`),
   `DisconnectionQueue.update` and the 50-tick autosave.
-- Ports or explicit services for WeaponInterface, LevelUp, QuestRepository,
-  EmoteManager, MusicPlayer, FamiliarManager, interface listeners and
-  content listeners before a native world can stand without stand-ins.
+- World bindings of the `world::player_tabs` hosts (the test's `Tabs` is
+  their shape), quest content (configs, `getConfig` overrides,
+  `updateVarps`) for `syncronizeTab`, the varbit archive, ZoneMonitor's
+  music zones, and ports or explicit services for FamiliarManager,
+  interface listeners and content listeners before a native world can stand
+  without stand-ins.

@@ -1188,13 +1188,15 @@ const TICK_SEGMENTS: &[(&str, usize)] = &[
 ];
 
 /// (scenario session, entries compared, natively written and equal, NPC
-/// updates replayed, login tick, emotes, region move, extra login listener).
+/// updates replayed, login tick, extra login listener). The native count
+/// includes the login's player-tab systems (world/player_tabs: 76 entries
+/// for a new character, 52 for the returning one).
 #[allow(clippy::type_complexity)]
-const SESSIONS: &[(&str, usize, usize, usize, i64, usize, usize, bool)] = &[
-    ("new-character traceone", 482, 227, 21, 1, 6, 23, false),
-    ("two-characters traceone", 482, 224, 21, 1, 6, 23, false),
-    ("two-characters tracetwo", 485, 228, 22, 6, 6, 23, true),
-    ("returning-character traceone", 458, 227, 21, 1, 3, 2, false),
+const SESSIONS: &[(&str, usize, usize, usize, i64, bool)] = &[
+    ("new-character traceone", 482, 303, 21, 1, false),
+    ("two-characters traceone", 482, 300, 21, 1, false),
+    ("two-characters tracetwo", 485, 304, 22, 6, true),
+    ("returning-character traceone", 458, 279, 21, 1, false),
 ];
 
 /// Natively written entries that differ from the original's, all player
@@ -1281,7 +1283,7 @@ fn tick_driver_runs_the_world_trace_scenarios() {
             assert_eq!(tally.entries, pin.1, "{session}: entries");
             assert_eq!(tally.native, pin.2, "{session}: natively written and equal");
             let mut expected: BTreeMap<String, usize> = BTreeMap::new();
-            for (marker, n) in expected_segments(pin.5, pin.6, pin.7) {
+            for (marker, n) in expected_segments(pin.5) {
                 *expected.entry(marker).or_insert(0) += n;
             }
             for (marker, n) in TICK_SEGMENTS {

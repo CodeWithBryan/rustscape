@@ -130,7 +130,27 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   services and is replayed against the same corpus; no corpus runs the real
   MagicSwingHandler with these spells and nothing installs the library.
   Non-combat and lunar spells are not ported. See docs/spells.md.
-
+- For the player tab systems (world/player_tabs: WeaponInterface, LevelUp and
+  getSkillJingle, EmoteManager/Emotes, MusicPlayer/MusicZone.enter,
+  QuestRepository.syncronizeTab/forButtonId/forIndex and the base
+  Quest.getConfig), run `cargo test -p rs09-server --test player_tabs --test
+  world_login` and `cargo xtask player-tabs-oracle --check` with Python/JDK
+  11, plus the combat_swing, combat_pulse, spells, prayer and player_state
+  suites. Preserve the 5,041 cases. Keep definition 92's type for the weapon
+  tab's pane and child, the attack style read first in ensureStyleIndex, the
+  special bar set before the animations, every repeated style index, spell
+  book and getNew(3) read, the non-combat spell cast failure, the global
+  definition mutation of openAutocastSelect, the 24 flashing-icon reads, the
+  per-milestone combat level read, the nested skillcape unlock inside
+  EmoteManager.refresh, lock's refresh without a removal, music key 62 as a
+  list index, play's early null read when looping, tick's swallowed send and
+  the varbit-or-varp choice by config length. Emote, song and quest state is
+  the persisted state in player/persisted, joined, not copied. Every outside
+  call is a required service; quest getConfig overrides and updateVarps,
+  Skillcape.trim and the SALUTE, GOBLIN_BOW and GIVE_THANKS plays are
+  content services. world_login joins these libraries to the canonical
+  player (only the quest tab stays replayed); nothing installs them in a
+  live session. See docs/player-tabs.md.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790
@@ -1018,8 +1038,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   are an input list by class name; every call without a native library is a
   required Host service with no default. The test's replay stand-ins (the
   original's packets for a not-ported call, found by its stack, with the
-  counter and varps they carry) are inputs, not ports: it pins 206 natively
-  written entries per login and every replayed segment, and a closed gap or
+  counter and varps they carry) are inputs, not ports: it pins 282 natively
+  written entries per new character's login (258 returning; the player tab
+  calls are world/player_tabs) and every replayed segment, and a closed gap or
   a new difference must fail it. Nothing installs the library; the tick
   driver is world/driver (next bullet). See docs/world-login.md.
 - For the tick driver (world/driver: handleTickActions' phases with the

@@ -97,12 +97,14 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 
 | Session | Entries | Native, equal | Replayed | Differ |
 | --- | --- | --- | --- | --- |
-| new-character traceone | 482 | 227 | 253 | 2 |
-| two-characters traceone | 482 | 224 | 253 | 5 |
-| two-characters tracetwo | 485 | 228 | 255 | 2 |
-| returning-character traceone | 458 | 227 | 229 | 2 |
+| new-character traceone | 482 | 303 | 177 | 2 |
+| two-characters traceone | 482 | 300 | 177 | 5 |
+| two-characters tracetwo | 485 | 304 | 179 | 2 |
+| returning-character traceone | 458 | 279 | 177 | 2 |
 
-Natively written beyond the 206 of each login: the rebuild of the first
+Natively written beyond the login's own (282 for a new character, 258 for
+the returning one, with the player-tab systems of
+[player-tabs.md](player-tabs.md)): the rebuild of the first
 update after login (`Player.update`'s scene graph), every idle player update
 (225) from the native renderer (including the two characters seeing each
 other, `e100020080`, and tracetwo removing the logged-out traceone,
@@ -128,7 +130,7 @@ appearance and then sends its placement and teleport masks).
 
 Also pinned: the saves written at logout differ from the original's in the
 top-level keys world-login.md lists (content hooks, content attributes and the
-wealth check, replayed emote and music state, the AntiMacro timer, varp 442,
+wealth check, the AntiMacro timer, varp 442,
 the loot-share delay) and nothing else; the published events equal the
 original's except `SendContactInfo` at each login (its handler is not joined);
 the native pulse runner is empty after every tick (the original's holds 14 to

@@ -1,0 +1,1420 @@
+{
+  "caseCount": 5041,
+  "constantsJar": {
+    "checkedAgainstNames": {
+      "Components": [
+        "CHATTOP_752",
+        "MAGIC_192",
+        "MAGIC_ZAROS_193",
+        "TOPLEVEL_548",
+        "TOPLEVEL_FULLSCREEN_746",
+        "WEAPON_2H_SWORD_SEL_82",
+        "WEAPON_BAXE_SEL_75",
+        "WEAPON_BOW_SEL_77",
+        "WEAPON_CHINCHOMPA_SEL_473",
+        "WEAPON_CLAWS_SEL_78",
+        "WEAPON_DAGGER_SEL_89",
+        "WEAPON_FISTS_SEL_92",
+        "WEAPON_FIXED_DEVICE_SEL_80",
+        "WEAPON_HALBERD_SEL_84",
+        "WEAPON_MACE_SEL_88",
+        "WEAPON_PICKAXE_SEL_83",
+        "WEAPON_SALAMANDER_SEL_474",
+        "WEAPON_SCEPTER_SEL_85",
+        "WEAPON_SCIMITAR_SEL_81",
+        "WEAPON_SCYTHE_SEL_86",
+        "WEAPON_SPEAR_SEL_87",
+        "WEAPON_STAFF_SEL_90",
+        "WEAPON_THROWN_SEL_91",
+        "WEAPON_WARHAMMER_SEL_76",
+        "WEAPON_WHIP_SEL_93",
+        "WEAPON_XBOW_SEL_79"
+      ],
+      "Items": [
+        "INITIATE_CUISSE_5576",
+        "INITIATE_HAUBERK_5575",
+        "INITIATE_SALLET_5574"
+      ]
+    },
+    "lock": "oracle/bank/constants.lock.json"
+  },
+  "coverage": {
+    "actions": 27385,
+    "errors": {
+      "Binding": 1752,
+      "Cast": 1,
+      "IllegalState: Music is for players only!": 3,
+      "Index": 12,
+      "Null": 21
+    },
+    "events": {
+      "access_mask": 190,
+      "add_extension": 2380,
+      "animate": 1006,
+      "animation": 5,
+      "attack_style": 3051,
+      "autocast": 10927,
+      "combat_level": 4260,
+      "combat_milestone": 1304,
+      "custom_config": 264,
+      "debug": 60,
+      "dialogue": 98,
+      "diary_complete": 102,
+      "diary_update": 24,
+      "duration": 1006,
+      "equipment": 4445,
+      "equipment_new": 21838,
+      "get_attribute": 5928,
+      "graphic": 180,
+      "in_combat": 405,
+      "interface": 3105,
+      "interface_config": 30282,
+      "is_attacking": 501,
+      "is_debug": 256,
+      "is_locked": 600,
+      "is_npc": 4740,
+      "item_config": 12157,
+      "lock": 1001,
+      "lock_all": 5,
+      "log": 12,
+      "message": 1288,
+      "music": 491,
+      "news": 126,
+      "open_chatbox": 104,
+      "open_tab": 171,
+      "prayer_points": 40,
+      "pulse_clear": 141,
+      "remove_attribute": 5053,
+      "resizable": 3134,
+      "rights": 147,
+      "set_attack_animation": 4571,
+      "set_attack_style": 5403,
+      "set_attribute": 5003,
+      "set_autocast": 10200,
+      "set_combat_milestone": 320,
+      "set_skill_milestone": 140,
+      "skill_milestone": 1075,
+      "skillcape_trim": 85,
+      "special_toggled": 3161,
+      "spell_book": 19184,
+      "spell_lookup": 2274,
+      "static_level": 3228,
+      "string": 3786,
+      "style_index": 17140,
+      "tabs": 4240,
+      "ticks": 14,
+      "toggle_special_bar": 83,
+      "toggle_style_index": 2976,
+      "total_level": 767,
+      "update_style": 3175,
+      "update_varps": 924,
+      "varbit": 252,
+      "varp": 19843
+    },
+    "failureCases": 1753,
+    "groups": {
+      "emote_diary": 3,
+      "emote_for_id": 1,
+      "emote_handle": 317,
+      "emote_lock": 2,
+      "emote_play": 895,
+      "emote_refresh": 78,
+      "emote_unlock": 54,
+      "flashing": 33,
+      "jingle": 25,
+      "levelup": 301,
+      "milestones": 504,
+      "music_guitar": 31,
+      "music_init": 156,
+      "music_random": 40,
+      "music_tick": 14,
+      "music_unlock": 27,
+      "music_zone": 6,
+      "quest_config": 48,
+      "quest_repository": 20,
+      "quest_sync": 105,
+      "weapon_autocast": 311,
+      "weapon_broken": 42,
+      "weapon_buttons": 36,
+      "weapon_cast": 1,
+      "weapon_definition": 6,
+      "weapon_flags": 32,
+      "weapon_open": 1432,
+      "weapon_random": 240,
+      "weapon_restore": 277,
+      "weapon_static": 1,
+      "weapon_unset": 3
+    },
+    "operations": {
+      "emote_for_id": 51,
+      "emote_handle": 600,
+      "emote_is_unlocked": 55,
+      "emote_lock": 91,
+      "emote_play": 895,
+      "emote_refresh": 78,
+      "emote_save_required": 117,
+      "emote_unlock": 99,
+      "flashing": 33,
+      "jingle": 2525,
+      "levelup": 301,
+      "milestones": 504,
+      "music_has_air_guitar": 7,
+      "music_has_unlocked": 81,
+      "music_init": 232,
+      "music_play": 75,
+      "music_play_default": 6,
+      "music_refresh": 64,
+      "music_replay": 72,
+      "music_set_looping": 12,
+      "music_tick": 14,
+      "music_toggle_looping": 75,
+      "music_unlock": 322,
+      "music_zone_enter": 76,
+      "quest_available": 30,
+      "quest_complete_all": 30,
+      "quest_config": 48,
+      "quest_dock": 26,
+      "quest_for_button": 24,
+      "quest_for_index": 20,
+      "quest_has_started": 21,
+      "quest_increment": 32,
+      "quest_is_complete": 20,
+      "quest_set_stage": 25,
+      "quest_set_stage_nonmonotonic": 18,
+      "quest_stage": 24,
+      "quest_sync": 168,
+      "quest_sync_points": 31,
+      "set": 3385,
+      "weapon_autospell_id": 2488,
+      "weapon_can_autocast": 623,
+      "weapon_interface_for": 28,
+      "weapon_new": 2380,
+      "weapon_open": 2718,
+      "weapon_open_select": 721,
+      "weapon_restore_autocast": 697,
+      "weapon_restore_style": 541,
+      "weapon_select": 3224,
+      "weapon_set_style": 2156,
+      "weapon_update": 1522
+    },
+    "recordedCalls": 228671
+  },
+  "fixtureSha256": "6729aa258f3086e486ae78be8fa241e17d5c4f7085d6bec06de3b12af7eedc51",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "locale": "en-US",
+  "scope": "Unchanged WeaponInterface, ComponentDefinition, InterfaceType, LevelUp, LevelUpJingles, EmoteManager, Emotes, MusicPlayer, MusicEntry, MusicZone, QuestRepository, Quest and Quests on JDK 11 with Kotlin 1.8.20 and the published ConstLib 1.4.28 (Components and Items values checked against the suffixes of the names used). Original text inserted into adapters at generation time: the EquipmentContainer slot constants, the Skills constants and SKILL_NAME, the ItemConfigParser keys, the Log constants, the Animator.Priority constants, and the ContentAPI getAttribute/setAttribute/removeAttribute/removeAttributes, setComponentVisibility, getStatLevel and sendNews functions. Everything else is a recording adapter answering from the case: packets (Interface, InterfaceConfig, String, Music, access masks), varps and varbits, attributes, equipment and item configuration, Settings attack style index and special bar, Properties attack style/animation/autocast/combat level and the combat pulse, appearance, the spell book and spell lookups, the interface manager (tabs, openTab, openChatbox, resizable), skills, news, Skillcape.trim, locks, the animator, animation durations, rights, the pulse manager, the dialogue interpreter, the Varrock diary, debug output, ticks and logging. Not driven: the SALUTE, GOBLIN_BOW and GIVE_THANKS emote overrides (content: diaries, quests, dialogue, a world pulse), Quest.start/finish/journal members, MusicPlayer.clearUnlocked and the zone registration that reaches MusicZone.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/player-tabs/Support.java": "42dd64bf2427867d2a3394942b6ba7f43c482f538987b7fb7d20c5da1f8f961e",
+    "oracle/player-tabs/adapters.py": "526b7c0d20c77e62f99f5a9359c0da970ae04c6aa22cdccdda58632d1c641662",
+    "oracle/player-tabs/cases.py": "4f4062b373b0a852ee9c75b81690a1f5ec0ec220b0aa211d0e4671a002f2f6a3",
+    "oracle/player-tabs/generate.py": "594a4401995f838a4c3f952b987c583d2de2a5232fa22cdb1492e3e3c8a2a050",
+    "reference/server/Server/src/main/content/data/Quests.kt": "20cc6078a5456cb36433518a2b9f0e7a0a37588040b5e1e151bc6fe6bfe12554",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/game/component/ComponentDefinition.java": "b2cd5aefb9beb02c660c68cfdbcdbd81efa8882899aec35fb14f6440d4b67a3a",
+    "reference/server/Server/src/main/core/game/component/InterfaceType.java": "9bf9ab1e21683e3412335d47a32af946880dbd5a4515ed4370a870824e34f435",
+    "reference/server/Server/src/main/core/game/container/impl/EquipmentContainer.java": "81c78260eaeb3e9001e0d0b7a237ddf739998a778704089685b539eb487476df",
+    "reference/server/Server/src/main/core/game/node/entity/combat/equipment/WeaponInterface.java": "608ad0d39eb7d2697d8676dbd4d48929117b152538009c190a5292c32c55580e",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/emote/EmoteManager.java": "db2fc03be8f44c15f64e5da16cddf35ae8a3bb68fda14411475fbc7023c06d64",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/emote/Emotes.java": "3b8f34b4a269af00ea35c4ee9b95528e390478a3e77476e2d92d968518ebf356",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/music/MusicEntry.java": "c8f3ea78856becc36b03465a559f1369f252814634a1c31048022cb730364fd2",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/music/MusicPlayer.java": "c38f94c4239d540481b1514337201a66c6af7b3978d284a2829bd92bbe68993e",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/music/MusicZone.java": "0fb8481d989dc16a37c28668987dea4b33cce791b35018c8257dc09acb71e3b6",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/quest/Quest.java": "210699e66027c81c7b56f46c244e3e4ed790fd0fd5bb4e5b000b827a8bb9768c",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/quest/QuestRepository.java": "9121d6f61ded46330cd3deaeda24c96188469431774d62d8b47846b8abee3e04",
+    "reference/server/Server/src/main/core/game/node/entity/skill/LevelUp.java": "78ede941a32feeb0db8fa7920313d7a4ff510e1b1f0bd8cafdd203bda358cdd8",
+    "reference/server/Server/src/main/core/game/node/entity/skill/LevelUpJingles.kt": "161c9cccfe4a48491bc9225bfaaa1bb07ea70169cf01490afbd5486882517a7f",
+    "reference/server/Server/src/main/core/game/node/entity/skill/Skills.java": "b442b260cc591406dc903d46cd729db27976b9470413bc039d6766bd4fe1f0db",
+    "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+    "reference/server/Server/src/main/core/tools/SystemLogger.kt": "7119ef8a19c691f0d5054a978295b080d4ea5f94921e1e7a7545fd5b02cae561",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "tables": {
+    "items": {
+      "1381": {
+        "attack_anims": [
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ]
+        ],
+        "has_special": false,
+        "name": "Staff of air",
+        "weapon_interface": 1
+      },
+      "13867": {
+        "attack_anims": [
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ]
+        ],
+        "name": "Zuriel's staff",
+        "weapon_interface": 1
+      },
+      "20000": {
+        "attack_anims": [
+          [
+            400,
+            0,
+            "HIGH"
+          ],
+          [
+            401,
+            0,
+            "HIGH"
+          ],
+          [
+            402,
+            0,
+            "HIGH"
+          ],
+          [
+            403,
+            0,
+            "HIGH"
+          ]
+        ],
+        "has_special": true,
+        "name": "Unarmed",
+        "weapon_interface": 0
+      },
+      "20001": {
+        "attack_anims": [
+          [
+            401,
+            0,
+            "MID"
+          ],
+          [
+            402,
+            0,
+            "MID"
+          ]
+        ],
+        "name": "Staff",
+        "weapon_interface": 1
+      },
+      "20002": {
+        "has_special": false,
+        "name": "Axe",
+        "weapon_interface": 2
+      },
+      "20003": {
+        "attack_anims": [
+          [
+            412,
+            0,
+            "HIGH"
+          ],
+          [
+            413,
+            0,
+            "HIGH"
+          ],
+          [
+            414,
+            0,
+            "HIGH"
+          ],
+          [
+            415,
+            0,
+            "HIGH"
+          ]
+        ],
+        "name": "Scepter",
+        "weapon_interface": 3
+      },
+      "20004": {
+        "attack_anims": [
+          [
+            404,
+            0,
+            "MID"
+          ],
+          [
+            405,
+            0,
+            "MID"
+          ]
+        ],
+        "has_special": true,
+        "name": "Pickaxe",
+        "weapon_interface": 4
+      },
+      "20005": {
+        "name": "Sword Dagger",
+        "weapon_interface": 5
+      },
+      "20006": {
+        "attack_anims": [
+          [
+            424,
+            0,
+            "HIGH"
+          ],
+          [
+            425,
+            0,
+            "HIGH"
+          ],
+          [
+            426,
+            0,
+            "HIGH"
+          ],
+          [
+            427,
+            0,
+            "HIGH"
+          ]
+        ],
+        "has_special": false,
+        "name": "Scimitar",
+        "weapon_interface": 6
+      },
+      "20007": {
+        "attack_anims": [
+          [
+            407,
+            0,
+            "MID"
+          ],
+          [
+            408,
+            0,
+            "MID"
+          ]
+        ],
+        "name": "Two H Sword",
+        "weapon_interface": 7
+      },
+      "20008": {
+        "has_special": true,
+        "name": "Mace",
+        "weapon_interface": 8
+      },
+      "20009": {
+        "attack_anims": [
+          [
+            436,
+            0,
+            "HIGH"
+          ],
+          [
+            437,
+            0,
+            "HIGH"
+          ],
+          [
+            438,
+            0,
+            "HIGH"
+          ],
+          [
+            439,
+            0,
+            "HIGH"
+          ]
+        ],
+        "name": "Claws",
+        "weapon_interface": 9
+      },
+      "20010": {
+        "attack_anims": [
+          [
+            410,
+            0,
+            "MID"
+          ],
+          [
+            411,
+            0,
+            "MID"
+          ]
+        ],
+        "has_special": false,
+        "name": "Warhammer Maul",
+        "weapon_interface": 10
+      },
+      "20011": {
+        "name": "Whip",
+        "weapon_interface": 11
+      },
+      "20012": {
+        "attack_anims": [
+          [
+            448,
+            0,
+            "HIGH"
+          ],
+          [
+            449,
+            0,
+            "HIGH"
+          ],
+          [
+            450,
+            0,
+            "HIGH"
+          ],
+          [
+            451,
+            0,
+            "HIGH"
+          ]
+        ],
+        "has_special": true,
+        "name": "Flowers",
+        "weapon_interface": 12
+      },
+      "20013": {
+        "attack_anims": [
+          [
+            413,
+            0,
+            "MID"
+          ],
+          [
+            414,
+            0,
+            "MID"
+          ]
+        ],
+        "name": "Mud Pie",
+        "weapon_interface": 13
+      },
+      "20014": {
+        "has_special": false,
+        "name": "Spear",
+        "weapon_interface": 14
+      },
+      "20015": {
+        "attack_anims": [
+          [
+            460,
+            0,
+            "HIGH"
+          ],
+          [
+            461,
+            0,
+            "HIGH"
+          ],
+          [
+            462,
+            0,
+            "HIGH"
+          ],
+          [
+            463,
+            0,
+            "HIGH"
+          ]
+        ],
+        "name": "Halberd",
+        "weapon_interface": 15
+      },
+      "20016": {
+        "attack_anims": [
+          [
+            416,
+            0,
+            "MID"
+          ],
+          [
+            417,
+            0,
+            "MID"
+          ]
+        ],
+        "has_special": true,
+        "name": "Bow",
+        "weapon_interface": 16
+      },
+      "20017": {
+        "name": "Crossbow",
+        "weapon_interface": 17
+      },
+      "20018": {
+        "attack_anims": [
+          [
+            472,
+            0,
+            "HIGH"
+          ],
+          [
+            473,
+            0,
+            "HIGH"
+          ],
+          [
+            474,
+            0,
+            "HIGH"
+          ],
+          [
+            475,
+            0,
+            "HIGH"
+          ]
+        ],
+        "has_special": false,
+        "name": "Thrown Weapons",
+        "weapon_interface": 18
+      },
+      "20019": {
+        "attack_anims": [
+          [
+            419,
+            0,
+            "MID"
+          ],
+          [
+            420,
+            0,
+            "MID"
+          ]
+        ],
+        "name": "Chinchompa",
+        "weapon_interface": 19
+      },
+      "20020": {
+        "has_special": true,
+        "name": "Fixed Device",
+        "weapon_interface": 20
+      },
+      "20021": {
+        "attack_anims": [
+          [
+            484,
+            0,
+            "HIGH"
+          ],
+          [
+            485,
+            0,
+            "HIGH"
+          ],
+          [
+            486,
+            0,
+            "HIGH"
+          ],
+          [
+            487,
+            0,
+            "HIGH"
+          ]
+        ],
+        "name": "Salamander",
+        "weapon_interface": 21
+      },
+      "20022": {
+        "attack_anims": [
+          [
+            422,
+            0,
+            "MID"
+          ],
+          [
+            423,
+            0,
+            "MID"
+          ]
+        ],
+        "has_special": false,
+        "name": "Scythe",
+        "weapon_interface": 22
+      },
+      "20023": {
+        "name": "Ivandis Flail",
+        "weapon_interface": 23
+      },
+      "30000": {
+        "name": "Broken",
+        "weapon_interface": 24
+      },
+      "4170": {
+        "attack_anims": [
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ]
+        ],
+        "name": "Slayer's staff",
+        "weapon_interface": 1
+      },
+      "4675": {
+        "attack_anims": [
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ],
+          [
+            419,
+            0,
+            "HIGH"
+          ]
+        ],
+        "name": "Ancient staff",
+        "weapon_interface": 1
+      },
+      "8841": {
+        "has_special": true,
+        "name": "Void knight mace",
+        "weapon_interface": 1
+      },
+      "995": {
+        "name": "Coins"
+      }
+    },
+    "quests": [
+      [
+        "MYTHS_OF_THE_WHITE_LANDS",
+        "Myths of the White Lands"
+      ],
+      [
+        "BLACK_KNIGHTS_FORTRESS",
+        "Black Knights' Fortress"
+      ],
+      [
+        "COOKS_ASSISTANT",
+        "Cook's Assistant"
+      ],
+      [
+        "DEMON_SLAYER",
+        "Demon Slayer"
+      ],
+      [
+        "DORICS_QUEST",
+        "Doric's Quest"
+      ],
+      [
+        "DRAGON_SLAYER",
+        "Dragon Slayer"
+      ],
+      [
+        "ERNEST_THE_CHICKEN",
+        "Ernest the Chicken"
+      ],
+      [
+        "GOBLIN_DIPLOMACY",
+        "Goblin Diplomacy"
+      ],
+      [
+        "IMP_CATCHER",
+        "Imp Catcher"
+      ],
+      [
+        "THE_KNIGHTS_SWORD",
+        "The Knight's Sword"
+      ],
+      [
+        "PIRATES_TREASURE",
+        "Pirate's Treasure"
+      ],
+      [
+        "PRINCE_ALI_RESCUE",
+        "Prince Ali Rescue"
+      ],
+      [
+        "THE_RESTLESS_GHOST",
+        "The Restless Ghost"
+      ],
+      [
+        "ROMEO_JULIET",
+        "Romeo & Juliet"
+      ],
+      [
+        "RUNE_MYSTERIES",
+        "Rune Mysteries"
+      ],
+      [
+        "SHEEP_SHEARER",
+        "Sheep Shearer"
+      ],
+      [
+        "SHIELD_OF_ARRAV",
+        "Shield of Arrav"
+      ],
+      [
+        "VAMPIRE_SLAYER",
+        "Vampire Slayer"
+      ],
+      [
+        "WITCHS_POTION",
+        "Witch's Potion"
+      ],
+      [
+        "ANIMAL_MAGNETISM",
+        "Animal Magnetism"
+      ],
+      [
+        "BETWEEN_A_ROCK",
+        "Between a Rock..."
+      ],
+      [
+        "BIG_CHOMPY_BIRD_HUNTING",
+        "Big Chompy Bird Hunting"
+      ],
+      [
+        "BIOHAZARD",
+        "Biohazard"
+      ],
+      [
+        "CABIN_FEVER",
+        "Cabin Fever"
+      ],
+      [
+        "CLOCK_TOWER",
+        "Clock Tower"
+      ],
+      [
+        "CONTACT",
+        "Contact!"
+      ],
+      [
+        "ZOGRE_FLESH_EATERS",
+        "Zogre Flesh Eaters"
+      ],
+      [
+        "CREATURE_OF_FENKENSTRAIN",
+        "Creature of Fenkenstrain"
+      ],
+      [
+        "DARKNESS_OF_HALLOWVALE",
+        "Darkness of Hallowvale"
+      ],
+      [
+        "DEATH_TO_THE_DORGESHUUN",
+        "Death to the Dorgeshuun"
+      ],
+      [
+        "DEATH_PLATEAU",
+        "Death Plateau"
+      ],
+      [
+        "DESERT_TREASURE",
+        "Desert Treasure"
+      ],
+      [
+        "DEVIOUS_MINDS",
+        "Devious Minds"
+      ],
+      [
+        "THE_DIG_SITE",
+        "The Dig Site"
+      ],
+      [
+        "DRUIDIC_RITUAL",
+        "Druidic Ritual"
+      ],
+      [
+        "DWARF_CANNON",
+        "Dwarf Cannon"
+      ],
+      [
+        "EADGARS_RUSE",
+        "Eadgar's Ruse"
+      ],
+      [
+        "EAGLES_PEAK",
+        "Eagles' Peak"
+      ],
+      [
+        "ELEMENTAL_WORKSHOP_I",
+        "Elemental Workshop I"
+      ],
+      [
+        "ELEMENTAL_WORKSHOP_II",
+        "Elemental Workshop II"
+      ],
+      [
+        "ENAKHRAS_LAMENT",
+        "Enakhra's Lament"
+      ],
+      [
+        "ENLIGHTENED_JOURNEY",
+        "Enlightened Journey"
+      ],
+      [
+        "THE_EYES_OF_GLOUPHRIE",
+        "The Eyes of Glouphrie"
+      ],
+      [
+        "FAIRYTALE_I_GROWING_PAINS",
+        "Fairytale I - Growing Pains"
+      ],
+      [
+        "FAIRYTALE_II_CURE_A_QUEEN",
+        "Fairytale II - Cure a Queen"
+      ],
+      [
+        "FAMILY_CREST",
+        "Family Crest"
+      ],
+      [
+        "THE_FEUD",
+        "The Feud"
+      ],
+      [
+        "FIGHT_ARENA",
+        "Fight Arena"
+      ],
+      [
+        "FISHING_CONTEST",
+        "Fishing Contest"
+      ],
+      [
+        "FORGETTABLE_TALE",
+        "Forgettable Tale..."
+      ],
+      [
+        "THE_FREMENNIK_TRIALS",
+        "The Fremennik Trials"
+      ],
+      [
+        "WATERFALL_QUEST",
+        "Waterfall Quest"
+      ],
+      [
+        "GARDEN_OF_TRANQUILITY",
+        "Garden of Tranquility"
+      ],
+      [
+        "GERTRUDES_CAT",
+        "Gertrude's Cat"
+      ],
+      [
+        "GHOSTS_AHOY",
+        "Ghosts Ahoy"
+      ],
+      [
+        "THE_GIANT_DWARF",
+        "The Giant Dwarf"
+      ],
+      [
+        "THE_GOLEM",
+        "The Golem"
+      ],
+      [
+        "THE_GRAND_TREE",
+        "The Grand Tree"
+      ],
+      [
+        "THE_HAND_IN_THE_SAND",
+        "The Hand in the Sand"
+      ],
+      [
+        "HAUNTED_MINE",
+        "Haunted Mine"
+      ],
+      [
+        "HAZEEL_CULT",
+        "Hazeel Cult"
+      ],
+      [
+        "HEROES_QUEST",
+        "Heroes' Quest"
+      ],
+      [
+        "HOLY_GRAIL",
+        "Holy Grail"
+      ],
+      [
+        "HORROR_FROM_THE_DEEP",
+        "Horror from the Deep"
+      ],
+      [
+        "ICTHLARINS_LITTLE_HELPER",
+        "Icthlarin's Little Helper"
+      ],
+      [
+        "IN_AID_OF_THE_MYREQUE",
+        "In Aid of the Myreque"
+      ],
+      [
+        "IN_SEARCH_OF_THE_MYREQUE",
+        "In Search of the Myreque"
+      ],
+      [
+        "JUNGLE_POTION",
+        "Jungle Potion"
+      ],
+      [
+        "LEGENDS_QUEST",
+        "Legend's Quest"
+      ],
+      [
+        "LOST_CITY",
+        "Lost City"
+      ],
+      [
+        "THE_LOST_TRIBE",
+        "The Lost Tribe"
+      ],
+      [
+        "LUNAR_DIPLOMACY",
+        "Lunar Diplomacy"
+      ],
+      [
+        "MAKING_HISTORY",
+        "Making History"
+      ],
+      [
+        "MERLINS_CRYSTAL",
+        "Merlin's Crystal"
+      ],
+      [
+        "MONKEY_MADNESS",
+        "Monkey Madness"
+      ],
+      [
+        "MONKS_FRIEND",
+        "Monk's Friend"
+      ],
+      [
+        "MOUNTAIN_DAUGHTER",
+        "Mountain Daughter"
+      ],
+      [
+        "MOURNINGS_END_PART_I",
+        "Mourning's End Part I"
+      ],
+      [
+        "MOURNINGS_END_PART_II",
+        "Mourning's End Part II"
+      ],
+      [
+        "MURDER_MYSTERY",
+        "Murder Mystery"
+      ],
+      [
+        "MY_ARMS_BIG_ADVENTURE",
+        "My Arm's Big Adventure"
+      ],
+      [
+        "NATURE_SPIRIT",
+        "Nature Spirit"
+      ],
+      [
+        "OBSERVATORY_QUEST",
+        "Observatory Quest"
+      ],
+      [
+        "ONE_SMALL_FAVOUR",
+        "One Small Favour"
+      ],
+      [
+        "PLAGUE_CITY",
+        "Plague City"
+      ],
+      [
+        "PRIEST_IN_PERIL",
+        "Priest in Peril"
+      ],
+      [
+        "RAG_AND_BONE_MAN",
+        "Rag and Bone Man"
+      ],
+      [
+        "RATCATCHERS",
+        "Ratcatchers"
+      ],
+      [
+        "RECIPE_FOR_DISASTER",
+        "Recipe for Disaster"
+      ],
+      [
+        "RECRUITMENT_DRIVE",
+        "Recruitment Drive"
+      ],
+      [
+        "REGICIDE",
+        "Regicide"
+      ],
+      [
+        "ROVING_ELVES",
+        "Roving Elves"
+      ],
+      [
+        "ROYAL_TROUBLE",
+        "Royal Trouble"
+      ],
+      [
+        "RUM_DEAL",
+        "Rum Deal"
+      ],
+      [
+        "SCORPION_CATCHER",
+        "Scorpion Catcher"
+      ],
+      [
+        "SEA_SLUG",
+        "Sea Slug"
+      ],
+      [
+        "THE_SLUG_MENACE",
+        "The Slug Menace"
+      ],
+      [
+        "SHADES_OF_MORTTON",
+        "Shades of Mort'ton"
+      ],
+      [
+        "SHADOW_OF_THE_STORM",
+        "Shadow of the Storm"
+      ],
+      [
+        "SHEEP_HERDER",
+        "Sheep Herder"
+      ],
+      [
+        "SHILO_VILLAGE",
+        "Shilo Village"
+      ],
+      [
+        "A_SOULS_BANE",
+        "A Soul's Bane"
+      ],
+      [
+        "SPIRITS_OF_THE_ELID",
+        "Spirits of the Elid"
+      ],
+      [
+        "SWAN_SONG",
+        "Swan Song"
+      ],
+      [
+        "TAI_BWO_WANNAI_TRIO",
+        "Tai Bwo Wannai Trio"
+      ],
+      [
+        "A_TAIL_OF_TWO_CATS",
+        "A Tail of Two Cats"
+      ],
+      [
+        "TEARS_OF_GUTHIX",
+        "Tears of Guthix"
+      ],
+      [
+        "TEMPLE_OF_IKOV",
+        "Temple of Ikov"
+      ],
+      [
+        "THRONE_OF_MISCELLANIA",
+        "Throne of Miscellania"
+      ],
+      [
+        "THE_TOURIST_TRAP",
+        "The Tourist Trap"
+      ],
+      [
+        "WITCHS_HOUSE",
+        "Witch's House"
+      ],
+      [
+        "TREE_GNOME_VILLAGE",
+        "Tree Gnome Village"
+      ],
+      [
+        "TRIBAL_TOTEM",
+        "Tribal Totem"
+      ],
+      [
+        "TROLL_ROMANCE",
+        "Troll Romance"
+      ],
+      [
+        "TROLL_STRONGHOLD",
+        "Troll Stronghold"
+      ],
+      [
+        "UNDERGROUND_PASS",
+        "Underground Pass"
+      ],
+      [
+        "WANTED",
+        "Wanted!"
+      ],
+      [
+        "WATCHTOWER",
+        "Watchtower"
+      ],
+      [
+        "COLD_WAR",
+        "Cold War"
+      ],
+      [
+        "THE_FREMENNIK_ISLES",
+        "The Fremennik Isles"
+      ],
+      [
+        "TOWER_OF_LIFE",
+        "Tower of Life"
+      ],
+      [
+        "THE_GREAT_BRAIN_ROBBERY",
+        "The Great Brain Robbery"
+      ],
+      [
+        "WHAT_LIES_BELOW",
+        "What Lies Below"
+      ],
+      [
+        "OLAFS_QUEST",
+        "Olaf's Quest"
+      ],
+      [
+        "ANOTHER_SLICE_OF_HAM",
+        "Another Slice of H.A.M"
+      ],
+      [
+        "DREAM_MENTOR",
+        "Dream Mentor"
+      ],
+      [
+        "GRIM_TALES",
+        "Grim Tales"
+      ],
+      [
+        "KINGS_RANSOM",
+        "King's Ransom"
+      ],
+      [
+        "THE_PATH_OF_GLOUPHRIE",
+        "The Path of Glouphrie"
+      ],
+      [
+        "BACK_TO_MY_ROOTS",
+        "Back to my Roots"
+      ],
+      [
+        "LAND_OF_THE_GOBLINS",
+        "Land of the Goblins"
+      ],
+      [
+        "DEALING_WITH_SCABARAS",
+        "Dealing with Scabaras"
+      ],
+      [
+        "WOLF_WHISTLE",
+        "Wolf Whistle"
+      ],
+      [
+        "AS_A_FIRST_RESORT",
+        "As a First Resort..."
+      ],
+      [
+        "CATAPULT_CONSTRUCTION",
+        "Catapult Construction"
+      ],
+      [
+        "KENNITHS_CONCERNS",
+        "Kennith's Concerns"
+      ],
+      [
+        "LEGACY_OF_SEERGAZE",
+        "Legacy of Seergaze"
+      ],
+      [
+        "PERILS_OF_ICE_MOUNTAIN",
+        "Perils of Ice Mountain"
+      ],
+      [
+        "TOKTZ_KET_DILL",
+        "TokTz-Ket-Dill"
+      ],
+      [
+        "SMOKING_KILLS",
+        "Smoking Kills"
+      ],
+      [
+        "ROCKING_OUT",
+        "Rocking Out"
+      ],
+      [
+        "SPIRIT_OF_SUMMER",
+        "Spirit of Summer"
+      ],
+      [
+        "MEETING_HISTORY",
+        "Meeting History"
+      ],
+      [
+        "ALL_FIRED_UP",
+        "All Fired Up"
+      ],
+      [
+        "SUMMERS_END",
+        "Summer's End"
+      ],
+      [
+        "DEFENDER_OF_VARROCK",
+        "Defender of Varrock"
+      ],
+      [
+        "SWEPT_AWAY",
+        "Swept Away"
+      ],
+      [
+        "WHILE_GUTHIX_SLEEPS",
+        "While Guthix Sleeps"
+      ],
+      [
+        "IN_PYRE_NEED",
+        "In Pyre Need"
+      ],
+      [
+        "TEST_QUEST",
+        "Test Quest"
+      ]
+    ],
+    "registered": {
+      "ANCIENT": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "MODERN": [
+        1,
+        4,
+        6,
+        8,
+        10,
+        14,
+        17,
+        20,
+        24,
+        27,
+        33,
+        38,
+        45,
+        48,
+        52,
+        55,
+        22,
+        31,
+        42
+      ]
+    }
+  },
+  "unchanged": [
+    "core/game/node/entity/combat/equipment/WeaponInterface.java",
+    "core/game/component/ComponentDefinition.java",
+    "core/game/component/InterfaceType.java",
+    "core/game/node/entity/skill/LevelUp.java",
+    "core/game/node/entity/skill/LevelUpJingles.kt",
+    "core/game/node/entity/player/link/emote/EmoteManager.java",
+    "core/game/node/entity/player/link/emote/Emotes.java",
+    "core/game/node/entity/player/link/music/MusicPlayer.java",
+    "core/game/node/entity/player/link/music/MusicEntry.java",
+    "core/game/node/entity/player/link/music/MusicZone.java",
+    "core/game/node/entity/player/link/quest/QuestRepository.java",
+    "core/game/node/entity/player/link/quest/Quest.java",
+    "content/data/Quests.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

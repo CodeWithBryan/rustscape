@@ -69,7 +69,11 @@ use rs09_server::{
         doors::Location,
         interaction_options, interfaces,
         login::{self, Constants, Level, Write},
-        player_render, player_walk,
+        player_render,
+        player_tabs::{
+            self, emotes as tab_emotes, level_up, music as tab_music, weapon as tab_weapon,
+        },
+        player_walk,
         player_walk::{Node, NodeHandle, State},
         prepared_masks::PreparedMasks,
         rebuild,
@@ -109,6 +113,9 @@ const COUNTER_OPCODES: [u8; 16] = [
 /// bits 0..1. Checked against the cache by `pinned_varbit_matches_the_cache`
 /// when the cache is present.
 const SPELL_BOOK_VARBIT: (i32, i32, i32, i32) = (439, 357, 0, 1);
+/// Item 0's name as the pinned cache defines it. Checked by
+/// `pinned_item_zero_matches_the_cache` when the cache is present.
+const ITEM_ZERO_NAME: &str = "Dwarf remains";
 
 thread_local! {
     /// The clock of the scenario the test thread drives: tests run in
@@ -282,6 +289,10 @@ struct Canonical {
     render: player_render::Handle,
     client: ClientInfo,
     weapon: Option<interfaces::Handle>,
+    /// The native WeaponInterface object behind `weapon` (the player's extension).
+    weapon_tab: Option<tab_weapon::WeaponInterface>,
+    /// MusicPlayer's current track, playing and looping fields.
+    music: tab_music::Playback,
     friends: Option<interfaces::Handle>,
     options: interaction_options::Handle,
 }
@@ -872,6 +883,8 @@ impl login::Host<P> for Binding {
                     screen_height: 503,
                 },
                 weapon: None,
+                weapon_tab: None,
+                music: tab_music::Playback::default(),
                 friends: None,
                 options: interaction_options::Table::new(Some(node)),
             }),
@@ -1165,12 +1178,18 @@ impl login::Host<P> for Binding {
         Ok(())
     }
     fn quest_synchronize_tab(&mut self, p: &P) -> login::Result<()> {
+        // QuestRepository.syncronizeTab is native (world::player_tabs::quests),
+        // but each quest's configs, getConfig override and updateVarps are
+        // content this test has no input for, and its varbits need the varbit
+        // archive: the segment stays replayed.
         self.inner.replay(p, "QuestRepository.syncronizeTab");
         Ok(())
     }
     fn emote_refresh(&mut self, p: &P) -> login::Result<()> {
-        self.inner.replay(p, "EmoteManager.refresh");
-        Ok(())
+        // EmoteManager.refresh, native over the profile's persisted emotes.
+        self.inner
+            .with_emotes(p, |tabs, manager| tab_emotes::refresh(tabs, manager))
+            .map_err(native)
     }
     fn login_plugins(&mut self) -> Vec<String> {
         boot()["listeners"]["loginPlugins"]
@@ -1181,7 +1200,30 @@ impl login::Host<P> for Binding {
             .collect()
     }
     fn login_plugin(&mut self, plugin: &str, p: &P) -> login::Result<()> {
+        let session = self.inner.session_of(p);
+        let start = self.inner.queue.len();
         self.inner.replay(p, plugin);
+        // The replayed content's one state effect a native system reads later:
+        // LoginValidationPlugin's Player.toggleDebug in development mode, whose
+        // message carries the new value (MusicPlayer reads isDebug). Applied
+        // as the replayed varps are: the attribute write, without sending.
+        let toggled: Vec<bool> = self.inner.queue[start..]
+            .iter()
+            .filter(|(s, o)| *s == session && o.bytes.first() == Some(&70))
+            .filter_map(|(_, o)| {
+                let text = String::from_utf8_lossy(&o.bytes[1..]).into_owned();
+                let prefix = "Your debug mode is toggled to ";
+                let at = text.find(prefix)?;
+                Some(text[at + prefix.len()..].starts_with("true"))
+            })
+            .collect();
+        for debug in toggled {
+            self.inner
+                .canonical(p)
+                .player
+                .attributes()
+                .set_boolean("debug", debug);
+        }
         Ok(())
     }
     fn appearance_sync(&mut self, _: &P) -> login::Result<()> {
@@ -1199,13 +1241,29 @@ impl login::Host<P> for Binding {
     }
     fn region_move(&mut self, p: &P) -> login::Result<()> {
         // RegionManager.move: entity regions and zones are libraries not
-        // joined here; ZoneMonitor's music zones queue packets.
-        self.inner.replay(p, "RegionManager.move");
+        // joined here. Everything the original queued from it came from
+        // ZoneMonitor.checkMusicZones entering a music zone; which zone (its
+        // music id) is the stand-in input, read from the MusicPacket the
+        // original queued there. MusicZone.enter and the MusicPlayer it
+        // reaches run natively and are compared byte for byte.
+        let zone = self.inner.zone_music(p);
+        self.inner.calls.push(format!(
+            "RegionManager.move (regions and zones not joined; music zone {zone:?} is a stand-in input)"
+        ));
+        if let Some(id) = zone {
+            self.inner
+                .with_music(p, |tabs, player| {
+                    tab_music::zone_enter(Some(player), tabs, id)
+                })
+                .map_err(native)?;
+        }
         Ok(())
     }
     fn music_init(&mut self, p: &P) -> login::Result<()> {
-        self.inner.replay(p, "MusicPlayer.init");
-        Ok(())
+        // MusicPlayer.init, native over the profile's persisted songs.
+        self.inner
+            .with_music(p, |tabs, player| player.init(tabs))
+            .map_err(native)
     }
     fn update_appearance(&mut self, _: &P) -> login::Result<()> {
         self.inner
@@ -1415,9 +1473,10 @@ impl interfaces::Context for Inner {
             .as_ref()
             .is_some_and(|f| f.same(c));
         if weapon {
-            // WeaponInterface.open: core, not ported.
-            self.replay(&p, "WeaponInterface.open");
-            return Ok(());
+            // WeaponInterface.open(player), native.
+            return self
+                .with_weapon(&p, |tabs, weapon| weapon.open(tabs))
+                .map_err(|e| interfaces::Error::Binding(format!("{e:?}")));
         }
         if friends {
             // FriendsListInterface.open: content.
@@ -1441,8 +1500,14 @@ impl interfaces::Context for Inner {
         Ok(self.canonical(&p).weapon.clone())
     }
     fn create_weapon(&mut self) -> interfaces::Result<interfaces::Handle> {
-        let handle = self.registry.component(92);
+        // new WeaponInterface(player): super(92), then the player's extension.
+        let handle = self.registry.component(tab_weapon::WEAPON_FISTS_SEL);
         handle.write().weapon = true;
+        let p = self.current;
+        let created =
+            tab_weapon::WeaponInterface::new(&mut Tabs { inner: self, p }, handle.clone())
+                .map_err(|e| interfaces::Error::Binding(format!("{e:?}")))?;
+        self.players[p.0].canonical.as_mut().unwrap().weapon_tab = Some(created);
         Ok(handle)
     }
     fn add_weapon(&mut self, component: interfaces::Handle) -> interfaces::Result<()> {
@@ -1671,6 +1736,578 @@ impl social::Host<P> for Inner {
     }
 }
 
+// ---------------------------------------------------- player tabs (world::player_tabs)
+
+fn tab_binding<E: std::fmt::Debug>(e: E) -> player_tabs::Error {
+    player_tabs::Error::Binding(format!("{e:?}"))
+}
+fn tab_unreached<T>() -> player_tabs::Result<T> {
+    Err(player_tabs::Error::Binding(NOT_REACHED.into()))
+}
+
+impl Inner {
+    /// Runs a WeaponInterface member on the player's native extension object.
+    fn with_weapon<T>(
+        &mut self,
+        p: &P,
+        f: impl FnOnce(&mut Tabs<'_>, &mut tab_weapon::WeaponInterface) -> player_tabs::Result<T>,
+    ) -> player_tabs::Result<T> {
+        let mut weapon = self.players[p.0]
+            .canonical
+            .as_mut()
+            .unwrap()
+            .weapon_tab
+            .take()
+            .ok_or(player_tabs::Error::Null)?;
+        let result = f(&mut Tabs { inner: self, p: *p }, &mut weapon);
+        self.players[p.0].canonical.as_mut().unwrap().weapon_tab = Some(weapon);
+        result
+    }
+    /// Runs an EmoteManager member on the profile's persisted emotes; no
+    /// profile lock is held while it runs.
+    fn with_emotes<T>(
+        &mut self,
+        p: &P,
+        f: impl FnOnce(
+            &mut Tabs<'_>,
+            &mut rs09_server::player::persisted::emotes::Manager,
+        ) -> player_tabs::Result<T>,
+    ) -> player_tabs::Result<T> {
+        let mut manager = self
+            .with_profile(p, |profile| profile.persisted.emotes.clone())
+            .map_err(tab_binding)?;
+        let result = f(&mut Tabs { inner: self, p: *p }, &mut manager);
+        self.with_profile(p, |profile| profile.persisted.emotes = manager)
+            .map_err(tab_binding)?;
+        result
+    }
+    /// Runs a MusicPlayer member on the profile's persisted songs, the
+    /// player's playback fields and the world's song table.
+    fn with_music<T>(
+        &mut self,
+        p: &P,
+        f: impl FnOnce(&mut Tabs<'_>, &mut tab_music::MusicPlayer<'_>) -> player_tabs::Result<T>,
+    ) -> player_tabs::Result<T> {
+        let mut unlocked = self
+            .with_profile(p, |profile| profile.persisted.music.clone())
+            .map_err(tab_binding)?;
+        let mut playback = self.canonical(p).music.clone();
+        let songs = self.world.songs.clone();
+        let result = {
+            let mut player = tab_music::MusicPlayer {
+                unlocked: &mut unlocked,
+                playback: &mut playback,
+                songs: &songs,
+            };
+            f(&mut Tabs { inner: self, p: *p }, &mut player)
+        };
+        self.with_profile(p, |profile| profile.persisted.music = unlocked)
+            .map_err(tab_binding)?;
+        self.players[p.0].canonical.as_mut().unwrap().music = playback;
+        result
+    }
+    /// The stand-in for ZoneMonitor.checkMusicZones: the music id of the
+    /// MusicPacket (opcode 4, `putLEShortA`) the original queued from
+    /// RegionManager.move at the session's current position, if any.
+    fn zone_music(&self, p: &P) -> Option<i32> {
+        let session = self.session_of(p);
+        let position = self.queue.iter().filter(|(s, _)| *s == session).count();
+        let expected = self.expected.get(&session)?;
+        expected
+            .get(position..)?
+            .iter()
+            .take_while(|e| e.has("RegionManager.move"))
+            .find(|e| e.op == Some(4))
+            .map(|e| {
+                let b = unhex(&e.hex);
+                (i32::from(b[2]) << 8) | i32::from(b[1].wrapping_sub(128))
+            })
+    }
+}
+
+/// MusicPacket, as the original writes it: opcode 4 with `putLEShortA(id)`,
+/// or for a jingle opcode 208 with `putTri(255)` and `putLEShort(id)`.
+fn music_frame(id: i32, secondary: bool) -> Frame {
+    let mut w = Writer::new();
+    if secondary {
+        w.p1(0);
+        w.p1(0);
+        w.p1(255);
+        w.ip2(id);
+        Frame {
+            opcode: 208,
+            payload: w.into_vec(),
+        }
+    } else {
+        w.p1(id.wrapping_add(128));
+        w.p1(id >> 8);
+        Frame {
+            opcode: 4,
+            payload: w.into_vec(),
+        }
+    }
+}
+
+/// The hosts of world::player_tabs for one canonical player: packets through
+/// the session queue and the interface manager's counter, varps through the
+/// canonical variable store, Settings, Properties, persisted state, the
+/// attribute store, equipment and appearance of that player. Calls the
+/// login scenarios never reach fail as not reached.
+struct Tabs<'a> {
+    inner: &'a mut Inner,
+    p: P,
+}
+impl Tabs<'_> {
+    fn varp(&mut self, id: i32, value: i32, save: bool) -> player_tabs::Result<()> {
+        self.inner
+            .variables(&self.p, |ctx, owner| {
+                variables::set_varp(ctx, Some(owner), id, value, save)
+            })
+            .map_err(tab_binding)
+    }
+    fn get_attribute(
+        &mut self,
+        key: &str,
+        default: player_tabs::Value,
+    ) -> player_tabs::Result<player_tabs::Value> {
+        let attributes = self.inner.canonical(&self.p).player.attributes();
+        match default {
+            player_tabs::Value::Bool(d) => attributes
+                .boolean(key, d)
+                .map(player_tabs::Value::Bool)
+                .map_err(|_| player_tabs::Error::Cast),
+            player_tabs::Value::Int(d) => attributes
+                .integer(key, d)
+                .map(player_tabs::Value::Int)
+                .map_err(|_| player_tabs::Error::Cast),
+            player_tabs::Value::Component(_) => tab_unreached(),
+        }
+    }
+    fn set_attribute(&mut self, key: &str, value: player_tabs::Value) -> player_tabs::Result<()> {
+        let attributes = self.inner.canonical(&self.p).player.attributes();
+        match value {
+            player_tabs::Value::Bool(v) => attributes.set_boolean(key, v),
+            player_tabs::Value::Int(v) => attributes.set_integer(key, v),
+            player_tabs::Value::Component(_) => return tab_unreached(),
+        }
+        Ok(())
+    }
+    fn message(&mut self, text: &str) -> player_tabs::Result<()> {
+        self.inner.message(&self.p, text).map_err(tab_binding)
+    }
+    fn send_string(&mut self, text: &str, interface: i32, child: i32) -> player_tabs::Result<()> {
+        self.inner
+            .text(&self.p, text, interface, child)
+            .map_err(tab_binding)
+    }
+    fn settings(&mut self) -> Settings {
+        self.inner.canonical(&self.p).player.settings()
+    }
+    fn profile<T>(&self, f: impl FnOnce(&mut Profile) -> T) -> player_tabs::Result<T> {
+        self.inner.with_profile(&self.p, f).map_err(tab_binding)
+    }
+}
+
+impl tab_weapon::Host for Tabs<'_> {
+    type Spell = save::Autocast;
+    fn add_extension(&mut self) -> player_tabs::Result<()> {
+        self.inner
+            .calls
+            .push("Player.addExtension(WeaponInterface)".into());
+        Ok(())
+    }
+    fn set_tab(&mut self, slot: usize, component: &interfaces::Handle) -> player_tabs::Result<()> {
+        let manager = self.inner.canonical(&self.p).player.manager();
+        let tabs = manager
+            .fields
+            .read()
+            .tabs
+            .clone()
+            .ok_or(player_tabs::Error::Null)?;
+        let mut tabs = tabs.write();
+        *tabs.get_mut(slot).ok_or(player_tabs::Error::Index)? = Some(component.clone());
+        Ok(())
+    }
+    fn equipment(&mut self, slot: i32) -> player_tabs::Result<Option<i32>> {
+        let item = self.inner.canonical(&self.p).player.equipment().get(slot);
+        Ok(item.map(|i| i.read().id()))
+    }
+    fn equipment_new(&mut self, slot: i32) -> player_tabs::Result<i32> {
+        Ok(tab_weapon::Host::equipment(self, slot)?.unwrap_or(0))
+    }
+    fn item_name(&mut self, id: i32) -> Option<String> {
+        self.inner.items.for_id(id).read().name.clone()
+    }
+    fn item_config_int(&mut self, _: i32, _: &str, _: i32) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn item_config_bool(&mut self, _: i32, _: &str, _: bool) -> player_tabs::Result<bool> {
+        tab_unreached()
+    }
+    fn item_config_animations(
+        &mut self,
+        _: i32,
+        _: &str,
+    ) -> player_tabs::Result<Option<Vec<tab_weapon::Animation>>> {
+        tab_unreached()
+    }
+    fn component_definition(&mut self, id: i32) -> interfaces::Def {
+        self.inner.registry.for_id(id)
+    }
+    fn create_component(&mut self, id: i32) -> interfaces::Handle {
+        self.inner.registry.component(id)
+    }
+    fn resizable(&mut self) -> player_tabs::Result<bool> {
+        Ok(self.inner.canonical(&self.p).client.is_resizable())
+    }
+    fn send_interface(
+        &mut self,
+        pane: i32,
+        child: i32,
+        id: i32,
+        walkable: bool,
+    ) -> player_tabs::Result<()> {
+        let manager = self.inner.canonical(&self.p).player.manager();
+        self.inner.current = self.p;
+        interfaces::send_interface(&mut *self.inner, &manager, pane, child, id, walkable)
+            .map_err(tab_binding)
+    }
+    fn interface_config(
+        &mut self,
+        interface: i32,
+        child: i32,
+        hide: bool,
+    ) -> player_tabs::Result<()> {
+        let manager = self.inner.canonical(&self.p).player.manager();
+        self.inner.current = self.p;
+        interfaces::Context::interface_config(&mut *self.inner, &manager, interface, child, hide)
+            .map_err(tab_binding)
+    }
+    fn send_string(&mut self, text: &str, interface: i32, child: i32) -> player_tabs::Result<()> {
+        Tabs::send_string(self, text, interface, child)
+    }
+    fn message(&mut self, text: &str) -> player_tabs::Result<()> {
+        Tabs::message(self, text)
+    }
+    fn attack_style_index(&mut self) -> player_tabs::Result<i32> {
+        Ok(self.settings().fields.read().attack_style_index)
+    }
+    fn toggle_attack_style_index(&mut self, index: i32) -> player_tabs::Result<()> {
+        let settings = self.settings();
+        settings
+            .toggle_attack_style_index(
+                &mut SettingsContext {
+                    inner: &mut *self.inner,
+                    p: self.p,
+                },
+                index,
+            )
+            .map_err(tab_binding)
+    }
+    fn special_toggled(&mut self) -> player_tabs::Result<bool> {
+        Ok(self.settings().fields.read().special_toggled)
+    }
+    fn toggle_special_bar(&mut self) -> player_tabs::Result<()> {
+        let settings = self.settings();
+        settings
+            .toggle_special_bar(&mut SettingsContext {
+                inner: &mut *self.inner,
+                p: self.p,
+            })
+            .map_err(tab_binding)
+    }
+    fn attack_style(
+        &mut self,
+    ) -> player_tabs::Result<Option<rs09_server::world::combat_swing::AttackStyle>> {
+        self.profile(|profile| profile.properties.attack_style)
+    }
+    fn set_attack_style(
+        &mut self,
+        style: rs09_server::world::combat_swing::AttackStyle,
+    ) -> player_tabs::Result<()> {
+        self.profile(|profile| profile.properties.attack_style = Some(style))
+    }
+    fn set_attack_animation(
+        &mut self,
+        animation: tab_weapon::Animation,
+    ) -> player_tabs::Result<()> {
+        let animation = rs09_server::world::animation::Animation::with(
+            animation.id,
+            animation.delay,
+            Some(animation.priority),
+        );
+        self.profile(|profile| profile.properties.attack_animation = Some(animation))
+    }
+    fn update_style(&mut self) -> player_tabs::Result<()> {
+        self.inner
+            .calls
+            .push("CombatPulse.updateStyle (combat pulse not joined here)".into());
+        Ok(())
+    }
+    fn is_npc(&mut self) -> player_tabs::Result<bool> {
+        let masks = self.inner.canonical(&self.p).player.masks();
+        let npc = masks.body().read().npc_id != -1;
+        Ok(npc)
+    }
+    fn spell_book(&mut self) -> player_tabs::Result<i32> {
+        self.profile(|profile| profile.spell_book)
+    }
+    fn autocast(&mut self) -> player_tabs::Result<Option<save::Autocast>> {
+        self.profile(|profile| profile.persisted.spells.autocast)
+    }
+    fn spell_id(&mut self, spell: &save::Autocast) -> i32 {
+        spell.spell_id
+    }
+    fn set_autocast(&mut self, spell: Option<&save::Autocast>) -> player_tabs::Result<()> {
+        let spell = spell.copied();
+        self.profile(|profile| profile.persisted.spells.autocast = spell)
+    }
+    fn spell_lookup(
+        &mut self,
+        _: rs09_server::world::spells::SpellBook,
+        _: i32,
+    ) -> player_tabs::Result<tab_weapon::Lookup<save::Autocast>> {
+        tab_unreached()
+    }
+    fn get_attribute(
+        &mut self,
+        key: &str,
+        default: player_tabs::Value,
+    ) -> player_tabs::Result<player_tabs::Value> {
+        Tabs::get_attribute(self, key, default)
+    }
+    fn set_attribute(&mut self, key: &str, value: player_tabs::Value) -> player_tabs::Result<()> {
+        Tabs::set_attribute(self, key, value)
+    }
+    fn remove_attribute(&mut self, key: &str) -> player_tabs::Result<()> {
+        self.inner
+            .canonical(&self.p)
+            .player
+            .attributes()
+            .remove(key);
+        Ok(())
+    }
+    fn varp(&mut self, id: i32, value: i32, save: bool) -> player_tabs::Result<()> {
+        Tabs::varp(self, id, value, save)
+    }
+    fn open_tab(&mut self, _: &interfaces::Handle) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+}
+
+impl level_up::Host for Tabs<'_> {
+    fn get_attribute(
+        &mut self,
+        key: &str,
+        default: player_tabs::Value,
+    ) -> player_tabs::Result<player_tabs::Value> {
+        Tabs::get_attribute(self, key, default)
+    }
+    fn set_attribute(&mut self, key: &str, value: player_tabs::Value) -> player_tabs::Result<()> {
+        Tabs::set_attribute(self, key, value)
+    }
+    fn static_level(&mut self, _: i32) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn increment_prayer_points(&mut self, _: f64) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn total_level(&mut self) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn combat_milestone(&mut self) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn set_combat_milestone(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn skill_milestone(&mut self) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn set_skill_milestone(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn combat_level(&mut self) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn jingle(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn varp(&mut self, id: i32, value: i32, save: bool) -> player_tabs::Result<()> {
+        Tabs::varp(self, id, value, save)
+    }
+    fn graphic(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn send_string(&mut self, text: &str, interface: i32, child: i32) -> player_tabs::Result<()> {
+        Tabs::send_string(self, text, interface, child)
+    }
+    fn message(&mut self, text: &str) -> player_tabs::Result<()> {
+        Tabs::message(self, text)
+    }
+    fn is_artificial(&mut self) -> bool {
+        self.inner.slot(&self.p).artificial
+    }
+    fn username(&mut self) -> String {
+        self.inner.slot(&self.p).name.clone()
+    }
+    fn news(&mut self, _: &str, _: Option<(i32, &str)>) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn skillcape_trim(&mut self) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn emote_unlock(&mut self, emote: tab_emotes::Emote) -> player_tabs::Result<bool> {
+        let p = self.p;
+        self.inner
+            .with_emotes(&p, |tabs, manager| tab_emotes::unlock(tabs, manager, emote))
+    }
+    fn open_chatbox(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+}
+
+impl tab_emotes::Host for Tabs<'_> {
+    fn varp(&mut self, id: i32, value: i32, save: bool) -> player_tabs::Result<()> {
+        Tabs::varp(self, id, value, save)
+    }
+    fn is_locked(&mut self, _: &str) -> player_tabs::Result<bool> {
+        tab_unreached()
+    }
+    fn lock(&mut self, _: &str, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn lock_all(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn is_attacking(&mut self) -> player_tabs::Result<bool> {
+        tab_unreached()
+    }
+    fn in_combat(&mut self) -> player_tabs::Result<bool> {
+        tab_unreached()
+    }
+    fn debug(&mut self, _: &str) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn rights(&mut self) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn pulse_clear(&mut self) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn dialogue(&mut self, _: &[&str]) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn varrock_diary_complete(&mut self, _: i32, _: i32) -> player_tabs::Result<bool> {
+        tab_unreached()
+    }
+    fn varrock_diary_update(&mut self, _: i32, _: i32, _: bool) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn get_attribute(
+        &mut self,
+        key: &str,
+        default: player_tabs::Value,
+    ) -> player_tabs::Result<player_tabs::Value> {
+        Tabs::get_attribute(self, key, default)
+    }
+    fn set_attribute(&mut self, key: &str, value: player_tabs::Value) -> player_tabs::Result<()> {
+        Tabs::set_attribute(self, key, value)
+    }
+    fn equipment(&mut self, slot: i32) -> player_tabs::Result<Option<i32>> {
+        tab_weapon::Host::equipment(self, slot)
+    }
+    fn animate(&mut self, _: i32, _: Option<i32>) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn animation_duration(&mut self, _: i32) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn graphic(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn animation(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn message(&mut self, text: &str) -> player_tabs::Result<()> {
+        Tabs::message(self, text)
+    }
+    fn jingle(&mut self, _: i32) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+    fn content_play(&mut self, _: tab_emotes::Emote) -> player_tabs::Result<()> {
+        tab_unreached()
+    }
+}
+
+impl tab_music::Host for Tabs<'_> {
+    fn varp(&mut self, id: i32, value: i32, save: bool) -> player_tabs::Result<()> {
+        Tabs::varp(self, id, value, save)
+    }
+    fn access_mask(
+        &mut self,
+        hash: i32,
+        child: i32,
+        interface: i32,
+        offset: i32,
+        length: i32,
+    ) -> player_tabs::Result<()> {
+        // AccessMask (165): the interface manager's counter, then the fields.
+        let counter = self
+            .inner
+            .canonical(&self.p)
+            .player
+            .manager()
+            .packet_count(1);
+        let frame = updates::interface_events(
+            interface.wrapping_shl(16) | child,
+            offset,
+            length,
+            hash,
+            counter,
+        );
+        self.inner.queue_native(&self.p, frame);
+        Ok(())
+    }
+    fn message(&mut self, text: &str) -> player_tabs::Result<()> {
+        Tabs::message(self, text)
+    }
+    fn music(&mut self, id: i32, secondary: bool) -> player_tabs::Result<()> {
+        self.inner.queue_native(&self.p, music_frame(id, secondary));
+        Ok(())
+    }
+    fn send_string(&mut self, text: &str, interface: i32, child: i32) -> player_tabs::Result<()> {
+        Tabs::send_string(self, text, interface, child)
+    }
+    fn is_debug(&mut self) -> player_tabs::Result<bool> {
+        // Player.isDebug: an administrator with the "debug" attribute.
+        let admin = self
+            .profile(|profile| profile.details.rights())?
+            .map_err(tab_binding)?
+            == rs09_server::player::details::Rights::Administrator;
+        if !admin {
+            return Ok(false);
+        }
+        Tabs::get_attribute(self, "debug", player_tabs::Value::Bool(false))?.boolean()
+    }
+    fn ticks(&mut self) -> player_tabs::Result<i32> {
+        tab_unreached()
+    }
+    fn emote_unlocked(&mut self, emote: tab_emotes::Emote) -> player_tabs::Result<bool> {
+        self.profile(|profile| profile.persisted.emotes.is_unlocked(emote.ordinal()))
+    }
+    fn emote_unlock(&mut self, emote: tab_emotes::Emote) -> player_tabs::Result<bool> {
+        let p = self.p;
+        self.inner
+            .with_emotes(&p, |tabs, manager| tab_emotes::unlock(tabs, manager, emote))
+    }
+    fn emote_lock(&mut self, emote: tab_emotes::Emote) -> player_tabs::Result<bool> {
+        let p = self.p;
+        self.inner
+            .with_emotes(&p, |tabs, manager| tab_emotes::lock(tabs, manager, emote))
+    }
+}
+
 // ---------------------------------------------------- library contexts
 
 /// skills::Context for Skills.refresh and Skills.configure: SkillLevel is
@@ -1758,10 +2395,16 @@ impl skills::Context for SkillsContext<'_> {
                 self.inner.queue_native(&self.p, frame);
                 Ok(())
             }
-            Effect::FlashingIcons(_) => {
-                // LevelUp.sendFlashingIcons: core, not ported.
-                self.inner.replay(&self.p, "LevelUp.sendFlashingIcons");
-                Ok(())
+            Effect::FlashingIcons(slot) => {
+                // LevelUp.sendFlashingIcons, native.
+                level_up::send_flashing_icons(
+                    &mut Tabs {
+                        inner: self.inner,
+                        p: self.p,
+                    },
+                    slot,
+                )
+                .map_err(|_| skills::Error::Binding)
             }
             Effect::Combat(level) => {
                 self.inner
@@ -2043,9 +2686,10 @@ impl equipment::Context for Equipment<'_> {
         Ok(self.inner.canonical(&self.p).weapon.as_ref().map(|_| ()))
     }
     fn update_weapon(&mut self, _: ()) -> inventory::Result<()> {
-        // WeaponInterface.updateInterface: core, not ported.
-        self.inner.replay(&self.p, "WeaponInterface");
-        Ok(())
+        // WeaponInterface.updateInterface, native.
+        self.inner
+            .with_weapon(&self.p, |tabs, weapon| weapon.update_interface(tabs))
+            .map_err(binding)
     }
     fn defence_animation(&mut self, _: ()) -> inventory::Result<()> {
         self.inner
@@ -2636,7 +3280,18 @@ fn run(scenario: &Scenario, seed: &[(String, Vec<u8>)]) -> Run {
         "{}/data/players/",
         directory.to_string_lossy().replace('\\', "/")
     );
-    let items = Arc::new(Items::default());
+    let mut items = Items::default();
+    // Item 0 as the pinned cache defines it: WeaponInterface compares the name
+    // of getNew(3) (item 0 for an empty weapon slot) with two staff names.
+    items.insert(
+        0,
+        Shared::new(ItemDefinition {
+            id: 0,
+            name: Some(ITEM_ZERO_NAME.into()),
+            ..Default::default()
+        }),
+    );
+    let items = Arc::new(items);
     let mut registry = interfaces::Registry::default();
     registry.load(INTERFACE_CONFIGS).unwrap();
     let state = State::default();
@@ -3023,25 +3678,22 @@ type Segments = &'static [(&'static str, usize)];
 const COMMON_HEAD: Segments = &[("ManagementEvents.handleEvent", 2)];
 const COMMON_TAIL: Segments = &[
     ("content.minigame.puropuro.CropCircleController.login:", 1),
-    ("WeaponInterface.open", 9),
     ("FriendsListInterface.open", 2),
-    ("WeaponInterface", 6),
-    ("LevelUp.sendFlashingIcons", 1),
     ("FamiliarManager.login", 3),
-    ("WeaponInterface.open", 9),
     ("QuestRepository.syncronizeTab", 104),
 ];
-/// (scenario, session, login tick, native entries, stand-in calls, emotes,
-/// region move, extra login listener, save keys that differ from the
-/// original's save at logout).
+/// (scenario, session, login tick, native entries, stand-in calls, entries of
+/// the native EmoteManager.refresh, entries of the native music zone entered
+/// from RegionManager.move, extra login listener, save keys that differ from
+/// the original's save at logout).
 #[allow(clippy::type_complexity)]
 const PINNED: &[(&str, &str, i64, usize, usize, usize, usize, bool, &[&str])] = &[
     (
         "new-character",
         "traceone",
         1,
-        206,
-        61,
+        282,
+        54,
         6,
         23,
         false,
@@ -3051,8 +3703,8 @@ const PINNED: &[(&str, &str, i64, usize, usize, usize, usize, bool, &[&str])] = 
         "two-characters",
         "traceone",
         1,
-        206,
-        61,
+        282,
+        54,
         6,
         23,
         false,
@@ -3062,8 +3714,8 @@ const PINNED: &[(&str, &str, i64, usize, usize, usize, usize, bool, &[&str])] = 
         "two-characters",
         "tracetwo",
         6,
-        206,
-        61,
+        282,
+        54,
         6,
         23,
         true,
@@ -3073,8 +3725,8 @@ const PINNED: &[(&str, &str, i64, usize, usize, usize, usize, bool, &[&str])] = 
         "returning-character",
         "traceone",
         1,
-        206,
-        61,
+        258,
+        54,
         3,
         2,
         false,
@@ -3085,12 +3737,10 @@ const NEW_SAVE: &[&str] = &[
     "attributes",
     "barCrawl",
     "core_data",
-    "emoteData",
     "ge-history",
     "globalData",
     "slayer",
     "treasureTrails",
-    "unlockedMusic",
 ];
 const RETURNING_SAVE: &[&str] = &[
     "barCrawl",
@@ -3100,7 +3750,7 @@ const RETURNING_SAVE: &[&str] = &[
     "treasureTrails",
 ];
 
-fn expected_segments(emotes: usize, region: usize, shooting_star: bool) -> Vec<(String, usize)> {
+fn expected_segments(shooting_star: bool) -> Vec<(String, usize)> {
     let mut out: Vec<(String, usize)> = COMMON_HEAD
         .iter()
         .map(|(m, n)| (m.to_string(), *n))
@@ -3112,18 +3762,21 @@ fn expected_segments(emotes: usize, region: usize, shooting_star: bool) -> Vec<(
         ));
     }
     out.extend(COMMON_TAIL.iter().map(|(m, n)| (m.to_string(), *n)));
-    out.push(("EmoteManager.refresh".into(), emotes));
     out.push((
         "content.global.handlers.player.LoginValidationPlugin".into(),
         1,
     ));
-    out.push(("RegionManager.move".into(), region));
-    out.push(("MusicPlayer.init".into(), 22));
     out
 }
 
+/// The native EmoteManager.refresh's nested unlock of the skillcape emote (a
+/// new character's list lacks it): three of its six entries.
+const EMOTE_UNLOCK_SITE: &str = "core.game.node.entity.player.link.emote.EmoteManager.refresh:84 < core.game.node.entity.player.info.login.LoginConfiguration.config:250";
+/// The music zone entered from RegionManager.move (MusicZone.enter and the
+/// MusicPlayer it reaches are native; the zone is a stand-in input).
+const REGION_MOVE_SITE: &str = "core.game.world.map.RegionManager.move:385 < core.game.node.entity.player.info.login.LoginConfiguration.configureGameWorld:134";
 /// Natively written entries by the original call site they match, the same
-/// for every login of the corpus (206).
+/// for every login of the corpus.
 const NATIVE_SITES: &[(&str, usize)] = &[
     ("direct (written at once)", 3),
     (
@@ -3137,6 +3790,18 @@ const NATIVE_SITES: &[(&str, usize)] = &[
     (
         "core.game.node.entity.player.link.InterfaceManager.openDefaultTabs:409 < core.game.node.entity.player.info.login.LoginConfiguration.sendGameConfiguration:200",
         11,
+    ),
+    (
+        "core.game.node.entity.player.link.InterfaceManager.openDefaultTabs:393 < core.game.node.entity.player.info.login.LoginConfiguration.sendGameConfiguration:200",
+        9,
+    ),
+    (
+        "core.game.node.entity.player.link.InterfaceManager.openDefaultTabs:393 < core.game.node.entity.player.info.login.LoginConfiguration.config:245",
+        9,
+    ),
+    (
+        "core.game.node.entity.player.link.music.MusicPlayer.refreshList:147 < core.game.node.entity.player.link.music.MusicPlayer.init:77",
+        20,
     ),
     (
         "core.game.node.entity.player.link.InterfaceManager.openDefaultTabs:409 < core.game.node.entity.player.info.login.LoginConfiguration.config:245",
@@ -3156,7 +3821,7 @@ const NATIVE_SITES: &[(&str, usize)] = &[
     ),
     (
         "core.game.container.Container.refresh:493 < core.game.node.entity.player.info.login.LoginConfiguration.config:238",
-        2,
+        8,
     ),
 ];
 
@@ -3185,6 +3850,9 @@ fn native_login_writes_what_the_original_queued_during_the_login_ticks() {
                 c.replayed,
                 c.mismatch
             );
+            if std::env::var_os("RS09_WORLD_LOGIN_VERBOSE").is_some() {
+                eprintln!("{:#?}", c.sites);
+            }
             // Every byte, in order, against the original.
             assert!(
                 c.mismatch.is_none(),
@@ -3210,7 +3878,7 @@ fn native_login_writes_what_the_original_queued_during_the_login_ticks() {
             );
             assert_eq!(
                 c.replayed,
-                expected_segments(pin.5, pin.6, pin.7),
+                expected_segments(pin.7),
                 "{} {}",
                 c.scenario,
                 c.session
@@ -3218,18 +3886,26 @@ fn native_login_writes_what_the_original_queued_during_the_login_ticks() {
             for (site, n) in NATIVE_SITES {
                 assert_eq!(c.sites.get(*site), Some(n), "{site}");
             }
+            // The per-login native sites: the skillcape unlock nested in the
+            // emote refresh (new characters) and the music zone.
+            let unlock = pin.5 - 3;
+            assert_eq!(c.sites.get(EMOTE_UNLOCK_SITE).copied().unwrap_or(0), unlock);
+            assert_eq!(c.sites.get(REGION_MOVE_SITE), Some(&pin.6));
+            let per_login = usize::from(unlock > 0) + 1;
             let singles = c.sites.values().filter(|n| **n == 1).count();
-            assert_eq!(c.sites.len(), NATIVE_SITES.len() + singles);
+            assert_eq!(c.sites.len(), NATIVE_SITES.len() + per_login + singles);
             assert_eq!(
                 c.sites.values().sum::<usize>(),
-                NATIVE_SITES.iter().map(|(_, n)| n).sum::<usize>() + singles
+                NATIVE_SITES.iter().map(|(_, n)| n).sum::<usize>() + unlock + pin.6 + singles
             );
             // The single sites: Settings.update (15), the windows pane, the
             // spell book's tab (twice) and update (two), the welcome, run
-            // energy, both config texts, the five info bars, the interface config.
+            // energy, both config texts, the five info bars, the interface
+            // config, the flashing skill icons, the emote varps 802/313/1085,
+            // MusicPlayer.init's looping varp and access mask.
             assert_eq!(
                 singles,
-                15 + 1 + 2 + 2 + 1 + 1 + 2 + 5 + 1,
+                15 + 1 + 2 + 2 + 1 + 1 + 2 + 5 + 1 + 1 + 3 + 2,
                 "{:#?}",
                 c.sites
             );
@@ -3239,6 +3915,9 @@ fn native_login_writes_what_the_original_queued_during_the_login_ticks() {
                 .map(|(_, b)| String::from_utf8(b.clone()).unwrap())
                 .unwrap();
             let differing = differing_keys(&c.save, &original);
+            if std::env::var_os("RS09_WORLD_LOGIN_VERBOSE").is_some() {
+                eprintln!("differing save keys {differing:?}");
+            }
             if std::env::var_os("RS09_WORLD_LOGIN_VERBOSE").is_some() {
                 let a: Value = serde_json::from_str(&c.save).unwrap();
                 let b: Value = serde_json::from_str(&original).unwrap();
@@ -3328,6 +4007,30 @@ fn pinned_varbit_matches_the_cache() {
         ),
         (varp, id, start, end)
     );
+}
+/// The pinned item 0 name against the pinned cache, when it is present.
+#[test]
+fn pinned_item_zero_matches_the_cache() {
+    use rs09_cache::{
+        Limits,
+        archive::Archive,
+        store::{StorageMode, Store},
+    };
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap();
+    let directory = root.join("assets/cache");
+    if !directory.join("main_file_cache.idx19").is_file() {
+        eprintln!("SKIPPED: assets/cache is absent; the pinned item name is not checked");
+        return;
+    }
+    let store = Store::open(&directory, StorageMode::File, Limits::default()).unwrap();
+    let archive = Archive::open(store, 19, None, Limits::default()).unwrap();
+    let mut items = Items::default();
+    items.load_archive(&archive, 100_000).unwrap();
+    assert_eq!(items.for_id(0).read().name.as_deref(), Some(ITEM_ZERO_NAME));
 }
 /// Unused helpers kept for the item registry shape the binding needs.
 #[allow(dead_code)]
