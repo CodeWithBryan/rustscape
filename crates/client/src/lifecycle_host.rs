@@ -672,7 +672,10 @@ impl Host {
             if request.exists() {
                 self.dumped += 1;
                 let path = folder.join(format!("frame-{}.png", self.dumped));
-                get_screen_data().export_png(&path.to_string_lossy());
+                // As the window shows it: without the framebuffer's alpha.
+                let mut frame = get_screen_data();
+                rs09_client::frame_dump::opaque(&mut frame.bytes);
+                frame.export_png(&path.to_string_lossy());
                 let _ = std::fs::remove_file(request);
             }
         }

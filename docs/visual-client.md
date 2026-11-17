@@ -207,8 +207,9 @@ writes its files and exits; it reads no preferences and plays no music):
 
 Environment variables: `RS09_CLIENT_PASSWORD` (above). With
 `RS09_FRAME_DUMP=DIR` set, creating a file named `take` in that folder makes
-the running client write the frame it just drew as `frame-N.png` there
-(`take-25` waits for a frame of the loading state), a file named
+the running client write the frame it just drew as `frame-N.png` there,
+opaque as the window shows it (`frame_dump.rs`; `take-25` waits for a frame
+of the loading state), a file named
 `command` is run as a typed `::` command without its packet, and the lines
 `OPCODE HEX` of a file named `inject` are taken by the next cycle as server
 packets received (`game/inject.rs`). `RS09_POSTED_POINTER` set makes the

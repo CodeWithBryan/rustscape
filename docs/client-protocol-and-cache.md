@@ -163,11 +163,26 @@ difference fell from 6.5 to 3.6 (default camera) and from 6.5 to 4.0
 (pitch max) per channel, and the per-cell darkening of 1 to 14 levels in the
 kitchen disappeared (cells now differ by 0 to 1). Character shadows are now
 drawn before the scenery, and the title scene's unseen player has none. The
-cache-built pack now names the `floorshadows` sprites. Still open: the
-character shadow is darker in this client (its innermost ring darkens the
-floor to about 0.6 of its value, the original's to 0.77, which is what the
-model's alpha of 82/255 with its colour of about 19 gives); the model itself
-matches the JVM (`tests/oracle.rs`), and the extra darkness was not traced.
+cache-built pack now names the `floorshadows` sprites.
+
+A third run (2026-11-17, pairs `v4-*`) found that the two differences left
+open then, a darker character shadow (rings at 0.60 / 0.70 / 0.83 of the
+floor against the original's 0.77 / 0.85 / 0.92) and a dark patch on a wall
+in front of a shadow, were made by the comparison, not by the renderer. The
+streaming world material blended the framebuffer's alpha like its colour
+(as the original's single `glBlendFunc` does), so the frame dump's PNG
+carried an alpha of 0.78 / 0.83 / 0.90 under the three rings; the wall drawn
+later by `static_render`, which keeps the destination alpha, left the
+shadow's alpha behind it; and `image.ps1`'s crop composited the PNG onto
+black. The window itself showed the colours unchanged (a grab of the window
+matched the dump's colours, not their composite). The world material now
+keeps the destination alpha as `static_render` does, the dump is written
+opaque (`frame_dump.rs`), and `image.ps1` copies colours without
+compositing. With raw colours the rings come out 0.77 / 0.84 / 0.91 for the
+player in the kitchen (the original 0.77 / 0.85 / 0.92) and 0.73 / 0.82 /
+0.90 for an NPC on the courtyard path (the original 0.74 / 0.83 / 0.91, both
+clients on one server), each against the same client with its shadows off;
+the wall below the player matches the original within 1%.
 
 ## Start-up and cache download
 

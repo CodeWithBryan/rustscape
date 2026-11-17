@@ -351,6 +351,11 @@ const SOURCES: &[(&str, &str)] = &[
         "Js5.java",
         "b6c3449c5138544397539b9e052bb742be9fbdf3db34356d1f129036b786e07e",
     ),
+    // The shadow rings' transparencies in `frame_dump`'s tests.
+    (
+        "ShadowModelList.java",
+        "63dcac8beb918ac976f50854b2f0a62bba13c7d65efe71191a0c69e7e18666d7",
+    ),
 ];
 
 #[test]

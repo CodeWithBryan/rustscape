@@ -789,6 +789,13 @@ pub fn material(textures: &Textures, depth_write: bool) -> Result<Material, macr
                     BlendFactor::Value(BlendValue::SourceAlpha),
                     BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
                 )),
+                // As `static_render`'s pipeline: the frame stays opaque
+                // (see `rs09_client::frame_dump`).
+                alpha_blend: Some(BlendState::new(
+                    Equation::Add,
+                    BlendFactor::Zero,
+                    BlendFactor::One,
+                )),
                 ..Default::default()
             },
             textures: vec![

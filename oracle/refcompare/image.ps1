@@ -1,5 +1,5 @@
 # Image helpers for the frame comparison (System.Drawing, no other tools):
-#   [RefCompare.Img]::Crop(src, dst, x, y, w, h)
+#   [RefCompare.Img]::Crop(src, dst, x, y, w, h)   stored colours; an alpha channel is ignored, not composited
 #   [RefCompare.Img]::Sheet(dst, columns, scale, labelled paths...)   contact sheet
 #   [RefCompare.Img]::Pair(a, b, dst, zoom)      a | b | absolute difference x4
 #   [RefCompare.Img]::Compare(a, b)              size, exact-equal pixels, mean abs diff, first/last differing row and column
@@ -18,18 +18,28 @@ using System.Runtime.InteropServices;
 using System.Text;
 namespace RefCompare {
 public static class Img {
+    // The pixels as stored, alpha included and nothing composited (a frame
+    // dump of the Rust client made before frame_dump.rs kept the GL
+    // framebuffer's alpha, which the window never showed).
     static int[] Load(string path, out int w, out int h) {
         using (var src = new Bitmap(path)) {
             w = src.Width; h = src.Height;
-            using (var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb)) {
-                using (var g = Graphics.FromImage(bmp)) g.DrawImage(src, 0, 0, w, h);
-                var data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-                var px = new int[w * h];
-                Marshal.Copy(data.Scan0, px, 0, px.Length);
-                bmp.UnlockBits(data);
-                return px;
-            }
+            var data = src.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var px = new int[w * h];
+            Marshal.Copy(data.Scan0, px, 0, px.Length);
+            src.UnlockBits(data);
+            return px;
         }
+    }
+    // A rectangle of the stored colours, made opaque.
+    static int[] Region(string path, int x, int y, int w, int h) {
+        int sw, sh; var p = Load(path, out sw, out sh);
+        var o = new int[w * h];
+        for (int j = 0; j < h; j++) for (int i = 0; i < w; i++) {
+            int sx = x + i, sy = y + j;
+            o[j * w + i] = (sx < sw && sy < sh) ? (p[sy * sw + sx] | unchecked((int)0xFF000000)) : unchecked((int)0xFF000000);
+        }
+        return o;
     }
     static void Save(int[] px, int w, int h, string path) {
         using (var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb)) {
@@ -40,21 +50,16 @@ public static class Img {
         }
     }
     public static string Size(string path) { using (var b = new Bitmap(path)) return b.Width + "x" + b.Height; }
+    // Copies the stored colours (no compositing of the alpha channel).
     public static void Crop(string src, string dst, int x, int y, int w, int h) {
-        using (var s = new Bitmap(src)) using (var d = new Bitmap(w, h, PixelFormat.Format24bppRgb)) {
-            using (var g = Graphics.FromImage(d)) g.DrawImage(s, new Rectangle(0, 0, w, h), new Rectangle(x, y, w, h), GraphicsUnit.Pixel);
-            d.Save(dst, ImageFormat.Png);
-        }
+        Save(Region(src, x, y, w, h), w, h, dst);
     }
     // Enlarges a rectangle with nearest-neighbour sampling.
     public static void Zoom(string src, string dst, int x, int y, int w, int h, int factor) {
-        using (var s = new Bitmap(src)) using (var d = new Bitmap(w * factor, h * factor, PixelFormat.Format24bppRgb)) {
-            using (var g = Graphics.FromImage(d)) {
-                g.InterpolationMode = InterpolationMode.NearestNeighbor; g.PixelOffsetMode = PixelOffsetMode.Half;
-                g.DrawImage(s, new Rectangle(0, 0, w * factor, h * factor), new Rectangle(x, y, w, h), GraphicsUnit.Pixel);
-            }
-            d.Save(dst, ImageFormat.Png);
-        }
+        var p = Region(src, x, y, w, h);
+        var o = new int[w * factor * h * factor];
+        for (int j = 0; j < h * factor; j++) for (int i = 0; i < w * factor; i++) o[j * w * factor + i] = p[(j / factor) * w + i / factor];
+        Save(o, w * factor, h * factor, dst);
     }
     // items: "label|path" each.
     public static void Sheet(string dst, int columns, double scale, string[] items) {
