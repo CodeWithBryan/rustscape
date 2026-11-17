@@ -775,6 +775,11 @@ fn render_plane(regions: &[Region], plane: usize, position: [i32; 2]) -> usize {
         tile(regions, 1, position[0], position[1]).flags,
     )
 }
+/// `Tile.drawLevel` of a location's tile: the level its vertices are
+/// stamped with (lights and depth layer, `terrain::draw_level`).
+fn draw_plane(regions: &[Region], plane: usize, position: [i32; 2]) -> usize {
+    rs09_client::terrain::draw_level(plane, tile(regions, 1, position[0], position[1]).flags)
+}
 fn location_mesh(
     mesh: &mut Mesh,
     model: &Model,
@@ -1010,6 +1015,9 @@ impl Geometry {
                     if t.underlay == 0 && t.overlay == 0 {
                         continue;
                     }
+                    if scene.window.as_ref().is_some_and(|w| !w.builds_floor(x, z)) {
+                        continue;
+                    }
                     if let Some(caster) = scene_lights::floor_shadow(
                         &shadows,
                         regions,
@@ -1104,9 +1112,17 @@ impl Geometry {
                             if !pieces.is_empty() {
                                 objects += 1;
                             }
+                            // SceneGraph.addSceneryEntity: no scenery past the
+                            // title scene's tile 103 (`title_window`).
+                            let dropped = scene.window.as_ref().is_some_and(|w| {
+                                !w.keeps_scenery(shape, [x, z], planned.placement.size)
+                            });
                             for (part, piece) in pieces.into_iter().enumerate() {
                                 let mut model = piece.model;
                                 if animated {
+                                    if dropped {
+                                        continue;
+                                    }
                                     let sequence = d.animation as u32;
                                     let seq = sequences.get(&sequence).ok_or_else(|| {
                                         format!("missing location sequence {sequence}")
@@ -1170,6 +1186,11 @@ impl Geometry {
                                         });
                                     }
                                 }
+                                // getStaticEntity cast the shadow before
+                                // addEntity turned the entity away.
+                                if dropped {
+                                    continue;
+                                }
                                 loc_align(regions, plane, &piece.site, &mut model);
                                 if (ground_visible && !mesh.indices.is_empty())
                                     || (!ground_visible
@@ -1194,6 +1215,7 @@ impl Geometry {
                                     piece.site.ground,
                                     plane,
                                 );
+                                let draw_level = draw_plane(regions, plane, [x, z]);
                                 scene_lights::stamp(
                                     &mut output.vertices[first_vertex..],
                                     vec2(min_x as f32, min_z as f32),
@@ -1201,11 +1223,11 @@ impl Geometry {
                                         shape,
                                         rotation,
                                         planned.placement.size,
-                                        ground_visible,
+                                        draw_level != plane,
                                         part,
                                     ),
                                     [x, z],
-                                    display_plane,
+                                    draw_level,
                                 );
                                 let vertices = first_vertex..output.vertices.len();
                                 // One entity of the placement, the first
@@ -1891,6 +1913,7 @@ impl Workbench {
         };
         let (cast_shadow, randomized) = (d.cast_shadow, placed.randomized_animation);
         let display_plane = render_plane(&self.regions, slot.plane, slot.tile);
+        let draw_level = draw_plane(&self.regions, slot.plane, slot.tile);
         if animated {
             let sequence = seq as u32;
             let s = self
@@ -1985,11 +2008,11 @@ impl Workbench {
                     i32::from(loc.shape),
                     i32::from(loc.rotation),
                     site.size,
-                    display_plane != slot.plane,
+                    draw_level != slot.plane,
                     part,
                 ),
                 slot.tile,
-                display_plane,
+                draw_level,
             );
             position = piece.site.draw;
             parts.push((
@@ -3071,7 +3094,7 @@ impl Workbench {
             if loc.target.rotation & 1 != 0 {
                 size.swap(0, 1);
             }
-            let draw_plane = render_plane(&self.regions, loc.plane, loc.target.tile);
+            let draw_plane = draw_plane(&self.regions, loc.plane, loc.target.tile);
             scene_lights::stamp(
                 &mut mesh.vertices[first_vertex..],
                 self.point_lights.origin,

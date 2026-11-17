@@ -73,6 +73,24 @@ pub fn render_level(plane: usize, flags: u8, bridge_flags: u8) -> usize {
         plane
     }
 }
+/// `Tile.drawLevel` of a location's tile on `plane`: the level the tile is
+/// drawn and lit on. The constructor sets it to the tile's own level
+/// (Tile.java:79) and only the bridge shift of `buildScene` lowers it, for
+/// every tile above a bridge (`renderFlags[1] & 2`, SceneGraph.java:
+/// 1545-1548). A tile the map forces to the ground (`renderFlags & 8`) keeps
+/// its level here, unlike [`render_level`]: that flag moves its floor to the
+/// ground's floor group (SceneGraph.java:4538-4539), not the locations on it.
+/// `renderTile` lights a tile's locations on `drawLevel` (SceneGraph.java:
+/// 1764 and on) and puts them on the depth layer of `tile.level`
+/// (SceneGraph.java:1685, 1707), which is the same for every tile but a
+/// bridge's.
+pub fn draw_level(plane: usize, bridge_flags: u8) -> usize {
+    if plane > 0 && bridge_flags & 2 != 0 {
+        plane - 1
+    } else {
+        plane
+    }
+}
 impl Region {
     pub fn decode(x: i32, z: i32, data: &[u8]) -> Result<Self> {
         let mut r = Reader::new(data);
@@ -233,5 +251,24 @@ mod tests {
         assert_eq!(r.tile(0, 0, 0).height, 0);
         assert_eq!(r.tile(1, 0, 0).height, -240);
         assert!(Region::decode(50, 50, &[]).is_err());
+    }
+
+    /// Transcription test: `Tile.drawLevel` (Tile.java:79, SceneGraph.java:
+    /// 1545-1548) against `getRenderLevel` (SceneGraph.java:3855-3861). The
+    /// cave title scene (zone 378, 1244) has level 2 tiles with flags 9 under
+    /// walls: drawn on the ground's floor group, their walls stay on level 2.
+    #[test]
+    fn forced_ground_lowers_the_floor_but_not_the_locations() {
+        // Flags 9: forced to the ground, no bridge.
+        assert_eq!(render_level(2, 9, 1), 0);
+        assert_eq!(draw_level(2, 1), 2);
+        // A bridge lowers both, every level above it.
+        assert_eq!(render_level(1, 0, 2), 0);
+        assert_eq!(draw_level(1, 2), 0);
+        assert_eq!(render_level(3, 0, 2), 2);
+        assert_eq!(draw_level(3, 2), 2);
+        // The ground level stays where it is.
+        assert_eq!(draw_level(0, 2), 0);
+        assert_eq!(draw_level(2, 0), 2);
     }
 }

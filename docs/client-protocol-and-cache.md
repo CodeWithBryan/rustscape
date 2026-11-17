@@ -222,10 +222,40 @@ colour went from (32, 52, 68) against the original's (71, 81, 77) to
 (68, 80, 77) against (67, 79, 76), and the canvas mean difference from 9.7
 to 2.2 per channel; the strip above the cave's horizon went from rock
 (7.7, 6.5, 4.4) to black like the original's (0, 0, 0), and that pair's mean
-difference from 4.7 to 1.0. Still different: at the cave's east edge, in
+difference from 4.7 to 1.0. Still different then: at the cave's east edge, in
 `v5-after-378-1244-t16`, the original shows grey cave wall where this
-client shows a dark patch (12, 11, 11), something drawn rather than the
-cleared background; which object it is was not found.
+client showed a dark patch (12, 11, 11), something drawn rather than the
+cleared background.
+
+A sixth run (2026-11-17, pairs `v6-after-*`, `v6-final-*` and diagnostics
+`v6-diag-*`) found that patch. The driver gained `frame` (the rest of a
+command file runs inside the client's own `PluginRepository.LateDraw`, from
+a plugin registered before `client.main`, so reads happen between two
+frames on the thread that draws, instead of racing it), `tiles` and
+`heights` (what `SceneGraph.tiles` and `tileHeights` hold over a range), and
+`hide`, a diagnostic that drops the walls and scenery of a tile range from
+the original's scene (used only on scenes no pair was taken from). Hiding
+level by level at the pinned v5 pose showed the wall to be the level 2
+walls of type 40717 on scene tiles x 95, y 40 to 52, which the map forces to
+the ground (flags 9). The original keeps such a tile's locations on their
+own level: `renderTile` puts them on the depth layer of `tile.level` and
+lights them on `drawLevel`, which only a bridge lowers. This client gave
+them the ground's level, so they lay a hundred depth layers (150 units at
+3000) further back and what stands up to a tile behind them on level 2
+(walls of type 12231, by elimination; not hidden one by one in this
+client) won the depth test; `--no-occlusion` and `--roofs` did not change it. Locations
+now take `terrain::draw_level` (`Tile.drawLevel`). With it the cave pair's
+canvas mean difference fell from 0.96 to 0.72 per channel and the top-right
+crop's from 2.93 to 1.02 (98.8% within 8), the wall continuing to the edge
+as in the original. Title scenes also drop centrepieces whose footprint
+runs past tile 103 (after their shadow, as `addSceneryEntity` turns them
+away only after `getStaticEntity` cast it) and take the upper levels' floor
+shadows from tiles 1 to 102 only. Not yet cut to the 104 tiles: the light
+meshes, and the heights locations are averaged and skewed over (the
+original reads 0 at corner 104, skips `alignToTerrain` for a model reaching
+past it, and averages a too-wide location over one tile). Above a bridge
+this client still uses the lowered level for both the depth layer and the
+lights, where the original keeps `tile.level` for the layer.
 
 ## Start-up and cache download
 

@@ -356,6 +356,11 @@ const SOURCES: &[(&str, &str)] = &[
         "ShadowModelList.java",
         "63dcac8beb918ac976f50854b2f0a62bba13c7d65efe71191a0c69e7e18666d7",
     ),
+    // `Tile.drawLevel` (`terrain::draw_level`).
+    (
+        "Tile.java",
+        "e19c47dd7492b4f31f5615a6eedc78b134dbd02c1cbed743388716f9fd8f07dd",
+    ),
 ];
 
 #[test]

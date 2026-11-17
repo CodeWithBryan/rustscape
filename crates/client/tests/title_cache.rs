@@ -304,3 +304,39 @@ fn the_cave_title_scene_ends_inside_its_east_region() {
     assert!(!window.keeps_location(2976 + 103, 9950));
     assert!(!window.keeps_location(3135, 9950));
 }
+
+/// The cave place's east wall (pairs `v5-after-378-1244-t16` and
+/// `v6-after-378-1244-t16`): the walls of type 40717 on level 2 along scene
+/// x 95, y 40 to 52, stand on tiles the map forces to the ground (flags 9).
+/// The running original, read between two frames (`refcompare` driver,
+/// `tiles 2 ...`), held them in `SceneGraph.tiles[2][95][40..52]` as walls
+/// with zFine -480, so `renderTile` drew them on level 2's depth layer;
+/// this client drew them on the ground's, a hundred layers (150 units at
+/// 3000) back, so that what stands up to a tile behind them on level 2
+/// (walls of type 12231 on scene x 96) won the depth test and the frame
+/// showed a dark patch where the original shows the grey wall.
+/// `terrain::draw_level` keeps them on level 2; the floors stay on the
+/// ground (`render_level`).
+#[test]
+fn the_cave_east_wall_stands_on_level_2() {
+    let Some([maps, _, _]) = archives() else {
+        return;
+    };
+    let id = maps.index.group_by_ascii_name("m47_155").unwrap();
+    let raw = maps.file(id, 0, [0; 4]).unwrap().unwrap();
+    let region = rs09_client::terrain::Region::decode(47, 155, &raw).unwrap();
+    let base = [2976, 9904];
+    for y in 40..=52 {
+        let [ax, ay] = [base[0] + 95, base[1] + y];
+        let (lx, ly) = ((ax - 47 * 64) as usize, (ay - 155 * 64) as usize);
+        let own = region.tile(2, lx, ly);
+        let bridge = region.tile(1, lx, ly);
+        assert_eq!(own.flags, 9, "flags of level 2 at scene 95,{y}");
+        assert_eq!(own.height, -480);
+        assert_eq!(
+            rs09_client::terrain::render_level(2, own.flags, bridge.flags),
+            0
+        );
+        assert_eq!(rs09_client::terrain::draw_level(2, bridge.flags), 2);
+    }
+}

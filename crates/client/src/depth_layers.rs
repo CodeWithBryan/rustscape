@@ -34,11 +34,17 @@
 //! `DepthBias` uniform; [`glsl`] is that code and [`shift`] is the same
 //! arithmetic for tests and for draws that use another shader.
 //!
-//! One departure, which holds everywhere in this client: the level is the
-//! one a tile is drawn on (0 for a bridge deck and for tiles the map forces
-//! to the ground), where the original uses the tile's own level. Floor and
-//! contents of such a tile move together, so their order is the original's;
-//! only their distance in layers from other tiles' things differs.
+//! Floors take the level of the floor group they are built into, as in the
+//! original: the ground's for a tile the map forces to the ground (flag 8)
+//! and for a bridge deck. Locations take their tile's `drawLevel`
+//! (`terrain::draw_level`): their own level on a forced-ground tile, as in
+//! the original (`renderTile`'s `201.5 - (tile.level + 1) * 50`).
+//!
+//! One departure: above a bridge the original keeps `tile.level` for the
+//! layer and lights with the lowered `drawLevel`; here both are the lowered
+//! level. Floor and contents of such a tile move together, so their order is
+//! the original's; only their distance in layers from other tiles' things
+//! differs.
 
 use crate::projection::{FAR, NEAR};
 

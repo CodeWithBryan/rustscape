@@ -79,6 +79,27 @@ impl Window {
         lx > 0 && lz > 0 && lx < SIZE - 1 && lz < SIZE - 1
     }
 
+    /// `buildScene`'s floor loop (SceneGraph.java:949-951): the floors, and
+    /// with them the upper levels' floor shadows (`addFloorShadow`, 993 and
+    /// 1075), of tiles 1 to 102 on both axes.
+    pub fn builds_floor(&self, x: i32, z: i32) -> bool {
+        self.keeps_location(x, z)
+    }
+
+    /// `addLoc` hands a centrepiece (shapes 10 and 11) to `addEntity` with
+    /// its footprint (SceneGraph.java:2509-2521), and `addSceneryEntity`
+    /// turns it away when a tile of the footprint lies outside the 104 tiles
+    /// (1331-1335). `size` is the footprint after the quarter turn; every
+    /// other shape is added on its own tile or not through `addEntity`. The
+    /// shadow `getStaticEntity` cast before (2511-2514) stays.
+    pub fn keeps_scenery(&self, shape: i32, tile: [i32; 2], size: [i32; 2]) -> bool {
+        if !matches!(shape, 10 | 11) {
+            return true;
+        }
+        let [x, z] = self.local(tile);
+        x >= 0 && z >= 0 && x + size[0] <= SIZE && z + size[1] <= SIZE
+    }
+
     /// `tileHeights[level][x][y]` for scene-local corner `(x, y)` of the
     /// 105 by 105 grid, given the height the regions hold there.
     pub fn corner_height(&self, [x, y]: [usize; 2], height: i32) -> i32 {
@@ -319,6 +340,34 @@ mod tests {
         assert_eq!(window.corner_height([3, 104], -80), 0);
         // Zone 1244 is under the surface map: nothing is cleared.
         assert!(!window.clears());
+    }
+
+    /// Transcription test: `addSceneryEntity`'s bounds (SceneGraph.java:
+    /// 1331-1335) for the footprint `addLoc` gives a centrepiece
+    /// (2509-2521), and `buildScene`'s floor loop (949-951).
+    #[test]
+    fn scenery_past_tile_103_is_turned_away() {
+        let window = Window {
+            base: [2976, 9904],
+            zone: [378, 1244],
+            unread: vec![],
+        };
+        let at = |x: i32, z: i32| [2976 + x, 9904 + z];
+        // A 1 by 1 block on tile 102 fits; 2 by 2 on 102 reaches tile 103.
+        assert!(window.keeps_scenery(10, at(102, 50), [1, 1]));
+        assert!(window.keeps_scenery(10, at(102, 50), [2, 2]));
+        // Three tiles from 102 reach tile 104, in either direction.
+        assert!(!window.keeps_scenery(10, at(102, 50), [3, 1]));
+        assert!(!window.keeps_scenery(11, at(50, 102), [1, 3]));
+        assert!(window.keeps_scenery(10, at(101, 101), [3, 3]));
+        // Walls, decorations, diagonal walls and roofs are not checked.
+        for shape in [0, 1, 2, 3, 4, 9, 12, 21, 22] {
+            assert!(window.keeps_scenery(shape, at(102, 102), [3, 3]));
+        }
+        assert!(window.builds_floor(2977, 9905));
+        assert!(window.builds_floor(2976 + 102, 9904 + 102));
+        assert!(!window.builds_floor(2976 + 103, 9950));
+        assert!(!window.builds_floor(2976, 9950));
     }
 
     /// Transcription test: an unread region is the original's untouched

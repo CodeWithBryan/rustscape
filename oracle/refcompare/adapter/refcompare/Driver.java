@@ -47,11 +47,43 @@ import java.util.List;
  * call Class.method INT ...                     a static method taking ints, e.g. call LocTypeList.get 1902
  * set Class.field VALUE                         int, long, float, double or boolean fields
  * hold Class.field VALUE | unhold               re-apply a value every 5 ms until unhold
+ * frame                                         the lines after it run on the client's own thread,
+ *                                               between two frames (see FramePlugin)
+ * tiles LEVEL X0 X1 Y0 Y1                       what SceneGraph.tiles holds on those tiles: walls,
+ *                                               wall decor, ground decor and scenery with their
+ *                                               location ids, shapes, rotations and extents
+ * heights LEVEL X0 X1 Y0 Y1                     SceneGraph.tileHeights[LEVEL] there, one row per x
  * </pre>
  */
 public final class Driver implements Runnable {
 	private final File dir;
 	private final java.util.Map<Field, String> held = new java.util.concurrent.ConcurrentHashMap<>();
+	private static final java.util.concurrent.LinkedBlockingQueue<Runnable> frameWork = new java.util.concurrent.LinkedBlockingQueue<>();
+
+	/**
+	 * A plugin of the client's own plugin system ({@code plugin.PluginRepository},
+	 * part of the reference sources): {@code client.mainRedraw} calls
+	 * {@code PluginRepository.LateDraw()} at the end of every frame, on the
+	 * thread that builds and draws the scene, so work queued here reads the
+	 * scene between two frames instead of racing the renderer. It draws
+	 * nothing and changes nothing; it is registered before {@code client.main}
+	 * runs (so the plugin map is never written while the client iterates it)
+	 * and stays across plugin reloads.
+	 */
+	public static final class FramePlugin extends plugin.Plugin {
+		@Override
+		public void LateDraw(long timeDelta) {
+			Runnable work;
+			while ((work = frameWork.poll()) != null) {
+				work.run();
+			}
+		}
+
+		@Override
+		public boolean OnPluginsReloaded() {
+			return true;
+		}
+	}
 
 	private Driver(File dir) {
 		this.dir = dir;
@@ -60,6 +92,7 @@ public final class Driver implements Runnable {
 	public static void main(String[] args) throws Exception {
 		String dir = System.getProperty("refcompare.dir");
 		if (dir != null) {
+			plugin.PluginRepository.registerPlugin(new plugin.PluginInfo("refcompare", "reads between frames", 1.0), new FramePlugin());
 			File folder = new File(dir);
 			folder.mkdirs();
 			Driver driver = new Driver(folder);
@@ -98,21 +131,28 @@ public final class Driver implements Runnable {
 				}
 				List<String> lines = Files.readAllLines(cmd.toPath(), StandardCharsets.UTF_8);
 				StringBuilder result = new StringBuilder();
-				for (String line : lines) {
-					line = line.replace("﻿", "").trim();
+				for (int n = 0; n < lines.size(); n++) {
+					String line = lines.get(n).replace("﻿", "").trim();
 					if (line.isEmpty() || line.startsWith("#")) {
 						continue;
 					}
-					try {
-						String printed = execute(line);
-						if (printed != null) {
-							result.append(printed).append('\n');
+					if (line.equals("frame")) {
+						// The rest of the file runs inside the client's next LateDraw.
+						List<String> rest = lines.subList(n + 1, lines.size());
+						StringBuilder inFrame = new StringBuilder();
+						java.util.concurrent.CountDownLatch ran = new java.util.concurrent.CountDownLatch(1);
+						frameWork.add(() -> {
+							runLines(rest, inFrame);
+							ran.countDown();
+						});
+						if (ran.await(20, java.util.concurrent.TimeUnit.SECONDS)) {
+							result.append(inFrame);
+						} else {
+							result.append("ERROR frame: no frame within 20 s\n");
 						}
-					} catch (Throwable ex) {
-						StringWriter trace = new StringWriter();
-						ex.printStackTrace(new PrintWriter(trace));
-						result.append("ERROR ").append(line).append(": ").append(trace).append('\n');
+						break;
 					}
+					runLines(java.util.Collections.singletonList(line), result);
 				}
 				Files.write(out.toPath(), result.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 				cmd.delete();
@@ -121,6 +161,99 @@ public final class Driver implements Runnable {
 				ex.printStackTrace();
 			}
 		}
+	}
+
+	private void runLines(List<String> lines, StringBuilder result) {
+		for (String raw : lines) {
+			String line = raw.replace("﻿", "").trim();
+			if (line.isEmpty() || line.startsWith("#")) {
+				continue;
+			}
+			try {
+				String printed = execute(line);
+				if (printed != null) {
+					result.append(printed).append('\n');
+				}
+			} catch (Throwable ex) {
+				StringWriter trace = new StringWriter();
+				ex.printStackTrace(new PrintWriter(trace));
+				result.append("ERROR ").append(line).append(": ").append(trace).append('\n');
+			}
+		}
+	}
+
+	/** The location id, shape and rotation a scene key carries (SceneGraph.addLoc). */
+	private static String keyText(long key) {
+		int id = (int) (key >>> 32) & 0x7fffffff;
+		int shape = (int) (key >> 14) & 0x3f;
+		int rotation = (int) (key >> 20) & 0x3;
+		int x = (int) key & 0x7f;
+		int y = (int) (key >> 7) & 0x7f;
+		return "loc " + id + " shape " + shape + " rot " + rotation + " at " + x + "," + y;
+	}
+
+	private static String entityText(Object entity) {
+		if (entity == null) {
+			return "-";
+		}
+		String text = entity.getClass().getSimpleName();
+		if (entity instanceof rt4.Model) {
+			rt4.Model model = (rt4.Model) entity;
+			text += " minY " + model.getMinY() + " lengthXZ " + model.getLengthXZ();
+		}
+		return text;
+	}
+
+	private static String tiles(int level, int x0, int x1, int y0, int y1) {
+		StringBuilder sb = new StringBuilder();
+		rt4.Tile[][][] tiles = rt4.SceneGraph.tiles;
+		sb.append("tiles level ").append(level).append(" underwater ").append(rt4.SceneGraph.tiles == rt4.SceneGraph.underWaterGroundTiles).append('\n');
+		for (int x = x0; x <= x1; x++) {
+			for (int y = y0; y <= y1; y++) {
+				rt4.Tile tile = tiles[level][x][y];
+				if (tile == null) {
+					continue;
+				}
+				StringBuilder t = new StringBuilder();
+				if (tile.wall != null) {
+					t.append(" wall[").append(keyText(tile.wall.key)).append(" flags ").append(tile.wall.primaryFlags).append('/').append(tile.wall.secondaryFlags)
+						.append(" z ").append(tile.wall.zFine).append(' ').append(entityText(tile.wall.primary)).append(" | ").append(entityText(tile.wall.secondary)).append(']');
+				}
+				if (tile.wallDecor != null) {
+					t.append(" decor[").append(keyText(tile.wallDecor.key)).append(" z ").append(tile.wallDecor.zFine).append(' ').append(entityText(tile.wallDecor.primary)).append(']');
+				}
+				if (tile.groundDecor != null) {
+					t.append(" ground[").append(keyText(tile.groundDecor.key)).append(" z ").append(tile.groundDecor.zFine).append(' ').append(entityText(tile.groundDecor.entity)).append(']');
+				}
+				for (int i = 0; i < tile.sceneryLen; i++) {
+					rt4.Scenery s = tile.scenery[i];
+					if (s == null) {
+						continue;
+					}
+					t.append(" scenery[").append(keyText(s.key)).append(" x ").append(s.xMin).append("..").append(s.xMax).append(" y ").append(s.yMin).append("..").append(s.yMax)
+						.append(" fine ").append(s.xFine).append(',').append(s.yFine).append(',').append(s.zFine).append(' ').append(entityText(s.entity)).append(']');
+				}
+				t.append(tile.plainTile != null ? " plain" : "").append(tile.shapedTile != null ? " shaped" : "");
+				if (tile.linkedTile != null) {
+					t.append(" linked");
+				}
+				sb.append(x).append(',').append(y).append(':').append(t).append('\n');
+			}
+		}
+		return sb.toString().trim();
+	}
+
+	private static String heights(int level, int x0, int x1, int y0, int y1) {
+		StringBuilder sb = new StringBuilder("heights level ").append(level).append(" y ").append(y0).append("..").append(y1).append('\n');
+		int[][] h = rt4.SceneGraph.tileHeights[level];
+		for (int x = x0; x <= x1; x++) {
+			sb.append(x).append(':');
+			for (int y = y0; y <= y1; y++) {
+				sb.append(' ').append(h[x][y]);
+			}
+			sb.append('\n');
+		}
+		return sb.toString().trim();
 	}
 
 	private static Component canvas() {
@@ -238,6 +371,35 @@ public final class Driver implements Runnable {
 			case "unhold":
 				held.clear();
 				return "unhold";
+			case "tiles":
+				return tiles(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]), Integer.parseInt(p[4]), Integer.parseInt(p[5]));
+			case "heights":
+				return heights(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]), Integer.parseInt(p[4]), Integer.parseInt(p[5]));
+			case "hide": {
+				// hide LEVEL X0 X1 Y0 Y1: a diagnostic that CHANGES the scene: the
+				// walls, decorations and scenery on those tiles are dropped until
+				// the scene is built again (use inside `frame`).
+				int level = Integer.parseInt(p[1]);
+				int n = 0;
+				for (int x = Integer.parseInt(p[2]); x <= Integer.parseInt(p[3]); x++) {
+					for (int y = Integer.parseInt(p[4]); y <= Integer.parseInt(p[5]); y++) {
+						rt4.Tile tile = rt4.SceneGraph.tiles[level][x][y];
+						if (tile == null) {
+							continue;
+						}
+						n += tile.sceneryLen + (tile.wall != null ? 1 : 0) + (tile.wallDecor != null ? 1 : 0) + (tile.groundDecor != null ? 1 : 0);
+						tile.wall = null;
+						tile.wallDecor = null;
+						tile.groundDecor = null;
+						for (int i = 0; i < tile.scenery.length; i++) {
+							tile.scenery[i] = null;
+						}
+						tile.sceneryLen = 0;
+						tile.allInteriorFlags = 0;
+					}
+				}
+				return "hidden " + n;
+			}
 			default:
 				return "UNKNOWN " + line;
 		}
