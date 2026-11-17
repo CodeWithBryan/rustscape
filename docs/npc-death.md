@@ -13,7 +13,7 @@ here runs it.
 | `ContentAPI.kt` | `drop.rs` | `announceIfRare` |
 | `Bones.kt` | `drop.rs` (`BONES`, `bone_experience`) | item id and experience of the 31 constants; bonemeal ids are not ported |
 | `StringUtils.java` | `drop.rs` (`formatted_number`) | `getFormattedNumber` in the en-US locale |
-| `DeathTask.java` | `world/npc_death.rs` | `startDeath`, `isDead`, `start`, `exec`, `stop`, `removeFor`. `getContainers` is not ported |
+| `DeathTask.java` | `world/npc_death.rs` | `startDeath`, `isDead`, `start`, `exec`, `stop`, `removeFor`. `getContainers` is in `world/player_death` (docs/player-death.md) |
 | `NodeTask.java` | `npc_death.rs` (`Task`, `task_*`) | the pulse `schedule` builds, for the death task only |
 | `ImpactHandler.java` | `npc_death.rs` (`ImpactLog`, `log_hit`, `most_damage_entity`, `lethal_impact`, `set_disabled_ticks`) | the two damage logs, `getMostDamageEntity`, `setDisabledTicks`, and the two parts of `handleImpact` that write the logs and start a death. The rest of `handleImpact` is not ported |
 | `Entity.java` | `npc_death.rs` | `startDeath`, `finalizeDeath` as an NPC reaches it |
@@ -158,7 +158,7 @@ does exactly that.
 
 ## Not covered
 
-`DeathTask.getContainers` and a player's death; the rest of `handleImpact`
+A player's death and `DeathTask.getContainers` (docs/player-death.md); the rest of `handleImpact`
 (the dead-target check, hit reduction, hit splats, redemption, ring of life);
 `NPC.clear`; ground-item removal and expiry in this corpus (the ground-manager
 corpus has them); packet bytes; a dying entity that holds other pulses when it

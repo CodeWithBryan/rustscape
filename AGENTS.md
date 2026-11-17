@@ -873,11 +873,32 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   equal hashes are refused, not guessed. Host::roll must call the native table
   roll with the server's generators. The adapters of this oracle must not
   expose a public field named like a Kotlin getter property (`username` did
-  and bypassed getUsername). A player's own death, DeathTask.getContainers,
-  the rest of handleImpact, NPC.clear, real Properties/attributes/zones/
+  and bypassed getUsername). A player's own death and DeathTask.getContainers
+  are the next bullet's; the rest of handleImpact, NPC.clear, real Properties/attributes/zones/
   behaviours/plugins/clans/prices and any session or alpha binding are not
   ported; the en-US locale, entity hashes and the tick driver are oracle
   inputs. See docs/npc-death.md.
+- For a player's death, kept items or graves (world/player_death:
+  getContainers, Player.commenceDeath/finalizeDeath, Grave, GraveController,
+  GraveType, BarrowsEquipment's grave rules, DeathInterface, the active-graves
+  server store), run `cargo test -p rs09-server --test player_death` and
+  `cargo xtask player-death-oracle --check` with Python/JDK 11, plus the
+  npc_death, drop_tables, ground_manager, chunk_sync, pulses, inventory,
+  container_ownership, container_listeners, item_definitions, item_config,
+  ironman, player_save and player_state suites. Preserve all 938 cases. Keep
+  getContainers' repeated pass per kept slot, `<=` (a later equal value wins),
+  the push-out back into the worn container and the null-mode-is-not-ultimate
+  rule; finalizeDeath's order, the permadeath return that skips every reset,
+  bones for `k`, coins only for a player killer, all non-broken Barrows
+  dropping broken, the second plugin lookup in checkTransform, grave items
+  private to the owner's uid for good, Kotlin's direct `location` field
+  access, the controller's 150/50 versus addTime's 90/30 thresholds, the -1
+  grave that ends the whole tick, `String.valueOf` text for missing store
+  fields and map orders. Every outside call is a required service; the
+  driver order of the controller, ground pulse and grave NPC ticks is a case
+  input. Permadeath.kt, GravePurchaseInterface and the forcegravedeath
+  command are not ported; nothing installs the library. See
+  docs/player-death.md.
 - For NodeList, Repository, DisconnectionQueue or Player.clear/finishClear/
   allowRemoval (world/repository, world/disconnection), run
   `cargo test -p rs09-server --test repository` and `cargo xtask
