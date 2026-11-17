@@ -4033,6 +4033,8 @@ async fn main() {
         }
     }
     ui_vm.window_mode = ui_vm.display.window_mode();
+    // GameShell.startApplication's frame; the browser page is the applet's.
+    ui_vm.application = cfg!(not(target_arch = "wasm32"));
     display_host::place(&ui_vm.display);
     #[cfg(not(target_arch = "wasm32"))]
     if live_mode && !capture {

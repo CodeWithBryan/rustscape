@@ -78,11 +78,12 @@ impl Input {
     /// interface is hidden and receives no buttons.
     ///
     /// The original tests a click against its own position (`clickX`,
-    /// `clickY`); [`PointerInput`] has one point, so the click is tested
-    /// where the pointer is at this cycle.
+    /// `clickY`, InterfaceList.java:684), not where the pointer is by the
+    /// cycle that takes it.
     pub fn pointer(&self, pointer: &mut PointerInput, shown: bool) {
         let mouse = &self.mouse;
         pointer.point = [mouse.last_mouse_x, mouse.last_mouse_y];
+        pointer.click = Some([mouse.click_x, mouse.click_y]);
         pointer.clicked = shown && mouse.click_button == 1;
         pointer.down = shown && mouse.pressed_button == 1;
         pointer.any_down = shown && mouse.pressed_button != 0;

@@ -56,9 +56,11 @@ pub struct KeyInput<'a> {
 /// What the mouse does this cycle, in the original's terms.
 #[derive(Clone, Copy)]
 struct Mouse {
-    /// `Mouse.lastMouseX/Y`. The click position is the same point: the
-    /// caller reports a click on the frame it happens.
+    /// `Mouse.lastMouseX/Y`.
     point: [i32; 2],
+    /// `Mouse.clickX/Y`: a click is tested where it was (684), and its
+    /// `onClickRepeat` request is made relative to it (803-804).
+    click: [i32; 2],
     /// `Mouse.pressedButton == 1`.
     down: bool,
     /// `Mouse.clickButton == 1`.
@@ -130,6 +132,7 @@ impl State {
         let mouse = match input {
             Some(input) => Mouse {
                 point: input.point,
+                click: input.click.unwrap_or(input.point),
                 down: input.down,
                 clicked: input.clicked,
                 wheel: input.scroll,
@@ -139,6 +142,7 @@ impl State {
             // No pointer: the original's mouse outside the window, at (-1, -1).
             None => Mouse {
                 point: [-1, -1],
+                click: [-1, -1],
                 down: false,
                 clicked: false,
                 wheel: 0,
@@ -241,10 +245,13 @@ impl State {
         if c.if3 && !(bounds[0] < bounds[2] && bounds[1] < bounds[3]) {
             return;
         }
-        let inside = mouse.point[0] >= bounds[0]
-            && mouse.point[1] >= bounds[1]
-            && mouse.point[0] < bounds[2]
-            && mouse.point[1] < bounds[3];
+        let within = |point: [i32; 2]| {
+            point[0] >= bounds[0]
+                && point[1] >= bounds[1]
+                && point[0] < bounds[2]
+                && point[1] < bounds[3]
+        };
+        let inside = within(mouse.point);
         if c.kind == 0 {
             if !c.if3 && c.hidden && queues.hover != Some(key) {
                 return;
@@ -283,7 +290,7 @@ impl State {
         if c.if3 {
             let mut hovered = inside;
             let mut pressed = mouse.down && hovered;
-            let mut clicked = mouse.clicked && inside;
+            let mut clicked = mouse.clicked && within(mouse.click);
             // 710-712 with startComponentDrag's own conditions: no drag in
             // progress, the menu closed, and a drag parent to move within.
             if clicked && draggable && !mouse.suppressed && queues.dragged.is_none() {
@@ -346,7 +353,11 @@ impl State {
                 }
                 if !c.dragging && clicked {
                     c.dragging = true;
-                    if let Some(hook) = request(&c.on_click_repeat, relative) {
+                    let at = [
+                        mouse.click[0].wrapping_sub(x),
+                        mouse.click[1].wrapping_sub(y),
+                    ];
+                    if let Some(hook) = request(&c.on_click_repeat, at) {
                         queues.low.push((hook, true));
                     }
                 }

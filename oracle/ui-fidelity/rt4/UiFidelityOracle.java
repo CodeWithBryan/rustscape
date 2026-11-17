@@ -496,6 +496,9 @@ public final class UiFidelityOracle {
 		InterfaceList.layoutTopLevel(false);
 		int cycles = 3 + random.nextInt(4);
 		int[] point = {random.nextInt(canvas[0]), random.nextInt(canvas[1])};
+		// Where a click was, apart from where the pointer is by the cycle that
+		// takes it: its own generator, so the rest of the corpus stays as it was.
+		Random clicks = new Random(number * 7919L + 17);
 		for (int cycle = 0; cycle < cycles; cycle++) {
 			if (cycle > 0) {
 				out.append(',');
@@ -528,6 +531,7 @@ public final class UiFidelityOracle {
 			InterfaceList.layoutTopLevel(forced);
 			out.append(",\"forced\":").append(forced);
 			// Mouse: stay, jump onto a component, or go anywhere (also off the canvas).
+			int[] previous = point;
 			int move = random.nextInt(10);
 			if (move < 5) {
 				int[] rectangle = absolute(all.get(random.nextInt(all.size())));
@@ -547,15 +551,24 @@ public final class UiFidelityOracle {
 				// The mouse is still held on an inventory item: there is no new click.
 				Mouse.clickButton = 0;
 			}
-			Mouse.clickX = point[0];
-			Mouse.clickY = point[1];
+			// Mostly where the pointer is; one click in eight was where the
+			// pointer was before it moved on, or anywhere (also off the canvas).
+			int[] click = point;
+			int elsewhere = clicks.nextInt(16);
+			if (elsewhere == 0) {
+				click = previous;
+			} else if (elsewhere == 1) {
+				click = new int[]{clicks.nextInt(canvas[0] + 20) - 10, clicks.nextInt(canvas[1] + 20) - 10};
+			}
+			Mouse.clickX = click[0];
+			Mouse.clickY = click[1];
 			MouseWheel.wheelRotation = new int[]{0, 0, 0, 0, -1, 1, 3}[random.nextInt(7)];
 			Cs1ScriptRunner.isMenuOpen = random.nextInt(10) == 0;
 			InterfaceList.clickedInventoryComponent = inventoryHeld ? new Component() : null;
 			Camera.splineJustFinished = random.nextInt(8) == 0;
 			list("mouse", new int[]{point[0], point[1], Mouse.pressedButton, Mouse.clickButton, MouseWheel.wheelRotation,
 				Cs1ScriptRunner.isMenuOpen ? 1 : 0, InterfaceList.clickedInventoryComponent != null ? 1 : 0,
-				Camera.splineJustFinished ? 1 : 0});
+				Camera.splineJustFinished ? 1 : 0, click[0], click[1]});
 			InterfaceList.keyQueueSize = random.nextInt(4) == 0 ? 1 + random.nextInt(2) : 0;
 			out.append(",\"keys\":[");
 			for (int k = 0; k < InterfaceList.keyQueueSize; k++) {

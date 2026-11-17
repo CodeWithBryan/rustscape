@@ -6,7 +6,9 @@
 use super::*;
 
 impl Game {
-    pub(super) fn cycle_devices(&mut self) {
+    /// `hold_input`: the devices are not read this cycle (see `Step::Devices`
+    /// in `Game::step`).
+    pub(super) fn cycle_devices(&mut self, hold_input: bool) {
         let ui_vm = &mut self.ui_vm;
         let tooltip_seed = &mut self.tooltip_seed;
         let input = &mut self.input;
@@ -49,8 +51,10 @@ impl Game {
             }
         }
         ui_vm.music.clear();
-        input.cycle();
-        ClickCross::clicked([input.mouse.click_x, input.mouse.click_y]);
+        if !hold_input {
+            input.cycle();
+            ClickCross::clicked([input.mouse.click_x, input.mouse.click_y]);
+        }
         // ClientProt.sendMovePacket sends Keyboard.KEY_CTRL, either Ctrl key.
         let running = input.keyboard.pressed_keys[rs09_client::input::keyboard::KEY_CTRL]
             || capture_route && capture_route_run;
@@ -753,6 +757,21 @@ impl Game {
         self.display_shown = display_shown;
         self.route_steps = route_steps;
         self.ui_nodes = ui_nodes;
+    }
+
+    /// The title's `client.mainUpdate` has no `processDefaultAction`, so the
+    /// drag a click began in the interface walk (InterfaceList.java:710-712)
+    /// is begun here, before this cycle's update of it (client.java:
+    /// 1227-1229). In game the mini menu click begins it (`cycle_menu_click`).
+    pub(super) fn begin_walk_drag(&mut self) {
+        let Some(ui) = &self.ui else {
+            return;
+        };
+        if let Some(key) = ui.drag_candidate {
+            let click = [self.input.mouse.click_x, self.input.mouse.click_y];
+            self.ui_drag
+                .begin_walked(ui, &self.ui_nodes, key, click, self.ui_vm.cycle);
+        }
     }
 
     pub(super) fn cycle_drag(&mut self, inventory: bool) -> Option<MenuEntry> {

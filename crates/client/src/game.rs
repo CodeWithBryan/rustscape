@@ -277,6 +277,10 @@ impl Game {
         }
         for _ in 0..self.cycles {
             rs09_client::game_cycle::cycle(self);
+            // CS2 5411 (the title's Quit) ended the application.
+            if self.ui_vm.exit_requested {
+                return false;
+            }
             self.cycle_finish(self.interfaces_ran);
             self.interfaces_ran = false;
             // MouseWheel.wheelRotation is read once.
@@ -380,7 +384,10 @@ impl Host for Game {
     fn step(&mut self, step: Step) {
         match step {
             Step::Devices => {
-                self.cycle_devices();
+                // The title scene's build spans cycles here, one blocking
+                // cycle in the original: the devices wait for it.
+                let hold = !rs09_client::game_cycle::reads_devices(self.state());
+                self.cycle_devices(hold);
                 // SOUND_SONGEND is SoundPlayer.loop's (Protocol.java:2572),
                 // which only game state 30 runs.
                 if self.state() != CycleState::InGame {
@@ -426,7 +433,12 @@ impl Host for Game {
                 self.interfaces_ran = true;
             }
             Step::Hooks => self.cycle_hooks(),
-            Step::Drag => self.cycle_release(false),
+            Step::Drag => {
+                if self.state() == CycleState::Title {
+                    self.begin_walk_drag();
+                }
+                self.cycle_release(false)
+            }
             Step::Walk => self.cycle_walk(),
             Step::MenuClick => {
                 let chosen = self.cycle_menu_click();

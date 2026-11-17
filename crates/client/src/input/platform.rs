@@ -373,6 +373,18 @@ pub struct Events {
     /// Where the canvas is within the window; the owner of the window keeps
     /// `canvas.rect` current.
     pub canvas: Canvas,
+    /// A development aid: the pointer is where the window's own events put
+    /// it and the system cursor is not consulted (see [`posted_input`]).
+    posted: bool,
+}
+
+/// Whether `RS09_POSTED_INPUT` is set: a test harness then drives the
+/// window with posted mouse and key messages while the system cursor is
+/// elsewhere, so the once-a-frame question "is the cursor over the window"
+/// (which would answer no and take the pointer away again) is not asked. The
+/// events themselves take the same path as a person's.
+fn posted_input() -> bool {
+    cfg!(not(target_arch = "wasm32")) && std::env::var_os("RS09_POSTED_INPUT").is_some()
 }
 
 impl Default for Events {
@@ -388,6 +400,7 @@ impl Events {
             translator: Translator::new(Host::current()),
             inside: None,
             canvas: Canvas::default(),
+            posted: posted_input(),
         }
     }
 
@@ -409,6 +422,7 @@ impl Events {
         macroquad::input::utils::repeat_all_miniquad_input(&mut replay, self.subscriber);
         // Over the window but beside the canvas is outside too.
         let pointer = match pointer_in_window(scale) {
+            _ if self.posted => Pointer::Unknown,
             Pointer::Inside(point) => match self.canvas.point(point[0], point[1]) {
                 (point, true) => Pointer::Inside(point),
                 (_, false) => Pointer::Outside,

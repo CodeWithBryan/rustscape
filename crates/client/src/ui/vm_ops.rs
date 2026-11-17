@@ -1045,10 +1045,13 @@ impl Vm {
                 s.ints.push((points.len() >> 1) as i32);
             }
             5411 => {
-                // ScriptRunner.java:4774-4776.
+                // ScriptRunner.java:4774-4782: the applet opens the settings
+                // page; the application exits.
                 self.display.leave_full_screen(&mut self.preferences);
                 self.window_mode = self.display.window_mode();
-                if self.requested_urls.len() < 16 {
+                if self.application {
+                    self.exit_requested = true;
+                } else if self.requested_urls.len() < 16 {
                     self.requested_urls.push(String::new());
                 }
             }
@@ -2216,6 +2219,23 @@ mod settings_tests {
         run(vm, st, 5309, &[3], &[]);
         assert_eq!(run(vm, st, 5308, &[], &[]).ints, [0]);
         assert_eq!(run(vm, st, 5420, &[], &[]).ints, [0]);
+    }
+
+    #[test]
+    fn quit_exits_an_application_and_sends_an_applet_to_its_page() {
+        // Transcribed from ScriptRunner.java:4774-4782 (CS2 5411, the
+        // title's Quit): full screen is left first; then with no frame
+        // (an applet) the settings page is opened, with one System.exit(0).
+        let (mut state, mut vm) = setup();
+        let (st, vm) = (&mut state, &mut vm);
+        run(vm, st, 5411, &[], &[]);
+        assert!(!vm.exit_requested);
+        assert_eq!(vm.requested_urls, [""]);
+        vm.requested_urls.clear();
+        vm.application = true;
+        run(vm, st, 5411, &[], &[]);
+        assert!(vm.exit_requested);
+        assert!(vm.requested_urls.is_empty());
     }
 
     #[test]

@@ -219,6 +219,8 @@ fn the_hook_walk_and_layout_match_the_original() {
     let scenarios = corpus("walk");
     assert_eq!(scenarios.len(), 260);
     let (mut cycles, mut requests, mut drags, mut resizes, mut cancelled) = (0, 0, 0, 0, 0);
+    // Clicks taken away from where the pointer is that still reached a hook.
+    let mut clicked_elsewhere = 0;
     let mut kinds = [0usize; HOOKS + 1];
     for scenario in &scenarios {
         let number = int(&scenario["number"]);
@@ -405,6 +407,8 @@ fn the_hook_walk_and_layout_match_the_original() {
             }
             state.spline_just_finished = mouse[7] != 0;
             let point = [mouse[0], mouse[1]];
+            // Mouse.clickX/Y, which need not be where the pointer is.
+            let click = [mouse[8], mouse[9]];
             let (menu, inventory) = (mouse[5] != 0, mouse[6] != 0);
             state.queue_input_events(
                 &nodes,
@@ -415,6 +419,7 @@ fn the_hook_walk_and_layout_match_the_original() {
                     any_down: mouse[2] != 0,
                     scroll: mouse[4],
                     suppressed: menu || inventory,
+                    click: Some(click),
                 }),
             );
             let actual: Vec<Vec<i32>> = state
@@ -441,6 +446,9 @@ fn the_hook_walk_and_layout_match_the_original() {
                 .flat_map(|queue| step[queue].as_array().unwrap().iter().map(ints))
                 .collect();
             assert_eq!(actual, expected, "{at} requests");
+            if click != point && actual.iter().any(|request| request[1] == 1) {
+                clicked_elsewhere += 1;
+            }
             requests += actual.len();
             cycles += 1;
             assert_eq!(
@@ -457,7 +465,10 @@ fn the_hook_walk_and_layout_match_the_original() {
             // and as the drag controller decides it from the draw list.
             let dragged = int(&step["dragged"]);
             assert_eq!(ordinal(state.drag_candidate), dragged, "{at} drag");
-            if mouse[3] == 1 && !menu && !inventory {
+            // The controller has one point for the click and for the
+            // noClickThrough layers, which the walk tests at the pointer
+            // (666); it is compared where the two are the same.
+            if mouse[3] == 1 && !menu && !inventory && click == point {
                 let mut controller = Controller::default();
                 assert_eq!(
                     controller.begin(&state, &nodes, point, 0, None),
@@ -513,4 +524,5 @@ fn the_hook_walk_and_layout_match_the_original() {
         drags > 15 && resizes > 30 && cancelled > 40,
         "{drags} {resizes} {cancelled}"
     );
+    assert!(clicked_elsewhere > 5, "{clicked_elsewhere}");
 }

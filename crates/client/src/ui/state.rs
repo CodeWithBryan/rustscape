@@ -97,6 +97,9 @@ pub struct PointerInput {
     pub any_down: bool,
     pub scroll: i32,
     pub suppressed: bool,
+    /// Where this cycle's click was (`Mouse.clickX`, `clickY`), which the
+    /// IF3 walk tests a click against; None when it is `point`.
+    pub click: Option<[i32; 2]>,
 }
 impl Hook {
     pub fn new(source: Key, arguments: Vec<HookArg>) -> Self {

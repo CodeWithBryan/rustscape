@@ -189,6 +189,12 @@ pub struct Vm {
     /// URL_OPEN requests. A native client does not open server-supplied URLs
     /// on its own; the caller decides what to show.
     pub requested_urls: Vec<String>,
+    /// `GameShell.frame != null`: the client runs as an application in its
+    /// own frame rather than as an applet in a page (the browser).
+    pub application: bool,
+    /// CS2 5411 in an application: `System.exit(0)`, which the host carries
+    /// out by ending its run.
+    pub exit_requested: bool,
     pub logout_on_disconnect_timer: i32,
     /// Counts `ObjTypeList.clearSprites()` calls (CS2 6001 and 5401); the
     /// presenter drops its cached item sprites when this moves.

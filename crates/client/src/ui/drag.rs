@@ -195,6 +195,31 @@ impl Controller {
         });
         true
     }
+    /// `Cs1ScriptRunner.startComponentDrag` as the interface walk calls it
+    /// for a clicked component (InterfaceList.java:710-712), where nothing
+    /// else claims the click (the title's `client.mainUpdate` has no
+    /// `processDefaultAction`): drag `key`, pressed at `click`. The step of
+    /// the same cycle is its first update (`dragElapsedTicks` 1).
+    pub fn begin_walked(
+        &mut self,
+        state: &State,
+        nodes: &[DrawNode],
+        key: Key,
+        click: [i32; 2],
+        cycle: i32,
+    ) -> bool {
+        let Some(node) = nodes.iter().find(|node| node.key == key) else {
+            return false;
+        };
+        let offset = [click[0] - node.rect.x, click[1] - node.rect.y];
+        if !self.begin_scripted(state, nodes, key, offset, cycle, false) {
+            return false;
+        }
+        if let Some(gesture) = &mut self.gesture {
+            gesture.last_tick = cycle.wrapping_sub(1);
+        }
+        true
+    }
     pub fn begin(
         &mut self,
         state: &State,

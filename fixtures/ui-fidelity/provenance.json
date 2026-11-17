@@ -12,13 +12,13 @@
     "number": 435,
     "walk": 260
   },
-  "fixtureSha256": "af7801e16a0845558973b511dba94547b56fb598f8d2632c671eb591e52e73f5",
+  "fixtureSha256": "1b41a0e20a05adfb4760210a0461001161639232dc654fc9e7e7c6c11c649f9c",
   "format": 1,
   "scope": "Unchanged InterfaceList (layoutTopLevel, calculateSize, calculatePosition, processComponents, handleScrollbar), Inv.renderObjectSprite and formatObjAmount, Font and SoftwareFont (decode, calculateKerning, getStringWidth, render, renderGlyph), SoftwareRaster and JagString.parseHexString over seeded inputs. Component is an adapter holding the fields InterfaceList touches; every other class InterfaceList and Inv name is an adapter without behaviour, except Cs1ScriptRunner.startComponentDrag and getDragParent (the original's bodies) and SoftwareModel.setCamera (copies a staged picture in place of rendering a model). The walk driver stages what Protocol.loop does around processSubInterface (clears the hovered and tooltip components and the drag, fills the key queue, increments transmitTimer) and reads the three request lists without running scripts. Not observed: component key bindings (all keyCodes null), the world map component 1400, a click while an inventory item is held, an IF1 tooltip or scrollbar in a walk that also starts a drag, Protocol.loop's discard of requests for replaced created components, item models, outlines, shadows, notes and count variants, and any GL drawing.",
   "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
   "sources": {
     "oracle/ui-fidelity/adapters/rt4/Adapters.java": "40e382c00a5ed842619b11c52e3163d05bf5d41806ecbb335c253fd879ee32a4",
-    "oracle/ui-fidelity/rt4/UiFidelityOracle.java": "5d097ba664fe4261abd30f38c62a722099abaaf41b50d82918ffb0a66de091c3",
+    "oracle/ui-fidelity/rt4/UiFidelityOracle.java": "c5de97b239dbbbc0dacfbe219b45ae52757ea119cf7509e10457cd98ff6219e6",
     "reference/client/client/src/main/java/rt4/Base37.java": "3a886f6df1766521b332f5f1848a38a11f1d2a896a05cc3372b70b43e6e8860c",
     "reference/client/client/src/main/java/rt4/ComponentPointer.java": "4bb6e93332e410bd0d8f1a677d52101bef113384e91266eade4e0b43eca8d0e4",
     "reference/client/client/src/main/java/rt4/Font.java": "9c221bab222faab302a86b73006648f3cfffdfee2a02cec298e5418f1230569d",

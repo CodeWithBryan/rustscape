@@ -414,3 +414,66 @@ fn a_script_drags_its_active_component_from_the_given_offset() {
     // A second request is ignored while a drag is in progress.
     assert!(!drag.begin_scripted(&state, &nodes, parent, [0, 0], 4, false));
 }
+
+#[test]
+fn a_drag_the_title_walk_begins_follows_the_mouse_from_its_click() {
+    // Transcribed from Cs1ScriptRunner.startComponentDrag and
+    // updateComponentDrag (Cs1ScriptRunner.java:1348-1412), which the
+    // title's client.mainUpdate runs after its hooks (client.java:1227-1229):
+    // the component keeps the click's offset inside it, the cycle of the
+    // click is the first update, and moving past the dead zone after the
+    // dead time runs onDragStart at the component's place in its parent.
+    use crate::ui::{
+        drag::Controller,
+        state::{DrawNode, Rect},
+    };
+    let (mut state, _) = setup();
+    let key = Key::component(pointer(0));
+    let parent = Key::component(pointer(1));
+    let node = |key, rect| DrawNode {
+        key,
+        rect,
+        clip: rect,
+        paint_clip: rect,
+        subtree_end: 0,
+    };
+    let source = Rect {
+        x: 100,
+        y: 50,
+        w: 30,
+        h: 20,
+    };
+    let area = Rect {
+        x: 0,
+        y: 0,
+        w: 400,
+        h: 300,
+    };
+    let nodes = [node(parent, area), node(key, source)];
+    state.components.get_mut(&key).unwrap().on_drag_start = Some(vec![HookArg::Int(1)]);
+    let mut drag = Controller::default();
+    // No drag parent: nothing to drag within.
+    assert!(!drag.begin_walked(&state, &nodes, key, [110, 55], 10));
+    state.drag_parents.insert(key, parent);
+    assert!(!drag.begin_walked(&state, &[], key, [110, 55], 10));
+    // Pressed and let go in the same cycle: no drag, nothing run.
+    assert!(drag.begin_walked(&state, &nodes, key, [110, 55], 10));
+    let (hooks, click, release) = drag.step(&mut state, &nodes, [110, 55], 10, false, false);
+    assert!(hooks.is_empty() && click.is_none() && release.is_none());
+    assert!(!drag.active());
+    // Held: still within the dead zone at the click's own cycle.
+    assert!(drag.begin_walked(&state, &nodes, key, [110, 55], 20));
+    assert!(!drag.begin_walked(&state, &nodes, parent, [5, 5], 20));
+    assert!(
+        drag.step(&mut state, &nodes, [110, 55], 20, true, false)
+            .0
+            .is_empty()
+    );
+    // Moved 20 to the right: the component is at x 120 in its parent.
+    let (hooks, _, _) = drag.step(&mut state, &nodes, [130, 55], 21, true, false);
+    assert_eq!(hooks.len(), 1);
+    assert_eq!(hooks[0].mouse, [120, 50]);
+    // Let go: the drag ends.
+    drag.step(&mut state, &nodes, [130, 55], 22, false, false);
+    assert!(!drag.active());
+}

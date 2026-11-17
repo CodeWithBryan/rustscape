@@ -133,6 +133,19 @@ pub fn cycle(host: &mut impl Host) {
     }
 }
 
+/// Whether a cycle that starts in `state` reads the devices
+/// (`Keyboard.loop`, `Mouse.loop` in [`Step::Devices`]). With the map files
+/// at hand the original builds the title's scene in one blocking
+/// `LoginManager.rebuildMap` call of the cycle that finds game state 28
+/// (client.java:1725-1727), so whatever is clicked or typed during the build
+/// is taken by the cycle after it. This client builds that scene on the
+/// streaming thread while cycles go on; reading the devices in them would
+/// spend a click (`Mouse.clickButton` lasts one cycle) on cycles that run no
+/// interface walk. The first cycle of game state 10 reads them instead.
+pub fn reads_devices(state: State) -> bool {
+    state != State::TitleLoading
+}
+
 /// `Protocol.loop`.
 fn protocol_loop(host: &mut impl Host) {
     host.step(Step::Timers);
@@ -469,6 +482,25 @@ mod tests {
             run(State::Title, &[]),
             [Devices, Interfaces, World, Camera, Hooks, Drag, Login]
         );
+    }
+
+    #[test]
+    fn the_title_scene_build_leaves_the_devices_to_the_cycle_after_it() {
+        // client.java:1725-1732 with the map files at hand: game state 28 is
+        // one cycle whose rebuild blocks, so input that arrives meanwhile is
+        // read by the next cycle, a cycle of game state 10.
+        assert!(!reads_devices(State::TitleLoading));
+        // Every other state reads them each cycle (client.java:1697-1718),
+        // the game's own rebuild (25) included: it waits for map files
+        // cycle by cycle in the original too.
+        for state in [
+            State::Title,
+            State::Loading,
+            State::InGame,
+            State::ConnectionLost,
+        ] {
+            assert!(reads_devices(state), "{state:?}");
+        }
     }
 
     #[test]

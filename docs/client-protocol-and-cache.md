@@ -193,17 +193,32 @@ deleted.
   scene tiles 14 to 89. Game state 28 shows the last frame under the loading
   box, as does the state 25 that follows a login. With prepared packs only,
   the component shows the static title background instead.
+- The title's own controls: a press on a component with a drag parent (the
+  volume sliders' handles) starts its drag in the interface walk, as
+  `startComponentDrag` does, and the title's cycle updates it after the
+  hooks (`client.mainUpdate` has no mini menu). Quit (CS2 5411) ends the
+  desktop client, as `System.exit(0)` ends the original application; the
+  browser, an applet's page, records the settings-page request instead.
+  Input that arrives while the title scene is being rebuilt waits for the
+  first cycle after the build (`game_cycle::reads_devices`).
 
 Verified by: the login-flow trace and the loading-bar cases (above);
 `tests/login_seam.rs` against a scripted peer; and one live run in which a
 typed login, world select, a duplicate-login message, a killed server and a
 second login all worked. The title scene's rules are a JVM differential
 (`title-oracle`); its building, drawing and the interface scripts are not
-observed on the JVM and were looked at in live runs only.
+observed on the JVM and were looked at in live runs only. Every control of
+the main menu, the login form, account creation (to its second page), world
+select, Graphics Options and Audio Options was clicked in this client and in
+the original against the same example server, with frames compared by eye
+(2026-11-17); the walk-started drag, Quit and the held input are
+transcription tests.
 
 Differences: the title scene keeps whole regions where the original cuts the
 104 by 104 tile scene from them, builds on the streaming thread (state 28
-lasts a fraction of a second instead of one blocking call), and does not
+lasts a fraction of a second instead of one blocking call; two clicks during
+one build count as the later one, where the original's build cycle takes the
+first and the next cycle the second), and does not
 carry out the rebuild the original starts when a display setting changes. A
 live session started with `--cache` streams its maps from the cache in game
 as well. `--connect` is treated as the original
@@ -211,6 +226,10 @@ treats `config.json`: one address for the world list and every world. A
 world-list failure is fatal, as in the original, so a client started while
 the server is down stays on the loading bar. The pinned client's world hop
 is broken (the request overflows its buffer) and is reproduced as it is.
+The SD buttons (main menu and Graphics Options) end on the scripts' "unable
+to enter the chosen display mode" message, because mode 0 is carried out as
+mode 1 (see Display modes), and the full-screen list offers the desktop's own
+size only, where the original lists every screen mode from 800 by 600 up.
 
 ## Session lifecycle
 
@@ -301,6 +320,11 @@ policy in `input/platform.rs`: the table from window-system keys to AWT key
 codes, the characters AWT typed for Enter, Delete, Backspace, Tab and Escape,
 and how the pointer leaving the window is detected (five user32 calls on
 Windows, a `mouseleave` listener in the browser, not at all elsewhere).
+An IF3 click is tested where it was (`Mouse.clickX/clickY`), not where the
+pointer is by the cycle that takes it (`ui-fidelity-oracle` includes clicks
+away from the pointer). A development aid: with `RS09_POSTED_INPUT` set the
+desktop client does not ask Windows where the system cursor is, so a harness
+can drive it with posted mouse messages while the cursor is elsewhere.
 
 ## Interfaces and the script VM
 
@@ -1006,10 +1030,15 @@ Not seen or not working there:
   world map (not installed in the browser; the example gameframe's orb
   offered no option), account creation, full screen, a hidden tab, a slow
   network, refused storage, other browsers and real high-DPI hardware.
-- At the title, a click on Graphics Options or Audio Options changes
-  nothing, and after it the menu no longer answers the mouse (Enter still
-  opens the login form). Not compared with the desktop: clicks posted to the
-  desktop window did not reach it.
+- At the title, a click on Graphics Options or Audio Options was reported to
+  change nothing, after which the menu no longer answered the mouse. Rerun on
+  2026-11-17 with Playwright clicks (the cache from the update server): both
+  open; in 60 timed clicks on the earlier build 3 were lost, the cause being
+  clicks taken while the title scene was rebuilt; on the fixed build 0 of 40.
+  The lasting deafness was not reproduced. On the desktop the same report
+  came from clicks posted while the system cursor was elsewhere, which took
+  the pointer away after each event; such clicks now count where they were,
+  as in the original.
 - With the prepared packs the minimap was black and there was no compass,
   on the desktop as well; fixed (see Minimap): the recorded packs now get
   the minimap's sprite IDs and map scenes from the pinned tables.
@@ -1195,9 +1224,13 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
 - (b) Keys are identified by position, so letter and punctuation key codes
   follow the US layout on other layouts. Typed characters are unaffected. The
   number pad is treated as NumLock on.
-- (b)(d) A click is hit-tested at the pointer's position in that cycle, not
-  at `Mouse.clickX/clickY`; a drag start reads the mouse per frame; all
-  clicks in one frame share a timestamp.
+- (b) The IF1 walk and the in-game drag start still test a click at one
+  point: the drag controller tests `noClickThrough` layers at the click
+  where the walk tests them at the pointer. All clicks in one frame share a
+  timestamp.
+- (b) In game a component drag begins at the mini menu click, a cycle after
+  the original's (whose walk begins it), so its first update is that
+  cycle's second; on the title it begins in the walk's cycle.
 - (b) No mouse capture on Windows: a button released outside the window is
   not seen until the next event. The pointer leaving the window is not
   reported on desktop systems other than Windows.
@@ -1466,9 +1499,8 @@ What was run, and how, is under "The browser build as run".
 - (a) Never run: browsers other than Chromium, a real high-DPI display, a
   slow or failing network, refused storage quota, a hidden tab, a logout
   sent by the server, account creation.
-- (a) At the title, Graphics Options and Audio Options do nothing visible
-  and leave the menu deaf to the mouse. Seen in the browser; the desktop was
-  not compared.
+- (b) The title's lasting deafness to the mouse once reported after Graphics
+  or Audio Options was not reproduced (see "The browser build as run").
 - (a) Scene builds run on the page's one thread: 2.5 to 3.3 s in a single
   frame at login, and 45 to 127 music blocks (0.5 to 1.5 s) missed at
   start-up. Nothing is drawn or sent in such a frame. Music also goes
@@ -1504,7 +1536,12 @@ What was run, and how, is under "The browser build as run".
   pass order, the depth biases, the pack path of the underwater scene.
 - One mutation of the actors port survives its corpus (`braking < squared`
   against `<=`).
-- No frame of the original client has been compared with this one.
+- No frame of the original client has been compared with this one, apart
+  from the title's controls (by eye, under "Title screen and login").
+- The in-game Graphics and Audio settings (interfaces 742 and 743) were run
+  only headless (`examples/title_probe.rs`): neither example server opens
+  them from the options tab, as the original server's
+  `SettingsTabInterface` does.
 
 ### Decisions for the owner
 
@@ -1551,8 +1588,8 @@ Collected from every stream. None blocks the others.
     `roof::has_entity` beside `loc_placement`'s own decision;
     `login_flow::preferences_to_int` beside `Preferences::to_int`.
 15. **Mouse.** Count extra buttons as left clicks, as Java 7 and later do, or
-    ignore them. Give `PointerInput` a click point so IF3 clicks are tested
-    at `clickX/clickY`, or leave it.
+    ignore them. (IF3 clicks are now tested at `clickX/clickY` through
+    `PointerInput::click`; revert to the pointer if that is not wanted.)
 16. **Hover text.** Add a local-time source for the seed outside Windows or
     accept UTC there. Show the text in the hidden-interface workbench, and
     where, or not at all.
