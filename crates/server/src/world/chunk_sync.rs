@@ -193,6 +193,10 @@ impl DirtyTracker {
     pub fn len(&self) -> usize {
         self.chunks.len()
     }
+    /// The flagged chunks (order not meaningful: the original's set is keyed by identity).
+    pub fn chunks(&self) -> Vec<HandleChunk> {
+        self.chunks.values().cloned().collect()
+    }
     pub fn is_empty(&self) -> bool {
         self.chunks.is_empty()
     }

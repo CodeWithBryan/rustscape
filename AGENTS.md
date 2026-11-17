@@ -971,6 +971,15 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   is logged and makes the start-up incomplete, never skipped or reported as
   done; the whole-start-up test asserts its mismatches equal KNOWN_GAPS. The
   World it builds is not playable and nothing installs it. See docs/startup.md.
+  The class scan is a native manifest (startup/scan_order.txt, checked against
+  the boot record): register a class only with a native port, in the original
+  order, and name every other one as content not ported; never draw to fake a
+  generator position. For NPCSpawner, GroundSpawnLoader, the store, the scan
+  steps or the timers there, also run chunk_sync, ground_spawn_loader,
+  npc_spawns, npc_init, repository and timer_registry, and reproduce
+  `cargo xtask startup-draws-oracle --check`: it attributes every start-up
+  draw to its class and is accepted only if its phase lines equal the
+  startup-loaders fixture's. Start-up writes go through Inputs::writes.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

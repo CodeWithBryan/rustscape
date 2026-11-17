@@ -1,28 +1,40 @@
 //! The original start-up, `GameWorld.prompt(run = false)`, as an ordered list
-//! of steps, each either run natively or refused as not ported.
+//! of steps, each run natively or, where content is missing, in part.
 //!
 //! [`ORDER`] is the order of the statements of `prompt` (with
 //! `ConfigParser.prePlugin`/`postPlugin` expanded loader by loader), which is
-//! also the phase order of `fixtures/startup-loaders`. A refused step is never
-//! skipped silently and never reported as done: with
-//! [`Policy::StopAtRefusal`] the start-up stops there with
-//! [`StartupError::NotPorted`]; with [`Policy::ContinuePastRefusals`] the
-//! refusal is logged, recorded in the report and the result is marked
-//! incomplete. A failure inside a native step is the original's uncaught
-//! exception: the start-up stops with [`StartupError::Failed`].
+//! also the phase order of `fixtures/startup-loaders`. A step that is only
+//! partly ported ([`Step::refusal`] says what it leaves out) is never reported
+//! as done: with [`Policy::StopAtRefusal`] the start-up stops before it with
+//! [`StartupError::NotPorted`]; with [`Policy::ContinuePastRefusals`] its
+//! native part runs, the rest is reported by name in [`Outcome::Partial`], a
+//! line is logged and the result is marked incomplete. A failure inside a
+//! step is the original's uncaught exception: the start-up stops with
+//! [`StartupError::Failed`].
 //!
 //! The [`World`] this produces holds what the native steps loaded. It is not a
-//! playable world: content (class scan, plugins, start-up listeners), NPC
-//! spawning, ground spawns and the rest listed in docs/startup.md are refused.
+//! playable world: content (most of the class scan, plugins, start-up
+//! listeners, content NPC classes) and the rest listed in docs/startup.md are
+//! not ported.
 use super::generators::{Positions, Seeds, WorldGenerators};
+use super::ground::{self, Chunks, GroundItems};
 use super::loaders::{
     self, LoadError, Log, clue_rewards::ClueRewards, music, ranged::RangedTables, xtea::RegionKeys,
 };
+use super::npcs::{self, Npcs};
 use super::regions::Regions;
+use super::scan::{self, Manifest, Native};
+use super::store::{self, ServerStore, WorldWrites};
+use super::timers::{Entity as TimerEntity, Natives};
+use crate::auth::{factory::Registry as AuthRegistry, password::Passwords};
 use crate::config::Configuration;
-use crate::definitions::{item, item_config, npc, scenery, varbit};
+use crate::definitions::{item, item_config, npc, property::Property, scenery, varbit};
+use crate::timers::{Manager as TimerManager, registry::Registry as TimerRegistry};
 use crate::world::drop_tables::{LogLevel, NpcDropTable, parser as drop_parser};
-use crate::world::{doors, interfaces};
+use crate::world::{
+    chunk_sync::DirtyTracker, doors, ground_options, ground_spawn_loader, interfaces, npc_spawns,
+    player_walk::State,
+};
 use rs09_cache::{
     CacheError, Limits,
     archive::Archive,
@@ -140,47 +152,41 @@ impl Step {
             Self::Gc => "System.gc",
         }
     }
-    /// Why a step is refused; `None` for a step this sequence runs natively.
+    /// What a step leaves out; `None` for a step this sequence runs entirely
+    /// natively. Every such step is partly native: its native part runs and
+    /// the rest is reported by name ([`Outcome::Partial`]).
     pub const fn refusal(self) -> Option<&'static str> {
         Some(match self {
-            Self::ChunkDirtyListener => {
-                "RegionChunk.dirtyListener = ChunkUpdateTracker: world::chunk_sync is not joined to this World"
-            }
-            Self::AuthConfigure => {
-                "Auth.configure: auth::factory is ported (startup::configure installs it for the endpoint) but its world-owner lookup is not joined to this World"
-            }
-            Self::ScanClasspath => {
-                "ClassScanner.scanClasspath: content class scanning is not ported"
-            }
             Self::LoadPureInterfaces => {
-                "ClassScanner.loadPureInterfaces: content interfaces/listeners are not ported"
+                "ClassScanner.loadPureInterfaces: only ServerStore and GraveController (world persists) are native; every other content interface (listeners, interactions, interfaces, commands, behaviours, map areas, world events) is content not ported"
             }
             Self::LoadTimers => {
-                "ClassScanner.loadTimers: timers::registry exists but the scanned timer classes are content"
-            }
-            Self::ServerStore => "ServerStore.parse is not ported",
-            Self::WorldPersists => {
-                "worldPersists.parse (GraveController) is content and not ported"
+                "ClassScanner.loadTimers: only GrandExchangeTimer, AntiMacro and HolidayRandoms have native prototypes; the other scanned timers are not ported"
             }
             Self::LoadSideEffectfulPlugins => {
-                "ClassScanner.loadSideEffectfulPlugins: legacy plugins are content and not ported"
+                "ClassScanner.loadSideEffectfulPlugins: only PickupPlugin is native; every other legacy plugin is content not ported"
             }
             Self::NpcSpawner => {
-                "NPCSpawner: world::npc_spawns parses the rows, but NPC.create/init, Repository registration and region membership are not joined to this World"
+                "NPCSpawner: every NPC is a base NPC (content NPC classes are not ported); zone updates, NPC interaction defaults, slayer tasks, magic autocast spells and the SkillRestore timer are not ported"
             }
             Self::GroundSpawns => {
-                "GroundSpawnLoader: world::ground_spawn_loader needs a ground-item manager and world context this World does not own"
+                "GroundSpawnLoader: ground items' option tables hold only the natively registered item option handler (take); content registers the others"
             }
             Self::StartupListeners => {
-                "startup listeners: the list comes from the class scan (content); none is run"
-            }
-            Self::SceneryExamine => {
-                "SceneryDefinition.getExamine over every definition is not ported"
+                "startup listeners: every start-up listener the class scan registers is content not ported"
             }
             _ => return None,
         })
     }
 }
+
+/// A scanned class or a member the original runs that this port does not have.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Gap {
+    pub what: String,
+    pub cause: &'static str,
+}
+const CONTENT: &str = "content not ported";
 
 /// What a refused step does to the start-up.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -192,6 +198,8 @@ pub enum Policy {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Outcome {
     Native,
+    /// The native part ran; the rest is listed.
+    Partial(Vec<Gap>),
     NotPorted(&'static str),
 }
 
@@ -226,6 +234,12 @@ pub struct Inputs {
     pub seeds: Seeds,
     /// Bound on decoded cache definitions per archive.
     pub max_definitions: usize,
+    /// Where the start-up's own writes in the world directory go (the
+    /// original creates `STORE_PATH` when it is missing).
+    pub writes: Arc<dyn WorldWrites>,
+    /// The JVM's default-locale `String.toLowerCase()` (en-US in the
+    /// world-trace oracle, which lowercases as the ROOT locale does).
+    pub lower_case: fn(&str) -> String,
 }
 
 /// A log line: origin (simple class name), level, message.
@@ -267,6 +281,37 @@ pub struct World {
     pub varbits: varbit::Registry,
     pub clue_rewards: ClueRewards,
     pub log: Vec<LogLine>,
+    /// `RegionChunk.dirtyListener`: `None` is the original's initial no-op
+    /// listener; the `RegionChunk.dirtyListener` step installs the
+    /// `ChunkUpdateTracker` port.
+    pub dirty_listener: Option<DirtyTracker>,
+    /// `Auth.authenticator` / `Auth.storageProvider`.
+    pub auth: Option<AuthRegistry>,
+    /// `ClassScanner.scanResults`: the native manifest.
+    pub scan: Option<Manifest>,
+    /// `GameWorld.worldPersists`, in registration order.
+    pub world_persists: Vec<Native>,
+    /// `ServerStore.fileMap` / `counter`.
+    pub store: ServerStore,
+    /// `TimerRegistry`.
+    pub timers: TimerRegistry,
+    /// `registerTimer`'s log lines while NPCs get their automatic timers.
+    pub timer_log: Vec<(crate::timers::registry::Level, String)>,
+    /// `ItemDefinition.OPTION_HANDLERS` (and the arena binding them to ground
+    /// items).
+    pub item_options: ground_options::Registry,
+    /// `ClassScanner.amountLoaded` and `numPlugins`.
+    pub content_interfaces_loaded: i32,
+    pub legacy_plugins: i32,
+    /// Canonical actors: NPCs and the nodes ground items are bound to.
+    pub actors: State,
+    /// The NPCs Repository.npcs holds.
+    pub entities: Npcs,
+    pub ground: GroundItems,
+    /// Region chunks `RegionManager.getRegionChunk` created.
+    pub chunks: Chunks,
+    /// `GameWorld.ticks`.
+    pub ticks: i32,
 }
 
 /// The result of a start-up that did not stop.
@@ -372,8 +417,8 @@ fn debug<E: std::fmt::Debug>(error: E) -> String {
 }
 
 impl World {
-    fn new(seeds: Seeds) -> Self {
-        Self {
+    fn new(seeds: Seeds) -> Result<Self, StartupError> {
+        Ok(Self {
             generators: WorldGenerators::new(seeds),
             settings: None,
             config_path: None,
@@ -391,6 +436,47 @@ impl World {
             varbits: varbit::Registry::default(),
             clue_rewards: ClueRewards::default(),
             log: Vec::new(),
+            dirty_listener: None,
+            auth: None,
+            scan: None,
+            world_persists: Vec::new(),
+            store: ServerStore::default(),
+            timers: TimerRegistry::default(),
+            timer_log: Vec::new(),
+            item_options: ground_options::Registry::default(),
+            content_interfaces_loaded: 0,
+            legacy_plugins: 0,
+            actors: State::default(),
+            entities: Npcs::new().map_err(|error| StartupError::Failed {
+                step: Step::ServerConfig,
+                error,
+            })?,
+            ground: GroundItems::default(),
+            chunks: Chunks::default(),
+            ticks: 0,
+        })
+    }
+    fn constant_bool(&self, key: &str) -> Option<bool> {
+        self.settings
+            .as_ref()
+            .and_then(|s| s.constants().get(key))
+            .and_then(|v| v.as_bool())
+    }
+    fn manifest(&self, step: Step) -> Result<&Manifest, StartupError> {
+        // `lateinit var scanResults`: read before scanClasspath it throws.
+        self.scan.as_ref().ok_or(StartupError::Failed {
+            step,
+            error: "UninitializedPropertyAccessException: scanResults".into(),
+        })
+    }
+    fn timer_entity(&mut self) -> TimerEntity<'_> {
+        TimerEntity {
+            player: false,
+            artificial: false,
+            ticks: self.ticks,
+            holiday_event_randoms: false,
+            generators: &mut self.generators,
+            log: &mut self.timer_log,
         }
     }
     fn archive(&self, id: u8) -> Result<Archive, String> {
@@ -413,8 +499,14 @@ impl World {
         self.npcs.for_id(&mut files, id)
     }
 
-    fn run(&mut self, inputs: &Inputs, step: Step, lines: &mut Lines) -> Result<(), StartupError> {
+    fn run(
+        &mut self,
+        inputs: &Inputs,
+        step: Step,
+        lines: &mut Lines,
+    ) -> Result<Vec<Gap>, StartupError> {
         let failed = fail(step);
+        let mut gaps = Vec::new();
         match step {
             Step::ServerConfig => {
                 let path = inputs.world.join("worldprops").join("default.conf");
@@ -644,15 +736,287 @@ impl World {
                     });
                 }
             }
-            _ => unreachable!("refused steps are handled by start()"),
+            Step::ChunkDirtyListener => {
+                // RegionChunk.dirtyListener = ChunkUpdateTracker.
+                self.dirty_listener = Some(DirtyTracker::default());
+            }
+            Step::AuthConfigure => {
+                let settings = self
+                    .settings
+                    .as_ref()
+                    .ok_or_else(|| failed("no settings".into()))?;
+                // SQLStorageProvider's friend lookup is Repository.getPlayerByName:
+                // the world's player name map, keyed by the lower-cased name
+                // with spaces as underscores.
+                let repository = self.entities.repository.clone();
+                let lower = inputs.lower_case;
+                let online = move |name: &str| {
+                    let key = Some(lower(name).replace(' ', "_"));
+                    repository.name_entries().iter().any(|(n, _)| *n == key)
+                };
+                let mut registry = AuthRegistry::default();
+                registry
+                    .configure(
+                        &settings.auth_settings(),
+                        Arc::new(Passwords::default()),
+                        online,
+                    )
+                    .map_err(|e| failed(e.to_string()))?;
+                self.auth = Some(registry);
+            }
+            Step::ScanClasspath => {
+                self.scan = Some(Manifest::load());
+            }
+            Step::LoadPureInterfaces => {
+                let classes = self.manifest(step)?.content_interfaces.clone();
+                for class in classes {
+                    match scan::native(class) {
+                        Some(native @ (Native::ServerStore | Native::GraveController)) => {
+                            // `if (clazz is PersistWorld) GameWorld.worldPersists.add(clazz)`
+                            self.world_persists.push(native);
+                            self.content_interfaces_loaded += 1;
+                        }
+                        _ => gaps.push(Gap {
+                            what: class.into(),
+                            cause: CONTENT,
+                        }),
+                    }
+                }
+                lines.log(
+                    "SystemLogger",
+                    LogLevel::Fine,
+                    &format!(
+                        "[STARTUP] Loaded {} content interfaces.",
+                        self.content_interfaces_loaded
+                    ),
+                );
+            }
+            Step::LoadTimers => {
+                let classes = self.manifest(step)?.timers.clone();
+                for class in classes {
+                    if scan::is_abstract(class) {
+                        continue;
+                    }
+                    match scan::native(class) {
+                        Some(Native::Timer(kind)) => {
+                            let prototype = kind.instance();
+                            let timers = self.timers.clone();
+                            let mut manager = TimerManager::default();
+                            let mut entity = self.timer_entity();
+                            timers
+                                .register(Some(&prototype), &mut manager, &mut entity, &mut Natives)
+                                .map_err(|e| failed(format!("{e:?}")))?;
+                        }
+                        _ => gaps.push(Gap {
+                            what: class.into(),
+                            cause: CONTENT,
+                        }),
+                    }
+                }
+                for (level, message) in self.timer_log.drain(..) {
+                    let level = match level {
+                        crate::timers::registry::Level::Warn => LogLevel::Warn,
+                        crate::timers::registry::Level::Error => LogLevel::Err,
+                    };
+                    lines.log("TimerRegistry", level, &message);
+                }
+            }
+            Step::ServerStore => {
+                // worldPersists.first { it is ServerStore }.parse()
+                if !self.world_persists.contains(&Native::ServerStore) {
+                    return Err(failed(
+                        "NoSuchElementException: List contains no element matching the predicate."
+                            .into(),
+                    ));
+                }
+                let path = self
+                    .settings
+                    .as_ref()
+                    .and_then(|s| s.constants().get("STORE_PATH"))
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| failed("NullPointerException: STORE_PATH".into()))?;
+                let dir = inputs.world.join(path);
+                store::parse(&mut self.store, &dir, inputs.writes.as_ref(), lines)
+                    .map_err(|e| failed(debug(e)))?;
+            }
+            Step::WorldPersists => {
+                for persist in self.world_persists.clone() {
+                    match persist {
+                        Native::ServerStore => {}
+                        Native::GraveController => {
+                            store::parse_graves(&mut self.store).map_err(|e| failed(debug(e)))?;
+                        }
+                        other => return Err(failed(format!("{other:?} is not a world persist"))),
+                    }
+                }
+            }
+            Step::LoadSideEffectfulPlugins => {
+                let classes = self.manifest(step)?.initializable.clone();
+                for class in classes {
+                    match scan::native(class) {
+                        Some(Native::PickupPlugin) => {
+                            // definePlugin -> plugin.newInstance(null):
+                            // ItemDefinition.setOptionHandler("take", this).
+                            self.item_options
+                                .register_pickup()
+                                .map_err(|e| failed(debug(e)))?;
+                            self.legacy_plugins += 1;
+                        }
+                        _ => gaps.push(Gap {
+                            what: class.into(),
+                            cause: CONTENT,
+                        }),
+                    }
+                }
+                lines.log(
+                    "SystemLogger",
+                    LogLevel::Fine,
+                    &format!(
+                        "[STARTUP] We still have {} legacy plugins being loaded.",
+                        self.legacy_plugins
+                    ),
+                );
+            }
+            Step::NpcSpawner => {
+                let text = self
+                    .config_text("npc_spawns.json")
+                    .map_err(|e| failed(debug(e)))?;
+                let holiday = self
+                    .constant_bool("HOLIDAY_EVENT_RANDOMS")
+                    .ok_or_else(|| failed("no HOLIDAY_EVENT_RANDOMS".into()))?;
+                let before = self.entities.unported.clone();
+                let archive = self.npc_archive.clone();
+                let mut init = npcs::Init {
+                    actors: &mut self.actors,
+                    npcs: &mut self.entities,
+                    definitions: &mut self.npcs,
+                    archive: archive.as_deref(),
+                    timers: &self.timers,
+                    generators: &mut self.generators,
+                    chunks: &mut self.chunks,
+                    regions: &mut self.regions,
+                    holiday_event_randoms: holiday,
+                    ticks: self.ticks,
+                    timer_log: &mut self.timer_log,
+                    spawned: None,
+                };
+                npc_spawns::load(&mut init, &text).map_err(|e| failed(debug(e)))?;
+                let count = init
+                    .spawned
+                    .ok_or_else(|| failed("the spawner did not finish".into()))?;
+                lines.log(
+                    "NPCSpawner",
+                    LogLevel::Fine,
+                    &format!("Spawned {count} NPCs"),
+                );
+                let after = &self.entities.unported;
+                for (n, what) in [
+                    (
+                        after.zone_updates - before.zone_updates,
+                        "ZoneMonitor.updateLocation after RegionManager.move (region zones are registered by class-scan content)",
+                    ),
+                    (
+                        after.interact_defaults - before.interact_defaults,
+                        "InteractPlugin.setDefault for NPCs (NPC option handlers are class-scan content)",
+                    ),
+                    (
+                        after.slayer_tasks - before.slayer_tasks,
+                        "NPC.configure: Tasks.forId (slayer content)",
+                    ),
+                    (
+                        after.magic_autocasts - before.magic_autocasts,
+                        "NPC.configure: DefaultCombatSpell / SpellBook autocast for magic NPCs",
+                    ),
+                    (
+                        after.skill_restore_timers - before.skill_restore_timers,
+                        "Entity.init: the automatic SkillRestore timer (Entity.hook has no native port)",
+                    ),
+                ] {
+                    if n > 0 {
+                        gaps.push(Gap {
+                            what: format!("{n} x {what}"),
+                            cause: "not ported",
+                        });
+                    }
+                }
+            }
+            Step::GroundSpawns => {
+                let mut ctx = ground::Context {
+                    actors: &mut self.actors,
+                    definitions: &self.items,
+                    options: &self.item_options,
+                    spawns: &self.ground.spawns,
+                    chunks: &mut self.chunks,
+                    regions: &mut self.regions,
+                    dirty: &mut self.dirty_listener,
+                    ticks: self.ticks,
+                    lowercase: inputs.lower_case,
+                    log: lines,
+                };
+                ground_spawn_loader::Loader::default()
+                    .load_config(
+                        self.config_path.as_deref(),
+                        &mut ctx,
+                        &self.ground.spawns,
+                        &self.ground.manager,
+                    )
+                    .map_err(|e| failed(debug(e)))?;
+                gaps.push(Gap {
+                    what: "ItemDefinition.OPTION_HANDLERS entries other than take (registered by content plugins) in the ground items' option tables".into(),
+                    cause: CONTENT,
+                });
+            }
+            Step::StartupListeners => {
+                for class in scan::section("listeners.startup") {
+                    gaps.push(Gap {
+                        what: class.into(),
+                        cause: CONTENT,
+                    });
+                }
+            }
+            Step::SceneryExamine => {
+                let lower = inputs.lower_case;
+                for definition in self.scenery.definitions.values() {
+                    let mut d = definition.write();
+                    d.examine = Some(examine(&d, lower).map_err(&failed)?);
+                }
+            }
         }
-        Ok(())
+        Ok(gaps)
     }
+}
+
+/// `Definition.getExamine()` on a scenery definition: the cached text, else
+/// the `examine` handler's `toString()`, else "It's a(n) <name>." or "null"
+/// for an empty name. A null name is the original's NullPointerException.
+fn examine(d: &scenery::SceneryDefinition, lower: fn(&str) -> String) -> Result<String, String> {
+    if let Some(text) = &d.examine {
+        return Ok(text.clone());
+    }
+    match d.handlers.read().get("examine") {
+        None | Some(Property::Null) => {}
+        Some(Property::Text(text)) => return Ok(text.clone()),
+        Some(Property::Int(value)) => return Ok(value.to_string()),
+        Some(other) => return Err(format!("examine handler {other:?} has no native toString")),
+    }
+    let name = d
+        .name
+        .as_deref()
+        .ok_or("NullPointerException: name.length()")?;
+    if name.is_empty() {
+        return Ok("null".into());
+    }
+    // StringUtils.isPlusN: the first characters of name.toLowerCase().
+    let s: Vec<u16> = lower(name).encode_utf16().collect();
+    let c = |i: usize| s.get(i).copied().map(u32::from).and_then(char::from_u32);
+    let plus_n = matches!(c(0), Some('a' | 'e' | 'i' | 'o' | 'u'))
+        || (c(0) == Some('h') && s.len() > 1 && c(1) != Some('e'));
+    Ok(format!("It's a{}{name}.", if plus_n { "n " } else { " " }))
 }
 
 /// Runs the start-up in the original order.
 pub fn start(inputs: &Inputs, policy: Policy) -> Result<Startup, StartupError> {
-    let mut world = World::new(inputs.seeds);
+    let mut world = World::new(inputs.seeds)?;
     let mut steps = Vec::new();
     let mut complete = true;
     for step in ORDER {
@@ -662,14 +1026,21 @@ pub fn start(inputs: &Inputs, policy: Policy) -> Result<Startup, StartupError> {
                 return Err(StartupError::NotPorted { step, reason });
             }
             complete = false;
+            let gaps = world.run(inputs, step, &mut lines)?;
             lines.0.push(LogLine {
                 origin: "startup",
                 level: LogLevel::Err,
-                message: format!("not ported: {reason}"),
+                message: format!("partly ported: {reason} ({} named gaps)", gaps.len()),
             });
-            Outcome::NotPorted(reason)
+            Outcome::Partial(gaps)
         } else {
-            world.run(inputs, step, &mut lines)?;
+            let gaps = world.run(inputs, step, &mut lines)?;
+            if !gaps.is_empty() {
+                return Err(StartupError::Failed {
+                    step,
+                    error: "a step classified native reported gaps".into(),
+                });
+            }
             Outcome::Native
         };
         let log = lines

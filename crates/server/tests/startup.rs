@@ -8,7 +8,7 @@
 //! whole-start-up comparison also needs the pinned cache and data directory
 //! the generator extracts (runs/startup-loaders-oracle/template, or
 //! `RS09_STARTUP_WORLD`); without them it says so and checks nothing.
-use rs09_game_core::java_double;
+use rs09_game_core::{java_double, java_lower::lowercase_root};
 use rs09_server::definitions::{property::Property, scenery};
 use rs09_server::startup::{
     generators::{CountingRandom, Seeds, WorldGenerators},
@@ -17,7 +17,9 @@ use rs09_server::startup::{
         ranged, ranged::RangedTables, shops, xtea, xtea::RegionKeys,
     },
     regions::{Regions, ZoneBorders},
+    scan,
     sequence::{self, Inputs, ORDER, Outcome, Policy, Step},
+    store::WorldWrites,
 };
 use rs09_server::world::drop_tables::{
     LogLevel, NpcDropTable, WeightBasedTable, parser as drop_parser, random::Source,
@@ -36,6 +38,30 @@ const PROVENANCE: &str = include_str!("../../../fixtures/startup-loaders/provena
 const TRACE: &str = include_str!("../../../fixtures/world-trace/trace.jsonl");
 const TRACE_PROVENANCE: &str = include_str!("../../../fixtures/world-trace/provenance.json");
 const DROP_TABLES: &str = include_str!("../../../fixtures/drop-tables/drop_tables.json");
+const DRAWS: &str = include_str!("../../../fixtures/startup-draws/draws.jsonl");
+const DRAWS_PROVENANCE: &str = include_str!("../../../fixtures/startup-draws/provenance.json");
+
+/// The draw attribution and read-only state after one phase of the original
+/// (`cargo xtask startup-draws-oracle`).
+fn attribution(name: &str) -> Value {
+    DRAWS
+        .lines()
+        .map(|l| serde_json::from_str::<Value>(l).unwrap())
+        .find(|r| r["name"] == name)
+        .unwrap_or_else(|| panic!("no attribution for {name}"))
+}
+
+/// The class a draw belongs to: its innermost content frame, else the first
+/// frame outside the shared utilities.
+fn drawing_class(row: &Value) -> String {
+    let frame = row["content"]
+        .as_str()
+        .or(row["caller"].as_str())
+        .or(row["site"].as_str())
+        .unwrap();
+    let method = frame.rsplit_once('.').unwrap().0;
+    method.split('$').next().unwrap().to_string()
+}
 
 fn sha256(bytes: impl AsRef<[u8]>) -> String {
     format!("{:x}", Sha256::digest(bytes))
@@ -593,6 +619,221 @@ fn world_generators_report_positions_like_the_oracle() {
     assert_eq!(json!(p.thread_local), first["threadLocal"]);
 }
 
+// ---- the draw attribution and the scan manifest, portable ----
+
+#[test]
+fn draw_attribution_pins_and_per_phase_totals() {
+    let provenance: Value = serde_json::from_str(DRAWS_PROVENANCE).unwrap();
+    assert_eq!(provenance["schema"], 1);
+    assert_eq!(provenance["fixtureSha256"], sha256(DRAWS.replace('\r', "")));
+    assert_eq!(provenance["bootRecord"]["identicalToWorldTrace"], true);
+    assert_eq!(provenance["bootRecord"]["sha256"], boot()["sha256"]);
+    assert_eq!(
+        provenance["startupLoaders"]["fixtureSha256"],
+        sha256(ORACLE.replace('\r', ""))
+    );
+    assert_eq!(
+        provenance["startupLoaders"]["phaseAndTableLinesIdentical"],
+        true
+    );
+    // Every phase's attributed draws add up to the startup-loaders counts.
+    let records: Vec<Value> = DRAWS
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    assert_eq!(records.len(), 52);
+    let mut previous = [0u64; 3];
+    for (phase, record) in phases().iter().zip(&records) {
+        assert_eq!(phase["name"], record["name"]);
+        for (i, g) in ["shared", "math", "shuffle"].into_iter().enumerate() {
+            let now = phase["generators"][g][0].as_u64().unwrap();
+            let drawn: u64 = record["draws"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|d| d["generator"] == g)
+                .map(|d| d["count"].as_u64().unwrap())
+                .sum();
+            assert_eq!(drawn, now - previous[i], "{} {g}", record["name"]);
+            previous[i] = now;
+        }
+    }
+}
+
+/// A phase and its draws as (generator, drawing class, draws).
+type PhaseDraws = (&'static str, &'static [(&'static str, &'static str, u64)]);
+
+/// What draws in the class scan and the start-up listeners, by drawing class
+/// (generator, class, draws), from the attribution: content classes and the
+/// holiday world events, and AntiMacro only where content creates an NPC.
+#[test]
+fn class_scan_and_listener_draws_are_content() {
+    let expected: &[PhaseDraws] = &[
+        (
+            "ClassScanner.loadPureInterfaces",
+            &[
+                ("shared", "content.global.ame.events.maze.MazeInterface", 9),
+                ("shared", "content.global.handlers.item.CasketListener", 7),
+                ("shared", "content.global.handlers.item.ImplingLoot", 187),
+                ("shuffle", "content.minigame.vinesweeper.Vinesweeper", 2336),
+                (
+                    "shared",
+                    "content.region.misthalin.digsite.quest.thedigsite.TheDigSiteListeners",
+                    70,
+                ),
+                (
+                    "shared",
+                    "content.region.wilderness.handlers.RoguesCastleListeners",
+                    8,
+                ),
+                (
+                    "shared",
+                    "core.game.worldevents.holiday.christmas.Giftmas",
+                    35,
+                ),
+                (
+                    "shared",
+                    "core.game.worldevents.holiday.easter.EasterEvent",
+                    12,
+                ),
+            ],
+        ),
+        (
+            "ClassScanner.loadSideEffectfulPlugins",
+            &[
+                ("shared", "content.global.ame.events.mime.MimeActivity", 4),
+                (
+                    "shared",
+                    "content.global.skill.agility.GnomeStrongholdCourse",
+                    5,
+                ),
+                (
+                    "shared",
+                    "content.global.skill.summoning.familiar.Forager",
+                    21,
+                ),
+                ("shared", "content.minigame.mta.impl.EnchantingZone", 1),
+                ("shuffle", "content.minigame.mta.impl.AlchemistZone", 6),
+                (
+                    "shared",
+                    "content.region.asgarnia.taverley.quest.witchshouse.NoraTHaggNPC",
+                    1,
+                ),
+                (
+                    "math",
+                    "content.region.fremennik.rellekka.quest.thefremenniktrials.PeerTheSeerDialogue",
+                    14,
+                ),
+                (
+                    "shared",
+                    "content.region.kandarin.ardougne.quest.sheepherder.SheepHerder",
+                    17,
+                ),
+                (
+                    "shared",
+                    "content.region.misthalin.lumbridge.quest.lostcity.ShamusTreeListener",
+                    1,
+                ),
+            ],
+        ),
+        (
+            "startup:content.data.tables.RareDropTable",
+            &[("shared", "content.data.tables.RareDropTable", 27)],
+        ),
+        (
+            "startup:content.global.activity.penguinhns.PenguinHNSEvent",
+            &[(
+                "shared",
+                "content.global.activity.penguinhns.PenguinSpawner",
+                10,
+            )],
+        ),
+        (
+            "startup:content.global.skill.gather.fishing.barbfishing.SpotManager",
+            &[
+                (
+                    "shared",
+                    "content.global.skill.gather.fishing.barbfishing.SpotManagerKt",
+                    5,
+                ),
+                (
+                    "shared",
+                    "content.global.skill.gather.fishing.barbfishing.SpotManager",
+                    5,
+                ),
+            ],
+        ),
+    ];
+    for (phase, rows) in expected {
+        let mut found: Vec<(String, String, u64)> = Vec::new();
+        for d in attribution(phase)["draws"].as_array().unwrap() {
+            let key = (
+                d["generator"].as_str().unwrap().to_string(),
+                drawing_class(d),
+            );
+            match found
+                .iter_mut()
+                .find(|(g, c, _)| (g, c) == (&key.0, &key.1))
+            {
+                Some(entry) => entry.2 += d["count"].as_u64().unwrap(),
+                None => found.push((key.0, key.1, d["count"].as_u64().unwrap())),
+            }
+        }
+        let expected: Vec<(String, String, u64)> = rows
+            .iter()
+            .map(|(g, c, n)| (g.to_string(), c.to_string(), *n))
+            .collect();
+        assert_eq!(found, expected, "{phase}");
+        for (_, class, _) in &found {
+            assert!(
+                scan::native(class).is_none(),
+                "{class} is registered natively"
+            );
+        }
+    }
+}
+
+#[test]
+fn scan_manifest_is_the_original_scan_and_listener_order() {
+    let b = boot();
+    let mut names = Vec::new();
+    for list in ["contentInterfaces", "initializable", "timers"] {
+        let name = format!("scan.{list}");
+        assert_eq!(json!(scan::section(&name)), b["scan"][list], "{name}");
+        names.push(name);
+    }
+    for (list, value) in b["listeners"].as_object().unwrap() {
+        let name = format!("listeners.{list}");
+        assert_eq!(json!(scan::section(&name)), *value, "{name}");
+        names.push(name);
+    }
+    let mut sections: Vec<String> = scan::sections().into_iter().map(String::from).collect();
+    sections.sort();
+    names.sort();
+    assert_eq!(sections, names);
+    // The native registrations are classes of the original's scan.
+    for (list, class) in [
+        ("scan.contentInterfaces", "core.ServerStore"),
+        (
+            "scan.contentInterfaces",
+            "core.game.node.entity.combat.graves.GraveController",
+        ),
+        ("scan.timers", "core.game.ge.GrandExchangeTimer"),
+        ("scan.timers", "core.game.system.timer.impl.AntiMacro"),
+        (
+            "scan.timers",
+            "core.game.worldevents.holiday.HolidayRandoms",
+        ),
+        (
+            "scan.initializable",
+            "content.global.handlers.item.PickupPlugin",
+        ),
+    ] {
+        assert!(scan::section(list).contains(&class), "{class}");
+        assert!(scan::native(class).is_some(), "{class}");
+    }
+}
+
 // ---- the whole start-up, with the pinned cache and data ----
 
 /// The template directory, verified file by file against the world-trace
@@ -625,46 +866,78 @@ fn sorted_keys_digest(keys: impl Iterator<Item = i32>) -> String {
     sha256(keys.join("\n"))
 }
 
+/// Records the start-up's writes in the world directory instead of making
+/// them: the pinned data directory is shared by every run of this test.
+#[derive(Default)]
+struct RecordedWrites(std::sync::Mutex<Vec<PathBuf>>);
+impl WorldWrites for RecordedWrites {
+    fn create_dirs(&self, path: &Path) -> std::io::Result<()> {
+        self.0.lock().unwrap().push(path.to_path_buf());
+        Ok(())
+    }
+}
+
 /// Fields of the boot record (and of the phase records) the native start-up
 /// does not reproduce yet, each with its cause. The test fails if a field
 /// listed here starts matching or a field not listed stops matching.
 const KNOWN_GAPS: &[(&str, &str)] = &[
     (
-        "draws-refused:ClassScanner.loadPureInterfaces",
-        "content interfaces are not ported: 328 shared, 2,336 shuffle and thread-local draws",
+        "draws:ClassScanner.loadPureInterfaces",
+        "content not ported: 328 shared draws (WeightBasedTable insertions in the static initialisers/constructors of MazeInterface 9, CasketListener 7, ImplingLoot 187, TheDigSiteListeners 70, RoguesCastleListeners 8, and of the holiday world events Giftmas 35 and EasterEvent 12), 2,336 shuffle draws (Vinesweeper.populateSeeds) and thread-local draws",
     ),
     (
-        "draws-refused:ClassScanner.loadSideEffectfulPlugins",
-        "legacy plugins are not ported: 50 shared, 14 math, 6 shuffle and thread-local draws",
+        "draws:ClassScanner.loadSideEffectfulPlugins",
+        "content not ported: 50 shared draws (28 AntiMacro registrations of NPCs that MimeActivity, GnomeStrongholdCourse, NoraTHaggNPC, SheepHerder and ShamusTreeListener create; Forager 21; EnchantingZone 1), 14 Math.random (PeerTheSeerDialogue), 6 shuffle (AlchemistZone) and thread-local draws",
     ),
     (
-        "draws-refused:NPCSpawner",
-        "NPC.create/init is not joined: 13,846 shared draws",
+        "draws:NPCSpawner",
+        "13,709 native draws, one AntiMacro registration per spawned NPC (draws-explained:NPCSpawner matches); the other 137 are content: MineSlaveNPC's constructor 90, PuroPuroPlugin's WheatSet 35, and the AntiMacro registrations of the 12 GodWarsMinionNPCs GodwarsBossNPC.init creates",
     ),
     (
-        "draws-refused:startup:",
-        "start-up listeners are content: RareDropTable 27, PenguinHNSEvent 10, SpotManager 10 shared draws and thread-local draws",
+        "draws:startup:",
+        "start-up listeners are content: RareDropTable 27, PenguinHNSEvent 10 (AntiMacro of 10 penguins), SpotManager 10 (5 TTL, 5 AntiMacro), and thread-local draws",
     ),
     (
         "generators.shared",
-        "8,770 native draws (DropTableParser 8,412 + ClueRewardParser 358) against 23,041: the refused steps' 14,271",
+        "22,479 native draws against 23,041: the 562 content draws named above (328 + 50 + 137 + 47)",
     ),
     (
         "generators.math",
-        "the 14 Math.random draws are in legacy plugins",
+        "the 14 Math.random draws are PeerTheSeerDialogue's (a legacy plugin)",
     ),
     (
         "generators.shuffle",
-        "the 2,342 shuffle draws are in content interfaces and plugins",
+        "the 2,342 shuffle draws are Vinesweeper's and AlchemistZone's",
     ),
     (
         "generators.threadLocal",
-        "thread-local draws are in content, plugins, two start-up listeners and the dispatcher block run when the boot record is written",
+        "thread-local draws are in content interfaces, plugins, two start-up listeners and the dispatcher block run when the boot record is written",
     ),
-    ("npcs.count", "NPCSpawner and content spawns are refused"),
+    (
+        "log:ClassScanner.loadPureInterfaces",
+        "native: Loaded 2 content interfaces (ServerStore, GraveController); the original configures content map-area zones and loads 645",
+    ),
+    (
+        "log:ClassScanner.loadSideEffectfulPlugins",
+        "native: 1 legacy plugin (PickupPlugin) of the original's 1,794",
+    ),
+    (
+        "log:ClassScanner.loadTimers",
+        "3 of the 34 registrations are native (log-native:ClassScanner.loadTimers matches)",
+    ),
+    ("log:startup:", "start-up listeners are content"),
+    (
+        "npcs.count",
+        "13,709 spawner NPCs (npcs.spawner matches); the original's other 58 are created by content: 31 by the class scan before the spawner (3 content interfaces, 28 plugins), 12 GodWarsMinionNPCs by GodwarsBossNPC.init, 15 by start-up listeners (10 penguins, 5 barbarian fishing spots)",
+    ),
+    (
+        "npcs.indexSha256",
+        "as npcs.count: the content NPCs take slots before, between and after the spawner's",
+    ),
+    ("npcs.stateSha256", "as npcs.indexSha256"),
     (
         "tables.npcDefinitions",
-        "183 more NPC definitions are looked up by refused steps (spawns, content)",
+        "id 3813 is looked up only by a legacy plugin (npcDefinitions.nativePlusContent matches)",
     ),
     (
         "registries.core.cache.def.impl.NPCDefinition.DEFINITIONS",
@@ -672,7 +945,7 @@ const KNOWN_GAPS: &[(&str, &str)] = &[
     ),
     (
         "tables.sceneryDefinitions",
-        "3 more scenery definitions are created by refused steps",
+        "42027, 42028 and 48248 are created by legacy plugins (sceneryDefinitions.nativePlusContent matches)",
     ),
     (
         "registries.core.cache.def.impl.SceneryDefinition.DEFINITIONS",
@@ -683,44 +956,41 @@ const KNOWN_GAPS: &[(&str, &str)] = &[
         "91 component definitions come from content, not InterfaceConfigParser",
     ),
     (
-        "registries.core.game.node.item.GroundItemManager.GROUND_ITEMS",
-        "GroundSpawnLoader is refused",
-    ),
-    (
         "registries.core.game.world.map.RegionManager.REGION_CACHE",
-        "331 regions are created by refused steps (NPC and ground spawns, content)",
+        "796 native regions; the other 186 are created only by content (class scan, plugins, ZoneBuilder): regions.nativePlusContent matches",
     ),
     (
         "table:MusicConfigLoader.regionCache",
-        "300 of those regions exist before the music loader (NPCSpawner, GroundSpawnLoader)",
+        "796 native against 951: the regions the class scan's content created before the music loader",
     ),
-    ("tables.contentInterfaces", "class scan refused"),
-    ("tables.legacyPlugins", "plugins refused"),
+    (
+        "tables.contentInterfaces",
+        "2 native (ServerStore, GraveController) of 645",
+    ),
+    ("tables.legacyPlugins", "1 native (PickupPlugin) of 1,796"),
     (
         "tables.pulseClasses",
         "the world pulses are submitted by content",
     ),
     (
         "tables.timerTypes",
-        "timer classes come from the class scan",
+        "3 native timer types (GE periodic poll, antimacro, holiday) of 34",
     ),
     (
         "table:ClueRewardParser",
-        "built at shared draw 8,412 natively, 22,636 in the original: the refused steps' draws move every random insertion (the same holds for the drop tables, whose draw count matches by chance)",
+        "built at native shared draw 22,121 instead of 22,636: the 515 content draws before it move every random insertion (the drop tables are built at 0 instead of 378 for the same reason; their draw count matches)",
     ),
 ];
 
 /// Boot-record fields with no native counterpart in this World; they are
 /// listed, not compared.
 const UNCOMPARED: &[&str] = &[
-    "listeners (login, logout, tick, startup, shutdown, persistence, login plugins, timers)",
-    "scan (content interfaces, Initializable plugins, timers)",
-    "the other registries (activities, dialogues, interaction/interface listeners, plugin interactions, AbstractNPC, NPCBehavior, quests, shops, commands, timers, world events, option handlers, Entrana lists, clipping/projectile flags)",
-    "npcs.list/indexSha256/stateSha256/renderable",
+    "listeners login, logout, tick, startup, shutdown, persistPlayer, loginPlugins (persistWorld and the native automatic timers are compared)",
+    "the other registries (activities, dialogues, interaction/interface listeners, plugin interactions, AbstractNPC, NPCBehavior, quests, shops, commands, world events, item/NPC/scenery option handlers, Entrana lists, clipping/projectile flags)",
+    "npcs.renderable (0 in both: no region is active during start-up)",
     "pulses, systemState, threads, files (SQLite databases content creates)",
     "generators.clock/clockReads/seeded",
 ];
-
 #[test]
 fn native_startup_against_the_boot_record() {
     let Some(world) = pinned_world() else {
@@ -735,18 +1005,22 @@ fn native_startup_against_the_boot_record() {
         shuffle: 0,
         thread_local: 537_462_064,
     };
+    let writes = Arc::new(RecordedWrites::default());
     let inputs = Inputs {
-        world,
+        world: world.clone(),
         seeds,
         max_definitions: 1_000_000,
+        writes: writes.clone(),
+        lower_case: lowercase_root,
     };
     assert!(matches!(
         sequence::start(&inputs, Policy::StopAtRefusal),
         Err(sequence::StartupError::NotPorted {
-            step: Step::ChunkDirtyListener,
+            step: Step::LoadPureInterfaces,
             ..
         })
     ));
+    writes.0.lock().unwrap().clear();
     let startup =
         sequence::start(&inputs, Policy::ContinuePastRefusals).expect("native steps succeed");
     assert!(!startup.complete);
@@ -826,7 +1100,7 @@ fn native_startup_against_the_boot_record() {
             index += 1;
         }
         let name = report.step.phase();
-        if report.outcome == Outcome::Native {
+        if matches!(report.outcome, Outcome::Native | Outcome::Partial(_)) {
             check(
                 &format!("draws:{name}"),
                 json!([native_delta.0, native_delta.1, native_delta.2]),
@@ -932,11 +1206,21 @@ fn native_startup_against_the_boot_record() {
     );
     check(
         "tables.contentInterfaces",
-        json!(0),
+        json!(w.content_interfaces_loaded),
         t["contentInterfaces"].clone(),
     );
-    check("tables.legacyPlugins", json!(0), t["legacyPlugins"].clone());
-    check("tables.timerTypes", json!([]), t["timerTypes"].clone());
+    check(
+        "tables.legacyPlugins",
+        json!(w.legacy_plugins),
+        t["legacyPlugins"].clone(),
+    );
+    let mut timer_types: Vec<String> = w.timers.entries().into_iter().map(|(k, _)| k).collect();
+    timer_types.sort();
+    check(
+        "tables.timerTypes",
+        json!(timer_types),
+        t["timerTypes"].clone(),
+    );
     check("tables.pulseClasses", json!([]), t["pulseClasses"].clone());
     let reg = &boot["registries"];
     let registry = |class: &str, field: &str, size: usize, digest: Option<String>| {
@@ -1000,7 +1284,7 @@ fn native_startup_against_the_boot_record() {
         (
             "core.game.node.item.GroundItemManager",
             "GROUND_ITEMS",
-            0,
+            w.ground.manager.get_items().read().len(),
             None,
         ),
     ];
@@ -1008,7 +1292,400 @@ fn native_startup_against_the_boot_record() {
         let (native, original) = registry(class, field, size, digest);
         check(&format!("registries.{class}.{field}"), native, original);
     }
-    check("npcs.count", json!(0), boot["npcs"]["count"].clone());
+    let native_npcs = w.entities.list(&w.actors);
+    check(
+        "npcs.count",
+        json!(native_npcs.len()),
+        boot["npcs"]["count"].clone(),
+    );
+    // The digests the boot record keeps over Repository.npcs.
+    let mut index = String::new();
+    let mut state = String::new();
+    for row in &native_npcs {
+        let [slot, i, id, x, y, z] = row.map(|v| v.unwrap());
+        index.push_str(&format!("{slot}:{i}:{id};"));
+        state.push_str(&format!("{slot}:{i}:{id}:{x},{y},{z};"));
+    }
+    check(
+        "npcs.indexSha256",
+        json!(sha256(&index)),
+        boot["npcs"]["indexSha256"].clone(),
+    );
+    check(
+        "npcs.stateSha256",
+        json!(sha256(&state)),
+        boot["npcs"]["stateSha256"].clone(),
+    );
+
+    // ---- the steps this slice made native, against fixtures/startup-draws ----
+    let spawner = attribution("NPCSpawner");
+    // The NPCs the original's spawner phase added, in slot order, without the
+    // ones content NPC classes create from their own init (identified by
+    // class in the attribution), against the native spawner's NPCs in order.
+    let ranges: Vec<(i64, i64)> = spawner["npcSlots"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| (r[0].as_i64().unwrap(), r[1].as_i64().unwrap()))
+        .collect();
+    let in_phase = |slot: i64| ranges.iter().any(|(a, b)| (*a..=*b).contains(&slot));
+    let original_rows: Vec<Vec<i64>> = boot["npcs"]["list"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| {
+            r.as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_i64().unwrap())
+                .collect()
+        })
+        .filter(|r: &Vec<i64>| in_phase(r[0]))
+        .collect();
+    let native_rows: Vec<[i64; 4]> = native_npcs
+        .iter()
+        .map(|r| [r[2], r[3], r[4], r[5]].map(|v| i64::from(v.unwrap())))
+        .collect();
+    let created_by_content: Vec<i64> = spawner["npcSubclasses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| c[0] == "content.region.asgarnia.trollheim.handlers.gwd.GodWarsMinionNPC")
+        .flat_map(|c| c[2].as_array().unwrap().iter().map(|v| v.as_i64().unwrap()))
+        .collect();
+    let mut unmatched = Vec::new();
+    let mut cursor = 0;
+    for row in &original_rows {
+        let key = [row[2], row[3], row[4], row[5]];
+        if native_rows.get(cursor) == Some(&key) {
+            cursor += 1;
+        } else {
+            unmatched.push(row.clone());
+        }
+    }
+    // Every native NPC is found, in order, among the phase's NPCs; every
+    // original NPC left over was created by a content class.
+    let unexplained: Vec<i64> = unmatched
+        .iter()
+        .map(|r| r[2])
+        .filter(|id| !created_by_content.contains(id))
+        .collect();
+    check(
+        "npcs.spawner",
+        json!({"inOrder": cursor, "unexplained": unexplained}),
+        json!({"inOrder": native_rows.len(), "unexplained": []}),
+    );
+    // Draws: one AntiMacro registration per NPC the spawner creates; the
+    // rest of the original's draws are content (by drawing class).
+    let spawner_draws = |name: &str| -> u64 {
+        let p = startup
+            .steps
+            .iter()
+            .position(|s| s.step.phase() == name)
+            .unwrap();
+        startup.steps[p].positions.shared.0 - startup.steps[p - 1].positions.shared.0
+    };
+    let added = original_rows.len() as u64;
+    let content_draws: u64 = spawner["draws"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|d| {
+            d["site"].as_str().unwrap()
+                != "core.game.system.timer.impl.AntiMacro.setNextExecution:75"
+        })
+        .map(|d| d["count"].as_u64().unwrap())
+        .sum();
+    let anti_macro: u64 = spawner["draws"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|d| {
+            d["site"].as_str().unwrap()
+                == "core.game.system.timer.impl.AntiMacro.setNextExecution:75"
+        })
+        .map(|d| d["count"].as_u64().unwrap())
+        .sum();
+    let native_draws = spawner_draws("NPCSpawner");
+    let native_count = native_rows.len() as u64;
+    let original_draws = {
+        let p = &phases;
+        let i = p.iter().position(|p| p["name"] == "NPCSpawner").unwrap();
+        p[i]["generators"]["shared"][0].as_u64().unwrap()
+            - p[i - 1]["generators"]["shared"][0].as_u64().unwrap()
+    };
+    check(
+        "draws-explained:NPCSpawner",
+        json!({"onePerNativeNpc": native_draws == native_count,
+               "onePerOriginalNpc": anti_macro == added,
+               "nativePlusContent": native_draws + (added - native_count) + content_draws}),
+        json!({"onePerNativeNpc": true, "onePerOriginalNpc": true, "nativePlusContent": original_draws}),
+    );
+    // Region cache: every region the native start-up created is one the
+    // original has at the end.
+    let original_regions: BTreeSet<i64> = DRAWS
+        .lines()
+        .map(|l| serde_json::from_str::<Value>(l).unwrap())
+        .flat_map(|r| {
+            r["regionsAdded"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_i64().unwrap())
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    let native_regions: BTreeSet<i64> = w.regions.ids().into_iter().map(i64::from).collect();
+    check(
+        "regions.nativeSubsetOfOriginal",
+        json!(native_regions.difference(&original_regions).count()),
+        json!(0),
+    );
+    // Definitions and regions: the native start-up's keys plus the keys the
+    // original's content phases created (from the attribution) are the
+    // original's keys.
+    let records: Vec<Value> = DRAWS
+        .lines()
+        .map(|l| serde_json::from_str::<Value>(l).unwrap())
+        .collect();
+    let content_phase = |name: &str| {
+        name == "ClassScanner.loadPureInterfaces"
+            || name == "ClassScanner.loadSideEffectfulPlugins"
+            || name.starts_with("startup:")
+    };
+    let created_by_content = |field: &str, until: &str| -> BTreeSet<i64> {
+        let mut keys = BTreeSet::new();
+        for r in &records {
+            if content_phase(r["name"].as_str().unwrap()) {
+                keys.extend(
+                    r[field]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|v| v.as_i64().unwrap()),
+                );
+            }
+            if r["name"] == until {
+                break;
+            }
+        }
+        keys
+    };
+    let union_digest = |native: Vec<i64>, content: BTreeSet<i64>| {
+        let all: BTreeSet<i64> = native.into_iter().chain(content).collect();
+        sorted_keys_digest(all.into_iter().map(|k| k as i32))
+    };
+    let npc_content = created_by_content("npcDefinitionsAdded", "System.gc");
+    let npc_native: Vec<i64> = w.npcs.definitions.keys().map(|k| i64::from(*k)).collect();
+    let npc_content_only: Vec<i64> = npc_content
+        .iter()
+        .copied()
+        .filter(|k| !npc_native.contains(k))
+        .collect();
+    check(
+        "npcDefinitions.nativePlusContent",
+        json!({"keysSha256": union_digest(npc_native, npc_content), "contentOnly": npc_content_only}),
+        json!({"keysSha256": reg["core.cache.def.impl.NPCDefinition"]["DEFINITIONS"]["keysSha256"], "contentOnly": [3813]}),
+    );
+    let scenery_content = created_by_content("sceneryDefinitionsAdded", "System.gc");
+    let scenery_native: Vec<i64> = w
+        .scenery
+        .definitions
+        .keys()
+        .map(|k| i64::from(*k))
+        .collect();
+    check(
+        "sceneryDefinitions.nativePlusContent",
+        json!(union_digest(scenery_native, scenery_content)),
+        reg["core.cache.def.impl.SceneryDefinition"]["DEFINITIONS"]["keysSha256"].clone(),
+    );
+    let region_native: Vec<i64> = w.regions.ids().into_iter().map(i64::from).collect();
+    let region_content = created_by_content("regionsAdded", "System.gc");
+    // Original regions neither the native start-up nor a content phase made,
+    // by the phase that made them.
+    let mut missing: BTreeMap<String, Vec<i64>> = BTreeMap::new();
+    for r in &records {
+        for k in r["regionsAdded"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_i64().unwrap())
+        {
+            if !region_native.contains(&k) && !region_content.contains(&k) {
+                missing
+                    .entry(r["name"].as_str().unwrap().to_string())
+                    .or_default()
+                    .push(k);
+            }
+        }
+    }
+    // Three regions the original creates during its spawner phase hold no
+    // spawn location (the native spawner creates the region of each spawn).
+    // What the native spawner does not run there is content NPC classes'
+    // overrides, zone updates, NPC interaction defaults, slayer tasks and
+    // autocast spells; which of them reaches these three regions is not
+    // identified. With them, the native and content regions are the
+    // original's.
+    let spawner_content: BTreeSet<i64> = [10541, 13367, 14382].into_iter().collect();
+    let accounted: BTreeSet<i64> = region_content.union(&spawner_content).copied().collect();
+    check(
+        "regions.nativePlusContent",
+        json!({"keysSha256": union_digest(region_native, accounted), "missing": missing}),
+        json!({"keysSha256": reg["core.game.world.map.RegionManager"]["REGION_CACHE"]["keysSha256"], "missing": {"NPCSpawner": spawner_content}}),
+    );
+    // Chunk dirty listener: the chunks the native ground spawns flagged are the
+    // chunks the original's GroundSpawnLoader phase added to its dirty set.
+    let ground = attribution("GroundSpawnLoader");
+    let native_dirty: BTreeSet<String> = w
+        .dirty_listener
+        .as_ref()
+        .map(|d| {
+            d.chunks()
+                .iter()
+                .map(|c| {
+                    let [x, y, z] = c.read().current_base.coordinates();
+                    format!("{x},{y},{z}")
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let original_dirty: BTreeSet<String> = ground["dirtyChunksAdded"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
+    check(
+        "dirtyChunks.GroundSpawnLoader",
+        json!(native_dirty),
+        json!(original_dirty),
+    );
+    // Auth.configure: the provider and authenticator it built.
+    let auth = w.auth.as_ref().unwrap();
+    let provider = match auth.provider().unwrap() {
+        rs09_server::auth::factory::Provider::Memory(_) => "core.storage.InMemoryStorageProvider",
+        rs09_server::auth::factory::Provider::Sql(_) => "core.storage.SQLStorageProvider",
+    };
+    let authenticator = match auth.authenticator().unwrap().mode {
+        rs09_server::auth::Mode::Development { .. } => "core.auth.DevelopmentAuthenticator",
+        rs09_server::auth::Mode::Production => "core.auth.ProductionAuthenticator",
+    };
+    check(
+        "auth",
+        json!([authenticator, provider]),
+        attribution("Auth.configure")["auth"].clone(),
+    );
+    // ServerStore and GraveController: the store after the world persists
+    // parsed (content adds archives later), and the directory created.
+    check(
+        "serverStore",
+        json!([w.store.counter, w.store.keys()]),
+        attribution("worldPersists.parse")["serverStore"].clone(),
+    );
+    let store_path = world.join(
+        w.settings.as_ref().unwrap().constants()["STORE_PATH"]
+            .as_str()
+            .unwrap(),
+    );
+    check(
+        "serverStore.created",
+        json!(
+            writes
+                .0
+                .lock()
+                .unwrap()
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>()
+        ),
+        json!([store_path.display().to_string()]),
+    );
+    // SceneryDefinition.getExamine over every definition the cache created.
+    let mut examine = String::new();
+    let mut cached = 0;
+    let mut ids: Vec<i32> = w.scenery.definitions.keys().copied().collect();
+    ids.sort_unstable();
+    for id in ids {
+        if let Some(text) = &w.scenery.definitions[&id].read().examine {
+            cached += 1;
+            examine.push_str(&format!("{id}\t{text}\n"));
+        }
+    }
+    let examines = &attribution("SceneryDefinition.examine")["sceneryExamines"];
+    check(
+        "sceneryExamines.cacheDefinitions",
+        json!([cached, sha256(&examine)]),
+        json!([examines[2], examines[3]]),
+    );
+    // Timers: the native registrations, in the original's order.
+    let timer_lines: Vec<Value> = phases
+        .iter()
+        .find(|p| p["name"] == "ClassScanner.loadTimers")
+        .unwrap()["log"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|l| {
+            ["GrandExchangeTimer", "AntiMacro", "HolidayRandoms"]
+                .iter()
+                .any(|c| {
+                    l.as_str()
+                        .unwrap()
+                        .ends_with(&format!("Registering timer {c}"))
+                })
+        })
+        .cloned()
+        .collect();
+    let native_timer_lines = startup
+        .steps
+        .iter()
+        .find(|s| s.step == Step::LoadTimers)
+        .unwrap()
+        .log
+        .clone();
+    check(
+        "log-native:ClassScanner.loadTimers",
+        json!(native_timer_lines),
+        json!(timer_lines),
+    );
+    check(
+        "timers.automatic",
+        json!(
+            w.timers
+                .automatic
+                .read()
+                .values()
+                .iter()
+                .map(|t| t.as_ref().unwrap().read().class_name.clone())
+                .collect::<Vec<_>>()
+        ),
+        json!(
+            boot["listeners"]["timers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c.as_str().unwrap().rsplit('.').next().unwrap())
+                .filter(|c| *c != "SkillRestore")
+                .collect::<Vec<_>>()
+        ),
+    );
+    check(
+        "listeners.persistWorld",
+        json!(
+            w.world_persists
+                .iter()
+                .map(|p| format!("{p:?}"))
+                .collect::<Vec<_>>()
+        ),
+        json!(
+            boot["listeners"]["persistWorld"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c.as_str().unwrap().rsplit('.').next().unwrap())
+                .collect::<Vec<_>>()
+        ),
+    );
     let g = &boot["generators"];
     let p = w.generators.positions();
     check(
