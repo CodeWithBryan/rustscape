@@ -28,9 +28,10 @@
 //! Differences from the original:
 //! - The scene is built on the map-streaming thread, as in game, so game
 //!   state 28 lasts as long as that takes instead of one blocking call.
-//! - This client keeps whole regions: the original's scene is the 104 by
-//!   104 tiles around the centre zone, cut out of the same regions. Tiles of
-//!   a loaded region beyond that square are drawn here and not there.
+//! - The scene is streamed as whole regions, but only the original's 104 by
+//!   104 tiles around the centre zone are built and drawn
+//!   (`rs09_client::title_window`); regions without an NPC file have no
+//!   files at all, underwater ones included.
 //! - Without map streaming (prepared packs and no cache) there is no title
 //!   scene; the interface's component shows the title background instead
 //!   (`title_screen.rs`).
@@ -224,7 +225,15 @@ impl Title {
         scene.world.navigation =
             Navigation::new(&scene.world.regions, &scene.world.placements, loaded.origin);
         if let Some(map) = scene.map.as_deref_mut() {
-            map.title(selection.loaded().collect());
+            map.title(world_cache::TitleScene {
+                regions: selection
+                    .regions
+                    .iter()
+                    .map(|&(packed, listed)| ([packed >> 8, packed & 0xff], listed))
+                    .collect(),
+                base: loaded.origin,
+                zone: selection.zone,
+            });
         }
         eprintln!(
             "Game state 28: title scene around zone {:?} (base {:?}), regions {:?}, {} NPCs kept",

@@ -277,7 +277,24 @@ struct Request {
     corrected_lights: bool,
     instance: Option<Arc<Instance>>,
     /// A title-screen scene: the only regions whose files are read.
-    title: Option<Arc<Vec<Tile>>>,
+    title: Option<Arc<TitleScene>>,
+}
+
+/// The title screen's scene as `LoginManager.setupLoadingScreenRegion` and
+/// `loadRegion` set it up (`rs09_client::title_scene`).
+pub struct TitleScene {
+    /// `regionBitPacked` in the original's order, each with whether its files
+    /// are read (it has an NPC file).
+    pub regions: Vec<(Tile, bool)>,
+    /// `Camera.originX/Y`.
+    pub base: Tile,
+    /// `SceneGraph.centralZoneX/Y`.
+    pub zone: Tile,
+}
+impl TitleScene {
+    fn listed(&self, region: Tile) -> bool {
+        self.regions.contains(&(region, true))
+    }
 }
 
 /// An instanced scene from REBUILD_REGION: the 4 x 13 x 13 chunk table and
@@ -397,24 +414,28 @@ async fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepa
         (regions, objects) = build_instance(cache, &request, instance, &mut diagnostics)?;
         region_ids = regions.iter().map(|r| [r.x, r.z]).collect();
     }
+    let mut without_terrain = BTreeSet::new();
     for &[x, z] in region_ids.iter().filter(|_| request.instance.is_none()) {
         rs09_client::slice::yield_point().await;
-        // LoginManager.setupLoadingScreenRegion: a title scene leaves every
-        // region without an NPC file empty.
+        // LoginManager.setupLoadingScreenRegion: a title scene reads none of
+        // the files of a region without an NPC file (`title_window`).
         if request
             .title
             .as_ref()
-            .is_some_and(|listed| !listed.contains(&[x, z]))
+            .is_some_and(|title| !title.listed([x, z]))
         {
-            regions.push(
-                Region::decode(x, z, &[0; 4 * 64 * 64]).map_err(|e| format!("m{x}_{z}: {e}"))?,
-            );
+            regions.push(rs09_client::title_window::unread(x, z));
             continue;
         }
         let raw = cache.map(format!("m{x}_{z}"), [0; 4])?;
         let blank = [0; 4 * 64 * 64];
         let terrain = raw.as_deref().map_or(blank.as_slice(), Vec::as_slice);
-        regions.push(Region::decode(x, z, terrain).map_err(|e| format!("m{x}_{z}: {e}"))?);
+        if raw.is_none() && request.title.is_some() {
+            regions.push(rs09_client::title_window::unread(x, z));
+            without_terrain.insert([x, z]);
+        } else {
+            regions.push(Region::decode(x, z, terrain).map_err(|e| format!("m{x}_{z}: {e}"))?);
+        }
         // The underwater map and its locations, neither encrypted.
         let (under, under_locs) = (
             cache.map(format!("um{x}_{z}"), [0; 4])?,
@@ -435,6 +456,22 @@ async fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepa
             Err(e) => diagnostics.push(e),
         }
     }
+    // A title scene is the original's 104 by 104 tiles of these regions.
+    let window = request.title.as_ref().map(|title| {
+        let window = rs09_client::title_window::Window {
+            base: title.base,
+            zone: title.zone,
+            unread: title
+                .regions
+                .iter()
+                .filter(|&&(region, listed)| !listed || without_terrain.contains(&region))
+                .map(|&(region, _)| region)
+                .collect(),
+        };
+        window.clear_heights(&mut regions);
+        objects.retain(|&[_, x, z, ..]| window.keeps_location(x, z));
+        window
+    });
 
     let mut definitions = BTreeMap::new();
     let mut types = BTreeMap::new();
@@ -498,7 +535,8 @@ async fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepa
         .copied()
         .collect();
     // The NPCs a title scene places come from its regions' own files.
-    for &region in request.title.iter().flat_map(|listed| listed.iter()) {
+    let listed = request.title.iter().flat_map(|title| &title.regions);
+    for &(region, _) in listed.filter(|&&(_, listed)| listed) {
         if let Some(data) = cache.title_spawns(region)? {
             npc_ids.extend(
                 data.chunks_exact(4)
@@ -587,6 +625,7 @@ async fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepa
         avatar_kits: vec![],
         npc_types: vec![],
         npc_spawns: vec![],
+        window,
     };
     let mut geometry = Geometry::build_sliced(
         &scene,
@@ -853,7 +892,7 @@ pub struct Stream {
     keys: BTreeMap<Tile, Key>,
     pending: Option<Tile>,
     instance: Option<Arc<Instance>>,
-    title: Option<Arc<Vec<Tile>>>,
+    title: Option<Arc<TitleScene>>,
     /// Counts scene replacements; a build requested under an older value is
     /// for a scene that no longer exists.
     generation: u64,
@@ -1028,11 +1067,11 @@ impl WorldMap {
         Ok(())
     }
     /// The title screen's scene (`LoginManager.setupLoadingScreenRegion`):
-    /// from now on only `regions` are read, without keys, until a rebuild
-    /// from the server replaces the scene.
-    pub fn title(&mut self, regions: Vec<Tile>) {
+    /// from now on only its listed regions are read, without keys, until a
+    /// rebuild from the server replaces the scene.
+    pub fn title(&mut self, title: TitleScene) {
         self.stream.instance = None;
-        self.stream.title = Some(Arc::new(regions));
+        self.stream.title = Some(Arc::new(title));
         self.stream.generation += 1;
         self.restart();
     }

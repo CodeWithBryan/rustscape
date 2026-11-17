@@ -219,3 +219,88 @@ fn live_title_scenes_hold_the_regions_and_npcs_the_cache_gives() {
         );
     }
 }
+
+/// `setupLoadingScreenRegion` asks for the underwater map of every region
+/// with an NPC file and of no other (LoginManager.java:627-644). The group
+/// ids are what the running original held in
+/// `LoginManager.underWaterMapFileIds` at zone (332, 412), read through the
+/// frame-comparison driver on 2026-11-17 (`aget`), and at zone (378, 1244)
+/// the same way (`[-1, -1, -1, -1, 3657, -1, -1, 2549, -1, ..]`); every
+/// other slot was -1, whether or not the cache has a `um` group for the
+/// region.
+#[test]
+fn a_title_scene_reads_the_underwater_maps_of_its_listed_regions_only() {
+    let Some([maps, _, _]) = archives() else {
+        return;
+    };
+    let group = |name: String| maps.index.group_by_ascii_name(&name).map(|id| id as i32);
+    let ids = |zone: [i32; 2]| {
+        let selection = title_scene::select([0, 0], zone.map(|n| n * 8), |x, y| {
+            group(format!("n{x}_{y}")).is_some()
+        });
+        assert_eq!(selection.zone, zone);
+        let mut ids: Vec<i32> = selection
+            .regions
+            .iter()
+            .map(|&(packed, listed)| {
+                let name = format!("um{}_{}", packed >> 8, packed & 0xff);
+                group(name).filter(|_| listed).unwrap_or(-1)
+            })
+            .collect();
+        ids.resize(18, -1);
+        (selection, ids)
+    };
+    let (selection, observed) = ids([332, 412]);
+    assert_eq!(
+        selection
+            .regions
+            .iter()
+            .map(|&(packed, _)| packed)
+            .collect::<Vec<_>>(),
+        [
+            10290, 10291, 10292, 10546, 10547, 10548, 10802, 10803, 10804
+        ]
+    );
+    assert_eq!(
+        observed,
+        [
+            -1, 3235, -1, -1, 3086, -1, 2332, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+        ]
+    );
+    // The two places of the frame comparison: the coast at (475, 355) has
+    // one listed region, with an underwater map; the cave at (378, 1244)
+    // two, both with one.
+    let (water, water_ids) = ids([475, 355]);
+    assert_eq!(water.loaded().collect::<Vec<_>>(), [[59, 44]]);
+    assert_eq!(water_ids.iter().filter(|&&id| id != -1).count(), 1);
+    let (cave, cave_ids) = ids([378, 1244]);
+    assert_eq!(cave.loaded().collect::<Vec<_>>(), [[47, 155], [48, 155]]);
+    assert_eq!(
+        cave_ids,
+        [
+            -1, -1, -1, -1, 3657, -1, -1, 2549, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+        ]
+    );
+}
+
+/// The cave place (378, 1244): `loadRegion` puts the scene at (2976, 9904),
+/// so the east 56 columns of region (48, 155) lie outside its 104 tiles and
+/// are neither drawn nor given locations; and the scene is under the
+/// surface map, so its regions without files are not cleared.
+#[test]
+fn the_cave_title_scene_ends_inside_its_east_region() {
+    let mut central = Central::default();
+    let loaded = central.load([378, 1244]).unwrap();
+    assert_eq!(loaded.origin, [2976, 9904]);
+    let window = rs09_client::title_window::Window {
+        base: loaded.origin,
+        zone: [378, 1244],
+        unread: vec![],
+    };
+    assert!(!window.clears());
+    // Region (48, 155) runs from x 3072 to 3135; the scene ends at 3079.
+    assert!(window.keeps_location(3072, 9950));
+    assert!(window.keeps_location(2976 + 102, 9950));
+    assert!(!window.keeps_location(2976 + 103, 9950));
+    assert!(!window.keeps_location(3135, 9950));
+}

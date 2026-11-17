@@ -130,15 +130,9 @@ impl Builder {
         pick_objects: &mut [PickObject],
         faces: &mut usize,
     ) {
-        let Some(min_x) = regions.iter().map(|r| r.x * 64).min() else {
+        let Some((origin, width, depth)) = grid(scene, regions) else {
             return;
         };
-        let min_z = regions.iter().map(|r| r.z * 64).min().unwrap();
-        let origin = [min_x - PAD, min_z - PAD];
-        let width =
-            (regions.iter().map(|r| r.x * 64 + 64).max().unwrap() - origin[0] + PAD) as usize;
-        let depth =
-            (regions.iter().map(|r| r.z * 64 + 64).max().unwrap() - origin[1] + PAD) as usize;
         let size = [width as i32, depth as i32];
         // Corner grids hold one more row and column than the tile grids.
         let mut heights: [Vec<i32>; 4] =
@@ -149,7 +143,7 @@ impl Builder {
             for x in 0..=width {
                 for z in 0..=depth {
                     let t = tile(regions, level, origin[0] + x as i32, origin[1] + z as i32);
-                    heights[level][x * (depth + 1) + z] = t.height;
+                    heights[level][x * (depth + 1) + z] = corner(scene, [x, z], t.height);
                     if x < width && z < depth {
                         let fields = [t.underlay, t.overlay, t.shape, t.rotation, t.flags];
                         for (grid, value) in grids[level].iter_mut().zip(fields) {
@@ -169,6 +163,7 @@ impl Builder {
 
         // SceneGraph.addLoc over the landscape, in its order.
         let mut shade = tile_shade::ShadowMap::new(width, depth);
+        clear_shade(scene, &mut shade);
         let mut slots = normal_merge::Scene::new(width, depth);
         let mut merging = Vec::new();
         for (index, placement @ [id, x, z, level, shape, rotation]) in
@@ -419,6 +414,46 @@ impl Builder {
         }
         #[cfg(target_arch = "wasm32")]
         let _ = changed;
+    }
+}
+
+/// The tile grid the floor is built over: south-west tile, width and depth.
+/// A title scene is the original's 104-tile scene itself, whose outer rings
+/// the builders treat as the original does; any other scene is its loaded
+/// regions with [`PAD`] border tiles.
+pub(super) fn grid(scene: &Scene, regions: &[Region]) -> Option<([i32; 2], usize, usize)> {
+    if let Some(window) = &scene.window {
+        let size = rs09_client::title_window::SIZE as usize;
+        return Some((window.base, size, size));
+    }
+    let min_x = regions.iter().map(|r| r.x * 64).min()?;
+    let min_z = regions.iter().map(|r| r.z * 64).min()?;
+    let origin = [min_x - PAD, min_z - PAD];
+    let width = (regions.iter().map(|r| r.x * 64 + 64).max()? - origin[0] + PAD) as usize;
+    let depth = (regions.iter().map(|r| r.z * 64 + 64).max()? - origin[1] + PAD) as usize;
+    Some((origin, width, depth))
+}
+
+/// The height of grid corner `at` given the regions' height there.
+pub(super) fn corner(scene: &Scene, at: [usize; 2], height: i32) -> i32 {
+    scene
+        .window
+        .as_ref()
+        .map_or(height, |window| window.corner_height(at, height))
+}
+
+/// `clearTerrainRegion`'s shade for the title scene's regions without
+/// terrain, every level, before any location shades the ground
+/// (LoginManager.java:1525-1535, SceneGraph.java:5073-5079).
+fn clear_shade(scene: &Scene, shade: &mut tile_shade::ShadowMap) {
+    let Some(window) = scene.window.as_ref().filter(|window| window.clears()) else {
+        return;
+    };
+    for &[x, z] in &window.unread {
+        let [lx, lz] = window.local([x * 64, z * 64]);
+        for level in 0..4 {
+            shade.clear_region(level, lx, lz, 64, 64);
+        }
     }
 }
 

@@ -127,9 +127,18 @@ fn the_scene_is_set_up_around_the_camera_as_the_original_does() {
         let mut files = vec![0; 18];
         for (i, &(region, listed)) in selection.regions.iter().enumerate() {
             packed[i] = region;
-            // The NPC file, the terrain and the scenery; a region without
-            // the first is asked for none of them.
-            files[i] = if listed { 7 } else { 0 };
+            // The NPC file, the terrain and the scenery, and the underwater
+            // map and locations where the oracle's archive has them (a third
+            // and a quarter of the regions, by its rules); a region without
+            // the NPC file is asked for none of them.
+            let [x, y] = [region >> 8, region & 0xff];
+            let underwater = if (x + y) % 3 == 0 { 8 } else { 0 };
+            let locations = if (x * 7 + y) % 4 == 0 { 16 } else { 0 };
+            files[i] = if listed {
+                7 + underwater + locations
+            } else {
+                0
+            };
         }
         assert_eq!(packed, numbers(output["packed"], ','), "{input:?}");
         assert_eq!(files, numbers(output["files"], ','), "{input:?}");

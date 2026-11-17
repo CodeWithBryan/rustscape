@@ -3,10 +3,11 @@
 //! surface's water as chunk meshes, and the pass that draws them before the
 //! surface.
 //!
-//! The scene is the loaded regions with a border, as for the surface floor
-//! (`terrain_mesh`), not the original's 104-tile window: what the original
-//! decides per scene (whether any region has underwater files, which regions
-//! lack them and are cleared) is decided over the loaded regions.
+//! The scene is the surface floor's grid (`terrain_mesh::grid`): in game the
+//! loaded regions with a border, not the original's 104-tile window, so what
+//! the original decides per scene (whether any region has underwater files,
+//! which regions lack them and are cleared) is decided over the loaded
+//! regions; a title scene is the original's 104 tiles (`title_window`).
 //!
 //! Chunks carry their [`Pass`]; the surface's draw never sees them.
 use super::{PreparedChunk, Scene, loc_mesh, render, scene_lights, tile};
@@ -22,8 +23,6 @@ use rs09_client::{
 };
 use std::collections::BTreeMap;
 
-/// Border tiles around the loaded regions, as in `terrain_mesh`.
-const PAD: i32 = 2;
 /// Sixteen-bit indices bound a mesh.
 const LIMIT: usize = 60000;
 
@@ -179,9 +178,10 @@ pub(super) fn build(
     }
     let min_x = regions.iter().map(|r| r.x * 64).min().unwrap();
     let min_z = regions.iter().map(|r| r.z * 64).min().unwrap();
-    let origin = [min_x - PAD, min_z - PAD];
-    let width = (regions.iter().map(|r| r.x * 64 + 64).max().unwrap() - origin[0] + PAD) as usize;
-    let depth = (regions.iter().map(|r| r.z * 64 + 64).max().unwrap() - origin[1] + PAD) as usize;
+    // The same grid as the surface floor (a title scene: the original's).
+    let Some((origin, width, depth)) = super::terrain_mesh::grid(scene, regions) else {
+        return Ok(());
+    };
 
     // The surface's ground level, as `terrain_mesh` lays it out.
     let mut heights = vec![0; (width + 1) * (depth + 1)];
@@ -190,7 +190,7 @@ pub(super) fn build(
         for z in 0..=depth {
             let (ax, az) = (origin[0] + x as i32, origin[1] + z as i32);
             let t = tile(regions, 0, ax, az);
-            heights[x * (depth + 1) + z] = t.height;
+            heights[x * (depth + 1) + z] = super::terrain_mesh::corner(scene, [x, z], t.height);
             if x < width && z < depth {
                 let bridge = tile(regions, 1, ax, az).flags;
                 let fields = [t.underlay, t.overlay, t.shape, t.rotation, t.flags, bridge];
@@ -221,7 +221,11 @@ pub(super) fn build(
         }
     }
     // `SceneGraph.centralZoneY < 800`: only on the surface map.
-    if (scene.start[1] >> 3) < 800 {
+    let clears = scene
+        .window
+        .as_ref()
+        .map_or((scene.start[1] >> 3) < 800, |window| window.clears());
+    if clears {
         for region in &ordered {
             if region
                 .underwater
@@ -236,6 +240,13 @@ pub(super) fn build(
         .iter()
         .filter_map(|region| region.underwater.layer())
         .flat_map(|layer| &layer.locations)
+        // readLocs: a title scene keeps tiles 1 to 102 only.
+        .filter(|&&[_, x, z, ..]| {
+            scene
+                .window
+                .as_ref()
+                .is_none_or(|window| window.keeps_location(x, z))
+        })
         .map(|&[id, x, z, level, shape, rotation]| {
             [id, x - origin[0], z - origin[1], level, shape, rotation]
         })

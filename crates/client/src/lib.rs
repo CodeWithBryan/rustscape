@@ -89,6 +89,7 @@ pub mod tile_mesh;
 pub mod tile_shade;
 pub mod title;
 pub mod title_scene;
+pub mod title_window;
 pub mod transport;
 pub mod ui;
 pub mod underwater;

@@ -64,6 +64,9 @@ struct Scene {
     avatar_kits: Vec<u32>,
     npc_types: Vec<u32>,
     npc_spawns: Vec<[i32; 5]>,
+    /// A title scene: only its 104 by 104 tiles are built (`title_window`).
+    #[serde(skip)]
+    window: Option<rs09_client::title_window::Window>,
 }
 fn default_scene_name() -> String {
     "Lumbridge".into()

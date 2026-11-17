@@ -402,12 +402,20 @@ public final class TitleSceneOracle {
 		for (int[] region : TITLE) {
 			client.js5Archive5.names.add("n" + region[0] + "_" + region[1]);
 		}
-		// Every region has terrain and scenery; none has underwater files
-		// here, so those two stay unasked for.
+		// Every region has terrain and scenery. A third of them have an
+		// underwater map and a quarter underwater locations, by fixed rules
+		// the test repeats, so that a listed region is asked for whichever
+		// of the two it has and an unlisted one for neither.
 		for (int x = 0; x < 256; x++) {
 			for (int y = 0; y < 256; y++) {
 				client.js5Archive5.names.add("m" + x + "_" + y);
 				client.js5Archive5.names.add("l" + x + "_" + y);
+				if ((x + y) % 3 == 0) {
+					client.js5Archive5.names.add("um" + x + "_" + y);
+				}
+				if ((x * 7 + y) % 4 == 0) {
+					client.js5Archive5.names.add("ul" + x + "_" + y);
+				}
 			}
 		}
 		for (int i = 0; i < 4; i++) {

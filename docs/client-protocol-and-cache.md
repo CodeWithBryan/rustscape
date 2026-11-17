@@ -40,7 +40,7 @@ this tree on 2026-11-16:
 | `lighting-oracle` | `tests/lighting_oracle.rs` | `LightingManager`, `LightMesh`, `ShadowManager`; copied `buildGlLighting` | 104 |
 | `display-oracle` | `tests/display.rs` | `DisplayMode` over recording adapters | 600 cases, 5,410 steps |
 | `occlusion-oracle` | `tests/occlusion.rs` | copied `SceneGraph` occluder marks and construction, active occluders, `isOccluded` and the four visibility queries in frame order, `renderTile` with real occlusion; `Occluder`, `Tile` and the tile entity classes unchanged | 1,424 |
-| `title-oracle` | `tests/title_scene.rs` | `Camera`, `MathUtils`, `CollisionMap` unchanged; copied `setupLoadingScreenRegion`, `loadRegion`, `decodeNpcFiles` and the NPC and camera part of `client.mainUpdate`: title region set-up, NPC files, wandering, the title camera | 1,720 |
+| `title-oracle` | `tests/title_scene.rs` | `Camera`, `MathUtils`, `CollisionMap` unchanged; copied `setupLoadingScreenRegion`, `loadRegion`, `decodeNpcFiles` and the NPC and camera part of `client.mainUpdate`: title region set-up (with which `m`, `l`, `um` and `ul` groups are asked for), NPC files, wandering, the title camera | 1,720 |
 | `cargo run -p rs09-client --example terrain_oracle -- --check` | `tests/terrain.rs`, `tests/underwater.rs` | `GlTile`, `FluType`, `FloType` and others unchanged, with methods extracted from `SceneGraph`, `GlModel` and `Rasteriser`: floor mesh, tile shade, merged normals; then the underwater scene | 73 and 77 sections |
 
 What these do not observe is the same everywhere: what the real renderer,
@@ -138,7 +138,7 @@ typed chat, hover text, object and floor menus, the click cross, walking and
 running (unpinned sequences), the castle courtyard, the river by the bridge,
 Draynor Village with world NPCs, standard-detail lighting, brightness 1 with
 `Camera.ZOOM` 400, and resizable mode at 1024×768. Not compared: underwater
-scenes, fog over long distances, health bars and overhead names (the example
+scenes in game (title scenes are, below), fog over long distances, health bars and overhead names (the example
 servers send none), full screen, the software renderer, sound. The evidence
 and the ranked list of differences are outside the repository (the
 coordinator's scratchpad `refcompare-evidence/`). To repeat: build the
@@ -202,6 +202,30 @@ player on an NPC's tile, overhead chat of a left-out player (drawn by both,
 which this client could not pick before (`v5-B5`) and now lists the same
 entries in the same order (`v5-B7`). `v5-B0` is the build before the fix
 next to the original: two overlapping bodies against one.
+
+A fifth run (2026-11-17, pairs `v5-before-*` and `v5-after-*`) pinned two title places, the coast
+at zone (475, 355) and the cave at (378, 1244), 6 and 16 seconds into each,
+before and after a fix (`runs/refcompare/match-place.ps1` and
+`pair-places.ps1` in the run's copy restart the Rust title until its first
+place is the original's, then wait for both places). The original asks for
+the `um`/`ul` groups of every region of a title scene that has an NPC file
+and of no other (its `LoginManager.underWaterMapFileIds`, read through the
+driver at two zones, are pinned in `tests/title_cache.rs`), so it builds
+the underwater scene there and cuts the 104 by 104 tile scene out of the
+regions. This client marked the regions without an NPC file as saying
+nothing about underwater files, which switched the whole scene to the opaque
+stand-in backdrop, and built whole regions. Now a title scene is the
+original's 104 tiles (`title_window.rs`: tiles 1 to 102 take locations,
+corner row and column 104 stay at height 0, regions without files keep
+height 0 or are cleared below zone 800). In a box of coast water the mean
+colour went from (32, 52, 68) against the original's (71, 81, 77) to
+(68, 80, 77) against (67, 79, 76), and the canvas mean difference from 9.7
+to 2.2 per channel; the strip above the cave's horizon went from rock
+(7.7, 6.5, 4.4) to black like the original's (0, 0, 0), and that pair's mean
+difference from 4.7 to 1.0. Still different: at the cave's east edge, in
+`v5-after-378-1244-t16`, the original shows grey cave wall where this
+client shows a dark patch (12, 11, 11), something drawn rather than the
+cleared background; which object it is was not found.
 
 ## Start-up and cache download
 
@@ -289,7 +313,10 @@ oversize cache file is an error instead of being deleted.
   scene (`title_scene.rs`, `title_world.rs`): one of the 13 scripted camera
   paths, the regions around it that have an `n{X}_{Y}` group, their NPCs
   wandering as `client.mainUpdate` moves them, rebuilt when the camera leaves
-  scene tiles 14 to 89. Game state 28 shows the last frame under the loading
+  scene tiles 14 to 89. Only the original's 104 by 104 tiles of those regions
+  are built, with their underwater scene; a region without an NPC file has
+  no files at all, and beyond the 104 tiles the frame shows its cleared
+  background (`title_window.rs`). Game state 28 shows the last frame under the loading
   box, as does the state 25 that follows a login. With prepared packs only,
   the component shows the static title background instead.
 - The title's own controls: a press on a component with a drag parent (the
@@ -313,8 +340,7 @@ the original against the same example server, with frames compared by eye
 (2026-11-17); the walk-started drag, Quit and the held input are
 transcription tests.
 
-Differences: the title scene keeps whole regions where the original cuts the
-104 by 104 tile scene from them, builds on the streaming thread (state 28
+Differences: the title scene builds on the streaming thread (state 28
 lasts a fraction of a second instead of one blocking call; two clicks during
 one build count as the later one, where the original's build cycle takes the
 first and the next cycle the second), and does not
@@ -1323,7 +1349,7 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
   map files or models. An in-game rebuild (state 30 to 25) keeps drawing the
   old scene under the box; the original freezes the frame, as this client does
   only for state 28 and the 25 that follows a login.
-- (b)(d) The title scene is not cropped to 104 by 104 tiles, title NPCs are
+- (b)(d) Title NPCs are
   drawn in index order rather than placement order, and the settings-change
   rebuild (state 10 to 28) is not carried out. The start-up bar stops at the
   world-list stage; the original reaches 100% before state 28.

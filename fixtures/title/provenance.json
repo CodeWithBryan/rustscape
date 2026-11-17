@@ -13,12 +13,12 @@
     "spline": 60,
     "wander": 400
   },
-  "fixtureSha256": "f77c4280f5c1a0114dbb2d75cdfed8622f68239bfeba851889de8c82c7fc93d2",
+  "fixtureSha256": "fdec37558471b8c4022f61efacd3bc7faa9dbff09a349d7732873f224ddfdf0f",
   "format": 1,
   "scope": "The unchanged Camera (updateLoginScreenCamera, updateLockedCamera, setLockedPosition, setLockedLookAt, resetCameraEffects), MathUtils and CollisionMap (isPathClear, flagScenery, unflagScenery), with text copied unchanged from LoginManager (setupLoadingScreenRegion, loadRegion, decodeNpcFiles), client (mainUpdate from its NPC pass to the end of its camera part) and PathingEntity (teleport, setSize, getSize). Math.random() is a scripted sequence; the map archive is a name table holding the 30 NPC files of the pinned cache and terrain and scenery for every region; NPC types are a table; the ground is a fixed slope; NpcList.processMovement takes a queued step at once and facing and animation are empty; the camera path tables and the spline start are written as CS2 5405, 5406 and 5502 write them, by hand. Not observed: LoginManager.rebuildMap, the scene build, NPC movement, rendering, the interface scripts that choose the paths.",
   "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
   "sources": {
-    "oracle/title/scene/TitleSceneOracle.java": "02c4347f129f92f241af4504da16edbd8c1327e17d8ea5ffcc61b3eb6f074cb3",
+    "oracle/title/scene/TitleSceneOracle.java": "ea350ba9a9933ed8c9f87d070b3c7676166ff8fc36ef558b07adc0b29236c81b",
     "oracle/title/scene/adapters/rt4/Adapters.java": "ee4ba70e68ee0b1d5eafd879e703319314f6d95b99e44f9f9e09d169b8a3dbb5",
     "reference/client/client/src/main/java/rt4/Camera.java": "28461c2ee97afb5886ec314796266cd1ddec74d799fb34de0247f48967f9bf17",
     "reference/client/client/src/main/java/rt4/CollisionMap.java": "dae85a8d9acd111bcd46a5c3bfb5533e87fdfabdbaf4b805cb8b45856ebb5098",
