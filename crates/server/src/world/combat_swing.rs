@@ -999,6 +999,11 @@ pub struct Handler {
     pub style: Option<CombatStyle>,
     /// `CombatSwingHandler.flags`: a list, so duplicates and order are kept.
     pub flags: Vec<Flag>,
+    /// A subclass whose only override is `calculateDefence` answering
+    /// `CombatStyle.X.swingHandler.calculateDefence(victim, attacker)`
+    /// (MixedSwingHandlers.kt): the class of that singleton. `None` for the
+    /// three classes themselves.
+    pub defence_of: Option<HandlerKind>,
 }
 
 impl Handler {
@@ -1012,6 +1017,16 @@ impl Handler {
                 HandlerKind::Magic => CombatStyle::Magic,
             }),
             flags: flags.to_vec(),
+            defence_of: None,
+        }
+    }
+
+    /// A MixedSwingHandlers.kt object: the `kind` class whose
+    /// `calculateDefence` is the `defence_of` singleton's.
+    pub fn mixed(kind: HandlerKind, defence_of: HandlerKind) -> Self {
+        Self {
+            defence_of: Some(defence_of),
+            ..Self::new(kind, &[])
         }
     }
 
@@ -1282,6 +1297,9 @@ impl Handler {
         victim: Option<&H::Entity>,
         attacker: Option<&H::Entity>,
     ) -> Result<i32> {
+        if let Some(kind) = self.defence_of {
+            return Self::new(kind, &[]).calculate_defence(h, victim, attacker);
+        }
         let (Some(v), Some(a)) = (victim, attacker) else {
             return Ok(0);
         };

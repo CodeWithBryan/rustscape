@@ -6,10 +6,10 @@
 //! and [`super::pulse`] ask before running the body of the instance's base
 //! class. Every member that is `None` is the base class's own body.
 //!
-//! The weapon special attacks (`world::special_attacks`) are the only
-//! subclasses that fill this table so far.
+//! The weapon special attacks (`world::special_attacks`) and the dragonfire
+//! and switching handlers (`world::dragonfire`) fill this table.
 use super::Host;
-use crate::world::combat_swing::{BattleState, Result, Types};
+use crate::world::combat_swing::{ArmourSet, BattleState, InteractionType, Result, Types};
 
 type E<H> = <H as Types>::Entity;
 type R<H> = <H as Host>::HandlerRef;
@@ -26,6 +26,24 @@ pub type StateMember<H> =
 pub type Adjust<H> = fn(&mut H, &R<H>, &E<H>, &E<H>, &mut BattleState<H>) -> Result<()>;
 /// `getFormattedHit(attacker, victim, state, hit)`.
 pub type FormattedHit<H> = fn(&mut H, &R<H>, &E<H>, &E<H>, &BattleState<H>, i32) -> Result<i32>;
+/// `canSwing(entity, victim)`.
+pub type CanSwing<H> = fn(&mut H, &R<H>, &E<H>, &E<H>) -> Result<InteractionType>;
+/// `addExperience(entity, victim, state)`.
+pub type AddExperience<H> =
+    fn(&mut H, &R<H>, Option<&E<H>>, Option<&E<H>>, Option<&BattleState<H>>) -> Result<()>;
+/// `postSwing(entity, victim, state)`.
+pub type PostSwing<H> =
+    fn(&mut H, &R<H>, Option<&E<H>>, Option<&E<H>>, &BattleState<H>) -> Result<()>;
+/// `getArmourSet(e)`.
+pub type ArmourSetOf<H> = fn(&mut H, &R<H>, Option<&E<H>>) -> Result<Option<ArmourSet>>;
+/// `calculateAccuracy(entity)`.
+pub type Accuracy<H> = fn(&mut H, &R<H>, Option<&E<H>>) -> Result<i32>;
+/// `calculateHit(entity, victim, modifier)`.
+pub type Hit<H> = fn(&mut H, &R<H>, Option<&E<H>>, Option<&E<H>>, f64) -> Result<i32>;
+/// `calculateDefence(victim, attacker)`.
+pub type Defence<H> = fn(&mut H, &R<H>, Option<&E<H>>, Option<&E<H>>) -> Result<i32>;
+/// `getSetMultiplier(e, skillId)`.
+pub type SetMultiplier<H> = fn(&mut H, &R<H>, Option<&E<H>>, i32) -> Result<f64>;
 
 /// The overriding bodies of one subclass.
 pub struct Overrides<H: Host> {
@@ -35,6 +53,14 @@ pub struct Overrides<H: Host> {
     pub impact: Option<StateMember<H>>,
     pub adjust_battle_state: Option<Adjust<H>>,
     pub formatted_hit: Option<FormattedHit<H>>,
+    pub can_swing: Option<CanSwing<H>>,
+    pub add_experience: Option<AddExperience<H>>,
+    pub post_swing: Option<PostSwing<H>>,
+    pub armour_set: Option<ArmourSetOf<H>>,
+    pub calculate_accuracy: Option<Accuracy<H>>,
+    pub calculate_hit: Option<Hit<H>>,
+    pub calculate_defence: Option<Defence<H>>,
+    pub set_multiplier: Option<SetMultiplier<H>>,
 }
 
 impl<H: Host> Overrides<H> {
@@ -47,6 +73,14 @@ impl<H: Host> Overrides<H> {
             impact: None,
             adjust_battle_state: None,
             formatted_hit: None,
+            can_swing: None,
+            add_experience: None,
+            post_swing: None,
+            armour_set: None,
+            calculate_accuracy: None,
+            calculate_hit: None,
+            calculate_defence: None,
+            set_multiplier: None,
         }
     }
 }

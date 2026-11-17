@@ -173,10 +173,13 @@ HairCutPlugin's `isWalk`): every one fails the replay.
   `world::dialogue_dsl::banker` (docs/dialogue-dsl.md);
   `Host::banker_conversation` stays the join point: a live host answers it
   with `dialogue_dsl::banker::talk_to`. Nothing binds it yet.
-- `ChromaticDragonNPC`, `MetalDragonNPC` (their dragonfire swing handlers),
-  `ChromaticDragonBehavior`, `SheepBehavior`, `ChinchompaDeathListener`,
-  `ShooAwayStrayDogListener`, `CowMilkingPlugin`, `DecantListener` and
-  `QuestTabUtils.showRequirementsInterface` are not ported in this pass.
+- `ChromaticDragonNPC`, `MetalDragonNPC` and `ChromaticDragonBehavior` are
+  `world::dragonfire::dragons` (docs/dragonfire.md): `DragonClass` implements
+  `Abstract`, so `registry` registers and constructs them, but `Class` does not
+  list them and the start-up world does not register them. `SheepBehavior`,
+  `ChinchompaDeathListener`, `ShooAwayStrayDogListener`, `CowMilkingPlugin`,
+  `DecantListener` and `QuestTabUtils.showRequirementsInterface` are not
+  ported in this pass.
 - The start-up world registers BankerNPC and DarkWizardNPC only once its
   regions hold objects and spells (see above); NPCTalkListener, BankerNPC's
   listeners and the two option handlers are not registered there (the

@@ -563,8 +563,7 @@ pub fn swing<H: Host>(
     r: &H::HandlerRef,
 ) -> Result<bool> {
     let mut state = BattleState::new(Some(entity.clone()), victim.cloned());
-    let instance = h.handler(r).clone();
-    let set = instance.armour_set(h, Some(entity))?;
+    let set = handler::armour_set(h, r, Some(entity))?;
     h.set_armour_set(entity, set)?;
     let delay = match h.overrides(r).and_then(|o| o.swing) {
         Some(swing) => swing(h, r, Some(entity), victim, &mut state),

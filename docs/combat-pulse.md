@@ -189,11 +189,13 @@ log under the stand-in's name.
   catches `Exception`, not `Error`.
 - A handler's class is a field, as in the swing slice. A subclass's
   overriding `swing`, `visualize`, `visualizeImpact`, `impact`,
-  `adjustBattleState` and `getFormattedHit` are answered per instance by
-  `Host::overrides` (`overrides.rs`); the weapon special attacks
-  (`world::special_attacks`, docs/special-attacks.md) are the only subclasses
-  joined that way. A subclass overriding `canSwing` or the other members
-  cannot be represented yet.
+  `adjustBattleState`, `getFormattedHit`, `canSwing`, `addExperience`,
+  `postSwing`, `getArmourSet` and the four calculations are answered per
+  instance by `Host::overrides` (`overrides.rs`); the weapon special attacks
+  (`world::special_attacks`, docs/special-attacks.md) and the dragonfire and
+  switching handlers (`world::dragonfire`, docs/dragonfire.md) are joined that
+  way. The MixedSwingHandlers objects are base-class instances whose
+  `calculateDefence` is another singleton's (`Handler::defence_of`).
 - `BattleState` is an owned value. Target handling reads a target array by
   index and takes one child out while it is being adjusted; a service that
   replaced the array of the state it was handed would be seen sooner than in
@@ -208,8 +210,8 @@ log under the stand-in's name.
 
 `removeFor`; `lastSentAttack`/`lastReceivedAttack` users; `BoltEffect`
 overrides other than the `DIAMOND` path; every handler subclass other than
-the special attacks (docs/special-attacks.md), `MultiSwingHandler` and
-`SalamanderSwingHandler`;
+the special attacks (docs/special-attacks.md) and the dragonfire and switching
+handlers (docs/dragonfire.md), and `SalamanderSwingHandler`;
 spell effects and spell visuals; `DeathTask` and graves; prayer drain (now
 `world::prayer`, docs/prayer.md), poison and degradation themselves; `Entity.onImpact`, `sendImpact`, `checkImpact`,
 `isAttackable` and auto-retaliation; `RangedConfigLoader`.

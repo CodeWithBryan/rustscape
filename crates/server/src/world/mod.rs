@@ -20,6 +20,7 @@ pub mod disconnection;
 pub mod door_option;
 pub mod door_runtime;
 pub mod doors;
+pub mod dragonfire;
 pub mod driver;
 pub mod drop_tables;
 pub mod entity_regions;

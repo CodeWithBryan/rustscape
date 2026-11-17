@@ -585,6 +585,9 @@ pub fn can_swing<H: Host>(
     entity: &H::Entity,
     victim: &H::Entity,
 ) -> Result<InteractionType> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.can_swing) {
+        return member(h, r, entity, victim);
+    }
     match kind_of(h, r) {
         HandlerKind::Melee => melee_can_swing(h, r, entity, victim),
         HandlerKind::Range => range_can_swing(h, r, entity, victim),
@@ -667,8 +670,9 @@ fn npc_poison<H: Host>(h: &mut H, entity: &H::Entity, victim: &H::Entity) -> Res
     Ok(())
 }
 
-/// `CombatSwingHandler.adjustBattleState`, the body the subclasses call last.
-fn base_adjust<H: Host>(
+/// `CombatSwingHandler.adjustBattleState`, the body the subclasses call last
+/// (and a direct subclass of `CombatSwingHandler` reaches with `super`).
+pub fn base_adjust<H: Host>(
     h: &mut H,
     r: &H::HandlerRef,
     entity: &H::Entity,
@@ -868,7 +872,7 @@ pub fn adjust_battle_state_super<H: Host>(
 }
 
 /// `CombatSwingHandler.addExperience`.
-fn base_add_experience<H: Host>(
+pub fn base_add_experience<H: Host>(
     h: &mut H,
     entity: Option<&H::Entity>,
     victim: Option<&H::Entity>,
@@ -960,6 +964,9 @@ pub fn add_experience<H: Host>(
     victim: Option<&H::Entity>,
     state: Option<&BattleState<H>>,
 ) -> Result<()> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.add_experience) {
+        return member(h, r, entity, victim, state);
+    }
     if kind_of(h, r) == HandlerKind::Magic {
         if let (Some(state), Some(entity)) = (state, entity) {
             if let Some(spell) = state.spell.clone() {
@@ -1076,6 +1083,9 @@ pub fn post_swing<H: Host>(
     victim: Option<&H::Entity>,
     state: &BattleState<H>,
 ) -> Result<()> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.post_swing) {
+        return member(h, r, entity, victim, state);
+    }
     if kind_of(h, r) != HandlerKind::Range {
         return Ok(());
     }
@@ -1571,4 +1581,104 @@ pub fn special<H: Host>(h: &mut H, r: &H::HandlerRef, item_id: i32) -> Option<H:
         .iter()
         .find(|(id, _)| *id == item_id)
         .map(|(_, handler)| handler.clone())
+}
+
+/// `getArmourSet(e)` of the instance's class.
+pub fn armour_set<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    e: Option<&H::Entity>,
+) -> Result<Option<ArmourSet>> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.armour_set) {
+        return member(h, r, e);
+    }
+    let instance = h.handler(r).clone();
+    instance.armour_set(h, e)
+}
+
+/// `calculateAccuracy(entity)` of the instance's class.
+pub fn calculate_accuracy<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    entity: Option<&H::Entity>,
+) -> Result<i32> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.calculate_accuracy) {
+        return member(h, r, entity);
+    }
+    let instance = h.handler(r).clone();
+    instance.calculate_accuracy(h, entity)
+}
+
+/// `calculateHit(entity, victim, modifier)` of the instance's class.
+pub fn calculate_hit<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    entity: Option<&H::Entity>,
+    victim: Option<&H::Entity>,
+    modifier: f64,
+) -> Result<i32> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.calculate_hit) {
+        return member(h, r, entity, victim, modifier);
+    }
+    let instance = h.handler(r).clone();
+    instance.calculate_hit(h, entity, victim, modifier)
+}
+
+/// `calculateDefence(victim, attacker)` of the instance's class.
+pub fn calculate_defence<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    victim: Option<&H::Entity>,
+    attacker: Option<&H::Entity>,
+) -> Result<i32> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.calculate_defence) {
+        return member(h, r, victim, attacker);
+    }
+    let instance = h.handler(r).clone();
+    instance.calculate_defence(h, victim, attacker)
+}
+
+/// `getSetMultiplier(e, skillId)` of the instance's class.
+pub fn set_multiplier<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    e: Option<&H::Entity>,
+    skill_id: i32,
+) -> Result<f64> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.set_multiplier) {
+        return member(h, r, e, skill_id);
+    }
+    let instance = h.handler(r).clone();
+    instance.set_multiplier(h, e, skill_id)
+}
+
+/// `CombatSwingHandler.isAccurateImpact(entity, victim, style, accuracyMod,
+/// defenceMod)` with its virtual `calculateAccuracy` and `calculateDefence`.
+pub fn is_accurate_impact<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    entity: Option<&H::Entity>,
+    victim: Option<&H::Entity>,
+    style: Option<CombatStyle>,
+    accuracy_mod: f64,
+    defence_mod: f64,
+) -> Result<bool> {
+    let mut modifier = 1.0;
+    let (Some(v), Some(_)) = (victim, style) else {
+        return Ok(false);
+    };
+    if h.kind(v).is_player()
+        && entity.is_some_and(|e| h.kind(e) == Kind::Familiar)
+        && h.protects_from_summoning(v)?
+    {
+        modifier = 0.0;
+    }
+    let attack = f64::from(calculate_accuracy(h, r, entity)?) * accuracy_mod * modifier;
+    let defence = f64::from(calculate_defence(h, r, victim, entity)?) * defence_mod;
+    let chance = if attack > defence {
+        1.0 - ((defence + 2.0) / (2.0 * (attack + 1.0)))
+    } else {
+        attack / (2.0 * (defence + 1.0))
+    };
+    Ok(h.math_random()? < chance)
 }

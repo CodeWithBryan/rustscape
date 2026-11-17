@@ -91,8 +91,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   stand-ins' world model, tick runner and retaliating onImpact are oracle
   inputs, not ports. Not ported: removeFor, bolt-effect overrides (their two
   services are never driven by the corpus), handler subclasses other than
-  the special attacks (next bullet, joined through Host::overrides),
-  MultiSwingHandler, spell effects, DeathTask, graves, prayer
+  the special attacks and world/dragonfire (next bullets, joined through
+  Host::overrides), spell effects, DeathTask, graves, prayer
   drain, poison, degradation, Entity.onImpact/isAttackable and
   auto-retaliation. `rs09-server --world` installs it over the canonical
   actors, their pulse managers, the world runner, skills and equipment
@@ -119,11 +119,43 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   target outside multi, Slice and dice's unset main style, Warstrike's drain
   chain, Descent's shared weapon object, Shove's four location reads and the
   finders' filter-before-take. Special energy is the native Settings; every
-  other call is a required Host service with no default. The equipment
-  registers, FireType, SwitchAttack, MixedSwingHandlers, the chinchompa,
-  salamander and dragonfire handlers and the dragon NPC classes are not
-  ported; nothing installs the library in `--world`. See
+  other call is a required Host service with no default. The
+  equipment registers and the chinchompa and salamander handlers are not
+  ported (the dragonfire handler, FireType, SwitchAttack, MultiSwingHandler,
+  MixedSwingHandlers and the dragon classes are world/dragonfire, next
+  bullet); nothing installs the library in `--world`. See
   docs/special-attacks.md.
+
+- For dragonfire and switching NPC attacks (world/dragonfire:
+  DragonfireSwingHandler, FireType, SwitchAttack, MultiSwingHandler,
+  MixedSwingHandlers, ContentAPI calculateDragonfireMaxHit and
+  hasDragonfireShieldProtection, Player.getDragonfireProtection,
+  DragonfireShieldListener with DFSItemPlugin, ChromaticDragonNPC,
+  MetalDragonNPC, ChromaticDragonBehavior), the combat_pulse Overrides
+  members they add (canSwing, addExperience, postSwing, getArmourSet and
+  the four calculations) or combat_swing Handler::defence_of, run `cargo test
+  -p rs09-server --test dragonfire` and `cargo xtask dragonfire-oracle
+  --check` with Python/JDK 11, plus the special_attacks, combat_swing,
+  combat_pulse, spells, prayer, content_timers, npc_classes, npc_behaviour,
+  equipment and consumables suites and special-attacks-oracle,
+  combat-pulse-oracle, combat-swing-oracle and npc-classes-oracle. Preserve
+  the 1,264 cases. Keep the virtual calls where the original makes them
+  (isAccurateImpact's calculateAccuracy/calculateDefence, a switching
+  handler's delegations to its current attack's handler, the mixed objects'
+  defence), dragonfire's random(max + 1) against the switch's random(max),
+  the next attack drawn before the current one swings, the type set from the
+  current style, the 0.5/0.3 delay factors, the prayer-only 60% with additive
+  shield/potion shares and the fiery-only potion message, the shield charge
+  that returns before freeze and defence animation, Item's packed idHash
+  charge, the icy redraw only above 10, the anonymous shield swing's order
+  (varp, attribute, shield check, audio, delay, charge, uncharge in the
+  shield slot, bonuses, lock) with BETTER_DFS read at construction, one
+  static dragonfire per dragon class shared by its instances, and EGG_RATE
+  as mutable state. Every outside call is a required Host service with no
+  default. DragonClass implements npc_classes::Abstract but is not in
+  npc_classes::Class; nothing installs the library in `--world`. The other
+  creature listeners (sheep, chinchompa, stray dogs, cow milking, decanting)
+  and the equipment registers are not ported. See docs/dragonfire.md.
 
 - For Prayer/PrayerType/PrayerCategory, the prayer tab handler, Player
   commenceDeath/fullRestore or the combat prayer reads (world/prayer), run
@@ -296,9 +328,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   content are named services. The
   start-up world registers only STARTUP_NPC_CLASSES (not BankerNPC or
   DarkWizardNPC: no region objects or spells there); nothing installs the
-  library in `--world`. The dragon classes and behaviours, Sheep, Chinchompa,
-  stray dogs, cow milking, decanting and QuestTabUtils are not ported. See
-  docs/npc-classes.md.
+  library in `--world`. The dragon classes and ChromaticDragonBehavior are
+  world/dragonfire/dragons.rs (an Abstract outside Class); Sheep,
+  Chinchompa, stray dogs, cow milking, decanting and QuestTabUtils are not
+  ported. See docs/npc-classes.md.
   QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
   ShopNPC are not ported; nothing installs the libraries in `--world` (the
   binding is described in docs/global-handlers.md).

@@ -16,7 +16,8 @@ a session or `--world` installs it yet (see Joins).
 
 `ChinchompaSwingHandler`, `DragonfireSwingHandler` and
 `SalamanderSwingHandler` live in the same folder but are not special attacks;
-they are not ported here.
+the dragonfire handler is `world::dragonfire` (docs/dragonfire.md), the other
+two are not ported.
 
 ## What is ported
 
@@ -205,9 +206,9 @@ dispatch.
 
 ## Not ported
 
-`ChinchompaSwingHandler`, `DragonfireSwingHandler`, `SalamanderSwingHandler`,
-`SwitchAttack`, `FireType`, `MixedSwingHandlers`, the equipment registers
+`ChinchompaSwingHandler`, `SalamanderSwingHandler` (`DragonfireSwingHandler`,
+`SwitchAttack`, `FireType`, `MixedSwingHandlers` and the chromatic and metal
+dragons are `world::dragonfire`, docs/dragonfire.md), the equipment registers
 (`BarrowsEquipment`, `BarrowsEquipmentRegister`, `CrystalEquipmentRegister`,
-`EquipmentDegrader`, `HastaEquipListener`, `PVPEquipmentRegister`) and the
-dragon NPC classes; the timer manager's scheduling of the anonymous timers;
+`EquipmentDegrader`, `HastaEquipListener`, `PVPEquipmentRegister`); the timer manager's scheduling of the anonymous timers;
 every binding to a live session.
