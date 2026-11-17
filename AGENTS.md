@@ -110,6 +110,27 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   SkillRestore hooks, protect-item death and every session binding are not
   ported. See docs/prayer.md.
 
+- For the spell framework (world/spells: Runes, CombinationRune, MagicStaff,
+  SpellUtils.hasRunes, MagicSpell/CombatSpell/DefaultCombatSpell, SpellType,
+  SpellBookManager, SpellBlocks, WeaponInterface's autocast members and the
+  53 combat spell registrations), run `cargo test -p rs09-server --test
+  spells` and `cargo xtask spells-oracle --check` with Python/JDK 11, plus
+  the combat_swing, combat_pulse and prayer suites and their oracles.
+  Preserve the 8,600 cases. Keep hasRunes' JDK HashMap walk (resizes
+  included), combination runes first in declaration order with zero-usage
+  entries, the stale spell:runes attribute, the staff-of-light draw before
+  any rune check, the autocast-staff check against the autocast spell, the
+  binding delay through Player.sendMessage, every repeated location/weapon/
+  god-cast/NPC-id read, the God spells' three failure sounds and delay-0
+  impact sound, Crumble undead's null NPC and the double requirement checks
+  of Teleblock and the miasmic spells. Spell objects are host-owned values
+  (spell_id and DefaultCombatSpell's projectile mutate); every outside call
+  is a required service with no default; fireEffect is content and stays the
+  combat host's service. spells::combat answers the combat slices' spell
+  services and is replayed against the same corpus; no corpus runs the real
+  MagicSwingHandler with these spells and nothing installs the library.
+  Non-combat and lunar spells are not ported. See docs/spells.md.
+
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790

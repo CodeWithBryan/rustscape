@@ -73,6 +73,7 @@ pub mod scenery_runtime;
 pub mod script_runtime;
 pub mod session;
 pub mod social;
+pub mod spells;
 pub mod tick;
 pub mod trade;
 pub mod update;
