@@ -54,6 +54,7 @@ pub mod pickup_types;
 pub mod plain_dialogue;
 pub mod player_render;
 pub mod player_walk;
+pub mod prayer;
 pub mod prepared_animation;
 pub mod prepared_masks;
 pub mod rebuild;

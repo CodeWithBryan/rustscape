@@ -94,7 +94,9 @@ identity inside a retained `BattleState`.
 
 None of these has a default. Prayer state, equipment effects, NPC combat
 definitions, familiars, slayer, perks and spells are not ported here; the
-values they would supply are inputs.
+values they would supply are inputs. `world::prayer::combat` holds the
+answers to the three prayer services from native prayer state
+(docs/prayer.md); no binding uses them yet.
 
 ## Reference tests
 

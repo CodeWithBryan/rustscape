@@ -205,8 +205,8 @@ log under the stand-in's name.
 `removeFor`; `lastSentAttack`/`lastReceivedAttack` users; `BoltEffect`
 overrides other than the `DIAMOND` path; special attack handlers and every
 other handler subclass, `MultiSwingHandler` and `SalamanderSwingHandler`;
-spell effects and spell visuals; `DeathTask` and graves; prayer drain, poison
-and degradation themselves; `Entity.onImpact`, `sendImpact`, `checkImpact`,
+spell effects and spell visuals; `DeathTask` and graves; prayer drain (now
+`world::prayer`, docs/prayer.md), poison and degradation themselves; `Entity.onImpact`, `sendImpact`, `checkImpact`,
 `isAttackable` and auto-retaliation; `RangedConfigLoader`.
 
 Binding `Host` to the canonical actors, the native pulse manager and runner

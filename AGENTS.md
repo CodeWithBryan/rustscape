@@ -95,6 +95,21 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   auto-retaliation. Nothing is bound to canonical actors, server::pulses,
   skills, equipment or a session. See docs/combat-pulse.md.
 
+- For Prayer/PrayerType/PrayerCategory, the prayer tab handler, Player
+  commenceDeath/fullRestore or the combat prayer reads (world/prayer), run
+  `cargo test -p rs09-server --test prayer` and `cargo xtask prayer-oracle
+  --check` with Python/JDK 11, plus the combat_swing, combat_pulse, skills
+  and variables suites and combat-swing-oracle/combat-pulse-oracle. Preserve
+  the 3,145 cases. Keep the varp write before flag, a prayer switched off once
+  per conflicting bonus pair, permitted() also on switching off, the float
+  `(1/30f) * bonuses[12]` read once per active prayer, the zero check before
+  the drain, the decrement even of 0, reset leaving the tick counter and
+  clearing the head icon a tick later, and getFormattedHit's truncating int
+  multiply. Points, levels and healing are native Skills; every other call is
+  a required service. ConstLib 1.4.28 supplies the sound names. Training,
+  SkillRestore hooks, protect-item death and every session binding are not
+  ported. See docs/prayer.md.
+
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790
