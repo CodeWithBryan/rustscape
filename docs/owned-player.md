@@ -43,6 +43,10 @@ player_inventory/inventory_listener/settings, actor/ground/mask tests, headless
 and all three example targets. Reproduce owned-player-oracle and affected
 existing corpora; broader gates are specified in AGENTS.md.
 
+The record also holds a once-bound profile (details, skills, saved data, timers,
+Properties, spell book, persisted state, Player's scalar fields) from which the
+save file is written and into which it is loaded; see canonical-player.md.
+
 This record is the supported native admission component, not the complete Java
 Player class or profile loader/save system. Full Settings/movement and skills/
 Animator field joins, equipment/bank subclasses and listeners, other plugin

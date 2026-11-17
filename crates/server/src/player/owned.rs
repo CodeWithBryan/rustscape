@@ -1,5 +1,6 @@
-//! Canonical fields currently bound by native player startup. Full Player,
-//! profiles/content and the remaining concrete container subclasses are pending.
+//! Canonical fields currently bound by native player startup, and the profile
+//! state of profile.rs. Login, content and the remaining concrete container
+//! subclasses are pending.
 use crate::{
     definitions::item::{Registry, Shared, WeakShared},
     inventory::{
@@ -22,6 +23,7 @@ mod appearance;
 mod attributes;
 mod components;
 mod inventory;
+pub mod profile;
 mod variables;
 pub use attributes::Attributes;
 pub use inventory::Services;
@@ -45,6 +47,8 @@ struct Fields {
     varp_manager: super::variables::Manager,
     bank_pin: super::bank_pin::Manager,
     scripts: crate::scripts::Runtime,
+    /// Holds no node handle; see profile.rs.
+    profile: profile::Slot,
 }
 #[derive(Clone)]
 pub struct Player(Shared<Fields>);
@@ -132,6 +136,7 @@ impl Player {
             varp_manager,
             bank_pin,
             scripts,
+            profile: profile::Slot::Unbound,
         })))
     }
     pub fn same(&self, other: &Self) -> bool {

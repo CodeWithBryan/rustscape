@@ -328,8 +328,9 @@ those texts and files are byte for byte identical
 - Bind `persisted::Persisted` and its `World` to the canonical player and to
   world start-up (the real quest, song and spell registration). Nothing does
   yet; the stand-ins in the corpus are oracle inputs.
-- The varp maps here are `core_data`'s. The canonical player's variable store
-  in `player/owned/variables.rs` is a separate object and is not yet joined.
+- The varp maps here are `core_data`'s. The canonical player's save and load
+  ([canonical-player.md](canonical-player.md)) project its variable store into
+  them and write the result back; this module itself is unchanged.
 - The Java-below-11 output, default-charset files and the I/O failure paths.
 - A decision on write safety. The original replaces the file in place; a
   crash mid-write leaves a truncated save, which the parser then rejects.

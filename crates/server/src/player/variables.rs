@@ -63,6 +63,10 @@ impl<T: Copy> Map<T> {
     pub fn snapshot(&self) -> HashMap<i32, Option<T>> {
         self.0.read().values.clone()
     }
+    /// The keys in the order the original HashMap iterates them.
+    pub fn keys(&self) -> Vec<i32> {
+        self.iteration().0
+    }
     fn iteration(&self) -> (Vec<i32>, u32) {
         let f = self.0.read();
         (

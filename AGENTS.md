@@ -523,6 +523,24 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   natively), a null save path, most I/O failures, concurrent saves, and every
   login, logout and playable-alpha call site; the alpha still writes its own
   snapshot. See docs/player-save.md.
+- For the canonical player's profile state (player/owned/profile.rs: details,
+  skills, saved data, timers, Properties in player/properties.rs, spell book,
+  persisted state, Player's scalar fields) or its save/load binding, run
+  `cargo test -p rs09-server --test canonical_player --test owned_player
+  --test player_save --test player_state`, all ownership suites and all three
+  examples, and reproduce `cargo xtask canonical-player-oracle --check` and
+  player-save-oracle with Python/JDK 11. The oracle reuses the world-trace
+  build and is accepted only with a byte-identical boot record; never edit the
+  world-trace harness for it. Keep: profile values store no node handle (the
+  original's entity back-references are implicit), operations take the profile
+  out and hold no player lock across services (reentry gets InUse), save.rs
+  and parser.rs unchanged with core_data projected from the player's own
+  containers, tabs, selector and variable store, and native answers only for
+  what the player owns (retaliating, combat levels, Settings' Properties and
+  ironman). Every NOT_HELD field and KNOWN difference in the test is listed in
+  docs/canonical-player.md; a new field must be compared or listed. Entity
+  location stays the actor's (save argument, load result). Login, Player.init,
+  LoginConfiguration and the tick driver are not ported here.
 - For timer-registry or ROOT string-case changes, also run the timer_registry and
   xtask string_case tests, `cargo xtask timer-registry-oracle --check`,
   `cargo xtask string-case-oracle --check` with Python/JDK 11, and
