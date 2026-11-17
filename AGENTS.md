@@ -1060,6 +1060,26 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   DarkZone, ZoneBuilder.startup and cleanItems are not ported, and nothing
   binds these libraries to a session: the examples' check_inactive,
   zone_update and ZoneMove answers are still fabricated. See docs/zones.md.
+- For TeleportManager, TeleportType, TeleportPulse or Entity.isTeleporting
+  (world/teleport.rs), run `cargo test -p rs09-server --test teleport` and
+  `cargo xtask teleport-oracle --check` with Python/JDK 11, plus the pulses,
+  animator, prepared_masks, update_masks, action_locks, walking, zones,
+  scripts and attributes suites. Preserve all 1,027 cases. Keep send's order
+  (WILDY_TELEPORT/OBELISK check only the teleblock timer; otherwise
+  ZoneMonitor.teleport(type, null) then a second isTeleBlocked, both skipped
+  for -1), the null node that makes type 1 fail while tele-blocked, delay and
+  dialogue only for a non-forced player, tablet-spell after them, getPulse
+  after the walking reset, lock 12 and disabled ticks 12 or 5 before the
+  submission. Each type keeps its step ticks, sounds, priorities and stop
+  override; FAIRY_RING keeps `++delay`, MID animate and the uncopied
+  destination; every other type copies it at its step. A second send leaves
+  the first pulse running, PulseManager.clear never reaches a teleport and
+  send never calls start(). Pulses are native pulses::Pulse handles the world
+  dispatches by identity; animations go through the native Animator, the
+  final move through walking::Queue, the checks through zones::Monitor and
+  zones::is_tele_blocked. Every other call is a required service with no
+  default; the per-tick driver is an oracle input. No content reaches send
+  and nothing installs the library. See docs/teleport.md.
 - For aggression, NPCBehavior hooks or the NPC/Entity/Player combat members
   (world/npc_behaviour: AggressiveHandler/AggressiveBehavior, setDefaultBehavior,
   configureBossData, isInvisible/isHidden, isAttackable, continueAttack,

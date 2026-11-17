@@ -75,6 +75,7 @@ pub mod session;
 pub mod shops;
 pub mod social;
 pub mod spells;
+pub mod teleport;
 pub mod tick;
 pub mod trade;
 pub mod update;
