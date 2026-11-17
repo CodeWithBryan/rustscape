@@ -22,6 +22,8 @@
 //! - [`server`]: the 600 ms worker loop, the transport gate
 //!   ([`super::session::World`]), the saver thread and [`server::run`], which
 //!   `main.rs` calls for `--world`.
+//! - [`ground_items`]: ground items (the manager, the start-up's spawns,
+//!   ground item options and pickup, drops).
 //! - [`not_ported`]: the registry of named answers for systems without a
 //!   port; each is listed in docs/live-world.md.
 //!
@@ -30,12 +32,16 @@
 //! ported and is answered by name. See docs/live-world.md.
 pub mod boot;
 pub mod buttons;
+pub mod equipment;
 pub mod ground;
+pub mod ground_items;
 pub mod host;
 pub mod inner;
+pub mod items;
 pub mod not_ported;
 pub mod npc_life;
 pub mod npcs;
+pub mod region_zones;
 pub mod regions;
 pub mod server;
 pub mod tabs;

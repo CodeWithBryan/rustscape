@@ -414,11 +414,12 @@ impl zones::Host for Live {
     ) -> zones::Result<bool> {
         refused("Entity.continueAttack (combat is not installed)")
     }
-    fn skull_wilderness(&mut self, _: &NodeHandle) -> zones::Result<bool> {
-        refused("SkullManager (player managers are not installed here)")
+    fn skull_wilderness(&mut self, player: &NodeHandle) -> zones::Result<bool> {
+        // skullManager.isWilderness(), the player's SkullManager.
+        crate::world::player_managers::skull::answers::is_wilderness(self, player).map_err(zerror)
     }
-    fn skull_level(&mut self, _: &NodeHandle) -> zones::Result<i32> {
-        refused("SkullManager (player managers are not installed here)")
+    fn skull_level(&mut self, player: &NodeHandle) -> zones::Result<i32> {
+        crate::world::player_managers::skull::answers::level(self, player).map_err(zerror)
     }
     fn packet_message(&mut self, player: &NodeHandle, message: &str) -> zones::Result<()> {
         self.inner

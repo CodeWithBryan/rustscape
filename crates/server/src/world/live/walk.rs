@@ -41,6 +41,8 @@ pub struct Walk {
         crate::world::prepared_animation::World<crate::definitions::animation::CacheSource>,
     pub maps: Maps,
     pub active: BTreeSet<i32>,
+    /// Ground items ([`super::ground_items`]): with the scene they live in.
+    pub ground: super::ground_items::Grounds,
 }
 
 /// `scene::Services` for collision queries. The scenery services (doors,
@@ -143,6 +145,8 @@ pub struct WalkHost<'a> {
     pub npcs: &'a mut crate::startup::npcs::Npcs,
     /// The world's generators (`RandomFunction.RANDOM` is `shared`).
     pub random: &'a mut crate::startup::generators::WorldGenerators,
+    /// The NPC renderer's views (facing an NPC), when the caller holds them.
+    pub npc_views: Option<&'a std::collections::HashMap<Node, crate::world::npc_render::Handle>>,
 }
 
 impl WalkHost<'_> {
@@ -206,10 +210,12 @@ impl player_walk::Services for WalkHost<'_> {
                 true
             }
             Query::ZoneMove(_, _, _) => {
-                // ZoneMonitor.move: true unless a registered zone refuses;
-                // no zone is registered in this world.
-                self.not_ported
-                    .default_answer("ZoneMonitor.move (no zones registered: true)");
+                // ZoneMonitor.move: true unless a zone the entity is in
+                // refuses; none of the installed zones (ZoneBuilder.startup's
+                // six) overrides move.
+                self.not_ported.default_answer(
+                    "ZoneMonitor.move (no installed region zone overrides move: true)",
+                );
                 true
             }
             Query::CloseInterface(n) => {
@@ -294,17 +300,23 @@ impl player_walk::Services for WalkHost<'_> {
             }
             Event::Face(n, Some(target)) => {
                 let masks = self.masks(n)?;
-                let render = self
-                    .players
-                    .get(&target)
-                    .map(|s| s.canonical.render.clone())
-                    .ok_or(player_walk::Error::Binding(
-                        "facing an NPC: NPC render views are not joined in the live world".into(),
-                    ))?;
-                let node = state.retain_node(target)?;
-                masks
-                    .face_entity(Some(FaceTarget::Player(node, render)))
-                    .map_err(binding)?;
+                let face = match self.players.get(&target) {
+                    Some(slot) => {
+                        let render = slot.canonical.render.clone();
+                        FaceTarget::Player(state.retain_node(target)?, render)
+                    }
+                    None => {
+                        let view = self
+                            .npc_views
+                            .and_then(|views| views.get(&target))
+                            .cloned()
+                            .ok_or(player_walk::Error::Binding(
+                                "facing an NPC without an NPC render view".into(),
+                            ))?;
+                        FaceTarget::Npc(state.retain_node(target)?, view)
+                    }
+                };
+                masks.face_entity(Some(face)).map_err(binding)?;
             }
             Event::CloseChatbox(n) => self.deferred.push(Deferred::CloseChatbox(n)),
         }
@@ -389,6 +401,43 @@ impl player_walk::Services for WalkHost<'_> {
     }
     fn metrics_enabled(&self) -> bool {
         false
+    }
+    fn interaction_arrival(
+        &mut self,
+        state: &mut State,
+        approach: &crate::world::interaction::Approach,
+    ) -> player_walk::Result<bool> {
+        // InteractPlugin's movement pulse arrived: the legacy arrival body
+        // (the only installed option handler is PickupPlugin).
+        super::ground_items::arrival(state, self, approach)
+    }
+    fn delayed_interaction(
+        &mut self,
+        state: &mut State,
+        task: &crate::world::legacy_interaction::Task,
+    ) -> player_walk::Result<bool> {
+        crate::world::legacy_runtime::arrival(state, self, task)
+            .map_err(|e| player_walk::Error::Binding(e.to_string()))
+    }
+    fn destination(
+        &mut self,
+        _: &mut State,
+        _: Option<Node>,
+        _: Option<Node>,
+        service: crate::world::movement::DestinationService,
+    ) -> player_walk::Result<Option<Location>> {
+        // OptionHandler.getDestination: PickupPlugin's is null (the default
+        // destination); no other handler is installed.
+        match service {
+            crate::world::movement::DestinationService::Option(id)
+                if self.walk.ground.program(id).is_some() =>
+            {
+                Ok(None)
+            }
+            _ => Err(player_walk::Error::Binding(
+                "not ported in the live world: content destinations".into(),
+            )),
+        }
     }
     fn teleport_permitted(
         &mut self,

@@ -320,6 +320,22 @@ impl Inner {
         }
         result
     }
+    /// `Appearance.sync()`: `prepareBodyData` over the canonical appearance
+    /// and the worn equipment (`player::appearance`), the prepared body
+    /// copied into the appearance block's data, then the appearance mask.
+    pub fn appearance_sync(&mut self, p: &P) -> Result<bool, String> {
+        let player = self.canonical(p).player.clone();
+        player.render_info().write().prepared_appearance = false;
+        player
+            .prepare_body(&self.state)
+            .map_err(|e| format!("{e:?}"))?;
+        let body = *player.appearance().body().read();
+        let masks = player.masks();
+        masks.body().write().body_parts.copy_from_slice(&body[..12]);
+        masks
+            .sync_appearance(now_millis)
+            .map_err(|e| format!("{e:?}"))
+    }
     /// The live player whose render handle this is.
     pub fn by_render(&self, handle: &player_render::Handle) -> Option<P> {
         self.players
@@ -1219,8 +1235,29 @@ impl settings::Context for WeightContext<'_> {
         };
         Ok(self.item.as_ref().map(|_| 0))
     }
-    fn weight(&mut self, _: &Settings, _: usize) -> settings::Result<f64> {
-        Err(settings::Error::Binding)
+    fn weight(&mut self, _: &Settings, item: usize) -> settings::Result<f64> {
+        // The weight configuration of the item the last `item` returned
+        // (the canonical inventory binding's own body).
+        if item != 0 {
+            return Err(settings::Error::Binding);
+        }
+        let definition = self
+            .item
+            .as_ref()
+            .ok_or(settings::Error::Null)?
+            .read()
+            .definition
+            .clone()
+            .ok_or(settings::Error::Null)?;
+        let definition = definition.read();
+        match definition
+            .handlers
+            .get(crate::definitions::item_config::constants::WEIGHT)
+        {
+            None | Some(crate::definitions::property::Property::Null) => Ok(0.0),
+            Some(crate::definitions::property::Property::Double(value)) => Ok(*value),
+            Some(_) => Err(settings::Error::Type),
+        }
     }
 }
 
@@ -1231,6 +1268,9 @@ impl settings::Context for WeightContext<'_> {
 pub struct EquipmentContext<'a> {
     pub inner: &'a mut Inner,
     pub p: P,
+    /// InteractionListeners' registries (equip listeners), when the caller
+    /// holds them.
+    pub listeners: Option<crate::world::interaction_listeners::Registry>,
 }
 fn binding<E: std::fmt::Debug>(e: E) -> inventory::Error {
     inventory::Error::Binding(format!("{e:?}"))
@@ -1241,20 +1281,57 @@ fn unbound(what: &str) -> inventory::Error {
 impl inventory::container::Context for EquipmentContext<'_> {
     fn update(
         &mut self,
-        _: ListenerHandle,
-        _: &mut Container,
-        _: Event,
-        _: &Items,
+        listener: ListenerHandle,
+        container: &mut Container,
+        event: Event,
+        definitions: &Items,
     ) -> inventory::Result<()> {
-        Err(unbound("container update from the equipment refresh"))
+        // The container's listeners: the EquipmentListener with this
+        // context, an InventoryListener through the canonical player's
+        // inventory binding.
+        if let Some(receiver) = listener.value::<equipment::Listener>() {
+            return receiver.update_event(self, container, Some(&event), definitions);
+        }
+        if let Some(receiver) = listener.value::<crate::inventory::listener::Listener>() {
+            let player = self.inner.canonical(&self.p).player.clone();
+            let inner = &mut *self.inner;
+            let result = player.apply(
+                &mut inner.state,
+                &mut inner.frames,
+                now_millis,
+                |_, _, context| receiver.update_event(context, container, Some(&event)),
+            );
+            inner.drain(&self.p);
+            return result;
+        }
+        Err(unbound(
+            "a foreign container listener during an equipment change",
+        ))
     }
     fn refresh(
         &mut self,
-        _: ListenerHandle,
-        _: &mut Container,
-        _: &Items,
+        listener: ListenerHandle,
+        container: &mut Container,
+        definitions: &Items,
     ) -> inventory::Result<()> {
-        Err(unbound("container refresh from the equipment refresh"))
+        if let Some(receiver) = listener.value::<equipment::Listener>() {
+            return receiver.refresh(self, container, definitions);
+        }
+        if let Some(receiver) = listener.value::<crate::inventory::listener::Listener>() {
+            let player = self.inner.canonical(&self.p).player.clone();
+            let inner = &mut *self.inner;
+            let result = player.apply(
+                &mut inner.state,
+                &mut inner.frames,
+                now_millis,
+                |_, _, context| receiver.refresh(context, container),
+            );
+            inner.drain(&self.p);
+            return result;
+        }
+        Err(unbound(
+            "a foreign container listener during an equipment change",
+        ))
     }
     fn ground(
         &mut self,
@@ -1262,7 +1339,7 @@ impl inventory::container::Context for EquipmentContext<'_> {
         _: Option<ItemHandle>,
         _: &Items,
     ) -> inventory::Result<()> {
-        Err(unbound("ground drop from the equipment refresh"))
+        Err(unbound("ground drop from an equipment change"))
     }
 }
 impl equipment::Context for EquipmentContext<'_> {
@@ -1281,12 +1358,14 @@ impl equipment::Context for EquipmentContext<'_> {
     }
     fn requirements(
         &mut self,
-        _: crate::definitions::item::Handle,
+        definition: crate::definitions::item::Handle,
         _: Option<&NodeHandle>,
-        _: bool,
-        _: bool,
+        message: bool,
+        equip: bool,
     ) -> inventory::Result<bool> {
-        Err(unbound("equipment requirements"))
+        // ItemDefinition.hasRequirement(player, wield, message).
+        super::items::has_requirement(self.inner, &self.p, &definition, equip, message)
+            .map_err(inventory::Error::Binding)
     }
     fn dispatch(&mut self, _: &NodeHandle) -> inventory::Result<()> {
         Ok(())
@@ -1320,12 +1399,23 @@ impl equipment::Context for EquipmentContext<'_> {
     }
     fn interaction(
         &mut self,
-        _: i32,
+        id: i32,
         _: &NodeHandle,
         _: ItemHandle,
-        _: bool,
+        equip: bool,
     ) -> inventory::Result<bool> {
-        Err(unbound("equipment interaction listeners (content)"))
+        // InteractionListeners.run(id, player, item, isEquip): with no equip
+        // listener for the id, removeWeakScripts, the event, then true.
+        let Some(registry) = &self.listeners else {
+            return Err(unbound("equipment interaction listeners outside an equip"));
+        };
+        if registry.get_equip(id, equip).is_some() {
+            return Err(unbound("a content equip listener"));
+        }
+        self.inner.not_ported.skip(
+            "removeWeakScripts and the equip InteractionEvent in InteractionListeners.run (no content listener)",
+        );
+        Ok(true)
     }
     fn send(&mut self, packet: equipment::Packet, _: &mut Container) -> inventory::Result<()> {
         let null = self.inner.factory.null_item.clone();
@@ -1409,11 +1499,12 @@ impl equipment::Context for EquipmentContext<'_> {
         Ok(())
     }
     fn update_appearance(&mut self, _: &NodeHandle) -> inventory::Result<()> {
-        let masks = self.inner.canonical(&self.p).player.masks();
-        masks
-            .sync_appearance(now_millis)
+        // Appearance.sync(): the body with the worn equipment.
+        let p = self.p.clone();
+        self.inner
+            .appearance_sync(&p)
             .map(|_| ())
-            .map_err(binding)
+            .map_err(inventory::Error::Binding)
     }
     fn update_weight(&mut self, settings: Settings) -> inventory::Result<()> {
         let mut ctx = WeightContext {

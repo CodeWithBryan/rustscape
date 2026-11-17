@@ -7,16 +7,23 @@ the player tab systems (weapon tab, level-up icons, emotes, music, quest tab),
 walking on the canonical actor state, the player update with prepared masks,
 the start-up's NPCs (tick, random walking, the NPC update), entity regions
 and zone monitors with music zones, region activation, the map chunk renderer
-with chunk synchronisation, and the interface buttons of the player tabs.
-A client logs in, enters the world, walks, sees NPCs and other players, uses
-its weapon, emote and music tabs, logs out, and its character is saved and
-loaded again.
+with chunk synchronisation, the interface buttons of the player tabs, ground
+items (the start-up's spawns, `GroundItemManager`, the ground item packet,
+pickup), the region zones of `ZoneBuilder.startup` with the players'
+`SkullManager`, the routed item, NPC, player, examine and track-finished
+packets (`world/packet_handlers`) with `DropListener` and `EquipHandler` in
+the native `InteractionListeners`, `EquipmentContainer.add/remove` and the
+appearance block with worn equipment. A client logs in, enters the world,
+walks, sees NPCs, players and ground items, uses its weapon, emote and music
+tabs, takes, drops and wields items, examines, uses an NPC's option, enters
+the wilderness, logs out, and its character is saved and loaded again.
 
 This is a playable engine slice, **not a complete server**: content (login
-listeners and plugins, quests, tutorial, NPC aggression and combat, scenery
-and item handlers, dialogue, banking, shops, prayer, trade), ground items,
-worn equipment in the appearance block and every handler listed below as
-refused are not installed, and every such call is answered by name below.
+listeners and plugins, quests, tutorial, NPC combat, scenery, use-with and
+content item handlers, dialogue, banking, shops, prayer, trade), content
+timers (SkillRestore, poison and the rest: not installed), combat, and every
+handler listed below as refused are not installed, and every such call is
+answered by name below.
 
 ```powershell
 cargo build --release -p rs09-server
@@ -40,7 +47,7 @@ modes of `rs09-server` are unchanged.
 | login reply | `LoginWriteEvent` | `login::write_response` → `login::Host::write_bytes`, which completes the transport's admission with the same rights and index (the transport writes the identical bytes) |
 | worker | `MajorUpdateWorker` | `server::worker_loop`: admissions, the read event, `Driver::tick`, the hand-offs, the management pump and social flush, delivery, the ping timeout (20 s) and the inactive-player failsafe; sleep to 600 ms |
 | read event | `IoReadEvent`/`GameReadEvent.read` | `Driver::read` on the bytes of the frames the transport framed (re-encoded with the same size table); end of stream is `Driver::close` |
-| packet routes | `PacketProcessor.process` | the driver's table; `Walk` (`player_walk::World::process`, i.e. `world::walk_request`), `Social` (`Social::process`), `DisplayUpdate` (client info and `interfaces::switch_window_mode`), `IfAction` and `CloseIface` (`interface_packets::if_action`/`close_iface`, `buttons.rs`) bound; the rest below |
+| packet routes | `PacketProcessor.process` | the driver's table; `Walk` (`player_walk::World::process`, i.e. `world::walk_request`), `Social` (`Social::process`), `DisplayUpdate` (client info and `interfaces::switch_window_mode`), `IfAction` and `CloseIface` (`interface_packets::if_action`/`close_iface`, `buttons.rs`), `GroundItemAction` (`ground_items.rs`), `ItemAction`, `NpcAction`, `PlayerAction`, `Examine` and `TrackFinished` (`items.rs`) bound; the rest below |
 | pulses | `GameWorld.Pulser.updateAll` | the driver's runner (login pulses, the combat tab's one-tick pulses), then the canonical state's runner (movement pulses) at the start of the tick-listener phase |
 | `Player.tick` | `Entity.tick`, music, prayer … | `player_walk::World::entity_before_masks` (script phases through `script_runtime::phase`, the walking queue) and `prepare_masks`, then `MusicPlayer.tick`; the queue's entity is projected into the render view and the slot |
 | player tabs | `WeaponInterface`, `LevelUp`, `EmoteManager`/`Emotes`, `MusicPlayer`, `QuestRepository.syncronizeTab` | `world::player_tabs` with `tabs::Tabs` as their host (the world-login test's binding): the weapon tab is created with the tab array (`create_weapon`), opened by `WeaponInterface.open` and refreshed by `updateInterface` from the equipment listener; `LevelUp.sendFlashingIcons` from `Skills.refresh`; the emote, music and quest tabs at login; the persisted emotes, songs and quest stages joined, not copied |
@@ -53,6 +60,12 @@ modes of `rs09-server` are unchanged.
 | collision | `RegionManager` | `world::scene` over cache archive 5, regions loaded around players as they arrive |
 | saves | `PlayerParser.saveImmediately`, `SaveTask`, autosave | the save text is built by the canonical player (`Player::save_text`) on the worker thread after the tick; the `PlayerSave` thread writes `<saves>/players/<name>.json`; the autosave every 50 ticks and a final save of every playing character at shutdown |
 | account | `details.save()` | the account storage `Auth.configure` made from the configuration (in memory with `persist_accounts = false`) |
+| ground items | `GroundItemManager`, `GroundSpawn`, `GroundSpawnLoader` | `ground_items.rs`: the start-up's manager list, spawn registry and `ItemDefinition.OPTION_HANDLERS` (the loader ran in the start-up), each item joined to the scene chunk of its location in manager order; `world::ground_manager` (create, destroy, get, increase, `pulse` from the driver's update sequence) over the scene's chunks and dirty tracker; respawns submitted to `GameWorld.Pulser` (the driver's runner) and dispatched by identity; `GroundSpawn` answers its own privacy and activity in the manager and in chunk synchronisation; a departed dropper's uid and name stay readable |
+| ground item packet, pickup | `processGroundItemAction`, `PickupPlugin`, `PickupHandler.take` | `world::ground_runtime` with the walk host as `legacy_runtime::Bindings` (`InteractPlugin.handle` over the canonical legacy scheduler: movement, then `interaction_arrival`), `world::pickup` at arrival over the canonical inventory, attributes, Ironman, pickup types, animator (535) and sound (2582) |
+| item, NPC, player, examine, track-finished packets | `processItemAction`, `InteractPlugin.handleItemOption` and `InteractPlugin$1`, `processNpcAction`, `processPlayerAction`, the examine branches, `TrackFinished` | `items.rs`: `world::packet_handlers` over the live world; an inventory item's InteractPlugin is a table made the first time it is asked for (`setDefault` over its definition's actions and `OPTION_HANDLERS`), an NPC's over its definition's options, a player's the one login set up; the item pulse on `GameWorld.Pulser`; `InteractPlugin.handle`/`handleInvalidInteraction` through the legacy runtime (walk, arrival, "Nothing interesting happens." with no content handler); `InteractionListeners` is the native registry (`world::interaction_listeners`) with `DropListener` and `EquipHandler` registered at boot (generic ITEM options) |
+| drop, equip | `DropListener`, `EquipHandler`, `EquipmentContainer` | the drop's soft queued script (due a tick later), `Item.getDropItem`, `GroundItemManager.create`, `droppedItem:ID`, the save task; `EquipHandler.handleEquip` with `EquipmentContainer.add` (`inventory::equipment::add_at` over the live equipment context: `ItemDefinition.hasRequirement` (`items::has_requirement`, JDK HashMap key order), the EquipmentListener and the InventoryListener of the canonical containers); the canonical equipment container is an `EquipmentContainer` bound to its player with its listener |
+| appearance | `Appearance.sync`, `prepareBodyData` | `Inner::appearance_sync`: the canonical appearance's `prepareBodyData` over the worn equipment, the prepared body copied into the appearance block's data, then the mask; at login and from the EquipmentListener |
+| region zones | `ZoneBuilder.startup` (a StartupListener), `SkullManager` | `region_zones.rs`: `wilderness_zone::startup` at boot (after the NPCs join, as the start-up runs startup listeners after NPCSpawner) registers WildernessZone, MultiwayCombatZone, ModeratorZone, DarkZone, KaramjaZone and BankZone in the scene's regions, where the zone monitors find them (entities already in a region enter, aggressive wilderness NPCs get the WILDERNESS AggressiveHandler); `Live` is `zone_impls::Host`, `dark_zone::Host` and `wilderness_zone::Host`; each player's `SkullManager` (`world::player_managers::skull`) answers the skull services; overlays through the interface manager |
 
 ## Deviations from the original
 
@@ -72,9 +85,21 @@ modes of `rs09-server` are unchanged.
   an activated region stays active.
 - The start-up's NPCs are copied into the scene's chunks by location (the
   start-up ran `RegionManager.move` against its own chunk store).
-- The appearance block is the prepared publisher's (`appearance::Data::naked`
-  with the name; worn equipment is not shown), registered by
-  `Appearance.sync` and `updateAppearance` at login.
+- The appearance block is the prepared publisher's (`appearance::Data`): its
+  twelve body slots are copied from the canonical appearance after
+  `prepareBodyData` (worn equipment included); the other fields stay the
+  prepared data's (the original's full flag writer, `player::appearance_writer`,
+  is not joined to the prepared masks).
+- `DropListener`'s soft queued script is kept by the live world, not in the
+  player's canonical script queue: it runs at the start of the player's
+  `Player.tick` once its tick (the next one) is due.
+- An item's `InteractPlugin` table uses the item handle's identity as its
+  node id (no canonical node is made for an inventory item).
+- `ZoneMonitor.interact` for an item option is answered false only when the
+  player is in no zone; inside a zone it is refused (the zones' `Target` is a
+  canonical node, which an inventory item is not).
+- A player in the disconnection queue keeps its slot until it leaves the
+  queue (the queue's next update reads it).
 - NPC update masks are not joined: `masks_required` is false for every NPC,
   so no NPC mask block is written (force talk, animations, facing).
 - The canonical state's collection (the native stand-in for the JVM's
@@ -105,10 +130,15 @@ sent or changed; the first call of each is logged with `--verbose`):
 `AggressiveHandler.selectTarget` (no target) and its tolerance calls,
 `Appearance.setAnimations`, `ButtonClickEvent` dispatch, `checkForWealthUpdate`,
 `CombatPulse.updateStyle`, `CombatPulse.stop` and `ImpactHandler.setDisabledTicks`
-for NPCs, `Commands.define`, `ComponentPlugin.open`, `Discord.postPlayerAlert`,
-entity tick event hooks, `FamiliarManager.login`, `FriendsListInterface.open`,
+for NPCs, `CombatPulse.stop` before an interaction, `Commands.define`,
+`ComponentPlugin.open`, `Discord.postPlayerAlert`, entity tick event hooks,
+`Entity.hook(UsedWith)`/`unhook` of DarkZone, `Entity.scripts.removeWeakScripts`
+in `InteractionListeners.run`, the equip listeners' `removeWeakScripts` and
+event, `InteractionEvent`, `PickUpEvent`, `ItemEquipEvent` and
+`ItemUnequipEvent` dispatch, `FamiliarManager.login`, `FriendsListInterface.open`,
 `GameWorld.loginListeners`, `GameWorld.logoutListeners`, `GameWorld.tickListeners`,
-`GroundItemManager.pulse`, `HouseManager.leave`, `InterfaceListeners.runOpen`,
+`HouseManager.leave`, `InterfaceListeners.runOpen`, `PlayerMonitor` drop-trade
+log and DUPE_ALERT (logged only),
 LoginConfiguration's per-item equipment hooks, `LoginConfiguration.LOGIN_PLUGINS`,
 `Managers.tick`, NPC attributes (return-to-spawn, lastForceTalk), `NPC.sendChat`,
 NPC update masks (reset and blocks), `Player.tick`'s potion timers, prayer
@@ -129,15 +159,39 @@ the Marathon perk (false), `Player.logoutListeners` (empty),
 `QuestRequirements.hasRequirement` (false), ServerStore `daily-accounts`
 (empty: the account limit counts nothing across logins) and `flagged-ips`
 (empty), skillcape perks (false), walking timer queries (none),
-`ZoneMonitor.move` (no region zones registered: true; `ZoneBuilder` is not
-run).
+`ZoneMonitor.move` (no installed region zone overrides move: true),
+`ZoneMonitor.interact` for ground items (false), `ItemDefinition.getItemPlugin`
+(null: no item plugin is registered), `PluginInteractionManager` for ground
+items and NPCs (false), `InteractionListeners` for ground items (false),
+`NPCDefinition.getOptionHandler` (null: NPC option handlers are content),
+`DegradableEquipment.getDropReplacement` (the item's own id: no degradable
+equipment registered), `GraveController.hasGraveAt` (false: no graves),
+`SlayerEquipmentFlags.isSlayerEq` (false), `DialogueInterpreter.close` after
+an equip (true).
 
 Refused (an error the caller logs; never a success): routed packets whose
-library is ported but not installed here (`SceneryAction`,
-`GroundItemAction`, `ContinueOption`, `InputPromptResponse`) and those the
-driver refuses (`ItemAction`, `NpcAction`, `PlayerAction`, use-with,
-component actions, slot switches, examines, commands, quick chat, report
-abuse, GE, music track finished); content close events and open dispatch,
+library is ported but not installed here (`SceneryAction`, use-with,
+component actions (spells), slot switches, `ContinueOption`,
+`InputPromptResponse`) and those the driver refuses (commands, quick chat,
+report abuse, GE); content item and NPC option handlers and listeners
+(`InteractionListeners` functions other than DropListener and EquipHandler,
+their movement and scripts), item plugins (`ItemPlugin.remove`,
+`canPickUp`), the guild items' dialogue, `EquipHandler.unequip`'s caller
+(the equipment tab's button, rs09-w-global's content), equipment plugins'
+`fireEvent`, brawling gloves, autocast clearing on a weapon change,
+`SlayerEquipmentFlags.updateFlags`, the destroy dialogue
+(`sendDestroyItem`, `addDialogueAction`), `FamiliarManager.summon` of a pet
+(`Pets.forId` is native: the enum's item ids), `NPC.getShownNPC` of a
+morphing NPC, `Lock.getMessage`, the scenery examine varbit lookup,
+`NPCDefinition.forId` of an id no spawned NPC uses, `ZoneMonitor.interact`
+for an item inside a zone; the region zones' services without a port: the
+DarkZone darkness overlay, light sources, insects and tinderbox, the multiway
+overlay packets, Karamja's inventory removal, teleports from zones,
+`restoreTabs`, NPC walk/stacking, familiars (hasPet, getFamiliar,
+transform), `NPC.reTransform`, `CombatPulse.attack`, wilderness loot and
+news, the player Attack option (wild PvP), the Skulled timer and the
+deep-wilderness listener and risk value; water paths of water NPCs
+(`npc_walk`'s default, near Lumbridge's river); content close events and open dispatch,
 open listeners of content interfaces, button listeners and component plugins
 other than the three tab classes (bank, prayer, trade, shops), autocast
 spells (`SpellBook.getSpell`, the autocast tab), special attack handlers
@@ -149,8 +203,8 @@ level-up rewards (no experience is gained), tutorial content, reconnect
 account creation from social, familiars, region NPC queries
 (`Repository.findNPC(location)`), the deferred login world configuration of
 CloseIface, an NPC's dialogue player, content NPC clipping suppliers, the
-zone services of combat, skulls, timers and teleports, the scene's scenery
-services (doors, audio), content script invocation, facing NPCs.
+zone services of combat, timers and teleports, the scene's scenery
+services (doors, audio), content script invocation.
 
 ## Verification
 
@@ -193,37 +247,55 @@ the client-side player and NPC update decoders):
   `player::save::parser::parse_text`, and `traceone`'s location is where it
   walked; `traceone` logs in again from its save (the native parser) at
   that location.
+- `traceone` uses the first option of its nearest NPC (`processNpcAction`,
+  the NPC's InteractPlugin, the legacy walk and arrival) and receives
+  "Nothing interesting happens." (no content handler).
+- `groundone` (a save made from `traceone`'s, placed on the start-up's bowl
+  spawn 1923 at 3208,3214 with a bronze dagger 1205 in slot 0) sees the
+  spawn in its chunk synchronisation, takes it (opcode 66: the item enters
+  the inventory, the spawn leaves the ground, sound 2582), drops it (opcode
+  135: DropListener, the item leaves the inventory and lies on the ground,
+  sound 2739; `groundtwo`, logged in next to it, does not see the private
+  item), takes it back after the `droppedItem` deadline (the drop/pickup round
+  trip over TCP), wields the dagger (opcode 55: equipment slot 3, inventory
+  slot 0 empty) and `groundtwo` sees the weapon slot in `groundone`'s
+  appearance block; item and NPC examines answer with their texts.
+- `wildone` (a save in the wilderness north of Edgeville's ditch) enters
+  WildernessZone at login: overlay 381 opens and its level line reads
+  "Level: 1" (SkullManager.setLevel).
 - At least ten ticks, a mean interval between 590 and 700 ms.
 
 `running_server_scenario` (ignored) drives the same client against a
 running `rs09-server --world` (`RS09_LIVE_ADDRESS`, `RS09_LIVE_SAVES`).
 
-Measured (2026-11-17, this machine, NPCs joined): in-process debug test 26
-ticks, mean work 70.5 ms, maximum 1,210 ms (the first login: lazy definition
-loading in a debug build), mean interval 624.6 ms. Release binary
-(`rs09-server --world`, start-up 945 ms, 13,709 NPCs joined from the
-start-up's repository), the ignored scenario against it (15.4 s), then idle:
-299 ticks, mean work 3.83 ms, maximum 180 ms (the first login pulse or a
-100-tick collection), mean interval 600.3 ms.
-
+Measured (2026-11-17, this machine, NPCs, ground items and region zones
+joined): in-process debug test 69 ticks, mean work 38.7 ms, maximum 1,260 ms
+(the first login: lazy definition loading in a debug build), mean interval
+610.0 ms, 6 saves written. Release binary (`rs09-server --world`, start-up
+1,027 ms, 13,709 NPCs joined), the ignored scenario against it (43.5 s,
+every step above), then idle: 199 ticks, mean work 7.70 ms, maximum 175 ms,
+mean interval 600.3 ms.
 The world-login, tick-driver and world-trace comparisons of the libraries
 are unchanged (their tests bind the same libraries with replayed
 stand-ins); this test checks the production binding end to end.
 
 ## Not covered / still to do
 
-- Ground items: `GroundItemManager` (create, decay, `pulse`), drops to the
-  ground, `GroundItemAction` and pickup (`ground_action`, `ground_runtime`,
-  `pickup`), the start-up's ground spawns.
-- The remaining routed handlers (`scenery_action`, `input_prompt`,
-  `continue_option`) and the per-player or per-world libraries behind
-  interface buttons and options: the dialogue interpreter, prayer and its
-  tab, bank, trade and requests, shops (`shops::World`, its tick listener),
-  drop tables, gathering listeners, the combat pulse, NPC death and drops,
-  teleports, spells; the item, NPC and player option handlers merged in
-  `world/packet_handlers` after this copy was made.
-- `ZoneBuilder.startup` (wilderness and other region zones), region
-  unloading, NPC aggression and NPC update masks.
-- The appearance block with worn equipment (`appearance_writer`).
+- Content timers (`timers/content`: SkillRestore, poison, Frozen,
+  Teleblock, Skulled and the rest), `addAutoTimers` and `processTimers` for
+  players: not installed (hitpoints do not restore).
+- The remaining routed handlers (`scenery_action`, use-with and component
+  use-with (spells), slot switches, `input_prompt`, `continue_option`, close
+  with the dialogue interpreter) and the per-player or per-world libraries
+  behind interface buttons and options: the dialogue interpreter, prayer and
+  its tab, bank, trade and requests, shops (`shops::World`, its tick
+  listener), drop tables, gathering listeners, the combat pulse, NPC death
+  and drops, teleports, spells; content listeners (rs09-w-global's) are not
+  yet joined to the native `InteractionListeners` registry here.
+- Unequipping (`EquipHandler.unequip` is bound in `items.rs` but its caller,
+  the equipment tab's button, is rs09-w-global's content).
+- The full appearance flag writer (`appearance_writer`) instead of the
+  prepared data; region unloading, NPC aggression's target selection and
+  NPC update masks; the DarkZone's light sources and darkness overlay.
 - Reconnect, the lobby, AFK logout's client side, many players (capacity is
   not measured), concurrent saves of one character.

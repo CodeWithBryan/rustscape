@@ -284,6 +284,7 @@ impl<'a> Tabs<'a> {
             log: &mut lines,
             npcs,
             random: generators,
+            npc_views: None,
         };
         let result = state.context(&mut host).clear_pulses(node).map_err(binding);
         for line in lines {

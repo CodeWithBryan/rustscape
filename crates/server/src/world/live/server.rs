@@ -474,6 +474,16 @@ fn collect(live: &mut Live) {
             let p = live.player_of(*n);
             p.is_none_or(|p| !live.driver.renderable_players().contains(&p))
         })
+        // A player still in the disconnection queue is read by its next
+        // update (allowRemoval: combat, death, teleport): kept until it
+        // leaves the queue.
+        .filter(|n| {
+            let name = live.inner.players.get(n).map(|s| s.name.clone());
+            !live
+                .repository
+                .disconnection_queue()
+                .contains(name.as_deref())
+        })
         .collect();
     for node in gone {
         if let Some(slot) = live.inner.players.remove(&node) {
@@ -633,6 +643,24 @@ pub fn handle(
             },
         ),
         (Handler::CloseIface, dispatch::Packet::Action { player, .. }) => live.close_iface(player),
+        (
+            Handler::GroundItemAction,
+            dispatch::Packet::Action {
+                player,
+                action: action @ rs09_protocol::game::ClientAction::GroundItemAction { .. },
+                ..
+            },
+        ) => live
+            .ground_action(player.node(), action)
+            .map_err(super::host::fail),
+        (
+            Handler::ItemAction
+            | Handler::NpcAction
+            | Handler::PlayerAction
+            | Handler::Examine
+            | Handler::TrackFinished,
+            dispatch::Packet::Action { player, action, .. },
+        ) => live.item_packet(player, action).map_err(super::host::fail),
         (handler, packet) => {
             // A routed handler whose library is ported but not installed in
             // this world: refused, logged and recorded, never a success.

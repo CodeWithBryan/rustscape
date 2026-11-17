@@ -315,6 +315,10 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         }),
     );
     let loaded_regions = std::mem::take(&mut world.regions);
+    // GroundItemManager's list, the GroundSpawn registry and the option
+    // handler table the start-up's GroundSpawnLoader filled.
+    let ground_items = std::mem::take(&mut world.ground);
+    let item_options = std::mem::take(&mut world.item_options);
     let inner = Inner {
         state,
         frames: BTreeMap::new(),
@@ -351,10 +355,18 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             .map(str::to_owned)
             .collect()
     };
+    let driver = Driver::new(repository.clone());
+    let ground = super::ground_items::Grounds::new(
+        ground_items.manager,
+        ground_items.spawns,
+        item_options,
+        inner.items.clone(),
+        driver.pulser().clone(),
+    );
     let mut live = Live {
         inner,
         social: social::Social::new(),
-        driver: Driver::new(repository.clone()),
+        driver,
         repository,
         walk: Walk {
             scene,
@@ -366,6 +378,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             ),
             maps: Maps::default(),
             active: BTreeSet::new(),
+            ground,
         },
         login_listeners: names("listeners.login"),
         logout_listeners: names("listeners.logout"),
@@ -381,11 +394,29 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         npc_views: Default::default(),
         tab_pulses: Vec::new(),
         listeners: Default::default(),
+        item_actions: Default::default(),
+        zones: super::region_zones::RegionZones {
+            enhanced_deep_wilderness: configuration.constants()["ENHANCED_DEEP_WILDERNESS"]
+                .as_bool()
+                .ok_or("configuration has no ENHANCED_DEEP_WILDERNESS")?,
+            wild_pvp: value_bool("wild_pvp_enabled")?,
+            ..Default::default()
+        },
     };
     // The start-up's NPCs in the live repository and the scene's chunks;
     // the tab content's component plugins and interface listeners.
     let npcs = super::npcs::join(&mut live)?;
+    let ground = super::ground_items::join(&mut live)?;
+    live.inner.log_line(format!(
+        "{ground} start-up ground items joined to the scene's chunks"
+    ));
     super::buttons::register(&mut live)?;
+    // ZoneBuilder.startup: the region zones.
+    live.zone_startup()
+        .map_err(|e| format!("ZoneBuilder.startup: {e:?}"))?;
+    // DropListener and EquipHandler (InteractionListeners, ITEM).
+    live.define_item_listeners()
+        .map_err(|e| format!("item listeners: {e:?}"))?;
     Ok(Booted {
         live,
         configuration,

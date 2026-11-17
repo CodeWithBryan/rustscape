@@ -107,6 +107,10 @@ pub struct Live {
     pub tab_pulses: Vec<(pulses::Handle, super::buttons::TabPulse)>,
     /// `InterfaceListeners` of the installed content ([`super::buttons`]).
     pub listeners: crate::world::interface_listeners::Registry,
+    /// The routed item, NPC and player packet handlers ([`super::items`]).
+    pub item_actions: super::items::ItemActions,
+    /// Region zones and the players' SkullManagers ([`super::region_zones`]).
+    pub zones: super::region_zones::RegionZones,
 }
 
 pub fn fail(e: impl std::fmt::Debug) -> driver::Error {
@@ -149,6 +153,7 @@ impl Live {
             log: &mut lines,
             npcs,
             random: generators,
+            npc_views: Some(&self.npc_views),
         };
         let result = f(state, &mut host);
         for line in lines {
@@ -654,10 +659,8 @@ impl login::Host<P> for Live {
         inventory.register(Some(ListenerHandle::new(InventoryListener::new(Some(
             owner.clone(),
         )))));
-        let equipment = inner
-            .factory
-            .create(14, ContainerType::Default, SortType::Id)
-            .map_err(native)?;
+        // EquipmentContainer: bound to its player, with its EquipmentListener.
+        let equipment = equipment::create(&inner.factory, Some(owner.clone())).map_err(native)?;
         let core = Capture::new(
             owner.clone(),
             inventory,
@@ -738,6 +741,11 @@ impl login::Host<P> for Live {
             },
         );
         self.walk.maps.players.insert(node);
+        let slot = self.inner.players.get(&node).expect("the slot just made");
+        self.walk
+            .ground
+            .accounts
+            .insert(node, (slot.uid, slot.name.clone()));
         Ok(P(owner))
     }
     fn with_details<R>(
@@ -1017,6 +1025,7 @@ impl login::Host<P> for Live {
         let mut ctx = EquipmentContext {
             inner: &mut self.inner,
             p: p.clone(),
+            listeners: Some(self.item_actions.listeners.clone()),
         };
         equipment::Listener::new(Some(owner))
             .refresh(&mut ctx, &mut container, &items)
@@ -1111,15 +1120,9 @@ impl login::Host<P> for Live {
         Ok(())
     }
     fn appearance_sync(&mut self, p: &P) -> login::Result<()> {
-        // Appearance.sync: the body prepared from the canonical appearance,
-        // then the appearance mask registered.
-        let player = self.inner.canonical(p).player.clone();
-        player.prepare_body(&self.inner.state).map_err(native)?;
-        player
-            .masks()
-            .sync_appearance(now_millis)
-            .map(|_| ())
-            .map_err(native)
+        // Appearance.sync: the body prepared from the canonical appearance
+        // and the worn equipment, then the appearance mask registered.
+        self.inner.appearance_sync(p).map(|_| ()).map_err(native)
     }
     fn renderable_players_add(&mut self, p: &P) -> login::Result<()> {
         self.driver.renderable_players().add(p.clone());
@@ -1350,6 +1353,14 @@ impl driver::Host<P> for Live {
         if let Some(at) = self.tab_pulses.iter().position(|(h, _)| h.same(pulse)) {
             return self.tab_pulse_body(at);
         }
+        // InteractPlugin.handleItemOption's pulse (InteractPlugin$1).
+        if let Some(result) = self.item_pulse(pulse) {
+            return result.map_err(fail);
+        }
+        // GroundSpawn.respawn's pulse (GroundSpawnLoader$GroundSpawn$respawn$1).
+        if let Some(result) = self.ground_respawn_pulse(pulse) {
+            return result.map_err(fail);
+        }
         let Some(at) = self.logins.iter().position(|(h, _)| h.same(pulse)) else {
             return Err(driver::Error::Native(
                 "a world pulse this world did not submit".into(),
@@ -1421,6 +1432,8 @@ impl driver::Host<P> for Live {
         self.npc_reset_of(npc).map_err(fail)
     }
     fn player_tick(&mut self, p: &P) -> driver::Result<()> {
+        // DropListener's soft queued scripts that are due (super::items).
+        self.run_drop_scripts(p).map_err(fail)?;
         let node = p.node();
         self.with_walk(|world| {
             world.entity_before_masks(node)?;
@@ -1546,10 +1559,8 @@ impl driver::Host<P> for Live {
         Ok(())
     }
     fn ground_items_pulse(&mut self) -> driver::Result<()> {
-        self.inner
-            .not_ported
-            .skip("GroundItemManager.pulse (ground items not joined)");
-        Ok(())
+        // GroundItemManager.pulse(), native (super::ground_items).
+        self.ground_pulse().map_err(fail)
     }
     fn execute_autosave(&mut self, task: Autosave) -> driver::Result<()> {
         self.tasks.push_back(Task::Autosave(task));

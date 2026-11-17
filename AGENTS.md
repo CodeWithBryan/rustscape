@@ -193,8 +193,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   outside call is a required service with no default; EquipmentContainer.add
   is a service here (its body is inventory/equipment, not run with
   EquipHandler by any corpus); content listeners, plugins and
-  UseWithHandler subclasses stay content. Nothing binds the libraries in a
-  live world yet. See
+  UseWithHandler subclasses stay content. The live world binds the item,
+  NPC, player, examine and track-finished handlers (docs/live-world.md);
+  use-with, component use-with and slot switch are not bound there yet. See
   docs/packet-handlers.md.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
@@ -1110,14 +1111,20 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   production login/driver/repository/social hosts, walking, the player
   update with prepared masks, the player tabs and their buttons, NPCs,
   entity regions, zone monitors and music zones, region activation, the map
-  chunk renderer, the worker loop and the saver), run
+  chunk renderer, ground items and pickup, the item/NPC/player/examine
+  packets with DropListener and EquipHandler, EquipmentContainer and the
+  appearance body, the region zones of ZoneBuilder.startup with SkullManager,
+  the worker loop and the saver), run
   `cargo test -p rs09-server --test live_world` (needs assets/cache and
   runs/startup-loaders-oracle/template; it prints SKIPPED without them, and a
   skip establishes nothing) plus world_login, tick_driver, tick, world_update,
   repository, pulses, social, world_trace, canonical_player, startup,
   world_session, player_tabs, npc_walk, npc_behaviour, npc_render, zones,
-  entity_regions, chunk_sync, map_chunk_render, player_walk, action_locks and
-  scene. Keep the libraries unchanged: a host answers through them.
+  entity_regions, chunk_sync, map_chunk_render, player_walk, action_locks,
+  scene, packet_handlers, ground_manager, ground_spawn, ground_spawn_loader,
+  ground_options, ground_target, ground_runtime, pickup, wilderness,
+  player_managers, equipment, inventory and interaction_listeners. Keep the
+  libraries unchanged: a host answers through them.
   `zones::Host` is `Live` itself (a monitor per entity); NPCs keep the
   start-up's slots, store and generators; regions are never unloaded and
   NPC update masks are not written (both named).
@@ -1130,9 +1137,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   counter-carrying packets by opcode and length, reinitVarps as a subset); a
   segment that becomes native must be taken off the list. Saves are built on
   the worker thread and written by the saver thread; nothing blocks the tick
-  on file I/O. Content, ground items, worn equipment in the appearance
-  block, region zones (ZoneBuilder) and the not-installed handlers remain
-  open. See docs/live-world.md.
+  on file I/O. Ground items join the start-up's manager, spawns and option
+  table; DropListener's soft script runs at the player's next tick; the
+  appearance body is the canonical prepareBodyData copied into the prepared
+  data. Content, content timers (SkillRestore and the rest), combat,
+  use-with/component/slot-switch/scenery/continue/input handlers and region
+  unloading remain open. See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

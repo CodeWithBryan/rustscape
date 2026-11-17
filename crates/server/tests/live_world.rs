@@ -19,7 +19,7 @@
 //! without them the test prints SKIPPED and checks nothing.
 use rs09_net::{Chunk, Reader, Writer, login::LoginPeer};
 use rs09_protocol::{
-    game::{self, Direction, Frame, actions, npcs, players, updates},
+    game::{self, Direction, Frame, actions, ground, npcs, players, updates},
     login::{LoginRequest, RsaKey},
     profile::RS09_REVISION_530,
 };
@@ -77,6 +77,37 @@ struct Client {
     /// The client-side NPC list from the NPC updates (32).
     npcs: npcs::State,
     npc_updates: usize,
+    /// The client's ground item lists (the shared RT4 reducer), reset by
+    /// each rebuild.
+    ground: ground::State,
+    /// Containers by id (93 inventory, 94 equipment): slot -> (id, amount).
+    containers: HashMap<i32, std::collections::BTreeMap<i32, (i32, i32)>>,
+    /// Skill packets: skill -> (level, experience), the last of each.
+    skills: HashMap<i32, (i32, i32)>,
+    /// Every skill packet in order: (frame number, skill, level).
+    skill_log: Vec<(usize, i32, i32)>,
+    /// Game messages (70) as text, with their frame numbers.
+    messages: Vec<(usize, String)>,
+}
+
+/// Item metadata for the ground reducer: the test reads lists, not piles.
+struct NoMeta;
+impl ground::Context for NoMeta {
+    fn info(&mut self, _: &mut ground::State, _: i32) -> rs09_protocol::Result<ground::Info> {
+        Ok(ground::Info {
+            cost: 1,
+            stackable: 0,
+        })
+    }
+    fn height(
+        &mut self,
+        _: &mut ground::State,
+        _: i32,
+        _: i32,
+        _: i32,
+    ) -> rs09_protocol::Result<i32> {
+        Ok(0)
+    }
 }
 
 impl Client {
@@ -121,8 +152,38 @@ impl Client {
                 closed: false,
                 npcs: npcs::State::default(),
                 npc_updates: 0,
+                ground: ground::State::default(),
+                containers: HashMap::new(),
+                skills: HashMap::new(),
+                skill_log: Vec::new(),
+                messages: Vec::new(),
             }),
         )
+    }
+
+    /// The ground items the client holds on an absolute tile.
+    fn ground_ids(&self, at: [i32; 3]) -> Vec<i32> {
+        let Some(base) = self.base else {
+            return vec![];
+        };
+        let tile = ground::Tile {
+            plane: at[2],
+            x: at[0] - base[0],
+            y: at[1] - base[1],
+        };
+        self.ground
+            .stack(tile)
+            .ok()
+            .flatten()
+            .map(|s| s.items().iter().map(|i| i.get().id).collect())
+            .unwrap_or_default()
+    }
+    fn slot_of(&self, container: i32, id: i32) -> Option<i32> {
+        self.containers
+            .get(&container)?
+            .iter()
+            .find(|(_, (i, _))| *i == id)
+            .map(|(s, _)| *s)
     }
 
     fn take_frames(&mut self) {
@@ -133,6 +194,9 @@ impl Client {
                     let (base, local) = rebuild_base(&frame.payload);
                     self.base = Some(base);
                     self.players = players::State::new(local[0], local[1]);
+                    self.ground = ground::State::default();
+                    self.ground.plane = base[2];
+                    self.ground.self_id = self.index;
                 }
                 225 => {
                     let update = self
@@ -148,7 +212,53 @@ impl Client {
                         .unwrap_or_else(|e| panic!("{}: NPC update {n}: {e:?}", self.name));
                     self.npc_updates += 1;
                 }
-                _ => {}
+                _ => {
+                    if self.base.is_some() {
+                        self.ground
+                            .apply_frame(&frame, &mut NoMeta)
+                            .unwrap_or_else(|e| panic!("{}: ground frame {n}: {e:?}", self.name));
+                    }
+                    match updates::ServerUpdate::decode(&frame) {
+                        Ok(Some(updates::ServerUpdate::InventoryFull {
+                            container, items, ..
+                        })) => {
+                            let slots = self.containers.entry(container).or_default();
+                            slots.clear();
+                            for (slot, item) in items.iter().enumerate() {
+                                if item.id >= 0 && item.amount > 0 {
+                                    slots.insert(slot as i32, (item.id, item.amount));
+                                }
+                            }
+                        }
+                        Ok(Some(updates::ServerUpdate::InventoryPartial {
+                            container,
+                            slots,
+                            ..
+                        })) => {
+                            let held = self.containers.entry(container).or_default();
+                            for update in slots {
+                                if update.item.id >= 0 && update.item.amount > 0 {
+                                    held.insert(update.slot, (update.item.id, update.item.amount));
+                                } else {
+                                    held.remove(&update.slot);
+                                }
+                            }
+                        }
+                        Ok(Some(updates::ServerUpdate::Skill {
+                            skill,
+                            boosted,
+                            experience,
+                        })) => {
+                            self.skills.insert(skill, (boosted, experience));
+                            self.skill_log.push((n, skill, boosted));
+                        }
+                        Ok(Some(updates::ServerUpdate::GameMessage(text))) => {
+                            self.messages
+                                .push((n, String::from_utf8_lossy(&text).into_owned()));
+                        }
+                        _ => {}
+                    }
+                }
             }
             self.frames.push(frame);
         }
@@ -551,6 +661,29 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
         one.npcs.local_ids.len(),
         &near[..near.len().min(8)]
     );
+    // An NPC's first option (processNpcAction): the NPC's InteractPlugin
+    // over its definition's options, the walk to it and the legacy
+    // arrival; no content handler answers, so "Nothing interesting happens.".
+    let base = one.base.unwrap();
+    let here = one.position();
+    let (index, id) = one
+        .npcs
+        .actors
+        .iter()
+        .min_by_key(|(_, n)| {
+            (base[0] + n.tile[0] - here[0]).abs() + (base[1] + n.tile[1] - here[1]).abs()
+        })
+        .map(|(i, n)| (*i, n.type_id))
+        .unwrap();
+    let from = one.messages.len();
+    one.send(npc_option1(index as i32)).await;
+    one.until(Duration::from_secs(20), "the NPC option's answer", |c| {
+        c.messages[from..]
+            .iter()
+            .any(|(_, m)| m.contains("Nothing interesting happens."))
+    })
+    .await;
+    eprintln!("traceone: NPC option 1 on NPC {index} ({id}): Nothing interesting happens.");
 
     // The tabs' buttons (IfAction, opcode 155: hash, slot).
     let button = |iface: i32, child: i32| {
@@ -647,6 +780,8 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
             || c.players.players[index_two].is_none()
     })
     .await;
+    // Where traceone is when it leaves (it walked, then walked to the NPC).
+    let target = one.position();
     one.writer.close(1000, "logout").await.unwrap();
 
     // Both saves are written by the saver thread.
@@ -685,6 +820,9 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
     assert_eq!(again.position(), target, "returning character's location");
     again.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    items_scenario(address, saves).await;
+    wilderness_scenario(address, saves).await;
 }
 
 /// The same scenario against an `rs09-server --world` started outside the
@@ -709,4 +847,277 @@ fn running_server_scenario() {
         .unwrap()
         .block_on(drive(address, std::path::Path::new(&saves)));
     eprintln!("scenario finished in {} ms", started.elapsed().as_millis());
+}
+
+// ---------------------------------------------------- packets the client sends
+
+fn le16(v: i32) -> [u8; 2] {
+    [v as u8, (v >> 8) as u8]
+}
+fn la16(v: i32) -> [u8; 2] {
+    [(v as u8).wrapping_add(128), (v >> 8) as u8]
+}
+fn sa16(v: i32) -> [u8; 2] {
+    [(v >> 8) as u8, (v as u8).wrapping_add(128)]
+}
+fn be16(v: i32) -> [u8; 2] {
+    [(v >> 8) as u8, v as u8]
+}
+fn ib32(v: i32) -> [u8; 4] {
+    [(v >> 16) as u8, (v >> 24) as u8, v as u8, (v >> 8) as u8]
+}
+fn ia32(v: i32) -> [u8; 4] {
+    [(v >> 8) as u8, v as u8, (v >> 24) as u8, (v >> 16) as u8]
+}
+fn frame(opcode: u8, parts: &[&[u8]]) -> Frame {
+    Frame {
+        opcode,
+        payload: parts.concat(),
+    }
+}
+/// OBJSTACK_ACTION_1 (66): a ground item's third option, Take.
+fn take(id: i32, x: i32, y: i32) -> Frame {
+    frame(66, &[&le16(x), &be16(id), &la16(y)])
+}
+/// ITEM_ACTION_5 (135): an inventory item's fifth option (Drop).
+fn item_option5(id: i32, slot: i32) -> Frame {
+    frame(135, &[&sa16(id), &sa16(slot), &ib32(149 << 16)])
+}
+/// ITEM_ACTION_2 (55): an inventory item's second option (Wield).
+fn item_option2(id: i32, slot: i32) -> Frame {
+    frame(55, &[&le16(id), &sa16(slot), &ia32(149 << 16)])
+}
+/// EXAMINE_ITEM (92) and EXAMINE_NPC (72).
+fn item_examine(id: i32) -> Frame {
+    frame(92, &[&la16(id)])
+}
+fn npc_examine(id: i32) -> Frame {
+    frame(72, &[&be16(id)])
+}
+/// NPC_ACTION_1 (78): an NPC's first option.
+fn npc_option1(index: i32) -> Frame {
+    frame(78, &[&le16(index)])
+}
+
+/// A saved character made from another's save: its location and inventory
+/// replaced (the native parser loads it at login like any returning one).
+fn write_save(
+    players: &std::path::Path,
+    from: &str,
+    name: &str,
+    location: [i32; 3],
+    inventory: &[(i32, i32, i32)],
+) {
+    let text = std::fs::read_to_string(players.join(format!("{from}.json"))).unwrap();
+    let mut save: Value = serde_json::from_str(&text).unwrap();
+    save["core_data"]["location"] =
+        Value::String(format!("{},{},{}", location[0], location[1], location[2]));
+    save["core_data"]["inventory"] = Value::Array(
+        inventory
+            .iter()
+            .map(|(slot, id, amount)| {
+                serde_json::json!({"slot": slot.to_string(), "id": id.to_string(),
+                    "amount": amount.to_string(), "charge": "1000"})
+            })
+            .collect(),
+    );
+    std::fs::write(
+        players.join(format!("{name}.json")),
+        serde_json::to_string(&save).unwrap(),
+    )
+    .unwrap();
+}
+
+/// Ground items, the item handlers and the equipment: a saved character in
+/// Lumbridge castle's kitchen, on the start-up's ground spawn of a bowl
+/// (1923 at 3208,3214), with a bronze dagger (1205) in its inventory; a
+/// second character watches.
+async fn items_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let spawn = [3208, 3214, 0];
+    write_save(&players, "traceone", "groundone", spawn, &[(0, 1205, 1)]);
+    write_save(&players, "traceone", "groundtwo", [3209, 3215, 0], &[]);
+    let (code, one) = Client::login(address, "groundone").await;
+    assert_eq!(code, 2, "groundone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "groundone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    assert_eq!(one.position(), spawn, "groundone's saved location");
+    // The start-up's GroundSpawn is in the chunk synchronisation.
+    one.until(Duration::from_secs(10), "the bowl spawn", |c| {
+        c.ground_ids(spawn).contains(&1923)
+    })
+    .await;
+    one.until(Duration::from_secs(10), "the inventory", |c| {
+        c.slot_of(93, 1205) == Some(0)
+    })
+    .await;
+    eprintln!("groundone sees the ground spawn 1923 at {spawn:?}; dagger 1205 in slot 0");
+
+    // Take: the ground item packet, the legacy movement and arrival,
+    // PickupPlugin and PickupHandler.take.
+    let from = one.frames.len();
+    one.send(take(1923, spawn[0], spawn[1])).await;
+    one.until(Duration::from_secs(10), "the bowl in the inventory", |c| {
+        c.slot_of(93, 1923).is_some() && !c.ground_ids(spawn).contains(&1923)
+    })
+    .await;
+    let pickup_sound = updates::synth_sound(2582, 1, 0);
+    assert!(
+        one.frames[from..].contains(&pickup_sound),
+        "the pickup sound (2582)"
+    );
+    let slot = one.slot_of(93, 1923).unwrap();
+    eprintln!("groundone took 1923 into slot {slot}; the spawn left the ground");
+
+    // A second character next to it.
+    let (code, two) = Client::login(address, "groundtwo").await;
+    assert_eq!(code, 2, "groundtwo's login");
+    let mut two = two.unwrap();
+    two.until(Duration::from_secs(10), "groundtwo's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    assert!(
+        !two.ground_ids(spawn).contains(&1923),
+        "the taken spawn is gone for a new viewer"
+    );
+
+    // Drop: processItemAction, InteractPlugin.handleItemOption and its
+    // pulse, DropListener through InteractionListeners, the soft script.
+    let from = one.frames.len();
+    one.send(item_option5(1923, slot)).await;
+    one.until(Duration::from_secs(10), "the dropped bowl", |c| {
+        c.slot_of(93, 1923).is_none() && c.ground_ids(spawn).contains(&1923)
+    })
+    .await;
+    let drop_sound = updates::synth_sound(2739, 1, 0);
+    assert!(
+        one.frames[from..].contains(&drop_sound),
+        "the drop sound (2739)"
+    );
+    // A dropped item is private to its dropper for its first 100 ticks.
+    two.pump(Duration::from_millis(1500)).await;
+    assert!(
+        !two.ground_ids(spawn).contains(&1923),
+        "the dropped bowl is private to groundone"
+    );
+    eprintln!("groundone dropped 1923 at {spawn:?} (private: groundtwo does not see it)");
+
+    // Take it again (a dropped item, the dropper's own), after the
+    // `droppedItem:1923` deadline (two ticks after the drop).
+    one.pump(Duration::from_millis(1500)).await;
+    let from = one.messages.len();
+    one.send(take(1923, spawn[0], spawn[1])).await;
+    one.pump(Duration::from_millis(3000)).await;
+    assert!(
+        one.slot_of(93, 1923).is_some(),
+        "the dropped bowl was not taken back; messages since: {:?}",
+        &one.messages[from..]
+    );
+    one.until(Duration::from_secs(10), "the bowl taken back", |c| {
+        c.slot_of(93, 1923).is_some() && !c.ground_ids(spawn).contains(&1923)
+    })
+    .await;
+    eprintln!("groundone took the dropped bowl back: drop/pickup round trip over TCP");
+
+    // Wield: EquipHandler over the canonical EquipmentContainer.
+    one.send(item_option2(1205, 0)).await;
+    one.until(
+        Duration::from_secs(10),
+        "the dagger in the weapon slot",
+        |c| {
+            c.containers.get(&94).and_then(|e| e.get(&3)) == Some(&(1205, 1))
+                && c.slot_of(93, 1205).is_none()
+        },
+    )
+    .await;
+    eprintln!("groundone wields 1205: equipment slot 3, inventory slot 0 empty");
+    // The second player sees the weapon in groundone's appearance block.
+    let index_one = one.index as usize;
+    two.until(
+        Duration::from_secs(10),
+        "groundone's appearance with the dagger",
+        |c| {
+            c.updates.iter().flat_map(|(_, u)| &u.extended).any(|e| {
+                e.index == index_one
+                    && e.fields.iter().any(|f| match f {
+                        // The weapon slot (3) carries a worn item: 0x8000 plus
+                        // the item's equipment index.
+                        players::Field::Appearance { appearance, .. } => {
+                            appearance.slots[3] >= 0x8000
+                        }
+                        _ => false,
+                    })
+            })
+        },
+    )
+    .await;
+    eprintln!("groundtwo sees groundone's appearance with the dagger (1205)");
+
+    // Examine: an item and an NPC.
+    let from = one.messages.len();
+    one.send(item_examine(1205)).await;
+    one.until(Duration::from_secs(10), "the item examine", |c| {
+        c.messages.len() > from
+    })
+    .await;
+    eprintln!("item examine of 1205: {:?}", one.messages[from].1);
+    let near = one.npcs.actors.iter().map(|(i, n)| (*i, n.type_id)).next();
+    if let Some((index, id)) = near {
+        let from = one.messages.len();
+        one.send(npc_examine(id)).await;
+        one.until(Duration::from_secs(10), "the NPC examine", |c| {
+            c.messages.len() > from
+        })
+        .await;
+        eprintln!(
+            "NPC examine of {id} (index {index}): {:?}",
+            one.messages[from].1
+        );
+    }
+    two.writer.close(1000, "logout").await.unwrap();
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The region zones (ZoneBuilder.startup): a saved character in the
+/// wilderness north of Edgeville's ditch enters WildernessZone at login:
+/// overlay 381 and its level line through SkullManager.setLevel.
+async fn wilderness_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3093, 3525, 0];
+    write_save(&players, "traceone", "wildone", at, &[]);
+    let (code, one) = Client::login(address, "wildone").await;
+    assert_eq!(code, 2, "wildone's login");
+    let mut one = one.unwrap();
+    let pointer = (381 << 16) | 1;
+    one.until(
+        Duration::from_secs(10),
+        "the wilderness overlay and level",
+        |c| {
+            let opened = c.frames.iter().any(|f| {
+                matches!(
+                    updates::ServerUpdate::decode(f),
+                    Ok(Some(updates::ServerUpdate::OpenInterface {
+                        interface: 381,
+                        ..
+                    }))
+                )
+            });
+            let level = c.frames.iter().any(|f| {
+                matches!(updates::ServerUpdate::decode(f),
+                Ok(Some(updates::ServerUpdate::InterfaceText { pointer: p, ref text, .. }))
+                    if p == pointer && text.as_slice() == b"Level: 1")
+            });
+            opened && level
+        },
+    )
+    .await;
+    assert_eq!(one.position(), at, "wildone's saved location");
+    eprintln!("wildone entered WildernessZone at {at:?}: overlay 381, \"Level: 1\"");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }

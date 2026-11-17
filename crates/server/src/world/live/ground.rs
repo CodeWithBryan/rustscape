@@ -3,8 +3,9 @@
 //! `ClearRegionChunk` over the scene's chunks, their object layers and
 //! their ground-item lists, written into the player's write queue.
 //!
-//! Ground items reach these lists only through the ground-item manager;
-//! what is not installed is named in docs/live-world.md.
+//! Ground items reach these lists through the ground-item manager
+//! ([`super::ground_items`]); a `GroundSpawn` answers its own privacy and
+//! activity, as in the manager.
 use super::{P, host::Live};
 use crate::{
     inventory::item,
@@ -38,29 +39,47 @@ impl ground::Context for Sync<'_> {
         ))
     }
     fn uid(&mut self, player: &NodeHandle) -> ground::Result<i32> {
-        self.0
-            .inner
-            .players
-            .get(&player.node)
-            .map(|s| s.uid)
-            .ok_or(ground::Error::Null)
+        match self.0.inner.players.get(&player.node) {
+            Some(s) => Ok(s.uid),
+            // A departed dropper's details (ground_items::Grounds::accounts).
+            None => self
+                .0
+                .walk
+                .ground
+                .accounts
+                .get(&player.node)
+                .map(|(uid, _)| *uid)
+                .ok_or(ground::Error::Null),
+        }
     }
     fn username(&mut self, player: &NodeHandle) -> ground::Result<Option<String>> {
-        Ok(self
-            .0
-            .inner
-            .players
-            .get(&player.node)
-            .map(|s| s.name.clone()))
+        Ok(match self.0.inner.players.get(&player.node) {
+            Some(s) => Some(s.name.clone()),
+            None => self
+                .0
+                .walk
+                .ground
+                .accounts
+                .get(&player.node)
+                .map(|(_, name)| name.clone()),
+        })
     }
     fn ticks(&mut self) -> ground::Result<i32> {
         Ok(self.0.inner.ticks)
+    }
+    fn virtual_private(&mut self, item: &Ground) -> ground::Result<Option<bool>> {
+        // GroundSpawn.isPrivate() is false.
+        Ok(self.0.walk.ground.spawns.get(item).map(|_| false))
+    }
+    fn virtual_active(&mut self, item: &Ground) -> ground::Result<Option<bool>> {
+        // GroundSpawn.isActive() is true.
+        Ok(self.0.walk.ground.spawns.get(item).map(|_| true))
     }
 }
 
 /// The scenery-node layer of an object (by shape): `layer` reaches only the
 /// invalid-shape log, which is kept; the variable services refuse.
-struct Layers<'a>(&'a mut Vec<String>);
+pub(super) struct Layers<'a>(pub(super) &'a mut Vec<String>);
 impl crate::definitions::scenery::PlayerContext for Layers<'_> {
     fn varbit(&mut self, _: i32, _: usize) -> crate::definitions::scenery::Result<Option<i32>> {
         Err(crate::definitions::scenery::Error::Binding(
