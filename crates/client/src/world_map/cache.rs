@@ -1,6 +1,7 @@
 //! [`Assets`] read straight from a JS5 cache directory: archives 2 (floor and
 //! map-scene definitions), 8 (sprites), 16 (locations), 23 (world map) and
-//! 26 (texture metadata). Everything on disk is ready at once.
+//! 26 (texture metadata). Everything on disk is ready at once; in the
+//! browser these archives are among those the title waits for.
 use super::Assets;
 use crate::{cache_pack::Source, texture::Material};
 use rs09_cache::{archive::Archive, index::name_hash};
@@ -35,6 +36,15 @@ impl CacheAssets {
             None => Store::open(directory, StorageMode::File, limits)
                 .map_err(|e| format!("{}: {e}", directory.display()))?,
         };
+        Self::from_archives(|id| {
+            Archive::open(store.clone(), id, None, limits).map_err(|e| format!("archive {id}: {e}"))
+        })
+    }
+
+    /// The same over a store that is already open: the browser's downloaded
+    /// cache, read as it stands.
+    pub fn from_store(store: rs09_cache::store::Store) -> Result<Self, String> {
+        let limits = rs09_cache::Limits::default();
         Self::from_archives(|id| {
             Archive::open(store.clone(), id, None, limits).map_err(|e| format!("archive {id}: {e}"))
         })

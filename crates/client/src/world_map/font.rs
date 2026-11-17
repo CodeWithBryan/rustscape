@@ -3,7 +3,8 @@
 //! The original asks AWT for "Helvetica" bold and grabs each glyph from an
 //! off-screen image. Here [`GlyphSource`] stands in for `java.awt.Font`,
 //! `FontMetrics` and `Graphics.drawString`, and [`Typeface`] implements it
-//! with `fontdue` over caller-supplied TrueType data. Glyph pixels and metrics
+//! with `fontdue` over caller-supplied TrueType data, or over a [`Face`]
+//! that draws its own glyphs (the browser's canvas text). Glyph pixels and metrics
 //! therefore differ from any particular JVM; the table layout, the
 //! bold/plain/double-strike fallback, the string measurement and the blits are
 //! the original's. [`WorldMapFont::from_data`] accepts a table produced
@@ -40,10 +41,43 @@ pub trait GlyphSource {
     fn draw(&self, bold: bool, ch: char, x: i32, baseline: i32, canvas: &mut [u8], width: usize);
 }
 
-/// A TrueType face pair read by `fontdue`.
+/// A face that measures and draws its own glyphs at any pixel size, as a
+/// system's font does for AWT: the browser's canvas text, which is that
+/// system's font in a page. Values are unrounded; [`SizedTypeface`] rounds
+/// them as it rounds `fontdue`'s.
+pub trait Face {
+    /// The advance of `ch`.
+    fn advance(&self, bold: bool, size: i32, ch: char) -> f32;
+    /// The face's ascent, descent and line gap (leading).
+    fn line(&self, bold: bool, size: i32) -> [f32; 3];
+    /// The coverage, 0 to 255, of `ch` drawn in white with its origin at
+    /// `(x, baseline)` on a black image `width` by `height`, row-major.
+    #[allow(clippy::too_many_arguments)]
+    fn coverage(
+        &self,
+        bold: bool,
+        size: i32,
+        ch: char,
+        x: i32,
+        baseline: i32,
+        width: usize,
+        height: usize,
+    ) -> Vec<u8>;
+}
+
+// One typeface exists while the client runs; its size does not matter.
+#[allow(clippy::large_enum_variant)]
+enum Faces {
+    TrueType {
+        bold: fontdue::Font,
+        plain: Option<fontdue::Font>,
+    },
+    Drawn(Box<dyn Face>),
+}
+
+/// A TrueType face pair read by `fontdue`, or a [`Face`].
 pub struct Typeface {
-    bold: fontdue::Font,
-    plain: Option<fontdue::Font>,
+    faces: Faces,
     /// False (the default) thresholds coverage at one half, like AWT text
     /// drawn without anti-aliasing; true keeps the coverage.
     pub antialias: bool,
@@ -57,10 +91,20 @@ impl Typeface {
                 .map_err(|e| format!("world map font: {e}"))
         };
         Ok(Self {
-            bold: load(bold)?,
-            plain: plain.map(load).transpose()?,
+            faces: Faces::TrueType {
+                bold: load(bold)?,
+                plain: plain.map(load).transpose()?,
+            },
             antialias: false,
         })
+    }
+
+    /// A face that draws its own glyphs, thresholded as TrueType ones are.
+    pub fn drawn(face: Box<dyn Face>) -> Self {
+        Self {
+            faces: Faces::Drawn(face),
+            antialias: false,
+        }
     }
 
     /// The glyph source for one pixel size.
@@ -71,11 +115,11 @@ impl Typeface {
         }
     }
 
-    fn font(&self, bold: bool) -> &fontdue::Font {
-        if bold {
-            &self.bold
-        } else {
-            self.plain.as_ref().unwrap_or(&self.bold)
+    fn font(&self, bold: bool) -> Result<&fontdue::Font, &dyn Face> {
+        match &self.faces {
+            Faces::TrueType { bold: face, .. } if bold => Ok(face),
+            Faces::TrueType { bold, plain } => Ok(plain.as_ref().unwrap_or(bold)),
+            Faces::Drawn(face) => Err(face.as_ref()),
         }
     }
 }
@@ -89,17 +133,23 @@ pub struct SizedTypeface<'a> {
 impl SizedTypeface<'_> {
     fn line(&self, bold: bool) -> [i32; 3] {
         let up = |v: f32| (v + 0.95) as i32;
-        self.face
-            .font(bold)
-            .horizontal_line_metrics(self.size)
-            .map_or([self.size as i32, 0, 0], |m| {
-                [up(m.ascent), up(-m.descent), up(m.line_gap)]
-            })
+        match self.face.font(bold) {
+            Ok(font) => font
+                .horizontal_line_metrics(self.size)
+                .map_or([self.size as i32, 0, 0], |m| {
+                    [up(m.ascent), up(-m.descent), up(m.line_gap)]
+                }),
+            Err(face) => face.line(bold, self.size as i32).map(up),
+        }
     }
 }
 impl GlyphSource for SizedTypeface<'_> {
     fn char_width(&self, bold: bool, ch: char) -> i32 {
-        (self.face.font(bold).metrics(ch, self.size).advance_width + 0.5) as i32
+        let advance = match self.face.font(bold) {
+            Ok(font) => font.metrics(ch, self.size).advance_width,
+            Err(face) => face.advance(bold, self.size as i32, ch),
+        };
+        (advance + 0.5) as i32
     }
     fn max_ascent(&self, bold: bool) -> i32 {
         self.line(bold)[0]
@@ -111,11 +161,29 @@ impl GlyphSource for SizedTypeface<'_> {
         self.line(bold).iter().sum()
     }
     fn draw(&self, bold: bool, ch: char, x: i32, baseline: i32, canvas: &mut [u8], width: usize) {
-        let (metrics, coverage) = self.face.font(bold).rasterize(ch, self.size);
         if width == 0 {
             return;
         }
         let height = canvas.len() / width;
+        let font = match self.face.font(bold) {
+            Ok(font) => font,
+            Err(face) => {
+                let size = self.size as i32;
+                let coverage = face.coverage(bold, size, ch, x, baseline, width, height);
+                for (pixel, value) in canvas.iter_mut().zip(coverage) {
+                    let value = if self.face.antialias {
+                        value
+                    } else if value >= 128 {
+                        255
+                    } else {
+                        0
+                    };
+                    *pixel = (*pixel).max(value);
+                }
+                return;
+            }
+        };
+        let (metrics, coverage) = font.rasterize(ch, self.size);
         let left = x + metrics.xmin;
         let top = baseline - metrics.ymin - metrics.height as i32;
         for row in 0..metrics.height {
@@ -452,6 +520,66 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// The [`Blocks`] glyphs as a drawn face: unrounded metrics and a
+    /// coverage of `self.0` instead of solid pixels.
+    struct Drawn(u8);
+    impl Face for Drawn {
+        fn advance(&self, _: bool, _: i32, ch: char) -> f32 {
+            if ch == ' ' { 2.6 } else { 3.6 }
+        }
+        fn line(&self, _: bool, _: i32) -> [f32; 3] {
+            [4.1, 1.2, 1.0]
+        }
+        fn coverage(
+            &self,
+            _: bool,
+            _: i32,
+            ch: char,
+            x: i32,
+            baseline: i32,
+            w: usize,
+            h: usize,
+        ) -> Vec<u8> {
+            let mut image = vec![0; w * h];
+            if ch != ' ' {
+                for row in baseline - 3..baseline {
+                    for col in x + 1..x + 3 {
+                        if col >= 0 && (col as usize) < w {
+                            image[row as usize * w + col as usize] = self.0;
+                        }
+                    }
+                }
+            }
+            image
+        }
+    }
+
+    /// Not from the Java: a drawn face is rounded like a TrueType one
+    /// (advances to nearest, the line metrics up from 0.05) and thresholded
+    /// at half coverage unless anti-aliased, so the same glyphs give the
+    /// same table.
+    #[test]
+    fn a_drawn_face_gives_the_table_its_glyphs_describe() {
+        let blocks = WorldMapFont::from_source(true, &Blocks(255)).unwrap();
+        let drawn = Typeface::drawn(Box::new(Drawn(200)));
+        assert_eq!(
+            WorldMapFont::from_source(true, &drawn.sized(11)).unwrap(),
+            blocks
+        );
+        // Below half coverage nothing is inked.
+        let faint = Typeface::drawn(Box::new(Drawn(100)));
+        let faint = WorldMapFont::from_source(true, &faint.sized(11)).unwrap();
+        assert_eq!(&faint.data()[3..5], &[4, 7]);
+        // Kept anti-aliased, the coverage makes the table a grayscale one.
+        let mut smooth = Typeface::drawn(Box::new(Drawn(200)));
+        smooth.antialias = true;
+        assert!(
+            WorldMapFont::from_source(true, &smooth.sized(11))
+                .unwrap()
+                .grayscale()
+        );
     }
 
     #[test]

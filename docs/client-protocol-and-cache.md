@@ -508,8 +508,8 @@ Known differences:
 
 - 4004 and 4005 use a fixed xorshift generator rather than `Math.random`.
 - 4104 formats in UTC; the original uses the JVM's default time zone.
-- 5302, 5303 and 5305 list one full-screen mode, the desktop's size, on
-  Windows, and none elsewhere.
+- 5302, 5303 and 5305 list one full-screen mode, the screen's own size, on
+  Windows and in the browser, and none elsewhere.
 - 6121 answers 1 on the desktop and 0 in the browser.
 - Preferences. These take effect: brightness, fog, flickering effects,
   character shadows, scenery shadows (0, 1, 2), ground decorations, the two
@@ -524,7 +524,9 @@ Known differences:
 - The file is `%APPDATA%\rs09-client\jagex_runescape_preferences.dat`, or
   `--preferences PATH`. An earlier `preferences.json` is read once when no
   binary file exists and never written again. Capture runs neither read nor
-  write preferences. The browser build has no saved preferences.
+  write preferences. The browser keeps the same bytes in the page's local
+  storage (`rs09:jagex_runescape_preferences.dat`, base64), read at start
+  and written at the same points.
 - `::` commands: `fpson`, `fpsoff`, `wm0` to `wm3`, `setparticles`,
   `shiftclick`, `tween`, `noclip`, `clientdrop`, `rebuild` and `errortest`
   act. `rect_debug`, `qa_op_test` and `fps N` are parsed and stored only.
@@ -601,12 +603,21 @@ Verified by `display-oracle`. Captures cover the fixed and resizable frames
 at several sizes; one live run recorded each 243. Not run: a 243 in mode 3
 and the 6016 canvas replacement. In a browser the fixed and resizable modes
 were looked at, not recorded on the wire (see "The browser build as run").
+In the browser, full screen is the canvas element in the browser's own full
+screen (the Fullscreen API), again at the screen's size only.
 
 Differences: there is one renderer, so the original's software mode 0 is
 carried out, and reported to the server and to scripts, as mode 1. Full
 screen never changes the screen's mode, so only the desktop's size is
 listed, and `::wm3` (1024 x 768) falls back to the remembered mode on any
-other desktop.
+other desktop. In the browser, full screen is granted only shortly after a
+click or key press, and the answer arrives after `setWindowMode` has
+returned: the client takes mode 3 at once (CS2 5300 pushes 1, the size is
+saved, packet 243 reports mode 3) and, if the browser refuses or later ends
+full screen (Escape, its own controls), leaves for the remembered mode as the
+original leaves a full-screen frame that loses the focus
+(`display_host::full_screen_lost`). The original's frame could not be taken
+away like that.
 
 ## Scene
 
@@ -804,9 +815,14 @@ the teleport, and a live session (no local server opens interface 755).
 
 Differences: label glyphs come from a system TrueType face (bold Arial on
 Windows, or `--world-map-font`), not AWT's, so they differ from the original
-and by machine; with no face, no labels. The palette is fixed at 0.7. The
-scene is not cleared while the map is open; the rebuild on close still runs.
-The map is not offered in the browser.
+and by machine; with no face, no labels. In the browser the face is the
+browser's own text, drawn on a 2D canvas in `bold Npx Helvetica` (the page's
+sans-serif behind it; `world_map::Face`, `web/visual/display_glue.js`),
+thresholded at half coverage like the TrueType glyphs; the canvas reports no
+leading, so the line height there is ascent plus descent. The browser map
+reads archive 23 and the rest from the downloaded cache (with the prepared
+packs there is no map). The palette is fixed at 0.7. The scene is not
+cleared while the map is open; the rebuild on close still runs.
 
 ## Music
 
@@ -1018,7 +1034,10 @@ as before.
   A page closed mid-download, or damaged storage, is repaired group by group.
 - `cache_pack`, `world_pack`, the music source and map streaming read that
   store through `rs09_cache::store::Store::live`. Map streaming has no worker
-  thread there: a scene is prepared on the frame that asks for it.
+  thread there: since 2026-11-17 a scene is prepared a slice of about 12 ms
+  per frame (`rs09_client::slice`; the build is the desktop's own code with
+  yield points in its loops, run to the end at once on the desktop's worker
+  thread). `?slice=MS` sets the slice, `?slice=0` builds in one frame.
 - The login block carries the index CRCs the update server sent.
 
 What differs from the original:
@@ -1030,9 +1049,8 @@ What differs from the original:
   scene, the title scene and later scenes wait for the groups they need,
   which are asked for as they are met. Until 2026-11-17 it started only
   once every prefetched archive had arrived (about 35 s on localhost).
-- The world map is not offered in the browser (it needs a system typeface),
-  and offline the starting scene has locations only for regions whose keys
-  the page serves as `assets/visual/xteas.json`.
+- Offline the starting scene has locations only for regions whose keys the
+  page serves as `assets/visual/xteas.json`.
 
 `web/visual/cache_storage.js` and the additions to `game_transport.js` are
 the only JavaScript: sockets and key/value storage.
@@ -1137,10 +1155,9 @@ visit, 240 bytes and about 3.5 s on a reload) and with the prepared packs:
 
 Not seen or not working there:
 
-- A logout by the server (the examples do not answer the logout button), the
-  world map (not installed in the browser; the example gameframe's orb
-  offered no option), account creation, full screen, a hidden tab, a slow
-  network, refused storage, other browsers and real high-DPI hardware.
+- A logout by the server (the examples do not answer the logout button),
+  account creation, a hidden tab, a slow network, refused storage, other
+  browsers and real high-DPI hardware.
 - At the title, a click on Graphics Options or Audio Options was reported to
   change nothing, after which the menu no longer answered the mouse. Rerun on
   2026-11-17 with Playwright clicks (the cache from the update server): both
@@ -1153,6 +1170,43 @@ Not seen or not working there:
 - With the prepared packs the minimap was black and there was no compass,
   on the desktop as well; fixed (see Minimap): the recorded packs now get
   the minimap's sprite IDs and map scenes from the pinned tables.
+
+A third run (Chromium via Playwright, 2026-11-17, release wasm, the cache
+from `player_session`'s update listener, `player_session` and
+`movement_session --gameframe` for a world; evidence in the coordinator's
+scratchpad `browser2-evidence/`) covered four gaps closed that day:
+
+- Scene builds. Before: the login's build held one frame for 5.7 to 6.5 s,
+  the game socket was silent for 5.7 to 8.2 s and the worklet found its
+  queue empty 671 to 830 times in 25 s (three logins each, preferences
+  cleared, the cache already downloaded). After (`world_cache::Building`,
+  `rs09_client::slice`): the same build took 3.7 to 4.2 s of work over 258
+  to 290 frames, the longest frame during it was 159 to 197 ms, the socket
+  was never silent for more than 1.07 s and 5 to 17 music blocks were
+  missed. The login scene's digest (every chunk's mesh fingerprint, the
+  counts, the shadow tiles, the slots) was the same, 0cc444baed3af769, in
+  every run, sliced and with `?slice=0`. Still one frame of 2.9 to 3.2 s at
+  start-up (the starting scene and the texture generation, before the
+  title) and one of 0.35 to 0.42 s before the title scene, neither a scene
+  build.
+- Preferences. Music volume, brightness and the high-detail resizable mode
+  chosen in the title's options were in local storage at once and were in
+  force after a reload (title opened resizable, sliders where they were
+  left).
+- Full screen. The Graphics Options list `1100 x 700` (the emulated
+  screen). This Chromium refuses every `requestFullscreen`, even one made
+  inside a `pointerup` handler, so the real grant was not seen; the refusal
+  path was: mode 3 for a moment, the script's `keep this setting?` box, and
+  the remembered mode again. With the API stood in for by the page (a
+  1024 x 768 screen and a grant), `::wm3` asked for full screen with the
+  key press's activation still active, packet 243 carried mode 3 at
+  1024 x 768, and when the stand-in browser ended full screen the client went
+  back to mode 2 at 1100 x 700 (243 again).
+- World map. Interface 755 opened offline from a one-packet replay
+  (`91 73 02 80 80 00` as `assets/visual/ui-gameframe.bin`): loading,
+  then the map with its labels in the browser's own font, dragging, the
+  overview, the zoom menu (37 %), all drawn as on the desktop. Not opened
+  from the orb (no example server opens it).
 
 ## Still missing
 
@@ -1448,16 +1502,14 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
 - (b) A frame's interface walks all run before its camera updates, so a
   second walk in the frame where a script unlocks the camera reads the
   spline-finished flag one cycle late.
-- (a)(d) Full screen is Windows only, never changes the screen's mode and
-  offers one size. Nothing corrects a surface that differs from the listed
-  size.
-- (a)(d) A live browser client has no saved preferences, so every visit
-  opens the title on the fixed 765 x 503 canvas at the top centre of the
-  page, as the applet does in a page larger than its canvas. `::wm2` made
-  it resizable for the session; the options' own buttons were not tried and
-  nothing is kept across a reload. Full screen is not
-  offered there: no screen mode is listed and a request falls back to the
-  remembered mode, as the original's does for a mode the screen lacks.
+- (a)(d) Full screen is Windows and browser only, never changes the screen's
+  mode and offers one size. Nothing corrects a surface that differs from the
+  listed size. In the browser it needs a click or key press just before
+  and is entered optimistically (see Display modes); a real grant was not
+  seen in the test browser.
+- (b) A first browser visit opens the title on the fixed 765 x 503 canvas at
+  the top centre of the page, as the applet does in a page larger than its
+  canvas; later visits open in the remembered mode.
 - (b)(d) Mode 0 is reported as mode 1. With the title in mode 1 neither the
   SD nor the HD button is ticked; whether the original does the same was not
   checked.
@@ -1598,7 +1650,8 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
   offset); the scene is not cleared while the map is open.
 - (b) Offline, with no session, the world map's scene requests are not
   consumed.
-- (a) The world map is not offered in the browser.
+- (b) The browser's world-map labels are the browser's own text (canvas 2D),
+  without leading, and there is no map with the prepared packs.
 
 ### Audio
 
@@ -1623,12 +1676,17 @@ What was run, and how, is under "The browser build as run".
   sent by the server, account creation.
 - (b) The title's lasting deafness to the mouse once reported after Graphics
   or Audio Options was not reproduced (see "The browser build as run").
-- (a) Scene builds run on the page's one thread: 2.5 to 3.3 s in a single
-  frame at login, and 45 to 127 music blocks (0.5 to 1.5 s) missed at
-  start-up. Nothing is drawn or sent in such a frame. Music also goes
-  silent in a hidden tab or on any frame longer than 186 ms. (d)
-- (a) The world map is not installed, full screen is not offered, and a
-  window mode is not remembered across a reload (no saved preferences).
+- (a) Start-up still holds one frame for about three seconds before the
+  title (the starting scene and its textures) and one for about 0.4 s before
+  the title scene. Scene builds are spread over frames (about 12 ms each),
+  but a frame during one can still last up to about 0.2 s (one step of the
+  build, such as a dense chunk's locations or a floor pass, plus the rest of
+  the frame), and a few music blocks are missed then. Music also goes silent
+  in a hidden tab or on any frame longer than 186 ms. (d)
+- (b) A sliced build reads the client's global switches (lighting detail,
+  ground decorations, the sun) when each step runs, as the desktop's worker
+  thread does; a preference changed while a scene is being built can reach
+  part of it.
 - (a) A browser whose WebGL lacks three vertex texture units or 4096-pixel
   textures is refused at the start page. The check was exercised by
   overriding the reported limit, not on such a device; other limits the
@@ -1767,10 +1825,13 @@ Collected from every stream. None blocks the others.
     (every pack reader must accept "not yet") or keep the wait. Accept the
     pure-Rust bzip2 dependency and the `--import-undefined` linker flag;
     update the notices file. Read-ahead for music: 186 ms, lower or higher.
-    Build scenes over several frames or on a worker in the browser, or keep
-    the seconds-long frame at login. Keep window-mode and other preferences
-    in the browser's storage or not. Offer full screen through the
-    browser's own (it needs a click and has no fixed sizes) or not at all.
+    Scenes are now built over several frames (12 ms a frame; `?slice`),
+    preferences are kept in local storage and full screen goes through the
+    browser's own: keep these, change the slice, or move the build to a
+    worker (it would need the cache and the prepared scene to cross between
+    modules). Whether `::wm3` should, in a browser, scale a 1024 x 768
+    canvas to the screen (the nearest thing to the original's mode change)
+    instead of falling back.
 33. **Styled menu.** Leave CS2 5424's menu undrawn (no cached script uses
     it) or port `drawB`.
 34. **Error reports.** Post the original's reports to `clienterror.ws` or

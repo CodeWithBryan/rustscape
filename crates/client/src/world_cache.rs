@@ -388,7 +388,7 @@ struct Assets {
     overlays: Vec<Overlay>,
 }
 
-fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, String> {
+async fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, String> {
     let mut diagnostics = Vec::new();
     let mut regions = Vec::new();
     let mut objects = Vec::new();
@@ -398,6 +398,7 @@ fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, S
         region_ids = regions.iter().map(|r| [r.x, r.z]).collect();
     }
     for &[x, z] in region_ids.iter().filter(|_| request.instance.is_none()) {
+        rs09_client::slice::yield_point().await;
         // LoginManager.setupLoadingScreenRegion: a title scene leaves every
         // region without an NPC file empty.
         if request
@@ -450,6 +451,7 @@ fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, S
             .filter_map(|row| u32::try_from(row[0]).ok()),
     );
     while let Some(id) = location_ids.pop_first() {
+        rs09_client::slice::yield_point().await;
         if types.contains_key(&id) {
             continue;
         }
@@ -508,6 +510,7 @@ fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, S
     let mut npc_bases = BTreeMap::new();
     let mut npc_bodies = BTreeMap::new();
     while let Some(id) = npc_ids.pop_first() {
+        rs09_client::slice::yield_point().await;
         if !visited.insert(id) {
             continue;
         }
@@ -552,6 +555,7 @@ fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, S
         if id == 65535 || frames.contains_key(&id) {
             continue;
         }
+        rs09_client::slice::yield_point().await;
         let Some(bytes) = Cache::read(&cache.frames, id >> 16, id & 65535)? else {
             continue;
         };
@@ -584,7 +588,7 @@ fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, S
         npc_types: vec![],
         npc_spawns: vec![],
     };
-    let mut geometry = Geometry::build(
+    let mut geometry = Geometry::build_sliced(
         &scene,
         &regions,
         &models,
@@ -593,8 +597,14 @@ fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, S
         &types,
         &assets.underlays,
         &assets.overlays,
-    )?;
-    let shadows = geometry.shadows.map.updates().into();
+    )
+    .await?;
+    // Map::updates, a tile at a time.
+    let mut shadows = std::collections::VecDeque::new();
+    for tile in 0..geometry.shadows.map.tiles() {
+        rs09_client::slice::yield_point().await;
+        shadows.extend(geometry.shadows.map.update(tile));
+    }
     let slots = scene
         .locations
         .iter()
@@ -647,17 +657,128 @@ pub const NOT_YET: &str = "the scene's files are still arriving";
 
 /// [`build`], answering [`NOT_YET`] when it read any group that had not
 /// arrived (its result would lack what is still on its way).
+#[cfg(not(target_arch = "wasm32"))]
 fn build_when_present(
     cache: &Cache,
     request: Request,
     assets: &Assets,
 ) -> Result<Prepared, String> {
     let before = rs09_cache::store::misses_on_this_thread();
-    let result = build(cache, request, assets);
+    let result = rs09_client::slice::block_on(build(cache, request, assets));
     if rs09_cache::store::misses_on_this_thread() != before {
         return Err(NOT_YET.into());
     }
     result
+}
+
+/// How much of each frame the page gives a scene build (milliseconds). The
+/// rest of the frame (the cycles with their keep-alives, the music feed,
+/// the redraw) goes on as usual; a slice ends at the first yield point after
+/// this much, so it may run over by one step of the build. `?slice=MS` on
+/// the start page sets another; `?slice=0` builds each scene in the one frame
+/// that asks for it, as before 2026-11-17 (for comparison).
+#[cfg(target_arch = "wasm32")]
+const SLICE_MS: f64 = 12.0;
+
+#[cfg(target_arch = "wasm32")]
+fn slice_ms() -> f64 {
+    thread_local! {
+        static CHOSEN: std::cell::OnceCell<f64> = const { std::cell::OnceCell::new() };
+    }
+    CHOSEN.with(|chosen| {
+        *chosen.get_or_init(
+            || match crate::cache_host::launch_value(8).trim().parse::<f64>() {
+                Ok(ms) if ms == 0.0 => f64::INFINITY,
+                Ok(ms) if ms > 0.0 => ms,
+                _ => SLICE_MS,
+            },
+        )
+    })
+}
+
+/// A digest of what a build prepared, for comparing a build spread over
+/// frames with one done at once: every chunk's mesh fingerprint and pass,
+/// the counts, the shadow tiles and the placed slots.
+#[cfg(target_arch = "wasm32")]
+fn digest(prepared: &Prepared) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    let geometry = &prepared.geometry;
+    for chunk in &geometry.chunks {
+        (chunk.fingerprint, chunk.plane, chunk.blend, chunk.floor).hash(&mut hasher);
+    }
+    (
+        geometry.faces,
+        geometry.objects,
+        geometry.pick_objects.len(),
+    )
+        .hash(&mut hasher);
+    (
+        geometry.animated_locations.len(),
+        geometry.static_shadows.len(),
+    )
+        .hash(&mut hasher);
+    prepared.shadows.hash(&mut hasher);
+    for (slot, location) in &prepared.slots {
+        (
+            slot.plane,
+            slot.tile,
+            location.id,
+            location.shape,
+            location.rotation,
+        )
+            .hash(&mut hasher);
+    }
+    hasher.finish()
+}
+
+/// The page's clock in milliseconds.
+#[cfg(target_arch = "wasm32")]
+fn page_ms() -> f64 {
+    macroquad::miniquad::date::now() * 1000.0
+}
+
+/// [`build_when_present`] a slice at a time: the build under way, and the
+/// groups it has met that had not arrived. Only the misses of its own
+/// slices count; the page reads the store between them too.
+#[cfg(target_arch = "wasm32")]
+struct Building {
+    sliced: rs09_client::slice::Sliced<Result<Prepared, String>>,
+    misses: u64,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Building {
+    fn new(cache: Arc<Cache>, request: Request, assets: std::rc::Rc<Assets>) -> Self {
+        Self {
+            sliced: rs09_client::slice::Sliced::new(async move {
+                build(&cache, request, &assets).await
+            }),
+            misses: 0,
+        }
+    }
+
+    /// Runs on until `deadline`; the result once the build has ended.
+    fn run_until(&mut self, deadline: f64) -> Option<Result<Prepared, String>> {
+        let before = rs09_cache::store::misses_on_this_thread();
+        let done = self.sliced.run_until(deadline, page_ms);
+        self.misses += rs09_cache::store::misses_on_this_thread().wrapping_sub(before);
+        let result = done?;
+        let sliced = &self.sliced;
+        macroquad::logging::info!(
+            "Scene build: {:.0} ms in {} frames, longest slice {:.0} ms, region {:?}, digest {:016x}",
+            sliced.total_ms,
+            sliced.slices,
+            sliced.longest_ms,
+            result.as_ref().map_or([-1; 2], |prepared| prepared.center),
+            result.as_ref().map_or(0, digest)
+        );
+        Some(if self.misses != 0 {
+            Err(NOT_YET.into())
+        } else {
+            result
+        })
+    }
 }
 
 fn add_models(
@@ -1549,25 +1670,42 @@ impl Stream {
             })
             .map_err(|e| e.to_string())?;
         // A page has no second thread. The same jobs are carried out when the
-        // scene polls for its result, so a scene build holds that frame up
-        // (the original, too, builds its scene on the client's thread).
+        // scene polls for its result, once a frame, a slice of at most about
+        // SLICE_MS at a time (`rs09_client::slice`), so a build no longer
+        // holds a frame up for seconds. (The original builds its scene in one
+        // blocking call on the client's thread and pings the server from
+        // inside it; here the frames, and with them the cycles, go on.)
         #[cfg(target_arch = "wasm32")]
-        let worker: Box<dyn FnMut()> = Box::new(move || {
-            while let Ok(job) = jobs.try_recv() {
-                match job {
-                    WorkerJob::Build(request) => {
-                        if output
-                            .send(build_when_present(&cache, request, &assets))
-                            .is_err()
-                        {
-                            break;
+        let worker: Box<dyn FnMut()> = {
+            let assets = std::rc::Rc::new(assets);
+            let mut building: Option<Building> = None;
+            Box::new(move || {
+                let deadline = page_ms() + slice_ms();
+                loop {
+                    if building.is_none() {
+                        match jobs.try_recv() {
+                            Ok(WorkerJob::Build(request)) => {
+                                building =
+                                    Some(Building::new(cache.clone(), request, assets.clone()));
+                            }
+                            Ok(WorkerJob::RetirePrepared(data)) => drop(data),
+                            Ok(WorkerJob::RetireAssets(assets)) => drop(assets),
+                            Err(_) => break,
                         }
                     }
-                    WorkerJob::RetirePrepared(data) => drop(data),
-                    WorkerJob::RetireAssets(assets) => drop(assets),
+                    let Some(build) = &mut building else {
+                        continue;
+                    };
+                    let Some(result) = build.run_until(deadline) else {
+                        break;
+                    };
+                    building = None;
+                    if output.send(result).is_err() || page_ms() >= deadline {
+                        break;
+                    }
                 }
-            }
-        });
+            })
+        };
         Ok(Self {
             #[cfg(target_arch = "wasm32")]
             worker,

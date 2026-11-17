@@ -1,6 +1,7 @@
 // Storage glue only: named byte strings in IndexedDB, standing in for the
-// cache directory the original client keeps on disk. What is stored, when and
-// how it is checked on the way back is decided in Rust (web_cache.rs).
+// cache directory the original client keeps on disk, and the preferences
+// file in local storage. What is stored, when and how it is checked on the
+// way back is decided in Rust (web_cache.rs, preferences_file.rs).
 (() => {
  const STORE='files';
  // 0 not opened, 1 reading, 2 ready, 3 unavailable.
@@ -81,6 +82,26 @@
    staged=[];entries=new Map();
    if(!db||failed)return;
    try{db.transaction(STORE,'readwrite').objectStore(STORE).clear();}catch(_){failed=true;}
+  };
+  // The preferences file (preferences_file.rs): the original's bytes, kept
+  // under the file's name in local storage, which is read synchronously at
+  // start as the applet reads the file. Base64, since storage holds text.
+  const PREFS='rs09:jagex_runescape_preferences.dat';
+  const prefs=()=>{
+   try{const text=localStorage.getItem(PREFS);if(text===null)return null;
+    return Uint8Array.from(atob(text),c=>c.charCodeAt(0));}catch(_){return null;}
+  };
+  env.rs09_prefs_length=()=>prefs()?.length??-1;
+  env.rs09_prefs_read=(ptr,len)=>{
+   const value=prefs();
+   if(!value||value.length!==len)return -1;
+   new Uint8Array(wasm_memory.buffer,ptr,len).set(value);return 0;
+  };
+  env.rs09_prefs_write=(ptr,len)=>{
+   try{
+    localStorage.setItem(PREFS,btoa(String.fromCharCode(...new Uint8Array(wasm_memory.buffer,ptr,len))));
+    return 0;
+   }catch(_){return -1;}
   };
   // The cache's progress as JSON, for the page and for review.
   env.rs09_cache_state=(ptr,len)=>{

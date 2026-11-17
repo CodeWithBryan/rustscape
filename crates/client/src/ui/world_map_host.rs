@@ -290,6 +290,16 @@ impl Host {
         startup: Startup,
     ) -> Result<(), String> {
         use crate::world_map::cache::CacheAssets;
+        self.open_assets(startup, || CacheAssets::open_on_demand(directory))
+    }
+
+    /// [Host::open_cache] over assets opened by open (after the start-up
+    /// draws, as there): the browser's downloaded cache.
+    pub fn open_assets(
+        &mut self,
+        startup: Startup,
+        open: impl FnOnce() -> Result<crate::world_map::cache::CacheAssets, String>,
+    ) -> Result<(), String> {
         let mut state = startup.seed;
         let mut draw = || Self::random(&mut state);
         let (functions, scenes) = startup.jitters.unwrap_or_else(|| {
@@ -304,7 +314,7 @@ impl Host {
         });
         let random_light_offset = (draw() * 33.0) as i32 - 16;
         let random_hue_offset = (draw() * 17.0) as i32 - 8;
-        let assets = CacheAssets::open_on_demand(directory)?;
+        let assets = open()?;
         let sprite = assets
             .map_function_sprite()
             .ok_or("world map: the cache has no mapfunction sprites")?;

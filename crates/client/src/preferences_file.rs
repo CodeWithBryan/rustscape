@@ -228,6 +228,16 @@ pub fn title_shown(p: &mut Preferences) -> bool {
     true
 }
 
+/// `Preferences.write` over a file that holds `existing`: the encoded bytes
+/// at its start, and whatever lay past them kept (a `RandomAccessFile` is
+/// written in place and never shortened).
+pub fn written_over(existing: &[u8], preferences: &Preferences) -> Vec<u8> {
+    let encoded = encode(preferences);
+    let mut file = encoded.to_vec();
+    file.extend(existing.iter().skip(encoded.len()));
+    file
+}
+
 /// Where the preferences are kept on disk.
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -239,7 +249,6 @@ pub struct Store {
 }
 
 /// What [`Store::load`] found.
-#[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Source {
     Binary,
@@ -309,6 +318,78 @@ impl Store {
             .truncate(false)
             .open(&self.binary)?
             .write_all(&encode(preferences))
+    }
+}
+
+/// The browser's stand-in for the cache directory's file: the same bytes,
+/// kept under the file's name in the page's local storage
+/// (`web/visual/cache_storage.js`). The applet keeps them in its cache
+/// directory; a page has no files.
+#[cfg(target_arch = "wasm32")]
+mod browser {
+    unsafe extern "C" {
+        fn rs09_prefs_length() -> i32;
+        fn rs09_prefs_read(ptr: *mut u8, len: usize) -> i32;
+        fn rs09_prefs_write(ptr: *const u8, len: usize) -> i32;
+    }
+
+    /// The stored bytes; None when there are none or storage is refused.
+    pub fn read() -> Option<Vec<u8>> {
+        // SAFETY: plain calls into the page glue, which copies at most `len`
+        // bytes into the buffer it is given.
+        unsafe {
+            let length = usize::try_from(rs09_prefs_length()).ok()?;
+            let mut bytes = vec![0; length];
+            (rs09_prefs_read(bytes.as_mut_ptr(), length) == 0).then_some(bytes)
+        }
+    }
+
+    pub fn write(bytes: &[u8]) -> bool {
+        // SAFETY: the glue copies the bytes out before returning.
+        unsafe { rs09_prefs_write(bytes.as_ptr(), bytes.len()) == 0 }
+    }
+}
+
+/// Where the browser keeps the preferences: [`browser`].
+#[cfg(target_arch = "wasm32")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Store {
+    /// Names the stored file in messages.
+    pub binary: std::path::PathBuf,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Store {
+    /// A page has one place: its own storage. The arguments the desktop's
+    /// form takes mean nothing there.
+    pub fn locate(
+        _option: Option<std::path::PathBuf>,
+        _app_data: Option<std::ffi::OsString>,
+    ) -> Option<Self> {
+        Some(Self {
+            binary: format!("the browser's local storage ({FILE_NAME})").into(),
+        })
+    }
+
+    /// `Preferences.read`: the defaults, then the stored file if there is
+    /// one. There is no earlier JSON file in a browser.
+    pub fn load(&self, max_memory: i32) -> (Preferences, Source, Option<String>) {
+        match browser::read() {
+            Some(bytes) if !bytes.is_empty() => {
+                (read(Some(&bytes), max_memory), Source::Binary, None)
+            }
+            _ => (defaults(max_memory), Source::Defaults, None),
+        }
+    }
+
+    /// `Preferences.write`, as the desktop writes the file.
+    pub fn save(&self, preferences: &Preferences) -> std::io::Result<()> {
+        let file = written_over(&browser::read().unwrap_or_default(), preferences);
+        if browser::write(&file) {
+            Ok(())
+        } else {
+            Err(std::io::Error::other("the browser refused to store them"))
+        }
     }
 }
 
@@ -655,6 +736,34 @@ pub(crate) mod tests {
         let (loaded, source, warning) = store.load(128);
         assert_eq!((loaded, source), (defaults(128), Source::Defaults));
         assert!(warning.is_some());
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// The browser keeps the bytes the desktop's file would hold after the
+    /// same writes: `written_over` against `Store::save` on a real file,
+    /// for no file, a file shorter than the 34 bytes and one longer.
+    #[test]
+    fn the_browser_bytes_are_the_files_bytes() {
+        let folder = scratch("browser-bytes");
+        std::fs::create_dir_all(&folder).unwrap();
+        let store = Store::locate(Some(folder.join("p.dat")), None).unwrap();
+        let mut preferences = defaults(128);
+        preferences.brightness = 4;
+        preferences.music_volume = 64;
+        preferences.remembered_mode = 2;
+        for existing in [vec![], vec![7; 5], (0..60).collect::<Vec<u8>>()] {
+            if existing.is_empty() {
+                let _ = std::fs::remove_file(&store.binary);
+            } else {
+                std::fs::write(&store.binary, &existing).unwrap();
+            }
+            store.save(&preferences).unwrap();
+            let file = std::fs::read(&store.binary).unwrap();
+            assert_eq!(written_over(&existing, &preferences), file);
+            assert_eq!(file.len(), existing.len().max(34));
+            // And they read back as what was written.
+            assert_eq!(read(Some(&file), 128), preferences);
+        }
         let _ = std::fs::remove_dir_all(&folder);
     }
 }

@@ -73,7 +73,6 @@ pub(super) struct Game {
     #[cfg(any(target_os = "windows", target_arch = "wasm32"))]
     pub(super) ambient_audio: ambient_audio::Locations,
     pub(super) ui_vm: Vm,
-    #[cfg(not(target_arch = "wasm32"))]
     pub(super) preferences_store: Option<rs09_client::preferences_file::Store>,
     #[cfg(any(target_os = "windows", target_arch = "wasm32"))]
     pub(super) music: Option<rs09_client::music::Music>,

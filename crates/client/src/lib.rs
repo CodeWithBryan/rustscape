@@ -77,6 +77,7 @@ pub mod session;
 pub mod session_drift;
 pub mod shadow;
 pub mod shadow_rules;
+pub mod slice;
 pub mod sound_queue;
 pub mod spot;
 pub mod surface;

@@ -123,6 +123,99 @@ pub fn install(ui: &mut State, minimap: Option<&crate::minimap_render::Renderer>
     }
 }
 
+/// The browser's start-up: the same `MapList.init` over the downloaded cache
+/// (archive 23 and the rest are among the archives the title waits for),
+/// with the page's own text as the labels' face. Without a downloaded cache
+/// (the prepared packs) there is no map, as before.
+#[cfg(target_arch = "wasm32")]
+pub fn install(ui: &mut State, minimap: Option<&crate::minimap_render::Renderer>, _capture: bool) {
+    let Some(store) = crate::cache_host::store() else {
+        return;
+    };
+    let startup = world_map_host::Startup {
+        jitters: minimap.map(crate::minimap_render::Renderer::sprite_jitters),
+        seed: (miniquad::date::now() * 1000.0) as u64,
+        typeface: Some(rs09_client::world_map::Typeface::drawn(Box::new(
+            page_font::PageFont,
+        ))),
+    };
+    if let Err(error) = ui.world_map.open_assets(startup, || {
+        rs09_client::world_map::cache::CacheAssets::from_store(store)
+    }) {
+        macroquad::logging::error!("World map unavailable: {}", error);
+    }
+}
+
+/// AWT's `new Font("Helvetica", BOLD, size)` in a page: the browser's own
+/// text on a 2D canvas (`web/visual/display_glue.js`), asked for in the
+/// same family with the browser's sans-serif behind it. Its metrics come
+/// from `measureText`; the canvas has no leading, so the line gap is 0.
+#[cfg(target_arch = "wasm32")]
+mod page_font {
+    use rs09_client::world_map::Face;
+
+    unsafe extern "C" {
+        /// `what`: 0 the advance of `ch`, 1 the font's ascent, 2 its descent.
+        fn rs09_font_metric(bold: i32, size: i32, what: i32, ch: u32) -> f64;
+        fn rs09_font_draw(
+            bold: i32,
+            size: i32,
+            ch: u32,
+            x: i32,
+            baseline: i32,
+            width: i32,
+            height: i32,
+            ptr: *mut u8,
+        ) -> i32;
+    }
+
+    pub struct PageFont;
+    impl Face for PageFont {
+        fn advance(&self, bold: bool, size: i32, ch: char) -> f32 {
+            // SAFETY: a plain call into the page glue.
+            unsafe { rs09_font_metric(i32::from(bold), size, 0, u32::from(ch)) as f32 }
+        }
+        fn line(&self, bold: bool, size: i32) -> [f32; 3] {
+            // SAFETY: as above.
+            let [ascent, descent] = [1, 2]
+                .map(|what| unsafe { rs09_font_metric(i32::from(bold), size, what, 0) } as f32);
+            [ascent, descent, 0.0]
+        }
+        fn coverage(
+            &self,
+            bold: bool,
+            size: i32,
+            ch: char,
+            x: i32,
+            baseline: i32,
+            width: usize,
+            height: usize,
+        ) -> Vec<u8> {
+            let mut image = vec![0; width * height];
+            let (Ok(w), Ok(h)) = (i32::try_from(width), i32::try_from(height)) else {
+                return image;
+            };
+            // SAFETY: the glue writes exactly `width * height` bytes.
+            let drawn = unsafe {
+                rs09_font_draw(
+                    i32::from(bold),
+                    size,
+                    u32::from(ch),
+                    x,
+                    baseline,
+                    w,
+                    h,
+                    image.as_mut_ptr(),
+                )
+            };
+            if drawn != 0 {
+                image.fill(0);
+            }
+            image
+        }
+    }
+}
+
 /// The lifecycle calls the client makes at the points named in
 /// `world_map_host`. Each is a no-op without an interface state.
 pub fn scene_loading(ui: Option<&mut State>) {

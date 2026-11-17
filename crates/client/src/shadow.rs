@@ -414,11 +414,20 @@ impl Map {
     /// Returns only changed 128-square texture tiles, with original occupied
     /// alpha 68 and four-neighbor edge alpha 17. The original row hash is retained.
     pub fn updates(&mut self) -> Vec<([usize; 2], Vec<u8>)> {
+        (0..self.tiles())
+            .filter_map(|tile| self.update(tile))
+            .collect()
+    }
+    /// The number of 128-square tiles.
+    pub fn tiles(&self) -> usize {
+        self.dirty.len()
+    }
+    /// One tile of [`Map::updates`]: what it returns for `tile`, if anything.
+    pub fn update(&mut self, tile: usize) -> Option<([usize; 2], Vec<u8>)> {
         let columns = (self.width - 2) / 128;
-        let mut updates = Vec::new();
-        for tile in 0..self.dirty.len() {
-            if !std::mem::take(&mut self.dirty[tile]) {
-                continue;
+        {
+            if !std::mem::take(self.dirty.get_mut(tile)?) {
+                return None;
             }
             let x = tile % columns * 128;
             let y = tile / columns * 128;
@@ -432,7 +441,7 @@ impl Map {
                 }
             }
             if hash == self.hashes[tile] {
-                continue;
+                return None;
             }
             self.hashes[tile] = hash;
             let mut rgba = vec![0; 128 * 128 * 4];
@@ -450,8 +459,7 @@ impl Map {
                     };
                 }
             }
-            updates.push(([x, y], rgba));
+            Some(([x, y], rgba))
         }
-        updates
     }
 }

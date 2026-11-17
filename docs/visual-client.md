@@ -303,15 +303,34 @@ State of the browser build (what was run and seen is in the status document,
 - The page is the applet's container: the canvas element fills it, and a
   client in a fixed window mode draws its 765 x 503 canvas at the top
   centre with black around it, as the original does in an applet larger
-  than its canvas. A browser client has no saved preferences, so the title
-  always opens that way; `::wm2` or the options make the canvas the page.
+  than its canvas. `::wm2` or the options make the canvas the page.
+- Saved preferences (since 2026-11-17): the original preferences file's
+  bytes are kept in the page's local storage under
+  `rs09:jagex_runescape_preferences.dat` (`web/visual/cache_storage.js`),
+  read at start and written whenever the desktop writes its file
+  (`preferences_file::Store`). Brightness, volumes, window mode and the rest
+  survive a reload; a first visit opens the title fixed, later visits in the
+  remembered mode.
+- Full screen (since 2026-11-17): the options' full-screen mode, CS2
+  5300/5301 and `::wm3` put the canvas element in full screen with the
+  browser's Fullscreen API (`web/visual/display_glue.js`). The one mode
+  offered is the screen's own size; `::wm3` asks for 1024 x 768 and so
+  enters full screen only on a screen of that size, as on Windows. The
+  browser grants it only just after a click or key press and may end it by
+  itself (Escape); either way the client returns to the remembered mode.
+- The world map (since 2026-11-17) is installed when the cache came from the
+  update server; its labels are drawn by the browser's own text on a 2D
+  canvas in "Helvetica" (the page's sans-serif behind it), standing in for
+  AWT's font. With the prepared packs there is no map.
+- Scene builds (since 2026-11-17) are spread over frames, about 12 ms of a
+  frame each (`?slice=MS` sets another amount, `?slice=0` builds in one
+  frame as before), so the game, the keep-alives and the music feed go on
+  while a scene is built.
 - The drawing buffer has no alpha channel, so the page never shows through
   the frame.
-- Limits: the game starts only when the whole background download has
-  arrived; scene builds hold the page for seconds at login; the world map
-  and full screen are not offered; music stops in a hidden tab; the title's
-  Graphics and Audio Options do nothing and then block the mouse on its
-  menu; WebGL must offer three vertex texture units and 4096-pixel textures
+- Limits: start-up (before the title) still takes one frame of about three
+  seconds (the starting scene and its textures); music stops in a hidden
+  tab; WebGL must offer three vertex texture units and 4096-pixel textures
   (the start page says so when it does not).
 - To start a live browser client at the title screen, leave both credential
   fields empty. `?cursor=ID` on the page's address is the desktop's

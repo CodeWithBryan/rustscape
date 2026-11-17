@@ -46,7 +46,9 @@ impl Game {
         if let Some(window) = display_host::windowed(&ui_vm.display) {
             ui_vm.display.watch(window);
         }
-        if ui_vm.display.full_screen() && !input.focus && state_30_or_10 {
+        // A browser can also end full screen by itself (display_host).
+        let full_screen_lost = display_host::full_screen_lost();
+        if ui_vm.display.full_screen() && (full_screen_lost || !input.focus && state_30_or_10) {
             ui_vm.display.leave_full_screen(&mut ui_vm.preferences);
         }
         display_effects!();
@@ -494,7 +496,6 @@ impl Game {
         let cycle_driver = &mut self.cycle_driver;
         let mut input = &mut self.input;
         let input_events = &mut self.input_events;
-        #[cfg(not(target_arch = "wasm32"))]
         let preferences_store = &mut self.preferences_store;
         let live_mode = self.live_mode;
         let capture = self.capture;
@@ -748,7 +749,6 @@ impl Game {
                 (brightness, shadows_enabled, character_shadows) = shown;
             }
             // Wherever the original calls Preferences.write, mainLoad included.
-            #[cfg(not(target_arch = "wasm32"))]
             if let Some(store) = &preferences_store {
                 if let Err(error) = store.save(&ui_vm.preferences) {
                     eprintln!(

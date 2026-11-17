@@ -29,10 +29,10 @@ if unbound in bundle:
     bundle=bundle.replace(unbound,"}var register_plugin;register_plugin=function(e){e.env.ws_connect")
 (OUT/"mq_js_bundle.js").write_bytes(bundle.encode("utf-8"))
 for name in ["LICENSE","THIRD_PARTY_NOTICES.md","upstream.lock.json"]:shutil.copyfile(ROOT/name,OUT/name)
-version=hashlib.sha256(b''.join((OUT/name).read_bytes()for name in ['client.wasm','audio_worklet.wasm'])+b''.join((ROOT/'web/visual'/name).read_bytes()for name in ['game_transport.js','cache_storage.js','pcm_audio_worklet.js','pcm_worklet.js','graphics_lifecycle.js'])).hexdigest()[:16]
+version=hashlib.sha256(b''.join((OUT/name).read_bytes()for name in ['client.wasm','audio_worklet.wasm'])+b''.join((ROOT/'web/visual'/name).read_bytes()for name in ['game_transport.js','cache_storage.js','display_glue.js','pcm_audio_worklet.js','pcm_worklet.js','graphics_lifecycle.js'])).hexdigest()[:16]
 (OUT/"index.html").write_text((ROOT/"web/visual/index.html").read_text(encoding="utf-8").replace("__CLIENT_VERSION__",version),encoding="utf-8")
 shutil.copyfile(ROOT/"web/visual/game_transport.js",OUT/"game_transport.js")
-for name in ['cache_storage.js','pcm_audio_worklet.js','pcm_worklet.js','graphics_lifecycle.js']:shutil.copyfile(ROOT/'web/visual'/name,OUT/name)
+for name in ['cache_storage.js','display_glue.js','pcm_audio_worklet.js','pcm_worklet.js','graphics_lifecycle.js']:shutil.copyfile(ROOT/'web/visual'/name,OUT/name)
 # Optional: region keys for the starting scene when it is built from the downloaded cache.
 if (ROOT/"runs/player-session/xteas.json").exists():shutil.copyfile(ROOT/"runs/player-session/xteas.json",OUT/"assets/visual/xteas.json")
 shutil.copyfile(args.pack,OUT/"assets/visual/demo.pack")

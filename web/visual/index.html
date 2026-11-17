@@ -25,6 +25,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151a1e;col
 <script src="pcm_audio_worklet.js?v=__CLIENT_VERSION__"></script>
 <script src="game_transport.js?v=__CLIENT_VERSION__"></script>
 <script src="cache_storage.js?v=__CLIENT_VERSION__"></script>
+<script src="display_glue.js?v=__CLIENT_VERSION__"></script>
 <script>
 window.addEventListener('error',event=>{document.getElementById('error').textContent=event.message;});
 document.getElementById('live').addEventListener('change',event=>{document.getElementById('credentials').style.display=event.target.checked?'block':'none';});
@@ -43,15 +44,17 @@ document.getElementById('launch').addEventListener('click',()=>{
  const update=cached?document.getElementById('update-server').value:'',song=cached?document.getElementById('song').value:'';
  // ?cursor=ID is the desktop's --script-cursor: a review aid for the cursor presentation.
  const cursor=new URLSearchParams(location.search).get('cursor')||'';
+ // ?slice=MS: how much of a frame a scene build may take (world_cache.rs); 0 builds at once.
+ const slice=new URLSearchParams(location.search).get('slice')||'';
  if(document.getElementById('live').checked){
   const username=document.getElementById('username'),password=document.getElementById('password');
   if(!username.value !== !password.value){document.getElementById('error').textContent='Enter a username and password, or neither to log in at the title screen.';return;}
-  window.rs09Launch=[document.getElementById('endpoint').value,username.value,password.value,'','',update,song,cursor];
+  window.rs09Launch=[document.getElementById('endpoint').value,username.value,password.value,'','',update,song,cursor,slice];
   username.value='';password.value='';
  } else {
   const npc=document.getElementById('npc-preview').checked?'assets/visual/'+document.getElementById('npc-fixture').value:'';
   const player=document.getElementById('player-preview').value;
-  window.rs09Launch=['','','',npc,player?'assets/visual/'+player:'',update,song,cursor];
+  window.rs09Launch=['','','',npc,player?'assets/visual/'+player:'',update,song,cursor,slice];
  }
  document.getElementById('start').style.display='none';
  document.getElementById('glcanvas').focus();

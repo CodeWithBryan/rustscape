@@ -118,7 +118,7 @@ impl Builder {
     /// Builds the floor and puts its chunks before the location chunks, then
     /// merges the normals of the placed locations.
     #[allow(clippy::too_many_arguments)]
-    pub fn finish(
+    pub async fn finish(
         mut self,
         scene: &Scene,
         regions: &[Region],
@@ -171,7 +171,12 @@ impl Builder {
         let mut shade = tile_shade::ShadowMap::new(width, depth);
         let mut slots = normal_merge::Scene::new(width, depth);
         let mut merging = Vec::new();
-        for placement @ [id, x, z, level, shape, rotation] in scene.locations.iter().copied() {
+        for (index, placement @ [id, x, z, level, shape, rotation]) in
+            scene.locations.iter().copied().enumerate()
+        {
+            if index % 256 == 0 {
+                rs09_client::slice::yield_point().await;
+            }
             let (Some(kind), Some(d)) = (
                 types.get(&(id as u32)),
                 scene.definitions.get(&id.to_string()),
@@ -251,12 +256,22 @@ impl Builder {
         };
         let mut segments = BTreeMap::<(usize, i32, i32), Vec<Segment>>::new();
         for level in 0..4 {
+            rs09_client::slice::yield_point().await;
             let [under, over, shapes, rotations, flags] = &grids[level];
             let colors: Vec<i32> = rs09_client::floor::blend(width, depth, under, underlays)
                 .into_iter()
                 .map(i32::from)
                 .collect();
-            let floor = gl_tile::build(
+            rs09_client::slice::yield_point().await;
+            // SceneGraph.buildScene's two loops for the hardware renderer:
+            // the shade alone, or slope and shade.
+            let lightness = if baked {
+                shade.lightness_sd(level, &heights[level], rs09_client::sd_light::sun())
+            } else {
+                shade.lightness(level)
+            };
+            rs09_client::slice::yield_point().await;
+            let floor = gl_tile::build_sliced(
                 &gl_tile::Level {
                     width,
                     depth,
@@ -268,19 +283,15 @@ impl Builder {
                     flags,
                     bridge_flags: &grids[1][4],
                     heights: &heights[level],
-                    // SceneGraph.buildScene's two loops for the hardware
-                    // renderer: the shade alone, or slope and shade.
-                    lightness: &if baked {
-                        shade.lightness_sd(level, &heights[level], rs09_client::sd_light::sun())
-                    } else {
-                        shade.lightness(level)
-                    },
+                    lightness: &lightness,
                     colors: &colors,
                     water: None,
                 },
                 &tables,
-            );
+            )
+            .await;
             for group in floor.groups() {
+                rs09_client::slice::yield_point().await;
                 // Upper-level tiles the original draws with the ground level
                 // go to ground chunks, as the builder has always placed them.
                 let mut by_chunk = BTreeMap::<(usize, i32, i32), Vec<&gl_tile::Face>>::new();
@@ -349,6 +360,7 @@ impl Builder {
 
         // SceneGraph.mergeSceneNormals, then the changed normals go back
         // into the meshes the way render::model scaled the originals.
+        rs09_client::slice::yield_point().await;
         slots.merge(height);
         let mut changed = std::collections::BTreeSet::new();
         for (entity, before, record) in merging {

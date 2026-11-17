@@ -921,6 +921,30 @@ impl Geometry {
         underlays: &[rs09_client::floor::Underlay],
         overlays: &[rs09_client::floor::Overlay],
     ) -> Result<Self, String> {
+        rs09_client::slice::block_on(Self::build_sliced(
+            scene,
+            regions,
+            models,
+            sequences,
+            textures,
+            location_types,
+            underlays,
+            overlays,
+        ))
+    }
+    /// [`Geometry::build`] with yield points (`rs09_client::slice`), for the
+    /// browser's scene streaming, which spreads a build over frames.
+    #[allow(clippy::too_many_arguments)]
+    async fn build_sliced(
+        scene: &Scene,
+        regions: &[Region],
+        models: &BTreeMap<u32, Model>,
+        sequences: &BTreeMap<u32, Sequence>,
+        textures: &render::Textures,
+        location_types: &BTreeMap<u32, rs09_client::interaction::LocationType>,
+        underlays: &[rs09_client::floor::Underlay],
+        overlays: &[rs09_client::floor::Overlay],
+    ) -> Result<Self, String> {
         let min_x = scene
             .regions
             .iter()
@@ -1008,6 +1032,7 @@ impl Geometry {
             for cx in 0..4 {
                 for cz in 0..4 {
                     for plane in 0..4 {
+                        rs09_client::slice::yield_point().await;
                         let ox = r.x * 64 + cx * 16;
                         let oz = r.z * 64 + cz * 16;
                         let center = vec2(ox as f32 + 8.0, oz as f32 + 8.0);
@@ -1017,6 +1042,7 @@ impl Geometry {
                             .map(Vec::as_slice)
                             .unwrap_or_default();
                         for &(index, [id, x, z, p, shape, rotation]) in objects_in_chunk {
+                            rs09_client::slice::yield_point().await;
                             // What SceneGraph.addLoc leaves in the scene for
                             // this row: nothing for a type hidden in HD, a
                             // replaced wall or an unwanted ground decoration.
@@ -1221,17 +1247,20 @@ impl Geometry {
                 }
             }
         }
-        terrain.finish(
-            scene,
-            regions,
-            textures,
-            location_types,
-            underlays,
-            overlays,
-            &mut chunks,
-            &mut pick_objects,
-            &mut faces,
-        );
+        terrain
+            .finish(
+                scene,
+                regions,
+                textures,
+                location_types,
+                underlays,
+                overlays,
+                &mut chunks,
+                &mut pick_objects,
+                &mut faces,
+            )
+            .await;
+        rs09_client::slice::yield_point().await;
         underwater_mesh::build(
             scene,
             regions,
@@ -3698,7 +3727,6 @@ async fn main() {
     // read, under the launch switches.
     let detail = scene_detail::Detail::from_arguments(std::env::args());
     {
-        #[cfg(not(target_arch = "wasm32"))]
         let saved = (!capture)
             .then(|| {
                 rs09_client::preferences_file::Store::locate(
@@ -3708,8 +3736,6 @@ async fn main() {
             })
             .flatten()
             .map(|store| store.load(rs09_client::preferences_file::MAX_MEMORY).0);
-        #[cfg(target_arch = "wasm32")]
-        let saved = None::<rs09_client::ui::vm::Preferences>;
         let brightness = match &saved {
             Some(saved) => saved.brightness,
             None => detail.brightness().unwrap_or(3),
@@ -3903,8 +3929,7 @@ async fn main() {
     .map_err(|error| eprintln!("Minimap unavailable: {error}"))
     .ok();
     // The world map list (the original's main load state 130) is read from
-    // the cache; the browser build has none and keeps the map empty.
-    #[cfg(not(target_arch = "wasm32"))]
+    // the cache: the browser's downloaded one there, if it has one.
     if let Some(ui) = &mut ui {
         world_map_render::install(ui, minimap.as_ref(), capture);
     }
@@ -3944,8 +3969,8 @@ async fn main() {
     // Saved preferences: the original's binary file, at `--preferences PATH`
     // or in the per-user settings folder, with this client's earlier JSON
     // file read when there is no binary one yet. Capture runs neither read
-    // nor write them, so they stay repeatable.
-    #[cfg(not(target_arch = "wasm32"))]
+    // nor write them, so they stay repeatable. The browser keeps the same
+    // bytes in the page's storage.
     let preferences_store = if capture {
         None
     } else {
@@ -3954,7 +3979,6 @@ async fn main() {
             std::env::var_os("APPDATA"),
         )
     };
-    #[cfg(not(target_arch = "wasm32"))]
     let preferences_loaded = preferences_store.as_ref().is_some_and(|store| {
         use rs09_client::preferences_file::{MAX_MEMORY, Source, main_load};
         let (preferences, source, warning) = store.load(MAX_MEMORY);
@@ -3973,8 +3997,6 @@ async fn main() {
         }
         source != Source::Defaults
     });
-    #[cfg(target_arch = "wasm32")]
-    let preferences_loaded = false;
     // Music needs the cache's song, instrument and sample archives and a PCM
     // device. Capture runs stay silent so they remain repeatable.
     #[cfg(target_os = "windows")]
@@ -4189,6 +4211,15 @@ async fn main() {
             }
         }
     };
+    // The browser: the starting scene's meshes go to the GPU now, in the
+    // start-up frame, instead of all in the first frame that draws them,
+    // which would hold that frame (and the title music) up.
+    #[cfg(target_arch = "wasm32")]
+    if let Some(renderer) = &static_renderer {
+        for chunk in &mut workbench.chunks {
+            renderer.warm(chunk);
+        }
+    }
     let character_shadow_material =
         render::material(&workbench.textures, false).expect("character shadow shader");
     // GlRenderer.setDepthLayer: the scene's things are drawn on the depth
@@ -4488,7 +4519,6 @@ async fn main() {
         #[cfg(any(target_os = "windows", target_arch = "wasm32"))]
         ambient_audio,
         ui_vm,
-        #[cfg(not(target_arch = "wasm32"))]
         preferences_store,
         #[cfg(any(target_os = "windows", target_arch = "wasm32"))]
         music,

@@ -475,6 +475,11 @@ fn remember(ids: &mut [u8; 8], count: &mut usize, id: u8) {
 /// Builds the floor of `level`. Tiles on the outermost ring of the grid are
 /// read but not built, as in the original.
 pub fn build(level: &Level, tables: &Tables) -> Floor {
+    crate::slice::block_on(build_sliced(level, tables))
+}
+
+/// [`build`] with yield points between its three passes (`crate::slice`).
+pub async fn build_sliced(level: &Level<'_>, tables: &Tables<'_>) -> Floor {
     let (w, d) = (level.width, level.depth);
     let corners = (w + 1) * (d + 1);
     assert!(w >= 3 && d >= 3, "a floor needs a ring of border tiles");
@@ -522,8 +527,10 @@ pub fn build(level: &Level, tables: &Tables) -> Floor {
             scene.north[corner] = dy as f32 / length;
         }
     }
+    crate::slice::yield_point().await;
     let mut diagonals = vec![0; w * d];
     let plain = plain(&scene, &mut diagonals);
+    crate::slice::yield_point().await;
     // The underwater buildScene stops after buildGlPlainTiles.
     let shaped = if level.water.is_some() {
         Vec::new()
@@ -962,5 +969,65 @@ mod tests {
             remember(&mut ids, &mut count, id);
         }
         assert_eq!((&ids[..count], count), (&[5, 3, 9][..], 3));
+    }
+
+    /// Not from the Java: the floor built a pass at a time, stopping at
+    /// every yield point, is the floor built at once.
+    #[test]
+    fn a_floor_built_in_slices_is_the_floor_built_at_once() {
+        let (w, d) = (12, 10);
+        let mut seed = 0x2545_f491u32;
+        let mut next = |modulo: u32| {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            seed % modulo
+        };
+        let grid = |next: &mut dyn FnMut(u32) -> u32, modulo: u32| -> Vec<u8> {
+            (0..w * d).map(|_| next(modulo) as u8).collect()
+        };
+        let underlays = grid(&mut next, 3);
+        let overlays = grid(&mut next, 3);
+        let shapes = grid(&mut next, 12);
+        let rotations = grid(&mut next, 4);
+        let flags = vec![0; w * d];
+        let heights: Vec<i32> = (0..(w + 1) * (d + 1))
+            .map(|_| -(next(64) as i32) * 8)
+            .collect();
+        let lightness: Vec<i32> = (0..w * d).map(|_| next(128) as i32 - 64).collect();
+        let colors: Vec<i32> = (0..w * d).map(|_| next(65536) as i32).collect();
+        let level = Level {
+            width: w,
+            depth: d,
+            level: 0,
+            underlays: &underlays,
+            overlays: &overlays,
+            shapes: &shapes,
+            rotations: &rotations,
+            flags: &flags,
+            bridge_flags: &flags,
+            heights: &heights,
+            lightness: &lightness,
+            colors: &colors,
+            water: None,
+        };
+        let palette: Vec<u32> = (0..65536u32)
+            .map(|i| i.wrapping_mul(2654435761) >> 8)
+            .collect();
+        let (unders, overs) = (vec![Underlay::default(); 2], vec![Overlay::default(); 2]);
+        let tables = Tables {
+            underlays: &unders,
+            overlays: &overs,
+            palette: &palette,
+            textures: &[[0; 2]; 4],
+        };
+        let whole = build(&level, &tables);
+        assert!(whole.groups().count() > 0);
+        // Every yield point stops: the deadline has always passed.
+        let (floor, stops) = crate::slice::stopping_everywhere(build_sliced(&level, &tables));
+        assert_eq!(stops, 2);
+        assert_eq!(format!("{:?}", floor.plain), format!("{:?}", whole.plain));
+        assert_eq!(format!("{:?}", floor.shaped), format!("{:?}", whole.shaped));
+        assert_eq!(floor.diagonals, whole.diagonals);
     }
 }

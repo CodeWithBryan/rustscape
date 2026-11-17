@@ -396,6 +396,11 @@ pub fn active() -> bool {
     cache().is_some()
 }
 
+/// The downloaded cache as it stands, when there is one.
+pub fn store() -> Option<rs09_cache::store::Store> {
+    Some(locked(&cache()?).store())
+}
+
 /// The prepared pack at `path`, unless the cache came from the update
 /// server: then the scene is built from it and no pack is fetched.
 pub async fn prepared(path: &str) -> Result<Vec<u8>, String> {

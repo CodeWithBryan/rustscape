@@ -58,10 +58,9 @@ mod list;
 pub mod raster;
 mod render;
 
-#[cfg(not(target_arch = "wasm32"))]
 pub mod cache;
 
-pub use font::{Typeface, WorldMapFont};
+pub use font::{Face, Typeface, WorldMapFont};
 pub use list::{
     Map, MapChunk, MapElement, MapElementList, MapList, breaks_to_spaces, equals_ignore_case,
     jag_bytes, latin1, map_functions, starts_with_ignore_case,

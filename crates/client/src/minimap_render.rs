@@ -280,7 +280,6 @@ impl Renderer {
     }
     /// The `Sprites.load` map-function offsets and the `MsiTypeList`
     /// map-scene offsets drawn at start-up; the world map uses the same ones.
-    #[cfg(not(target_arch = "wasm32"))]
     pub fn sprite_jitters(&self) -> ([i32; 3], [i32; 3]) {
         (self.function_jitter, self.mapscene_jitter)
     }

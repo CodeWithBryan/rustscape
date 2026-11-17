@@ -18,8 +18,11 @@
 //!   the desktop's size (miniquad's `set_fullscreen`, Windows only). The
 //!   screen's mode is never changed, so the one size on offer is the
 //!   desktop's and a request for any other fails as the original's does for
-//!   a mode the screen lacks. Other native systems and the browser offer no
-//!   mode at all.
+//!   a mode the screen lacks. In the browser the canvas element is put in
+//!   full screen through the Fullscreen API, again at the screen's own size
+//!   only; the browser grants it only just after a click or key press and
+//!   can end it by itself (see [`full_screen_lost`]). Other native systems
+//!   offer no mode at all.
 //! - The renderer is never restarted. The sample count is fixed when the
 //!   window is made (see [`samples`]).
 use macroquad::{camera::Camera, prelude as mq};
@@ -281,7 +284,29 @@ fn desktop() -> Option<[i32; 2]> {
     })
 }
 
-#[cfg(not(target_os = "windows"))]
+/// The page glue (`web/visual/display_glue.js`): the screen and the
+/// browser's Fullscreen API.
+#[cfg(target_arch = "wasm32")]
+mod page {
+    unsafe extern "C" {
+        pub fn rs09_screen_width() -> i32;
+        pub fn rs09_screen_height() -> i32;
+        pub fn rs09_full_screen(on: i32);
+        pub fn rs09_full_screen_left() -> i32;
+    }
+}
+
+/// The screen in the page's pixels. A browser offers full screen at the
+/// screen's own size only (it never changes the screen's mode), so that is
+/// the one mode listed, as on Windows.
+#[cfg(target_arch = "wasm32")]
+fn desktop() -> Option<[i32; 2]> {
+    // SAFETY: plain calls into the page glue.
+    let (width, height) = unsafe { (page::rs09_screen_width(), page::rs09_screen_height()) };
+    (width > 0 && height > 0).then_some([width, height])
+}
+
+#[cfg(not(any(target_os = "windows", target_arch = "wasm32")))]
 fn desktop() -> Option<[i32; 2]> {
     None
 }
@@ -327,11 +352,44 @@ fn exit_full_screen() {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
+/// The canvas element asks the browser for full screen. The answer comes
+/// later: a refusal (no click or key press just before) or the player
+/// leaving with Escape is reported by [`full_screen_lost`].
+#[cfg(target_arch = "wasm32")]
+fn enter_full_screen() {
+    // SAFETY: a plain call into the page glue.
+    unsafe { page::rs09_full_screen(1) }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn exit_full_screen() {
+    LEAVING.with(|leaving| leaving.set(Some((self::window(), 30))));
+    // SAFETY: as above.
+    unsafe { page::rs09_full_screen(0) }
+}
+
+#[cfg(not(any(target_os = "windows", target_arch = "wasm32")))]
 fn enter_full_screen() {}
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(any(target_os = "windows", target_arch = "wasm32")))]
 fn exit_full_screen() {}
+
+/// The browser ended full screen without the client asking (Escape, its own
+/// controls) or refused to enter it, since the last call. The original's
+/// full-screen frame cannot be taken away like that; the nearest thing it
+/// knows is that frame losing the focus, which takes it back to the
+/// remembered mode (client.java:849-851), and the caller does the same.
+pub fn full_screen_lost() -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        // SAFETY: a plain call into the page glue.
+        unsafe { page::rs09_full_screen_left() != 0 }
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        false
+    }
+}
 
 /// Carries out what `display` did since the last call. Returns whether
 /// `DisplayMode.setWindowMode` ran to its end (it reports the window when
