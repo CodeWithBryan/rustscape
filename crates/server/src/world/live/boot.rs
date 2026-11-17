@@ -143,6 +143,12 @@ fn text_constant(config: &Configuration, key: &str) -> Result<String, String> {
         .ok_or_else(|| format!("configuration has no {key}"))
 }
 
+fn constant_bool(config: &Configuration, key: &str) -> Result<bool, String> {
+    config.constants()[key]
+        .as_bool()
+        .ok_or_else(|| format!("configuration has no {key}"))
+}
+
 /// Boots the world. Every refused or partial start-up step is reported; the
 /// start-up runs with `Policy::ContinuePastRefusals`.
 pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Result<Booted, String> {
@@ -348,6 +354,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         verbose: options.verbose,
         npcs: npc_store,
         generators,
+        timers: Default::default(),
     };
     let names = |section: &str| -> Vec<String> {
         startup::scan::section(section)
@@ -379,6 +386,9 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             maps: Maps::default(),
             active: BTreeSet::new(),
             ground,
+            scenery: Default::default(),
+            scenery_dispatch: false,
+            interactions: None,
         },
         login_listeners: names("listeners.login"),
         logout_listeners: names("listeners.logout"),
@@ -392,7 +402,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         saved: 0,
         regions: super::regions::Regions::new(loaded_regions),
         npc_views: Default::default(),
-        tab_pulses: Vec::new(),
+        global: Default::default(),
         listeners: Default::default(),
         item_actions: Default::default(),
         zones: super::region_zones::RegionZones {
@@ -410,7 +420,13 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.inner.log_line(format!(
         "{ground} start-up ground items joined to the scene's chunks"
     ));
-    super::buttons::register(&mut live)?;
+    // The global handlers (register_scanned) with the bank booth constants.
+    let booth = [
+        constant_bool(&configuration, "BANK_BOOTH_QUICK_OPEN")?,
+        constant_bool(&configuration, "BANK_BOOTH_NOTE_ENABLED")?,
+        constant_bool(&configuration, "BANK_BOOTH_NOTE_UIM")?,
+    ];
+    live.install_global_handlers(booth)?;
     // ZoneBuilder.startup: the region zones.
     live.zone_startup()
         .map_err(|e| format!("ZoneBuilder.startup: {e:?}"))?;

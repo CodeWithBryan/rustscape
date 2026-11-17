@@ -431,8 +431,10 @@ impl zones::Host for Live {
             .message(&P(player.clone()), message)
             .map_err(zerror)
     }
-    fn has_timer(&mut self, _: &NodeHandle, _: &str) -> zones::Result<bool> {
-        refused("entity timers (no player timer types are installed)")
+    fn has_timer(&mut self, entity: &NodeHandle, identifier: &str) -> zones::Result<bool> {
+        // hasTimerActive(entity, identifier) over the player's timers
+        // (super::timers); NPC timers are not installed.
+        self.has_timer_of(entity.node, identifier).map_err(zerror)
     }
     fn teleport_locked(&mut self, entity: &NodeHandle) -> zones::Result<bool> {
         let locks = self.inner.state.locks(entity).map_err(zerror)?;

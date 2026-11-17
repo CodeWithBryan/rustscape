@@ -289,9 +289,31 @@ impl Client {
         while !done(self) {
             assert!(
                 Instant::now() < end,
-                "{}: timed out waiting for {what}",
-                self.name
+                "{}: timed out waiting for {what} (inventory {:?}, last messages {:?})",
+                self.name,
+                self.containers.get(&93),
+                &self.messages[self.messages.len().saturating_sub(5)..]
             );
+            self.pump(Duration::from_millis(200)).await;
+        }
+    }
+
+    /// [`Client::until`] for long waits: a PING (93) every five seconds, as
+    /// the client sends one, so the 20-second ping timeout does not log it out.
+    async fn until_pinging(&mut self, limit: Duration, what: &str, done: impl Fn(&Client) -> bool) {
+        let end = Instant::now() + limit;
+        let mut ping = Instant::now();
+        while !done(self) {
+            assert!(
+                Instant::now() < end && !self.closed,
+                "{}: timed out waiting for {what} (closed: {})",
+                self.name,
+                self.closed
+            );
+            if ping.elapsed() > Duration::from_secs(5) {
+                self.send(frame(93, &[])).await;
+                ping = Instant::now();
+            }
             self.pump(Duration::from_millis(200)).await;
         }
     }
@@ -821,8 +843,88 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
     again.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 
+    // Hitpoints restoration (SkillRestore, installed by addAutoTimers) runs
+    // beside the other scenarios: it needs about a hundred ticks.
+    let healer = tokio::spawn(heal_scenario(address, saves.to_path_buf()));
     items_scenario(address, saves).await;
     wilderness_scenario(address, saves).await;
+    scenery_scenario(address, saves).await;
+    healer.await.expect("the heal scenario");
+}
+
+/// A scenery option: a saved character next to the ladder (36768) east of
+/// Lumbridge castle at 3229,3213 uses Climb-up (opcode 254):
+/// processSceneryAction, the legacy walk and arrival, the global handlers'
+/// LadderManagingPlugin and ClimbActionHandler (lock, animation 828, the
+/// one-tick pulse and the teleport location): the client's position reaches
+/// the floor above.
+async fn scenery_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3229, 3212, 0];
+    write_save(&players, "traceone", "climbone", at, &[]);
+    let (code, one) = Client::login(address, "climbone").await;
+    assert_eq!(code, 2, "climbone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "climbone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    assert_eq!(one.position(), at, "climbone's saved location");
+    let from = one.updates.len();
+    one.send(scenery_option1(36768, 3229, 3213)).await;
+    one.until(Duration::from_secs(10), "the floor above the ladder", |c| {
+        c.players.plane == 1
+    })
+    .await;
+    let climbed = one.updates[from..].iter().any(|(_, u)| {
+        u.extended.iter().any(|e| {
+            e.index == one.index as usize
+                && e.fields
+                    .iter()
+                    .any(|f| matches!(f, players::Field::Animation { id: 828, .. }))
+        })
+    });
+    eprintln!(
+        "climbone climbed the ladder 36768 at [3229, 3213, 0]: now on plane {} at {:?} (climb animation 828 seen: {climbed})",
+        one.players.plane,
+        one.players.self_player().tile()
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The engine timers: a saved character with 5 of its 10 hitpoints logs in;
+/// `TimerRegistry.addAutoTimers` installs SkillRestore, which heals one
+/// hitpoint once its counter passes 100 ticks (the client's skill packet for
+/// hitpoints goes from 5 to 6, about a minute after login).
+async fn heal_scenario(address: std::net::SocketAddr, saves: PathBuf) {
+    let players = saves.join("players");
+    let at = [3221, 3219, 0];
+    write_save_with(&players, "traceone", "healone", at, &[], |save| {
+        save["skills"][3]["lifepoints"] = Value::String("5".into());
+    });
+    let (code, one) = Client::login(address, "healone").await;
+    assert_eq!(code, 2, "healone's login");
+    let mut one = one.unwrap();
+    let logged_in = Instant::now();
+    one.until(Duration::from_secs(10), "healone's hitpoints", |c| {
+        c.skills.get(&3).map(|s| s.0) == Some(5)
+    })
+    .await;
+    one.until_pinging(Duration::from_secs(120), "a hitpoint restored", |c| {
+        c.skills.get(&3).map(|s| s.0) == Some(6)
+    })
+    .await;
+    let after = logged_in.elapsed();
+    eprintln!(
+        "healone's hitpoints 5 -> 6 after {:.1} s (SkillRestore: 100 ticks)",
+        after.as_secs_f64()
+    );
+    assert!(
+        after > Duration::from_secs(50) && after < Duration::from_secs(90),
+        "one hitpoint about 100 ticks after login, not {after:?}"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
 }
 
 /// The same scenario against an `rs09-server --world` started outside the
@@ -894,6 +996,31 @@ fn item_examine(id: i32) -> Frame {
 fn npc_examine(id: i32) -> Frame {
     frame(72, &[&be16(id)])
 }
+fn li32(v: i32) -> [u8; 4] {
+    v.to_le_bytes()
+}
+/// SLOT_SWITCH (231): an inventory item dragged to another slot (no insert).
+fn slot_switch(source: i32, dest: i32) -> Frame {
+    frame(231, &[&be16(source), &li32(149 << 16), &sa16(dest), &[0]])
+}
+/// USE_ITEM_ON_ITEM (27): one inventory item on another.
+fn use_item_on_item(used: i32, used_slot: i32, with: i32, with_slot: i32) -> Frame {
+    frame(
+        27,
+        &[
+            &be16(used_slot),
+            &li32(149 << 16),
+            &le16(with_slot),
+            &li32(149 << 16),
+            &la16(used),
+            &la16(with),
+        ],
+    )
+}
+/// OBJECT_ACTION_1 (254): a scenery's first option.
+fn scenery_option1(id: i32, x: i32, y: i32) -> Frame {
+    frame(254, &[&le16(x), &sa16(id), &be16(y)])
+}
 /// NPC_ACTION_1 (78): an NPC's first option.
 fn npc_option1(index: i32) -> Frame {
     frame(78, &[&le16(index)])
@@ -908,6 +1035,18 @@ fn write_save(
     location: [i32; 3],
     inventory: &[(i32, i32, i32)],
 ) {
+    write_save_with(players, from, name, location, inventory, |_| {});
+}
+
+/// [`write_save`] with a further edit of the save's JSON.
+fn write_save_with(
+    players: &std::path::Path,
+    from: &str,
+    name: &str,
+    location: [i32; 3],
+    inventory: &[(i32, i32, i32)],
+    edit: impl FnOnce(&mut Value),
+) {
     let text = std::fs::read_to_string(players.join(format!("{from}.json"))).unwrap();
     let mut save: Value = serde_json::from_str(&text).unwrap();
     save["core_data"]["location"] =
@@ -921,6 +1060,7 @@ fn write_save(
             })
             .collect(),
     );
+    edit(&mut save);
     std::fs::write(
         players.join(format!("{name}.json")),
         serde_json::to_string(&save).unwrap(),
@@ -1022,6 +1162,31 @@ async fn items_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
     })
     .await;
     eprintln!("groundone took the dropped bowl back: drop/pickup round trip over TCP");
+
+    // Slot switch (opcode 231): the bowl moves to inventory slot 5
+    // (processSlotSwitch, switchItem over the canonical inventory).
+    let bowl = one.slot_of(93, 1923).unwrap();
+    one.send(slot_switch(bowl, 5)).await;
+    one.until(Duration::from_secs(10), "the bowl in slot 5", |c| {
+        c.slot_of(93, 1923) == Some(5) && c.slot_of(93, 1205) == Some(0)
+    })
+    .await;
+    eprintln!("groundone switched the bowl from slot {bowl} to slot 5");
+    // Use-with (opcode 27): the dagger on the bowl; no listener, plugin or
+    // UseWithHandler takes it, so runUnhandledAction answers.
+    let from = one.messages.len();
+    one.send(use_item_on_item(1205, 0, 1923, 5)).await;
+    one.until(
+        Duration::from_secs(10),
+        "the unhandled use-with message",
+        |c| {
+            c.messages[from..]
+                .iter()
+                .any(|(_, m)| m == "Nothing interesting happens.")
+        },
+    )
+    .await;
+    eprintln!("groundone used 1205 on 1923: \"Nothing interesting happens.\"");
 
     // Wield: EquipHandler over the canonical EquipmentContainer.
     one.send(item_option2(1205, 0)).await;

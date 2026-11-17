@@ -17,7 +17,6 @@ use crate::{
     },
     player::{
         attributes::AttributeValue,
-        core_data::CoreData,
         details::{ClientInfo, PlayerDetails},
         owned::{
             Player,
@@ -173,6 +172,9 @@ pub struct Inner {
     /// The world's generators from the start-up (`RandomFunction.RANDOM` is
     /// `shared`), continued.
     pub generators: crate::startup::generators::WorldGenerators,
+    /// The timer registry, the entities' event hooks and the calls of
+    /// timers registered by a parse ([`super::timers`]).
+    pub timers: super::timers::TimerWorld,
 }
 
 pub fn native<E: std::fmt::Debug>(e: E) -> crate::world::login::Error {
@@ -296,10 +298,55 @@ impl Inner {
     pub fn environment_run<T>(
         &mut self,
         p: &P,
-        f: impl FnOnce(&Player, &State, &mut Environment<'_, LiveTimers, Rest>) -> T,
+        f: impl FnOnce(&Player, &State, &mut Environment<'_, LiveTimers<'_, '_>, Rest>) -> T,
     ) -> T {
         let player = self.canonical(p).player.clone();
-        let mut timers = LiveTimers::default();
+        // The timers of the file: content::Natives over the save host
+        // (super::timers::Saving); the rights are read before the parse.
+        let rights = self
+            .with_profile(p, |profile| profile.details.rights().ok())
+            .ok()
+            .flatten();
+        let players = self
+            .players
+            .values()
+            .map(|slot| (P(slot.canonical.owner.clone()), slot.uid, slot.active))
+            .collect();
+        let registry = self.timers.registry.clone();
+        let first = !self.timers.registered;
+        self.timers.registered = true;
+        let mut saving = super::timers::Saving {
+            ticks: self.ticks,
+            players,
+            npcs: &self.npcs.rows,
+            rights,
+            generators: &mut self.generators,
+            calls: &mut self.timers.calls,
+            lines: Vec::new(),
+            skills: placeholder_skills(),
+            book: 0,
+            rest: Rest {
+                hooks: self.hooks,
+                ticks: self.ticks,
+                skipped: Vec::new(),
+            },
+            failures: Vec::new(),
+        };
+        let mut timers = timers::content::Natives {
+            host: &mut saving,
+            entity: p.clone(),
+            registry,
+        };
+        if first {
+            if let Err(e) =
+                timers::content::register_prototypes(&mut timers, &mut timers::Manager::default())
+            {
+                timers
+                    .host
+                    .lines
+                    .push(format!("ClassScanner.loadTimers: {e:?}"));
+            }
+        }
         let mut rest = Rest {
             hooks: self.hooks,
             ticks: self.ticks,
@@ -315,8 +362,13 @@ impl Inner {
             attribute_path: &path,
         };
         let result = f(&player, &self.state, &mut env);
-        for what in rest.skipped.into_iter().chain(timers.skipped) {
+        let lines = std::mem::take(&mut saving.lines);
+        let failures = std::mem::take(&mut saving.failures);
+        for what in rest.skipped {
             self.not_ported.skip(what);
+        }
+        for line in lines.into_iter().chain(failures) {
+            self.log_line(line);
         }
         result
     }
@@ -921,7 +973,11 @@ impl skills::Context for SkillsContext<'_> {
         Err(skills::Error::Binding)
     }
     fn damage_spong_active(&mut self) -> skills::Result<bool> {
-        Err(skills::Error::Binding)
+        // SkillcapePerks.isActive(DAMAGE_SPONG, player): perks are off.
+        self.inner
+            .not_ported
+            .default_answer("skillcape perks (skillcape_perks off: false)");
+        Ok(false)
     }
     fn assisted_level(&mut self, _: i32) -> skills::Result<Option<i32>> {
         // AssistSession: nobody assists in this world (not ported).
@@ -1800,105 +1856,6 @@ impl settings::Context for Rest {
     }
 }
 
-/// Timer content in a save: no player timer type is ported (the three native
-/// timer prototypes refuse their player branches, docs/startup.md). An
-/// unknown identifier is the original's `TimerRegistry` answer for a class it
-/// does not hold: null, logged by the timer manager and dropped.
-#[derive(Default)]
-pub struct LiveTimers {
-    pub skipped: Vec<&'static str>,
-}
-impl timers::Context<CoreData> for LiveTimers {
-    fn is_player(&self, _: &CoreData) -> bool {
-        true
-    }
-    fn modal_open(&mut self, _: &mut CoreData) -> timers::Result<bool> {
-        Err(timers::Error::Type)
-    }
-    fn script_delay(&mut self, _: &mut CoreData) -> timers::Result<i32> {
-        Err(timers::Error::Type)
-    }
-    fn ticks(&mut self, _: &mut CoreData) -> timers::Result<i32> {
-        Err(timers::Error::Type)
-    }
-    fn entity_name(&mut self, _: &mut CoreData) -> timers::Result<Option<String>> {
-        Ok(None)
-    }
-    fn before_register(
-        &mut self,
-        _: &timers::Handle,
-        _: &mut timers::Manager,
-        _: &mut CoreData,
-    ) -> timers::Result<()> {
-        Err(timers::Error::Type)
-    }
-    fn on_register(
-        &mut self,
-        _: &timers::Handle,
-        _: &mut timers::Manager,
-        _: &mut CoreData,
-    ) -> timers::Result<()> {
-        Err(timers::Error::Type)
-    }
-    fn on_removal(
-        &mut self,
-        _: &timers::Handle,
-        _: &mut timers::Manager,
-        _: &mut CoreData,
-    ) -> timers::Result<()> {
-        Err(timers::Error::Type)
-    }
-    fn run(
-        &mut self,
-        _: &timers::Handle,
-        _: &mut timers::Manager,
-        _: &mut CoreData,
-    ) -> timers::Result<bool> {
-        Err(timers::Error::Type)
-    }
-    fn initial_delay(
-        &mut self,
-        _: &timers::Handle,
-        _: &mut timers::Manager,
-        _: &mut CoreData,
-    ) -> timers::Result<i32> {
-        Err(timers::Error::Type)
-    }
-    fn save(
-        &mut self,
-        timer: &timers::Handle,
-        root: &mut crate::definitions::item_config::json::Json,
-        _: &mut timers::Manager,
-        state: &mut CoreData,
-    ) -> timers::Result<()> {
-        timers::save_base(timer, root, state, self)
-    }
-    fn parse(
-        &mut self,
-        timer: &timers::Handle,
-        data: &crate::definitions::item_config::json::Json,
-        _: &mut timers::Manager,
-        _: &mut CoreData,
-    ) -> timers::Result<()> {
-        timers::parse_base(timer, data)
-    }
-    fn resolve(
-        &mut self,
-        _: &str,
-        _: &mut timers::Manager,
-        _: &mut CoreData,
-    ) -> timers::Result<Option<timers::Handle>> {
-        self.skipped
-            .push("TimerRegistry player timer types (content timers not ported: dropped)");
-        Ok(None)
-    }
-    fn run_failure(&mut self, _: &str, _: Option<&str>, _: &mut CoreData) -> timers::Result<()> {
-        Ok(())
-    }
-    fn unknown_timer(&mut self, _: &str, _: &mut CoreData) -> timers::Result<()> {
-        Ok(())
-    }
-    fn exception(&mut self, _: &timers::Error, _: &mut CoreData) -> timers::Result<()> {
-        Ok(())
-    }
-}
+/// The timers of a save file: the engine timers (`timers::content`) over
+/// the save host ([`super::timers::Saving`]).
+pub type LiveTimers<'n, 's> = timers::content::Natives<'n, super::timers::Saving<'s>>;

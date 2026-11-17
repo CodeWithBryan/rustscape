@@ -1,0 +1,30 @@
+{
+  "format": 1,
+  "upstream": {
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "url": "https://gitlab.com/2009scape/2009scape.git",
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only"
+    },
+    "client": {
+      "url": "https://gitlab.com/2009scape/rt4-client.git",
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only"
+    }
+  },
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/wield-requirements/WieldRequirementsOracle.java": "0bfb6d339e358059cf64f7c2aec4d769ef918a1f5fccc93ce425bf5f18160a45",
+    "oracle/wield-requirements/generate.py": "52912824faa32f67c65ad647ec7ef6f31a976ac463513a18dedfcc16d700686d",
+    "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+    "reference/server/Server/src/main/core/game/node/entity/skill/Skills.java": "b442b260cc591406dc903d46cd729db27976b9470413bc039d6766bd4fe1f0db",
+    "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+    "reference/server/Server/src/main/core/tools/StringUtils.java": "51365165036173a8b2df93b9ea108b5cc01d8aa6b86dc23383719f1ff5482e13",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "caseCount": 1146,
+  "fixtureSha256": "52d679004561235acdd63c62ad0aae1ae9f14d7885938de5e60fdfaa03297f46",
+  "scope": "ItemDefinition.hasRequirement verbatim from the pinned source, with Skills.SKILL_NAME and StringUtils.isPlusN verbatim; the configuration (absent, another class, or a java.util.HashMap filled in the case's order), Skills.getStaticLevel, Player and PacketDispatch.sendMessage are adapters. Compares the result, the exception class and the messages. Null map values and non-Integer keys are not covered (the native configuration holds int pairs)."
+}

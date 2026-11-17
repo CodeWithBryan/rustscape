@@ -647,6 +647,10 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
             .map_err(lerror)
     }
     fn handler_walk(&mut self, _: &mut State, id: usize) -> legacy::Result<bool> {
+        if self.walk.scenery_dispatch {
+            // A global handler's OptionHandler (super::scenery).
+            return self.scenery_handler(id).map(|h| h.is_walk());
+        }
         // PickupPlugin is an OptionHandler: isWalk() is true.
         self.pickup_program(id).map(|_| true)
     }
@@ -657,6 +661,9 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
         _: Option<Node>,
         _: Option<Node>,
     ) -> legacy::Result<bool> {
+        if self.walk.scenery_dispatch {
+            return self.scenery_handler(id).map(|h| h.is_walk_for());
+        }
         self.pickup_program(id).map(|_| false)
     }
     fn handler_delayed(
@@ -665,9 +672,15 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
         id: usize,
         _: Option<Node>,
     ) -> legacy::Result<bool> {
+        if self.walk.scenery_dispatch {
+            return self.scenery_handler(id).map(|h| h.is_delayed());
+        }
         self.pickup_program(id).map(|_| true)
     }
     fn handler_name(&mut self, _: &mut State, id: usize) -> legacy::Result<String> {
+        if self.walk.scenery_dispatch {
+            return self.scenery_handler(id).map(|h| h.class().into());
+        }
         self.pickup_program(id).map(|_| "PickupPlugin".into())
     }
     fn handler_handle(
@@ -676,8 +689,26 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
         id: usize,
         p: Option<Node>,
         target: Option<Node>,
-        _: &str,
+        option: &str,
     ) -> legacy::Result<bool> {
+        let target_node = target.ok_or(legacy::Error::Null)?;
+        if state.ground(target_node).is_err() {
+            // Scenery: a global handler's OptionHandler, run with the whole
+            // world right after this walking call returns (super::global).
+            let plugin = self.scenery_handler(id)?;
+            let player = state
+                .retain_node(p.ok_or(legacy::Error::Null)?)
+                .map_err(lerror)?;
+            let object = state.scenery(target_node).map_err(lerror)?;
+            self.deferred
+                .push(super::walk::Deferred::Handler(super::global::HandlerCall {
+                    plugin,
+                    player,
+                    target: Some(object),
+                    option: option.to_owned(),
+                }));
+            return Ok(true);
+        }
         let program = self.pickup_program(id)?;
         let player = state
             .retain_node(p.ok_or(legacy::Error::Null)?)

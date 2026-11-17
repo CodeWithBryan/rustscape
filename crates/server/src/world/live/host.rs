@@ -103,8 +103,9 @@ pub struct Live {
     pub regions: super::regions::Regions,
     /// The NPC renderer's view of each NPC, by node ([`super::npcs`]).
     pub npc_views: std::collections::HashMap<Node, crate::world::npc_render::Handle>,
-    /// The tab buttons' one-tick world pulses ([`super::buttons`]).
-    pub tab_pulses: Vec<(pulses::Handle, super::buttons::TabPulse)>,
+    /// The global handlers' state: their submitted pulses, login plugins,
+    /// configuration and ladders ([`super::global`]).
+    pub global: super::global::GlobalState,
     /// `InterfaceListeners` of the installed content ([`super::buttons`]).
     pub listeners: crate::world::interface_listeners::Registry,
     /// The routed item, NPC and player packet handlers ([`super::items`]).
@@ -195,6 +196,10 @@ impl Live {
                 Deferred::RemoveRenderable(node) => {
                     let repository = self.repository.clone();
                     repository.remove_renderable_npc(self, &P(node));
+                    None
+                }
+                Deferred::Handler(call) => {
+                    self.run_handler_calls(vec![call]);
                     None
                 }
                 Deferred::RegionMove(node, from, to) => Some(
@@ -810,6 +815,8 @@ impl login::Host<P> for Live {
             let outcome = player.load_file(state, Some(&location), &mut parser, &save_path, env);
             (outcome, parser)
         });
+        // The messages and skull calls of the timers the parse registered.
+        self.run_timer_calls();
         let outcome = outcome.map_err(native)?;
         if let Some(location) = outcome.location {
             let node = p.node();
@@ -892,11 +899,9 @@ impl login::Host<P> for Live {
             actor.view.active = active;
         }
     }
-    fn add_auto_timers(&mut self, _: &P) -> login::Result<()> {
-        self.inner
-            .not_ported
-            .skip("TimerRegistry.addAutoTimers for players (player timer types not ported)");
-        Ok(())
+    fn add_auto_timers(&mut self, p: &P) -> login::Result<()> {
+        // TimerRegistry.addAutoTimers (super::timers): AntiMacro, SkillRestore.
+        self.add_auto_timers_of(p).map_err(native)
     }
     fn update_scene_graph(&mut self, p: &P, _: bool) -> login::Result<()> {
         struct Keys<'a> {
@@ -1350,8 +1355,13 @@ impl driver::Host<P> for Live {
             .packet_count(increment))
     }
     fn pulse_body(&mut self, pulse: &pulses::Handle) -> driver::Result<bool> {
-        if let Some(at) = self.tab_pulses.iter().position(|(h, _)| h.same(pulse)) {
-            return self.tab_pulse_body(at);
+        // The global handlers' submitted bodies (super::global).
+        if let Some(result) = self.global_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
+        // PulseManager.runUnhandledAction's pulse of a use-with.
+        if let Some(result) = self.use_pulse(pulse) {
+            return result.map_err(fail);
         }
         // InteractPlugin.handleItemOption's pulse (InteractPlugin$1).
         if let Some(result) = self.item_pulse(pulse) {
@@ -1435,11 +1445,14 @@ impl driver::Host<P> for Live {
         // DropListener's soft queued scripts that are due (super::items).
         self.run_drop_scripts(p).map_err(fail)?;
         let node = p.node();
-        self.with_walk(|world| {
-            world.entity_before_masks(node)?;
-            world.prepare_masks(node)
-        })
-        .map_err(fail)?;
+        // Entity.tick: scripts, skills.pulse(), the walking queue (and the
+        // region move it asks for), then timers.processTimers() (its event
+        // is the last of entity_before_masks), then updateMasks.prepare.
+        self.with_walk(|world| world.entity_before_masks(node))
+            .map_err(fail)?;
+        self.process_timers_of(p).map_err(fail)?;
+        self.with_walk(|world| world.prepare_masks(node))
+            .map_err(fail)?;
         let Inner { state, players, .. } = &mut self.inner;
         if let Some(slot) = players.get_mut(&node) {
             walk::project(state, node, slot).map_err(fail)?;

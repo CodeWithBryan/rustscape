@@ -33,6 +33,7 @@ pub mod drop;
 pub mod equip;
 pub mod examine;
 pub mod item_option;
+pub mod requirement;
 pub mod slot_switch;
 pub mod use_with;
 

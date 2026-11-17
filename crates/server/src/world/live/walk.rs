@@ -43,6 +43,15 @@ pub struct Walk {
     pub active: BTreeSet<i32>,
     /// Ground items ([`super::ground_items`]): with the scene they live in.
     pub ground: super::ground_items::Grounds,
+    /// Scenery's InteractPlugin tables and option handler arena
+    /// (`world::scenery_options`), with the global handlers' defaults.
+    pub scenery: crate::world::scenery_options::Registry,
+    /// A scenery action is being dispatched (its handler ids are the
+    /// scenery arena's).
+    pub scenery_dispatch: bool,
+    /// `InteractionListeners` (the item packets' registry), for the scenery
+    /// listener lookup.
+    pub interactions: Option<crate::world::interaction_listeners::Registry>,
 }
 
 /// `scene::Services` for collision queries. The scenery services (doors,
@@ -130,6 +139,9 @@ pub enum Deferred {
     RegionMove(NodeHandle, Option<Location>, Location),
     /// `Repository.removeRenderableNPC(npc)` from `onRegionInactivity`.
     RemoveRenderable(NodeHandle),
+    /// A global handler's OptionHandler reached by an interaction
+    /// (`InteractPlugin.handle`), run with the whole world.
+    Handler(super::global::HandlerCall),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -190,12 +202,24 @@ impl player_walk::Services for WalkHost<'_> {
                     )
                     .map_err(binding)?
             }
-            Query::Timer(_, _) => {
-                // timers.getTimer(name): no player timer type is ported, so
-                // no timer is ever registered.
-                self.not_ported
-                    .default_answer("walking timer query (no player timer types: none)");
-                false
+            Query::Timer(n, name) => {
+                // timers.getTimer(name) != null over the player's timer
+                // manager (super::timers). An NPC's manager holds only the
+                // start-up's auto timers (AntiMacro and HolidayRandoms remove
+                // themselves, GrandExchangeTimer polls): none is asked for.
+                let Some(slot) = self.players.get(&n) else {
+                    self.not_ported.default_answer(
+                        "NPC timer queries (NPC timers not installed: none registered)",
+                    );
+                    return Ok(false);
+                };
+                slot.canonical
+                    .player
+                    .with_profile(|profile| {
+                        crate::timers::content::has_identifier(&profile.timers, name)
+                    })
+                    .map_err(binding_debug)?
+                    .map_err(binding_debug)?
             }
             Query::Marathon(_) => {
                 self.not_ported
@@ -273,12 +297,25 @@ impl player_walk::Services for WalkHost<'_> {
             Event::TickEvent(_, _) => self
                 .not_ported
                 .skip("Entity tick event hooks (entity events not ported)"),
-            Event::Skills(_) => self
-                .not_ported
-                .skip("Skills.pulse restoration (SkillRestore not ported)"),
-            Event::Timers(_) => self
-                .not_ported
-                .skip("timers.processTimers (no player timer types ported)"),
+            Event::Skills(n) => {
+                // Skills.pulse(): returns at once (restoration is the
+                // SkillRestore timer's).
+                if let Some(slot) = self.players.get(&n) {
+                    slot.canonical
+                        .player
+                        .with_profile(|profile| profile.skills.pulse())
+                        .map_err(binding_debug)?;
+                }
+            }
+            Event::Timers(n) => {
+                // A player's timers.processTimers() runs right after this
+                // call returns (Live::player_tick, super::timers); NPC
+                // timers are not installed.
+                if !self.players.contains_key(&n) {
+                    self.not_ported
+                        .skip("timers.processTimers for NPCs (NPC timers not installed)");
+                }
+            }
             Event::PulseLength(_, _)
             | Event::CountPulse(_)
             | Event::BotTotal(_)
@@ -421,11 +458,40 @@ impl player_walk::Services for WalkHost<'_> {
     }
     fn destination(
         &mut self,
-        _: &mut State,
+        state: &mut State,
         _: Option<Node>,
-        _: Option<Node>,
+        target: Option<Node>,
         service: crate::world::movement::DestinationService,
     ) -> player_walk::Result<Option<Location>> {
+        // OptionHandler.getDestination of a scenery option: the global
+        // handlers' (LadderManagingPlugin computes the climbing side over the
+        // scene, super::destination).
+        if let (crate::world::movement::DestinationService::Option(id), Some(target)) =
+            (&service, target)
+        {
+            if let Ok(object) = state.scenery(target) {
+                let plugin = self
+                    .scenery_handler(*id)
+                    .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?;
+                let mut geometry = super::destination::Geometry {
+                    walk: &mut *self.walk,
+                    failures: Vec::new(),
+                };
+                let at = crate::world::global_handlers::registry::handler_destination(
+                    &mut geometry,
+                    plugin,
+                    Some(&super::destination::SceneNode(object)),
+                )
+                .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?;
+                if !geometry.failures.is_empty() {
+                    return Err(player_walk::Error::Binding(format!(
+                        "getDestination reached {:?}",
+                        geometry.failures
+                    )));
+                }
+                return Ok(at.map(|[x, y, z]| Location::new(x, y, z)));
+            }
+        }
         // OptionHandler.getDestination: PickupPlugin's is null (the default
         // destination); no other handler is installed.
         match service {

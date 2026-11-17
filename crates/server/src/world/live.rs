@@ -32,7 +32,10 @@
 //! ported and is answered by name. See docs/live-world.md.
 pub mod boot;
 pub mod buttons;
+pub mod combat;
+pub mod destination;
 pub mod equipment;
+pub mod global;
 pub mod ground;
 pub mod ground_items;
 pub mod host;
@@ -43,8 +46,10 @@ pub mod npc_life;
 pub mod npcs;
 pub mod region_zones;
 pub mod regions;
+pub mod scenery;
 pub mod server;
 pub mod tabs;
+pub mod timers;
 pub mod walk;
 
 use super::player_walk::NodeHandle;

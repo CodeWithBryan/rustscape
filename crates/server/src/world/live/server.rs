@@ -654,6 +654,32 @@ pub fn handle(
             .ground_action(player.node(), action)
             .map_err(super::host::fail),
         (
+            Handler::SceneryAction,
+            dispatch::Packet::Action {
+                player,
+                action: action @ rs09_protocol::game::ClientAction::SceneryAction { .. },
+                ..
+            },
+        ) => live
+            .scenery_action(player.node(), action)
+            .map_err(super::host::fail),
+        (Handler::UseWith, dispatch::Packet::Action { player, action, .. }) => {
+            match crate::world::packet_handlers::use_with::UseWith::from_action(action) {
+                Some(request) => live.use_with(player, request).map_err(super::host::fail),
+                None => Err(super::host::fail(
+                    "a use-with packet without its decoded form",
+                )),
+            }
+        }
+        (Handler::SlotSwitch, dispatch::Packet::Action { player, action, .. }) => {
+            match crate::world::packet_handlers::slot_switch::SlotSwitch::from_action(action) {
+                Some(request) => live.slot_switch(player, request).map_err(super::host::fail),
+                None => Err(super::host::fail(
+                    "a slot switch packet without its decoded form",
+                )),
+            }
+        }
+        (
             Handler::ItemAction
             | Handler::NpcAction
             | Handler::PlayerAction

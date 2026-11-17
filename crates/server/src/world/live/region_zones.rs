@@ -89,7 +89,9 @@ impl Live {
 
 impl skull::Host for Live {
     type Player = NodeHandle;
-    type Timer = ();
+    /// `spawnTimer(identifier, runInterval)`'s answer: the identifier and
+    /// interval, instantiated by `registerTimer` (super::timers).
+    type Timer = (String, i32);
     fn skull(&mut self, player: &NodeHandle) -> skull_lib::Result<&mut SkullManager<NodeHandle>> {
         Ok(self
             .zones
@@ -97,22 +99,25 @@ impl skull::Host for Live {
             .entry(player.node)
             .or_insert_with(|| SkullManager::new(player.clone())))
     }
-    fn remove_timer(&mut self, _: &NodeHandle, _: &str) -> skull_lib::Result<()> {
-        Err(skull_lib::Error::Binding(
-            "not ported in the live world: the Skulled timer (content timers are not installed)"
-                .into(),
-        ))
+    fn remove_timer(&mut self, player: &NodeHandle, identifier: &str) -> skull_lib::Result<()> {
+        super::timers::remove_timer(self, player, identifier)
+            .map_err(|e| skull_lib::Error::Binding(format!("{e:?}")))
     }
-    fn spawn_timer(&mut self, _: &str, _: i32) -> skull_lib::Result<Option<()>> {
-        Err(skull_lib::Error::Binding(
-            "not ported in the live world: the Skulled timer (content timers are not installed)"
-                .into(),
-        ))
+    fn spawn_timer(
+        &mut self,
+        identifier: &str,
+        run_interval: i32,
+    ) -> skull_lib::Result<Option<(String, i32)>> {
+        Ok(super::timers::spawnable(self, identifier)
+            .then(|| (identifier.to_owned(), run_interval)))
     }
-    fn register_timer(&mut self, _: &NodeHandle, _: ()) -> skull_lib::Result<()> {
-        Err(skull_lib::Error::Binding(
-            "not ported in the live world: the Skulled timer".into(),
-        ))
+    fn register_timer(
+        &mut self,
+        player: &NodeHandle,
+        (identifier, run_interval): (String, i32),
+    ) -> skull_lib::Result<()> {
+        super::timers::register_spawned(self, player, &identifier, run_interval)
+            .map_err(|e| skull_lib::Error::Binding(format!("{e:?}")))
     }
     fn appearance_skull_icon(&mut self, player: &NodeHandle, icon: i32) -> skull_lib::Result<()> {
         let p = self

@@ -168,8 +168,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   null book failure before the dispatch and AntiMacro's draw order. Timer
   fields live on the timer (Timer::content); hooks, dispatch, logout
   listeners and every other outside call are required Host services with no
-  default; skills and special energy are native. The command, random event
-  content and every session binding are not ported. See docs/content-timers.md.
+  default; skills and special energy are native. The command and random event
+  content are not ported; the live world installs the timers (docs/live-world.md).
+  See docs/content-timers.md.
 - For the item, NPC, player, use-with, component use-with, slot switch,
   examine and track-finished packets (world/packet_handlers:
   processItemAction with InteractPlugin.handleItemOption, processNpcAction,
@@ -194,9 +195,19 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   is a service here (its body is inventory/equipment, not run with
   EquipHandler by any corpus); content listeners, plugins and
   UseWithHandler subclasses stay content. The live world binds the item,
-  NPC, player, examine and track-finished handlers (docs/live-world.md);
-  use-with, component use-with and slot switch are not bound there yet. See
-  docs/packet-handlers.md.
+  NPC, player, use-with, slot switch, examine and track-finished handlers
+  (docs/live-world.md); component use-with is not bound there yet. The
+  wield/use skill check (hasRequirement) is world/packet_handlers/requirement.rs
+  (next bullet). See docs/packet-handlers.md.
+- For ItemDefinition.hasRequirement (world/packet_handlers/requirement.rs),
+  run `cargo test -p rs09-server --test wield_requirements` and `cargo xtask
+  wield-requirements-oracle --check` with Python/JDK 11, plus live_world and
+  equipment. Preserve the 1,146 cases. The method is compiled verbatim from
+  the pinned ItemDefinition.java with SKILL_NAME and isPlusN; keep the JDK
+  HashMap key order of the configuration (insertion order), the skip of keys
+  outside the 24 skill names (24 included), the first failing skill's message
+  and the cast failure of a configuration of another class. See
+  docs/wield-requirements.md.
 - For the global handlers (world/global_handlers: AttackOptionPlugin,
   FollowOptionPlugin and its pulse, RequestOption, LoginValidationPlugin, the
   tab interfaces, MainGame/Login/Death/CharacterDesign/WorldMap/Experience/
@@ -1236,10 +1247,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   production login/driver/repository/social hosts, walking, the player
   update with prepared masks, the player tabs and their buttons, NPCs,
   entity regions, zone monitors and music zones, region activation, the map
-  chunk renderer, ground items and pickup, the item/NPC/player/examine
-  packets with DropListener and EquipHandler, EquipmentContainer and the
-  appearance body, the region zones of ZoneBuilder.startup with SkullManager,
-  the worker loop and the saver), run
+  chunk renderer, ground items and pickup, the item/NPC/player/examine,
+  use-with, slot switch and scenery packets with DropListener and
+  EquipHandler, EquipmentContainer and the appearance body, the region zones
+  of ZoneBuilder.startup with SkullManager, the engine timers, the global
+  handlers, the worker loop and the saver), run
   `cargo test -p rs09-server --test live_world` (needs assets/cache and
   runs/startup-loaders-oracle/template; it prints SKIPPED without them, and a
   skip establishes nothing) plus world_login, tick_driver, tick, world_update,
@@ -1248,11 +1260,21 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   entity_regions, chunk_sync, map_chunk_render, player_walk, action_locks,
   scene, packet_handlers, ground_manager, ground_spawn, ground_spawn_loader,
   ground_options, ground_target, ground_runtime, pickup, wilderness,
-  player_managers, equipment, inventory and interaction_listeners. Keep the
-  libraries unchanged: a host answers through them.
+  player_managers, equipment, inventory, interaction_listeners, timers,
+  content_timers, global_handlers, scenery_action and wield_requirements.
+  Keep the libraries unchanged: a host answers through them.
   `zones::Host` is `Live` itself (a monitor per entity); NPCs keep the
   start-up's slots, store and generators; regions are never unloaded and
-  NPC update masks are not written (both named).
+  NPC update masks are not written (both named). The engine timers run on
+  the canonical profile's timer manager (its lists aliased, never copied)
+  through `timers::content::Natives` with world/live/timers.rs as the host
+  (`Saving` while a save is written or parsed); processTimers runs right
+  after the walking call of Entity.tick. The global handlers are registered
+  by `register_scanned` into the live registries and replace the world's own
+  tab button bodies; their scenery OptionHandlers run right after the
+  walking call that reached them and getDestination over the scene
+  (world/live/destination.rs). The live client of the test sends PING (93)
+  during long waits (the 20-second ping timeout).
   Every call into a system without a port is a named answer in
   world/live/not_ported.rs (skipped, or the original's empty answer when that
   is what it does with no content) or a refusal; list each in
@@ -1265,9 +1287,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   on file I/O. Ground items join the start-up's manager, spawns and option
   table; DropListener's soft script runs at the player's next tick; the
   appearance body is the canonical prepareBodyData copied into the prepared
-  data. Content, content timers (SkillRestore and the rest), combat,
-  use-with/component/slot-switch/scenery/continue/input handlers and region
-  unloading remain open. See docs/live-world.md.
+  data. Content, combat, teleports, NPC timers, the dialogue interpreter,
+  component use-with (spells), continue and input handlers, the login
+  plugin and region unloading remain open. See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

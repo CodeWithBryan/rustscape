@@ -204,6 +204,19 @@ impl npc_walk::Services for WalkHost<'_> {
         // (content NPC classes that do are not ported).
         Ok(true)
     }
+    fn npc_water_path(
+        &mut self,
+        state: &mut State,
+        node: Node,
+        location: Location,
+    ) -> npc::Result<crate::world::pathfinding::Path> {
+        // Pathfinder.findWater(npc, destination, true, Pathfinder.DUMB) for a
+        // water_npc: the water clipping of the cache scene.
+        state
+            .context(self)
+            .find_water_path(node, location)
+            .map_err(nerror)
+    }
 }
 
 impl Live {

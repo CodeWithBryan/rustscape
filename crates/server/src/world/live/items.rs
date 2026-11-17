@@ -18,9 +18,7 @@ use super::{P, host::Live, tabs::Tabs};
 use crate::{
     definitions::{
         item::{Handle as Definition, Shared, WeakShared},
-        npc, option_handler as handlers,
-        property::Property,
-        scenery,
+        npc, option_handler as handlers, scenery,
     },
     inventory::{self, item::Handle as ItemHandle},
     pulses,
@@ -42,6 +40,9 @@ use crate::{
 use rs09_game_core::java_lower::lowercase_root;
 use rs09_protocol::game::{ClientAction, Frame, updates};
 use std::collections::HashMap;
+
+mod slots;
+pub mod use_with;
 
 /// A node the handlers see: `==` is identity.
 #[derive(Clone)]
@@ -86,6 +87,8 @@ pub struct ItemActions {
     pub pulses: Vec<(pulses::Handle, item_option::Task<Node>)>,
     /// `DropListener`'s soft queued scripts: due tick and captures.
     pub drops: Vec<(i32, drop::DropScript<Node>)>,
+    /// `runUnhandledAction` pulses of use-with ([`use_with`]).
+    pub use_pulses: Vec<(pulses::Handle, use_with::UsePulse)>,
 }
 
 /// The keys of `Pets`' babyPets, grownPets and overgrownPets maps (every
@@ -1323,34 +1326,26 @@ pub fn has_requirement(
     wield: bool,
     message: bool,
 ) -> std::result::Result<bool, String> {
-    let requirements = match definition.read().handlers.get("requirements") {
-        None | Some(Property::Null) => return Ok(true),
-        Some(Property::Requirements(r)) => r.clone(),
-        Some(_) => return Err("ClassCastException: requirements".into()),
-    };
-    let order = requirements.read().order();
-    for skill in order {
-        if !(0..25).contains(&skill) {
-            continue;
-        }
-        let level = requirements.read().get(skill).ok_or("a requirement")?;
-        let have = inner
-            .with_profile(p, |profile| profile.skills.static_levels[skill as usize])
-            .map_err(|e| format!("{e:?}"))?;
-        if have < level {
-            if message {
-                let name = crate::world::player_tabs::level_up::SKILL_NAME[skill as usize];
-                let n =
-                    examine::is_plus_n(Some(name), lowercase_root).map_err(|e| format!("{e:?}"))?;
-                let text = format!(
-                    "You need a{}{name} level of {level} to {}this.",
-                    if n { "n " } else { " " },
-                    if wield { "wear " } else { "use " }
-                );
-                inner.message(p, &text).map_err(|e| format!("{e:?}"))?;
-            }
-            return Ok(false);
-        }
+    // world::packet_handlers::requirement (fixtures/wield-requirements).
+    let configuration = definition.read().handlers.get("requirements").cloned();
+    let levels = inner
+        .with_profile(p, |profile| profile.skills.static_levels)
+        .map_err(|e| format!("{e:?}"))?;
+    let mut messages = Vec::new();
+    let result = crate::world::packet_handlers::requirement::has_requirement(
+        configuration.as_ref(),
+        |skill| levels.get(skill).copied().ok_or(Error::Index(None)),
+        wield,
+        message,
+        |text| {
+            messages.push(text.to_owned());
+            Ok(())
+        },
+        lowercase_root,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    for text in messages {
+        inner.message(p, &text).map_err(|e| format!("{e:?}"))?;
     }
-    Ok(true)
+    Ok(result)
 }
