@@ -1,0 +1,1 @@
+package core.game.node.item;public class GroundItem{public final int id;public GroundItem(int id){this.id=id;}}

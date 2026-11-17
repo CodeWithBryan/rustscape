@@ -1,0 +1,1 @@
+package core.game.world.map;public class RegionManager{public static RegionChunk getRegionChunk(Location l){return oracle.Support.chunk(l);}}

@@ -1,0 +1,36 @@
+{
+  "caseCount": 1087,
+  "fixtureSha256": "98ef63a3be4d1585a9cab4b6b46bb0cb258735a96c7893dc04086182be699b4a",
+  "format": 1,
+  "scope": "Complete unmodified ItemConfigParser.kt, Audio.kt, Animation.java and Definition.java; original priority enum and item fields/constructor/lookup. Actual JSON-simple 1.1.1 DOM parser, actual isolated UTF-8 FileReader loads. Controlled logging, metadata registry and throwing animation-definition/scenery/world adapters. Typed values, requirements iteration/partial writes, retained object identity, reload and parse failures. No animation execution, general Node/world, complete item definition/content binding or complete player profile claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/item-config/ItemConfigOracle.java": "70d4b36a70a6bef677925fa83d712c31722ea2ea0c0f7a8c39487a21bf0dfd84",
+    "oracle/item-config/generate.py": "91120d8143ff91ef4339f6a7ea33b2c0c5cd5fadc53d8d90cd8666f93bc849d1",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/audio/Audio.kt": "81496a8f949165d521cb836726618ad19f3b16d022589c75c5a1b1dad975ac78",
+    "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Animation.java": "73320e2e4c356dccb6f446683d18dd5bfe1be8eee41eaba540e01acdb174aded",
+    "tools/port_item_config.py": "37c2724f7511af530660450ed8d9f259e97efb726dcdf2f65aeb2b5ae0a23a53",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

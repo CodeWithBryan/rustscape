@@ -1,0 +1,32 @@
+{
+  "caseCount": 104,
+  "fixtureSha256": "81a056da17f9dae76f834c9c104f815f97b7db271155f4ced396626adf3e1f31",
+  "format": 1,
+  "scope": "Complete unchanged MapChunkRenderer with original packed Location and Region viewer-list method bodies. Canonical chunk/region routing, player getter/callback observations, packet send and chunk update/synchronize/activity are explicit adapters. Tests identity, traversal, retained arrays, anchor/current plane, callback errors and partial publication; no RegionChunk serialization, dirty reset or live fanout claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/map-chunk-render/Support.java": "dcf540274f6d7ed6580372d62369ff2843389e8f4021f70b556c3df291ce7223",
+    "oracle/map-chunk-render/generate.py": "5a62990b10841fd8c55b2c0d4152ba5858b46a0caecff919778e64644f922f54",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/Region.java": "511a3824b5c6098388aaa49ddc2812d17e656e1f5eada8f5383a5d6057d84810",
+    "reference/server/Server/src/main/core/game/world/update/MapChunkRenderer.kt": "07ee22ff51b1572534316c12846f26044482546ad2c557cbdc2d512346e5ff13",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

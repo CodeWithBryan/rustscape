@@ -1,0 +1,68 @@
+{
+  "cases": [
+    "init",
+    "colour-unbound",
+    "bind-floor",
+    "locked",
+    "range-128",
+    "scenery-200",
+    "colour-bound",
+    "range-48",
+    "scenery-0",
+    "leave",
+    "backdrop"
+  ],
+  "fixtureSha256": "039909d7ebdcf8bf57a2f67673ca094dd5870fa36d93f0ae7959e5e57a4987b9",
+  "format": 1,
+  "scope": "Unchanged UnderwaterMaterialRenderer, WaterMaterialRenderer, MaterialManager and GlTile (with the noise generators MaterialManager.init runs) against a com.jogamp.opengl.GL2 interface implemented by a recording proxy: every GL call of each case is listed in order with its arguments, display lists replayed in place. Observed: the gradient texture's bytes and parameters, both display lists, the texture-coordinate planes and environment colour setArgument sets for the floor (argument -1) and for scenery (minus the surface height) at a given camera, clock, atmosphere, water colour and fog range, that MaterialManager.setMaterial does nothing for any other material while renderingUnderwater, and the state and draw calls of applyFogFade over a surface group of a water texture. GlRenderer, FogManager, SceneGraph, Tile, Preferences, Rasteriser, GlVertexBufferObject and the four other renderers are adapters; GlRenderer's state setters are noted in the trace by name. No OpenGL exists: what the combiners, the texture lookups and the fog compute from this state is not observed, and neither is the order SceneGraph.setPlainTile and setShapedTile call these in. The classes under `transcribed` are hashed only.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/adapters/rt4/JagString.java": "7cc6e5eee6fe4c6a699acff8b246ab89cd75255fed315daa39f2a5f036e06a95",
+    "oracle/underwater/material/com/jogamp/opengl/GL2.java": "d37ef34893580397547fe5b0a73da34ba745e46e90d93b498962033b1dffe7c3",
+    "oracle/underwater/material/com/jogamp/opengl/GL2GL3.java": "a751b8de852424205076d583ae4900eba49db200e28781150d9129690d0aa907",
+    "oracle/underwater/material/rt4/Adapters.java": "c4f60bd29a5e66616bb25212b74a95c20096f01ee5177d2774df71d8d23cda35",
+    "oracle/underwater/material/rt4/UnderwaterMaterialOracle.java": "34571f6336569a7d761af66ad1114cb10779b08fe706920ffe3d302394ba93c4",
+    "reference/client/client/src/main/java/rt4/Buffer.java": "3930054bef9ddf3eab00a1dd1a44ddf9db7ec9a8bcc550abcdfba360554587ca",
+    "reference/client/client/src/main/java/rt4/ColorUtils.java": "d0c000bf36313b5fb2046267176c03ab5328c5714186ce2819cd55ed8ecf296d",
+    "reference/client/client/src/main/java/rt4/FractalNoiseGenerator.java": "16923a340b90af879d327163ef2567e66302a719694aa159bfea79303bc8c2c1",
+    "reference/client/client/src/main/java/rt4/FractalNoiseTexture.java": "5f594290a3eddd1aece3ac04dd02d30468953fae1cc5c0f314018e0b07a199e4",
+    "reference/client/client/src/main/java/rt4/GlTile.java": "a1af01c7ec0cfb7890acc405299f89174ebb1d1be44045d3781956952884efa6",
+    "reference/client/client/src/main/java/rt4/GlobalConfig.java": "9aea9139a1f866fdfbfb2bd71277579b9c0540a525b62db48c066da3f95a7a67",
+    "reference/client/client/src/main/java/rt4/HashTable.java": "128b7cd4c96a0dae7396696ec8b3de1f4344296feedb432fdc74f2e2727405f1",
+    "reference/client/client/src/main/java/rt4/IntNode.java": "1181c8edf37a1a7a733a8c73daa0020f4fcd6bcc14bc5b7b07a9d355ded575d3",
+    "reference/client/client/src/main/java/rt4/IntUtils.java": "871d88d84a51c453f098959fc0ec4a231c536cf3bdf17723cee2f8fc8be05d03",
+    "reference/client/client/src/main/java/rt4/LinkedList.java": "a333bb8ed5160e7b38888c4e1503b00ef50ce023ae8a79b15c2326658155c84f",
+    "reference/client/client/src/main/java/rt4/MaterialManager.java": "1d894aec8f9a16918557d434440b887296a51b3f3fa57640462940e3f1f7c829",
+    "reference/client/client/src/main/java/rt4/MaterialRenderer.java": "3688c18101839451be7a4b34bc56aec497f51f1f5c0984296a7a4e4986d9029b",
+    "reference/client/client/src/main/java/rt4/MonochromeImageCache.java": "400a944b1b966e6eb8419517c6bc7dea2c1b8ca9e755cb3fbfac2640283d68ea",
+    "reference/client/client/src/main/java/rt4/MonochromeImageCacheEntry.java": "c2ea9daf9431a9383d6c4ce3f38723781a02edeb540e24866f32a2757a460018",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/PerlinNoiseGenerator.java": "7c0b67a2820635eb096e2ae68d26897366ed506311d19a6e1db489aad7f82dcb",
+    "reference/client/client/src/main/java/rt4/RandomUtils.java": "2f568e552f562dcb9ee9de0113c821f405678a31fc119bef9537a4eaf4524c24",
+    "reference/client/client/src/main/java/rt4/RidgedNoiseGenerator.java": "a8373c1e734dec87d19fa0aea4c281359e375715fad7cd23f72d88fcda145b8a",
+    "reference/client/client/src/main/java/rt4/RidgedNoiseTexture.java": "08b9e5358d9b71151721ada16702da0d7eba7c3086b516c234f9481b06d01fc0",
+    "reference/client/client/src/main/java/rt4/TextureProvider.java": "d3034829d72e9fd12e1486998be1b393f5fad58b47ad63a7b19b58445137fa54",
+    "reference/client/client/src/main/java/rt4/UnderwaterMaterialRenderer.java": "41ebdbea5469958921d5a48b0759d9b290216c4c15fe93ee1915e42846a8def7",
+    "reference/client/client/src/main/java/rt4/WaterMaterialRenderer.java": "3997446d23b0f106a0e16e407253bb9ff085891f92fccfd65ea63afa94c3d770"
+  },
+  "transcribed": {
+    "reference/client/client/src/main/java/rt4/FogManager.java": "3f088f20fd85e91c51749cba00b8adcca4b2dfb1119fc480a38eff447ebee180",
+    "reference/client/client/src/main/java/rt4/GlRenderer.java": "d314e4167e39e36166a348fdcd6cb874cc8346304f34bc9c44835dc09b0f3858",
+    "reference/client/client/src/main/java/rt4/LoginManager.java": "882aefdb9fcdd3452893fe8500c194be367640da86097c4f0f20101b5707f005",
+    "reference/client/client/src/main/java/rt4/SceneGraph.java": "eec94c9c65b1044f10f9e3c0cf9bc06c37f7d398f3ac8488bba5f68c26340166"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

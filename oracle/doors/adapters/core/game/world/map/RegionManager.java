@@ -1,0 +1,1 @@
+package core.game.world.map;import core.game.node.scenery.Scenery;public class RegionManager{public static Scenery getObject(int x,int y,int z,int id,int type){return oracle.Support.object(new Location(x,y,z),type);}}

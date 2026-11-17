@@ -1,0 +1,22 @@
+{
+  "gson-2.8.1.jar": {
+    "sha256": "4f65e7dca6528d644031c43d159f1614f2ed58db7daf75f1e91a9fc1b57818d4",
+    "size": 232620,
+    "url": "https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.8.1/gson-2.8.1.jar"
+  },
+  "json-simple-1.1.1.jar": {
+    "sha256": "4e69696892b88b41c55d49ab2fdcc21eead92bf54acc588c0050596c3b75199c",
+    "size": 23931,
+    "url": "https://repo.maven.apache.org/maven2/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar"
+  },
+  "toml4j-0.7.2-sources.jar": {
+    "sha256": "fc9c72fb6a7abda2a65c037af622471da897f84e0a95643210b1c41328c83c5d",
+    "size": 29752,
+    "url": "https://repo.maven.apache.org/maven2/com/moandjiezana/toml/toml4j/0.7.2/toml4j-0.7.2-sources.jar"
+  },
+  "toml4j-0.7.2.jar": {
+    "sha256": "f5475e63e7e89e5db62223489aec7a56bd303543772077a17c2cb54c19ca3a20",
+    "size": 62621,
+    "url": "https://repo.maven.apache.org/maven2/com/moandjiezana/toml/toml4j/0.7.2/toml4j-0.7.2.jar"
+  }
+}

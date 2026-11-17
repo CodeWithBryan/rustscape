@@ -1,0 +1,85 @@
+{
+  "scope": "Explicit offline original-format17/56 world effects; no live spell/combat/gameplay claim. Cached assets unchanged.",
+  "start": [
+    3207,
+    3214
+  ],
+  "sceneOrigin": [
+    3152,
+    3168
+  ],
+  "frames": [
+    {
+      "tick": 1,
+      "opcode": 26,
+      "payload": [
+        200,
+        48
+      ]
+    },
+    {
+      "tick": 1,
+      "opcode": 17,
+      "payload": [
+        0,
+        0,
+        184,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "tick": 35,
+      "opcode": 56,
+      "payload": [
+        0,
+        5,
+        128,
+        0,
+        140,
+        144,
+        67,
+        33,
+        220,
+        0
+      ]
+    },
+    {
+      "tick": 70,
+      "opcode": 26,
+      "payload": [
+        200,
+        48
+      ]
+    },
+    {
+      "tick": 70,
+      "opcode": 17,
+      "payload": [
+        0,
+        1,
+        113,
+        0,
+        0,
+        6
+      ]
+    },
+    {
+      "tick": 110,
+      "opcode": 56,
+      "payload": [
+        0,
+        0,
+        0,
+        0,
+        76,
+        144,
+        67,
+        33,
+        119,
+        1
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "caseCount": 206,
+  "fixtureSha256": "d38942416bac5f0a19df5cc9cbe9c795c41e524fa1a51e0215f36e7a6556dcf0",
+  "format": 1,
+  "scope": "Verbatim original Region.load overloads with explicit region/chunk/scenery records and cache/XTEA/parser/scenery callbacks. Compares loaded/build/hasFlags publication, landscape-array reset identities, parser input sharing, short/missing data, dynamic template selection, nested loads, callback mutations, ArrayList iteration and normalized exception roots. Real cache/terrain/scenery parsing and services have separate corpora; actual region delivery, routing and live world entry are not proved here.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/region-load/Support.java": "28124b31596d3138431a25315423a3333c9941aa9991246333e998d30e0aff89",
+    "oracle/region-load/generate.py": "02e8a68537b6c864e458fa0b890d1da9c01a3a051631720bddf9d24391f5ad2a",
+    "reference/server/Server/src/main/core/game/world/map/Region.java": "511a3824b5c6098388aaa49ddc2812d17e656e1f5eada8f5383a5d6057d84810",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

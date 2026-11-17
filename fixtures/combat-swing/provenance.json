@@ -1,0 +1,81 @@
+{
+  "caseCount": 4461,
+  "constantsJar": {
+    "missingNamedConstant": "Sounds.HUMAN_ATTACK_2564",
+    "numericAdapter": {
+      "HUMAN_ATTACK_2564": 2564
+    },
+    "sha256": "aab8fa4d71f3a5e846f34a7b1cfba5c5fef5ee1094d806d240abc4941802a983",
+    "source": "reference/server git 9921b98d49308edd0489dd50ee98011d53914a57:Server/libs/ConstLib-1.4.jar"
+  },
+  "failureCaseCount": 615,
+  "fixtureSha256": "3c17700dfa73cea551c984bc660f92bf1488ed23dd40bb490f79eb4a491cba4a",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "operationCount": 20762,
+  "scope": "Unmodified CombatSwingHandler, MeleeSwingHandler, RangeSwingHandler, MagicSwingHandler, BattleState, CombatStyle, InteractionType, Weapon, RangeWeapon, Ammunition, ArmourSet, BoltEffect and EquipmentSlot. Verbatim selected RandomFunction methods, Location distance/transform, Graphics constructors, and the AttackStyle/WeaponInterfaces declarations and style/bonus constants of WeaponInterface. Entity, Player, NPC, Familiar, Skills, Properties, prayer, perk, slayer, familiar, equipment, item, spell, audio/graphics/message/log and combat-pulse members are recording stand-ins answering from the case input; stand-ins for paths this corpus does not drive throw. Math.random is bound to the case generator by replacing java.lang.Math private generator once at start. Drives calculateAccuracy/calculateHit/calculateDefence/getSetMultiplier/getArmourSet/isAccurateImpact, swing, getCombatDistance, formatHit, getDragonfireMessage and BattleState totals for the three handlers. Does not drive canSwing/isAttackable/canStepTowards/canMelee, adjustBattleState, getFormattedHit, addExperience, impact, visualize, onImpact, useAmmo, special-attack registration, BoltEffect or ArmourSet effects other than the DIAMOND path inside RangeSwingHandler.swing, RangedConfigLoader, or any original class behind a stand-in.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/combat-swing/Support.java": "ad0d88b4289bb6057c67e17f39793f4689b83678bd27bcb5f4087d0c768f5411",
+    "oracle/combat-swing/adapters.txt": "2bd2e6e0446de9c92b9225958bbc6e2b3e66713b7565ca61037d675ef92c60a8",
+    "oracle/combat-swing/generate.py": "4bbfa64c4f1fb88e98f834a766cad9561528a2667a077eec58b7e58024b23887",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/pickup/consts-evidence.json": "566e5164c0ef785d71d6502a1b663ebf100ebebf20c7d02f4f986f5f87177b39",
+    "reference/server/Server/src/main/content/global/skill/summoning/SummoningPouch.java": "96d8399675d529cbf0dd1b24b6002718cb6410e6b9afd7e73ac1f2ff09f2cc21",
+    "reference/server/Server/src/main/core/api/EquipmentSlot.kt": "942901bdf21c4822d6afeeb61173f350cc16499d3a866f379bf76a8bd9c0ac0f",
+    "reference/server/Server/src/main/core/game/container/impl/EquipmentContainer.java": "81c78260eaeb3e9001e0d0b7a237ddf739998a778704089685b539eb487476df",
+    "reference/server/Server/src/main/core/game/node/entity/combat/BattleState.java": "0843b3feb9e4adebaad25ce5746886670bcdb05c5c595fc9ee99c25f963cf8ef",
+    "reference/server/Server/src/main/core/game/node/entity/combat/CombatStyle.java": "644ab7dd06d777766746cbc50ee0a6265e7abe00c44cbeb4a77912b16402fb16",
+    "reference/server/Server/src/main/core/game/node/entity/combat/CombatSwingHandler.kt": "223f19b0e8d3c641c83554058b16dc23b69d6bee230cd28c1e002aff24636835",
+    "reference/server/Server/src/main/core/game/node/entity/combat/InteractionType.java": "a1a6339fdbe371eee13dd9f0229cc9537d3b001f5394f57343b00019b52a7469",
+    "reference/server/Server/src/main/core/game/node/entity/combat/MagicSwingHandler.kt": "e5fd7f4813b59efb572ae3926dd9fa3d477ec3d548c3014705b3c61a9e2b0175",
+    "reference/server/Server/src/main/core/game/node/entity/combat/MeleeSwingHandler.kt": "2be2a608ce18433c1a012955d1577cf71a47503a32e6ad98c8d14b21ba2356df",
+    "reference/server/Server/src/main/core/game/node/entity/combat/RangeSwingHandler.kt": "bf1c8e929de458ae1be037d6d68f8b21cab70a6d93143f9a02dedf136dc7d093",
+    "reference/server/Server/src/main/core/game/node/entity/combat/equipment/Ammunition.java": "a870de8f53b132ed7e09137e3c7e0b200d426e135319dd82c5641b0d219e4a2e",
+    "reference/server/Server/src/main/core/game/node/entity/combat/equipment/ArmourSet.java": "a4de41619879603d42fd4d5f2efeab7315c6e5040fea5aebcbedb8d0a66feb35",
+    "reference/server/Server/src/main/core/game/node/entity/combat/equipment/BoltEffect.java": "2642d200732e167c0e3af9535202297e1505be4bc9b8ec959b8c337e5e9d31fc",
+    "reference/server/Server/src/main/core/game/node/entity/combat/equipment/RangeWeapon.java": "e05aecd6980a3f0628a5edc3efc885d6c519e5747f816b46d86b76beb0346403",
+    "reference/server/Server/src/main/core/game/node/entity/combat/equipment/Weapon.java": "94c560c8017ccd4daf02b73e8ef7efed43c2e8050cc996ba51e8c0ca34a9f381",
+    "reference/server/Server/src/main/core/game/node/entity/combat/equipment/WeaponInterface.java": "608ad0d39eb7d2697d8676dbd4d48929117b152538009c190a5292c32c55580e",
+    "reference/server/Server/src/main/core/game/node/entity/combat/spell/SpellType.java": "b191f006667dfd088704c7cb0fab9e18834cc2b5d4c788213dc66f6654e9ca11",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/prayer/PrayerType.java": "8f86cb30fccd6c3e4a5f3a77e29e32d8c42a9dd3dc41e31259f5891338b3daff",
+    "reference/server/Server/src/main/core/game/node/entity/skill/Skills.java": "b442b260cc591406dc903d46cd729db27976b9470413bc039d6766bd4fe1f0db",
+    "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/path/Pathfinder.java": "81a9f20cff3bd34381984d0888600bdeb3e670d3725cc4b3d1e92ed26d0c993e",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Graphics.java": "f78fc7aa3320b9e356973c2f9faafaf12652ff75d5a3f7111f5e2c3da73a8e7c",
+    "reference/server/Server/src/main/core/tools/RandomFunction.java": "054fb47b8718ce25da6fe35af85765f3cdea3b2056ef0e4d678435b230ad559e",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unmodified": [
+    "core/game/node/entity/combat/CombatSwingHandler.kt",
+    "core/game/node/entity/combat/MeleeSwingHandler.kt",
+    "core/game/node/entity/combat/RangeSwingHandler.kt",
+    "core/game/node/entity/combat/MagicSwingHandler.kt",
+    "core/game/node/entity/combat/BattleState.java",
+    "core/game/node/entity/combat/CombatStyle.java",
+    "core/game/node/entity/combat/InteractionType.java",
+    "core/game/node/entity/combat/equipment/Weapon.java",
+    "core/game/node/entity/combat/equipment/RangeWeapon.java",
+    "core/game/node/entity/combat/equipment/Ammunition.java",
+    "core/game/node/entity/combat/equipment/ArmourSet.java",
+    "core/game/node/entity/combat/equipment/BoltEffect.java",
+    "core/api/EquipmentSlot.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

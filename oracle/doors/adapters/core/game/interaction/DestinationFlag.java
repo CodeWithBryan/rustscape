@@ -1,0 +1,1 @@
+package core.game.interaction;public enum DestinationFlag{OBJECT}

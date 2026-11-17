@@ -1,0 +1,6 @@
+/target/
+/reference/
+/runs/
+/assets/
+*.local.json
+__pycache__/

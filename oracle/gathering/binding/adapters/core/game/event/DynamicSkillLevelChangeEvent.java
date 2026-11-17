@@ -1,0 +1,1 @@
+package core.game.event;public class DynamicSkillLevelChangeEvent {public final int skill,previous,level;public DynamicSkillLevelChangeEvent(int s,int p,int l){skill=s;previous=p;level=l;}@Override public String toString(){return "DynamicSkillLevelChangeEvent("+skill+","+previous+","+level+")";}}

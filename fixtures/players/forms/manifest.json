@@ -1,0 +1,54 @@
+{
+  "scope": "Original NPC definition/BAS metadata and explicit offline player appearance/variable packets. No authoritative transformation or interaction outcome.",
+  "forms": [
+    {
+      "file": "player-chicken.bin",
+      "npc": 41,
+      "bas": 62,
+      "definitionSha256": "53cb2cbf2a35fa49f33c03b198909828e62e0eaffb1b9657a96949ce494ba9b6",
+      "basSha256": "9f41db7119468947f78995f8641920086d9077a4c5e1df1510d19dddad9aef0b",
+      "models": [
+        23905
+      ],
+      "children": []
+    },
+    {
+      "file": "player-cow.bin",
+      "npc": 81,
+      "bas": 66,
+      "definitionSha256": "d248f6967c69171ebb0e4abbde109cbc23f170ac7eee3442e642b2b33df2dc3c",
+      "basSha256": "4283704da0cbc7c38599546f5d025b7976d605eb19d6097afe9d042fb1675aba",
+      "models": [
+        23889
+      ],
+      "children": []
+    },
+    {
+      "file": "player-dwarf.bin",
+      "npc": 4,
+      "bas": 4,
+      "definitionSha256": "777bbf38720cfcbde81c0158b0a01309ccadf436c7f522fcb6012f58a0d6e7b0",
+      "basSha256": "3269b281d425bf89f85c1ac3baab935282e5266675febf3786e49927f6ba8970",
+      "models": [
+        332,
+        358,
+        390,
+        421,
+        456,
+        10706
+      ],
+      "children": []
+    },
+    {
+      "file": "player-morph.bin",
+      "npc": 3384,
+      "bas": 118,
+      "definitionSha256": "7e10f30008a9f5bdcb41ed94e35d9305be0d4da1b8dabe53c507e3bc2d854e38",
+      "basSha256": "6ef51b69bfe8598a90c5ecdf46bc54f166be21d96b92d8d187e148be37fc986e",
+      "models": [],
+      "children": [
+        3385
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+package core.api;import core.game.node.entity.player.Player;public class ContentAPIKt{public static void log(Object o,core.tools.Log l,String s){oracle.Support.emit("log",s);}public static void setVarbit(Player p,int i,int v){throw new UnsupportedOperationException();}public static void setVarp(Player p,int i,int v){throw new UnsupportedOperationException();}}

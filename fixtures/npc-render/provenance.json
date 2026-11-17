@@ -1,0 +1,38 @@
+{
+  "caseCount": 221,
+  "fixtureSha256": "e88f30c288750e4337ae602b2d0c27e87f363f1b12d89092850a67dfd377309e",
+  "format": 1,
+  "scope": "Complete unchanged NPCRenderer, IoBuffer and original game writer; original packed location and maxnorm method. Explicit NPC visibility/mask/aggression/spatial/player/clock services. Compares original frame bytes, live LinkedList membership and retained aliases, direction/movement fields, near/plane checks, 255 capacity, duplicate candidates, tolerance ordering and reentrant callback/failure prefixes. Concrete masks, complete NPC/definition/spawn/AI/combat/region/session integration remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/npc-render/Support.java": "488660ae43d55714a56ad50707f9413ed29a2e99ba945ef250c5939c0cafc6b9",
+    "oracle/npc-render/generate.py": "fbb8627fd20d2cb27e0bb35c89dda969ea8e79035ea9e575f71a12e4a3109575",
+    "oracle/scenery/adapters/core/cache/crypto/ISAACCipher.java": "290c851c9e96a9ef730a37fe901aaca74ad75d06316c10171e73d6c53d65eafd",
+    "oracle/scenery/adapters/core/cache/misc/buffer/ByteBufferUtils.java": "d10e96e4e5d2aad74c4d9a7684f131cf61d2f179b5d8040f2dd0256e0dcd01a5",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/MapDistance.java": "8dc2c8263cf6bd5f8cbd5fe32f5c441384e6d98b7329a67a3cedab013ec31140",
+    "reference/server/Server/src/main/core/game/world/update/NPCRenderer.kt": "a1fa3883a5fc0cbfdaf3d095bb49b8730fa0f59d342cdf168ae5ad4326d8a947",
+    "reference/server/Server/src/main/core/net/IoWriteEvent.java": "c4c9df7723807af657fe8ec345a4c9450eb21155545a73e72494745344b84861",
+    "reference/server/Server/src/main/core/net/event/GameWriteEvent.java": "f841d3073e5577ae133ddbcdd772f9f0e1373d6c9e45119ac13ab8bf07c1d839",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/PacketHeader.java": "a0635e12f2380381df12d534bc7695691d415c5c4dc0edf5692888082a623bc7",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

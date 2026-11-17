@@ -1,0 +1,34 @@
+{
+  "caseCount": 227,
+  "fixtureSha256": "5bde0304dc63369c6fa829813233bce49fbf2b50ac0b68b47bb29d89138f4434",
+  "format": 1,
+  "scope": "Original RegionManager.move and generic typed local query bodies; four RegionChunk entity methods, Region.isTolerated, ZoneBorders constructor/contains and packed Location. Clock calls explicitly redirected to deterministic inputs. Entity getter/zone/activity/log and region/chunk lookup services are adapters; cache/region loading, activity pulses, dynamic-region routing and complete Entity classes remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/entity-regions/Support.java": "be7d717ee6a6267a1fb1913733cc170f60e65a06f3642d6789d48c1efccf229a",
+    "oracle/entity-regions/generate.py": "6312eda73c1a01566e9f39b2dfa5824baa8056be25f503416036e99b01d78a6e",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/Region.java": "511a3824b5c6098388aaa49ddc2812d17e656e1f5eada8f5383a5d6057d84810",
+    "reference/server/Server/src/main/core/game/world/map/RegionChunk.java": "94932c58772b815e2799d0df32739b37b8bfa0be26233466ff006c12574b1389",
+    "reference/server/Server/src/main/core/game/world/map/RegionManager.kt": "c2b3bbc5b205e9ea6e8322a1eceb53dfc081975706db23a182b48af68707f7e3",
+    "reference/server/Server/src/main/core/game/world/map/zone/ZoneBorders.java": "e119de9cfa93e6bbb85838a4d36379304d71f28c66dae5198336d157f7221eb6",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

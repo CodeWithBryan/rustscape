@@ -1,0 +1,74 @@
+package rt4;
+
+import org.openrs2.deob.annotation.OriginalArg;
+import org.openrs2.deob.annotation.OriginalMember;
+import org.openrs2.deob.annotation.Pc;
+
+/**
+ * The tile bookkeeping of the original SceneGraph that the roof fill reads.
+ *
+ * `cargo xtask roof-oracle` writes this class. The field declarations and the
+ * methods after the second marker are copied from the pinned SceneGraph.java
+ * (and one array from LoginManager.java) without change; the generator refuses
+ * to run when one of them is no longer found there.
+ *
+ * `addLoc` below is NOT the original. The original builds models, shadows,
+ * collision and sounds on the way; this keeps only its decisions about which
+ * of `setWall` and `addEntity` receives a location, with which footprint and
+ * wall flags. It is a hand transcription of SceneGraph.addLoc (the lines that
+ * call setWall, addEntity and the early return for `loc.render`), and the
+ * comparison with the Rust tile array checks the two transcriptions against
+ * each other through the original `setWall`, `addSceneryEntity`, `bridgeTile`
+ * and `readLocs`.
+ */
+public final class SceneGraph {
+// @FIELDS@
+
+    public static void addLoc(int currentPlane, boolean lowmem, int plane, boolean highmem, CollisionMap map, int locIndex, int locType, int x, int y, int orientation) {
+        RoofLoc loc = RoofLoc.get(locIndex);
+        if (GlRenderer.enabled && loc.render) {
+            return;
+        }
+        int width;
+        int length;
+        if (orientation == 1 || orientation == 3) {
+            length = loc.width;
+            width = loc.length;
+        } else {
+            width = loc.width;
+            length = loc.length;
+        }
+        long bitset = x | 0x40000000 | (long) y << 7 | (long) locType << 14 | (long) orientation << 20;
+        bitset |= (long) locIndex << 32;
+        Entity entity;
+        if (locType == 22) {
+            // setGroundDecor: neither a wall nor scenery.
+        } else if (locType == 10 || locType == 11) {
+            entity = loc.entity(10);
+            if (entity != null) {
+                addEntity(plane, x, y, 0, width, length, entity, bitset);
+            }
+        } else if (locType >= 12) {
+            entity = loc.entity(locType);
+            addEntity(plane, x, y, 0, 1, 1, entity, bitset);
+        } else if (locType == 0) {
+            entity = loc.entity(0);
+            setWall(plane, x, y, 0, entity, null, WALL_ROTATION_TYPE1[orientation], 0, bitset);
+        } else if (locType == 1) {
+            entity = loc.entity(1);
+            setWall(plane, x, y, 0, entity, null, WALL_ROTATION_FLAGS[orientation], 0, bitset);
+        } else if (locType == 2) {
+            int next = orientation + 1 & 0x3;
+            setWall(plane, x, y, 0, loc.entity(2), loc.entity(2), WALL_ROTATION_TYPE1[orientation], WALL_ROTATION_TYPE1[next], bitset);
+        } else if (locType == 3) {
+            entity = loc.entity(3);
+            setWall(plane, x, y, 0, entity, null, WALL_ROTATION_FLAGS[orientation], 0, bitset);
+        } else if (locType == 9) {
+            entity = loc.entity(9);
+            addEntity(plane, x, y, 0, 1, 1, entity, bitset);
+        }
+        // Shapes 4 to 8 are wall decorations: setWallDecor.
+    }
+
+// @METHODS@
+}

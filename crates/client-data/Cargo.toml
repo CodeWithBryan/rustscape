@@ -1,0 +1,12 @@
+[package]
+name = "rs09-client-data"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Shared RT4 cache asset containers and item definitions without graphics dependencies"
+
+[dependencies]
+rs09-protocol.workspace = true
+serde.workspace = true
+serde_json.workspace = true

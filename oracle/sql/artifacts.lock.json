@@ -1,0 +1,17 @@
+{
+  "mariadb.zip": {
+    "sha256": "6eaa4c4c275c2e9d92348aa84cceef19a8deb16cf887e1617f79d62141f642f1",
+    "size": 62802495,
+    "url": "https://archive.mariadb.org/mariadb-10.4.14/winx64-packages/mariadb-10.4.14-winx64.zip"
+  },
+  "mysql-connector-java-8.0.29.jar": {
+    "sha256": "d4e32d2a6026b5acc00300b73a86c28fb92681ae9629b21048ee67014c911db6",
+    "size": 2519547,
+    "url": "https://repo.maven.apache.org/maven2/mysql/mysql-connector-java/8.0.29/mysql-connector-java-8.0.29.jar"
+  },
+  "protobuf-java-3.19.4.jar": {
+    "sha256": "e8f524c2ad5965aae31b0527bf9d4e3bc19b0dfba8c05aef114fccc7f057c94d",
+    "size": 1681869,
+    "url": "https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-java/3.19.4/protobuf-java-3.19.4.jar"
+  }
+}

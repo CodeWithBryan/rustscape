@@ -1,0 +1,1 @@
+package org.rs09.consts;public class Sounds{public static final int IRON_DOOR_CLOSE_70=70,GATE_CLOSE_66=66,DOOR_CREAK_61=61,IRON_DOOR_OPEN_71=71,GATE_OPEN_67=67,DOOR_OPEN_62=62;}

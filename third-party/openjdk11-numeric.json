@@ -1,0 +1,7 @@
+{
+  "adaptation": "crates/game-core/src/java_double.rs",
+  "jdk": "Temurin 11.0.32.1+1",
+  "license": "GPL-2.0-only WITH Classpath-exception-2.0",
+  "source": "java.base/jdk/internal/math/FloatingDecimal.java",
+  "sourceSha256": "8c95a03aa620280cabc43e6996042ebbb7e8c430377f107000219c573b553b03"
+}

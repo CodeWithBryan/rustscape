@@ -1,0 +1,37 @@
+{
+  "caseCount": 1831,
+  "fixtureSha256": "d21d95010eeb62e043b966616677dd4908a8e699f54805ce1723bbc2db9b9a51",
+  "format": 1,
+  "scope": "Verbatim ItemDefinition stored fields, constructor, parseDefinition/parse/forId/defineTemplates, all note/lend/recolour transfers, stackability/player-type/actions/special-bar/quest/archive/file helpers. Unchanged complete Definition.java and ByteBufferUtils.kt. JDK 11 char upper/lower pairs for every UTF-16 code unit and original String.equalsIgnoreCase observations. Explicit isolated cache index/file adapter and numeric TRADEABLE constant; no content configurations, plugins, inventory/equipment/world or complete ItemDefinition class claim. Snapshots include mutable-array/map and definition identity, relative read positions, partial registry loads and failures.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/items/ItemOracle.java": "475648a01ba9be790ca466ad3634fa1578e00c508444aaf045997b8674984b5b",
+    "oracle/items/cache-samples.json": "99f126cbf45d4f4becb9400ec7dbcab3cce3846d4c1973ec593cf7b4e9c7efaf",
+    "oracle/items/generate.py": "1fa9cecf84d5df640a3f4a54c24e731d34f3ca52197a66e3837545fbb9badb66",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/cache/Cache.java": "9d117d2f703f030fbcb02f294674a00d2671f311d50e0c226ba658825739d57a",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+    "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
+    "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+    "reference/server/Server/src/main/core/tools/StringUtils.java": "51365165036173a8b2df93b9ea108b5cc01d8aa6b86dc23383719f1ff5482e13",
+    "tools/port_jdk_case.py": "48367d297c9d23c1981b5a0615fe7d956c430873b27d8f3fa707b535467e7ee5",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

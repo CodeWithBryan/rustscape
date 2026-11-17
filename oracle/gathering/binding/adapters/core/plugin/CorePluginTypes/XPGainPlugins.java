@@ -1,0 +1,1 @@
+package core.plugin.CorePluginTypes;public class XPGainPlugins {public static void run(core.game.node.entity.player.Player p,int slot,double amount){oracle.Support.emit("xpGainPlugins.run",null,slot,amount);}}

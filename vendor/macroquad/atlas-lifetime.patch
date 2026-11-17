@@ -1,0 +1,77 @@
+--- a/src/text/atlas.rs
++++ b/src/text/atlas.rs
+@@ -29,8 +29,7 @@
+ 
+ impl Drop for Atlas {
+     fn drop(&mut self) {
+-        let ctx = &mut get_context().quad_context;
+-        ctx.delete_texture(self.texture);
++        get_context().textures.retire_atlas_texture(self.texture);
+     }
+ }
+ 
+@@ -88,11 +87,14 @@
+ 
+     pub fn texture(&mut self) -> miniquad::TextureId {
+         let ctx = get_quad_context();
++        let mut retired = None;
+         if self.dirty {
+             self.dirty = false;
+             let (texture_width, texture_height) = ctx.texture_size(self.texture);
+             if texture_width != self.image.width as _ || texture_height != self.image.height as _ {
+-                ctx.delete_texture(self.texture);
++                // Earlier glyphs can already be queued with this texture/UVs.
++                // Keep it alive until the frame's draws and bindings are done.
++                retired = Some(self.texture);
+ 
+                 self.texture = ctx.new_texture_from_rgba8(
+                     self.image.width,
+@@ -103,6 +105,9 @@
+             }
+ 
+             ctx.texture_update(self.texture, &self.image.bytes);
++        }
++        if let Some(texture) = retired {
++            get_context().textures.retire_atlas_texture(texture);
+         }
+ 
+         self.texture
+--- a/src/texture.rs
++++ b/src/texture.rs
+@@ -28,6 +28,7 @@
+ pub(crate) struct TexturesContext {
+     textures: TextureIdSlotMap,
+     removed: Vec<TextureSlotId>,
++    retired_atlas_textures: Vec<miniquad::TextureId>,
+     removed_render_passes: Vec<miniquad::RenderPass>,
+ }
+ impl TexturesContext {
+@@ -35,9 +36,15 @@
+         TexturesContext {
+             textures: TextureIdSlotMap::new(),
+             removed: Vec::with_capacity(200),
++            retired_atlas_textures: Vec::new(),
+             removed_render_passes: Vec::with_capacity(10),
+         }
+     }
++    /// Atlas draws retain unmanaged texture IDs until the frame is submitted.
++    pub(crate) fn retire_atlas_texture(&mut self, texture: miniquad::TextureId) {
++        self.retired_atlas_textures.push(texture);
++    }
++
+     fn schedule_removed(&mut self, texture: TextureSlotId) {
+         self.removed.push(texture);
+     }
+@@ -60,6 +67,12 @@
+         // Delete RenderPasses first, then textures (safer for attachments/FBOs)
+         for pass in self.removed_render_passes.drain(0..) {
+             ctx.delete_render_pass(pass);
++        }
++
++        // Context::end_frame calls this after draw submission and commit_frame,
++        // when queued glyphs and the backend's cached bindings are finished.
++        for texture in self.retired_atlas_textures.drain(..) {
++            ctx.delete_texture(texture);
+         }
+ 
+         for texture in self.removed.drain(0..) {

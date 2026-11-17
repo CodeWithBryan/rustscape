@@ -1,0 +1,26 @@
+"""Audit all packaged animation bytes with unchanged original metadata/frame/base decoders."""
+import hashlib,importlib.util,json,pathlib,subprocess
+
+def generate(check=False):
+    root=pathlib.Path(__file__).resolve().parents[2];spec=importlib.util.spec_from_file_location('visual',root/'oracle/visual/generate.py');v=importlib.util.module_from_spec(spec);spec.loader.exec_module(v);sources=v.generate(build_only=True)
+    run=root/'runs/players-oracle/animation-assets';run.mkdir(parents=True,exist_ok=True)
+    for path in v.RUN.glob('*.java'):
+        text=path.read_text(encoding='utf-8')
+        if path.name=='SeqType.java':text=text[:-1]+v.method(v.clean((v.SRC/'SeqType.java').read_text()),'public void postDecode()')+'}'
+        (run/path.name).write_text(text,encoding='utf-8')
+    (run/'AnimationAssetsProbe.java').write_text(r'''import java.io.*;import java.nio.*;import java.nio.file.*;import java.security.*;import java.util.*;import java.util.regex.*;
+public class AnimationAssetsProbe{
+static void ints(DataOutputStream d,int[]a)throws Exception{d.writeInt(a==null?0:a.length);if(a!=null)for(int n:a)d.writeInt(n);}
+public static void main(String[]args)throws Exception{byte[]bytes=Files.readAllBytes(Path.of(args[0]));int offset=12+ByteBuffer.wrap(bytes,8,4).order(ByteOrder.LITTLE_ENDIAN).getInt();String header=new String(bytes,12,offset-12,java.nio.charset.StandardCharsets.UTF_8);TreeMap<String,byte[]>files=new TreeMap<>();Matcher m=Pattern.compile("\"((?:seq|frame|base)/[^\"]+)\":\\[(\\d+),(\\d+)\\]").matcher(header);while(m.find()){int start=offset+Integer.parseInt(m.group(2));files.put(m.group(1),Arrays.copyOfRange(bytes,start,start+Integer.parseInt(m.group(3))));}Map<Integer,AnimBase>bases=new HashMap<>();for(var e:files.entrySet())if(e.getKey().startsWith("base/")){int id=Integer.parseInt(e.getKey().substring(5));bases.put(id,new AnimBase(id,e.getValue()));}var secondary=SeqType.class.getDeclaredField("frameset");secondary.setAccessible(true);ArrayList<String>out=new ArrayList<>();for(String prefix:new String[]{"base","frame","seq"}){MessageDigest hash=MessageDigest.getInstance("SHA-256");DataOutputStream d=new DataOutputStream(new DigestOutputStream(OutputStream.nullOutputStream(),hash));int count=0;for(var e:files.entrySet()){if(!e.getKey().startsWith(prefix+"/"))continue;count++;byte[]name=e.getKey().getBytes(java.nio.charset.StandardCharsets.UTF_8);d.writeInt(name.length);d.write(name);if(prefix.equals("base")){AnimBase b=bases.get(Integer.parseInt(e.getKey().substring(5)));d.writeInt(b.id);d.writeInt(b.transforms);for(int i=0;i<b.transforms;i++){d.writeInt(b.types[i]);d.writeBoolean(b.shadow[i]);d.writeInt(b.parts[i]);ints(d,b.bones[i]);}}else if(prefix.equals("frame")){byte[]raw=e.getValue();AnimFrame f=new AnimFrame(raw,bases.get((raw[0]&255)<<8|(raw[1]&255)));d.writeInt(f.base.id);d.writeInt(f.length);for(int i=0;i<f.length;i++){d.writeInt(f.indices[i]);d.writeInt(f.x[i]);d.writeInt(f.y[i]);d.writeInt(f.z[i]);d.writeInt(f.prevOriginIndices[i]);d.writeInt(f.flags[i]);}}else{SeqType s=new SeqType();s.decode(new Buffer(e.getValue()));s.postDecode();ints(d,s.frames);ints(d,s.frameDelay);d.writeInt(s.replayoff);d.writeBoolean(s.hasModelTransforms);d.writeBoolean(s.tween);d.writeBoolean(s.stretches);d.writeBoolean(s.updateShadows);d.writeInt(s.framegroup==null?-1:s.framegroup.length);if(s.framegroup!=null)for(boolean b:s.framegroup)d.writeBoolean(b);for(int n:new int[]{s.priority,s.replaycount,s.looptype,s.movetype,s.exactmove,s.mainhand,s.offhand})d.writeInt(n);ints(d,(int[])secondary.get(s));d.writeInt(s.soundeffect==null?0:s.soundeffect.length);if(s.soundeffect!=null)for(int[]row:s.soundeffect)ints(d,row);}}out.add("\""+prefix+"\":{\"count\":"+count+",\"sha256\":\""+HexFormat.of().formatHex(hash.digest())+"\"}");}System.out.println("{"+String.join(",",out)+"}");}}
+''',encoding='utf-8')
+    p=subprocess.run(['javac','-encoding','UTF-8','-d',str(run),*[str(p)for p in run.glob('*.java')]],text=True,capture_output=True);(run/'compile.log').write_text(p.stdout+p.stderr);assert p.returncode==0,p.stderr
+    pack=root/'assets/visual/animations.pack';p=subprocess.run(['java','-cp',str(run),'AnimationAssetsProbe',str(pack)],text=True,capture_output=True);(run/'stdout.txt').write_text(p.stdout);(run/'stderr.txt').write_text(p.stderr);assert p.returncode==0,p.stderr
+    data=dict(scope='Every raw packaged sequence/frame/base decoded through complete unchanged original decoders and SeqType.postDecode. Canonical digests preserve all fields consumed by Rust, including secondary frames, part bits, frame flags and sounds. Null optional arrays are normalized only where runtime uses empty vectors. This proves asset/decoder coverage, not all animations rendered or complete cache sharing/content.',sources=sources,packSha256=hashlib.sha256(pack.read_bytes()).hexdigest(),sections=json.loads(p.stdout))
+    content=json.dumps(data,separators=(',',':')).encode()+b'\n';path=root/'fixtures/players/animation-assets.json'
+    if check:assert path.read_bytes()==content,'Animation assets audit differs'
+    else:path.write_bytes(content)
+    print('Original full animation archive audit:',json.dumps(data['sections']),flush=True)
+
+if __name__=='__main__':
+    import sys
+    generate('--check'in sys.argv)

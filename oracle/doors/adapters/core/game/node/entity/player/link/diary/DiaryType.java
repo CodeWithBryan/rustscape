@@ -1,0 +1,1 @@
+package core.game.node.entity.player.link.diary;public enum DiaryType{FALADOR,LUMBRIDGE}

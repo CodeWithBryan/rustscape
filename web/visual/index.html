@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2009scape Rust visual workbench</title>
+<link rel="icon" href="data:,">
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151a1e;color:#e9ce96;font:16px system-ui}canvas{display:block;width:100%;height:100%;outline:0}#start{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#151a1e}h1{font-size:28px}p{color:#aebcc8;max-width:580px;line-height:1.6}button{margin:auto;padding:14px 26px;border:1px solid #b59b64;background:#3a3326;color:#ffe6ae;font:inherit;cursor:pointer}#error{position:absolute;bottom:12px;left:12px;color:#ffbbbb;white-space:pre-wrap}
+</style>
+<style>label{display:block;margin:8px auto;color:#d2c4aa}input{font:inherit;background:#252a2e;color:#fff;border:1px solid #776c56;padding:7px}#credentials{display:none}#connection{position:absolute;top:12px;left:12px;background:#151a1ee6;padding:8px 12px;color:#e9ce96;pointer-events:none}</style>
+<canvas id="glcanvas" tabindex="0" oncontextmenu="return false"></canvas>
+<script src="graphics_lifecycle.js?v=__CLIENT_VERSION__"></script>
+<div id="start"><h1>2009scape / Rust</h1><p>Explore Lumbridge using the pinned revision 530 cache. Models, animation, lighting, original interface scripts, item art and sound synthesis run in Rust / WebAssembly.</p>
+<label><input id="live" type="checkbox"> Connect to a development world</label>
+<label><input id="npc-preview" type="checkbox"> NPC animation and overhead preview (offline)</label>
+<label>Player appearance preview (offline) <select id="player-preview"><option value="">Default appearance</option><option value="player-male.bin">Male rune equipment</option><option value="player-female.bin">Female rune equipment</option><option value="forms/player-chicken.bin">Chicken transformation</option><option value="forms/player-cow.bin">Cow transformation</option><option value="forms/player-dwarf.bin">Dwarf transformation</option></select></label>
+<label>NPC preview <select id="npc-fixture"><option value="world-spots-replay.json">World spell effects (offline packet preview)</option><option value="npc-overheads-replay.json">Animation and overheads</option><option value="npc-nearby-replay.json">Nearby types and changing forms</option><option value="slot-render-replay.json">Per-part animation, delay and replacement</option></select></label>
+<label><input id="use-cache" type="checkbox"> Download the game cache from the update server (kept in this browser; otherwise prepared packs are used)</label>
+<div id="cache-options" style="display:none"><label>Update server <input id="update-server" value="ws://127.0.0.1:43597/" autocomplete="off"></label><label>Song to play offline (name or number; needs the cache) <input id="song" value="" placeholder="scape main" autocomplete="off"></label></div>
+<div id="credentials"><label>World <input id="endpoint" value="ws://127.0.0.1:43597/" autocomplete="off"></label><button id="movement-preset" type="button">Use controlled movement probe</button><label>Username <input id="username" autocomplete="off" maxlength="12"></label><label>Password <input id="password" type="password" autocomplete="off"></label><p id="world-scope">The default development world verifies login and stationary players. A separate movement probe supports walking/running; profiles, doors, NPC AI, bank and shop handlers remain incomplete.</p></div>
+<button id="launch">Launch client</button><p>Click ground to walk · Right click for actions<br>Offline: F5 inventory · F6 bank · F7 shop · F8 equipment<br>F9 show/hide interfaces · F10 action diagnostics<br>Arrows or middle drag orbit · wheel zoom<br>Offline interface previews use synthetic packet replays. Full gameplay and visual parity are pending.</p></div>
+<div id="connection" hidden role="status"></div>
+<div id="error" role="alert"></div>
+<script src="mq_js_bundle.js"></script>
+<script src="pcm_audio_worklet.js?v=__CLIENT_VERSION__"></script>
+<script src="game_transport.js?v=__CLIENT_VERSION__"></script>
+<script src="cache_storage.js?v=__CLIENT_VERSION__"></script>
+<script>
+window.addEventListener('error',event=>{document.getElementById('error').textContent=event.message;});
+document.getElementById('live').addEventListener('change',event=>{document.getElementById('credentials').style.display=event.target.checked?'block':'none';});
+document.getElementById('npc-preview').addEventListener('change',event=>{if(event.target.checked){document.getElementById('live').checked=false;document.getElementById('credentials').style.display='none';}});
+document.getElementById('live').addEventListener('change',event=>{if(event.target.checked)document.getElementById('npc-preview').checked=false;});
+document.getElementById('movement-preset').addEventListener('click',()=>{document.getElementById('endpoint').value='ws://127.0.0.1:43601/';document.getElementById('world-scope').textContent='Controlled real-cache movement probe: walking/running and energy updates. Full profiles, NPC AI, doors, bank/shop and other content remain incomplete. The separate probe server must be running.';});
+document.getElementById('use-cache').addEventListener('change',event=>{document.getElementById('cache-options').style.display=event.target.checked?'block':'none';});
+// ?update=ws://host:port/ and ?song=NAME fill the cache options in, for review runs.
+{const query=new URLSearchParams(location.search),update=query.get('update'),song=query.get('song');
+ if(update){document.getElementById('use-cache').checked=true;document.getElementById('update-server').value=update;document.getElementById('cache-options').style.display='block';}
+ if(song)document.getElementById('song').value=song;}
+document.getElementById('launch').addEventListener('click',()=>{
+ // graphics_lifecycle.js looked at what the browser's WebGL offers.
+ if(window.rs09GraphicsLacking&&window.rs09GraphicsLacking.length){document.getElementById('error').textContent='This browser cannot run the client: its graphics lack '+window.rs09GraphicsLacking.join(' and ')+'.';return;}
+ const cached=document.getElementById('use-cache').checked;
+ const update=cached?document.getElementById('update-server').value:'',song=cached?document.getElementById('song').value:'';
+ // ?cursor=ID is the desktop's --script-cursor: a review aid for the cursor presentation.
+ const cursor=new URLSearchParams(location.search).get('cursor')||'';
+ if(document.getElementById('live').checked){
+  const username=document.getElementById('username'),password=document.getElementById('password');
+  if(!username.value !== !password.value){document.getElementById('error').textContent='Enter a username and password, or neither to log in at the title screen.';return;}
+  window.rs09Launch=[document.getElementById('endpoint').value,username.value,password.value,'','',update,song,cursor];
+  username.value='';password.value='';
+ } else {
+  const npc=document.getElementById('npc-preview').checked?'assets/visual/'+document.getElementById('npc-fixture').value:'';
+  const player=document.getElementById('player-preview').value;
+  window.rs09Launch=['','','',npc,player?'assets/visual/'+player:'',update,song,cursor];
+ }
+ document.getElementById('start').style.display='none';
+ document.getElementById('glcanvas').focus();
+ load('client.wasm?v=__CLIENT_VERSION__');
+});
+</script>
+</html>

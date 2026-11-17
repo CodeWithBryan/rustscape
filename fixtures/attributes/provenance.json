@@ -1,0 +1,33 @@
+{
+  "caseCount": 503,
+  "fixtureSha256": "f0a650cca6647c7e328ac27d69e5d58361521ffab0b645ab4c1a2950a2aed536",
+  "format": 1,
+  "scope": "Complete unmodified GameAttributes, including its DOM XML file loader, plus verbatim PlayerSaveParser.parseAttributes and PlayerSaver.saveAttributes. Explicit player, controlled clock and recording logger adapters; selected LocationHash/fromString with coordinate/identity holder, not world geometry. File paths isolated in owned temporary directories. No Entity event dispatch, complete profile, general XML/JDK object model or playable world claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/attributes/AttributeOracle.java": "ab65f7cc774e6db5348d1349847b9442dea1b9fb9e8268ace06b7f8056d77be5",
+    "oracle/attributes/generate.py": "cc070978db8f98ff22f19b88c2097885d1d5fe84690b57ae65e6764f2c0c4196",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/node/entity/impl/GameAttributes.java": "23aaa3f00f9a2992a200ffdf642930a9612a3377d2ff4466177e989557ac6b7f",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaveParser.kt": "e9f41217991cbf7c2fe80e3a75666183fcc9d271ca54b3e07f0a95ab4a44159c",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaver.kt": "2428a08efcecf5b717ae901b6cf36e63cd08e14ba32ff9a6a32c30fc92cce665",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

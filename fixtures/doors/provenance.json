@@ -1,0 +1,58 @@
+{
+  "caseCount": 463,
+  "fixtureSha256": "383b074c189ded84b6828394938dba2e0394a90047d533ac9b3a720413ccc961",
+  "format": 1,
+  "scope": "Complete unchanged DoorActionHandler, DoorConfigLoader, Scenery, Constructed and Pulse. Original location packing/distance/equality and direction methods in adapters. Complete pinned door configuration data is compared. Explicit definition, scene replacement, collision, player, walking, logout, clock/scheduler, diary and audio bindings. Replacement requests are observed; they do not establish SceneryBuilder/LandscapeParser or live world integration.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "fixtures/doors/door_configs.json": "431e0a4addf5364ff05d012993bca20606565eaee9d5d4a0bd6c00de0a0ca0b0",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/doors/Support.java": "a0dd4f6abaad3ae73879b01f17c7e25847b50eb273f03954ffae2a8485918984",
+    "oracle/doors/adapters/core/ServerConstants.java": "64558bbf34b8b1822c87069374231ee9f97236da1eeacb78651f61b4ec99fafc",
+    "oracle/doors/adapters/core/api/ContentAPIKt.java": "8945f560774a7399ee5bab5ceae78b1c106dbedfb8137a5370eed8da84767102",
+    "oracle/doors/adapters/core/api/Logger.kt": "dcc813ffc4f318333ae5bbcfc060cd79227123c0646dedf856248b4f21733b07",
+    "oracle/doors/adapters/core/cache/def/impl/SceneryDefinition.java": "9991278b033ca54294bee1d46e23a641c60339c9d6e1b35641e630a17cf8faf2",
+    "oracle/doors/adapters/core/cache/def/impl/VarbitDefinition.java": "0ef7f362610d333bebe33624129bd11f9038f015b47215dda56fec9ba724e3a5",
+    "oracle/doors/adapters/core/game/interaction/DestinationFlag.java": "8036d0daa2078d907b8585dd933d5826522c31f8563b8d9770fdabbfc1fd8c30",
+    "oracle/doors/adapters/core/game/interaction/InteractPlugin.java": "cb4179494c870e65c1d5b307841dfd6f139c2b82b1dc4b809ee046a051d137f6",
+    "oracle/doors/adapters/core/game/node/Node.java": "7022a0fec3a4edd5aecefbbcf3ed38647361f3787185e04c37128832669e7108",
+    "oracle/doors/adapters/core/game/node/entity/Entity.java": "6b022ba7085e7bacd019b7fa9db90985d2cafbac3c36a08d1ac462d4b8a9d4c5",
+    "oracle/doors/adapters/core/game/node/entity/impl/GameAttributes.java": "29bb2ae586bc768b57db36e8ba8fd5a8a2c8a7ecb141bf22764b456f1e1446e1",
+    "oracle/doors/adapters/core/game/node/entity/player/Player.java": "f428edf1843be7dfea4a32ce49c8564424515ee3e0df92ed4037a506e76ca413",
+    "oracle/doors/adapters/core/game/node/entity/player/link/diary/DiaryType.java": "5c6769e476e9b3597eed5176aac0d6e26804cbcfb0bc846d7c31185feb0c47c6",
+    "oracle/doors/adapters/core/game/node/item/Item.java": "be94485362af8494485cda78935e982fcfbd87c0c0c2840f8fb60e926578416a",
+    "oracle/doors/adapters/core/game/node/scenery/SceneryBuilder.java": "b5cb5e160724d789b0252f6361e41ac6d8f9569914f37c804460a3702d6995da",
+    "oracle/doors/adapters/core/game/world/GameWorld.java": "ed1b7dd5d3edd437f8d857fbd4ff20f664cb197e23989e23d4f7ecdeb79a96ef",
+    "oracle/doors/adapters/core/game/world/map/RegionManager.java": "d293cb247ba17f791b03242c98b763ce5c234f584a2f5bf25862876e1c20464c",
+    "oracle/doors/adapters/core/game/world/map/path/Pathfinder.java": "9c013f36c5b5706d696a6009a28f2ad71a907ad63a95ed28066f767e47592e57",
+    "oracle/doors/adapters/core/tools/Log.java": "5a330951934f2c6a37a832ddec702cc202b40f86d02fdd0e23762114f3dbb042",
+    "oracle/doors/adapters/core/tools/SystemLogger.java": "f537e04de9c5aaffedea72f83731c6d8c2211fffbb930cd199ac25659b5b6d65",
+    "oracle/doors/adapters/org/jetbrains/annotations/NotNull.java": "3055e8f32cc2cc38728cd541a8ca9380bbc020584b1661629e3e01b287197e8d",
+    "oracle/doors/adapters/org/rs09/consts/Sounds.java": "b86dd661a73bda934a706f92f791b616dd5e40ab6016e6879bbabf555277f2f7",
+    "oracle/doors/generate.py": "55d58bedc912cd58bcb3f69c677cf5550d4c2b9962b98cdd16cca3552bb03a06",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/global/action/DoorActionHandler.java": "1f7dc3811743b13feb09fc1ce0d61556b7aeced3db1bd2fc513a196e02a895c7",
+    "reference/server/Server/src/main/core/game/node/scenery/Constructed.java": "ff1fe253c5e8d8b22da7a97bf5f9aa4ca4b130ea3c637039043f0340c5548b24",
+    "reference/server/Server/src/main/core/game/node/scenery/Scenery.java": "eaba60d20ec9e0e2953907641c5cc0ef366bde1ea0ce84c4af1609d474364e93",
+    "reference/server/Server/src/main/core/game/system/config/DoorConfigLoader.kt": "301187898cc6b98fd0bb2820a530d553cac49784d83bd079ad2bc9db40340b75",
+    "reference/server/Server/src/main/core/game/system/task/Pulse.java": "f2c9520364843507678e2859478abf48fbabc9538a59569b64f96729a2c2bf52",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

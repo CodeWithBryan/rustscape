@@ -1,0 +1,11 @@
+[alias]
+xtask = "run --package xtask --"
+
+[resolver]
+incompatible-rust-versions = "fallback"
+
+# Browser glue (web/visual/*.js, the Macroquad loader) supplies the client's
+# extern functions when the module is instantiated. Newer toolchains no longer
+# turn undefined symbols into imports unless asked.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=--import-undefined"]

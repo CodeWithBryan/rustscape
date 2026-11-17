@@ -1,0 +1,53 @@
+{
+  "cases": {
+    "aligned": 400,
+    "clock": 32,
+    "cursor": 300,
+    "font": 4,
+    "random": 72,
+    "wavy": 400
+  },
+  "fixtureSha256": "2a1acaf993c66461231b2586c01859b5b68d68d80622560c0b4815e27609be6b",
+  "format": 1,
+  "scope": "Unchanged Font.renderWavyText, renderWavyTextAligned and renderOffset (with setColors, parseTag, getStringWidth and the metrics constructor) over four seeded unkerned fonts, with every glyph and name-icon draw recorded instead of rasterised; unchanged CursorType.decode over seeded and truncated definitions, its private sprite id read through getSprite's cache lookup; java.util.Random after setSeed. The renderer switch, line drawing, sprite loading and the cursor cache are adapters that draw and load nothing. The clock cases repeat client.mainLoop's seed expression in the probe over java.util.Calendar; that method is not compiled. MiniMenu, the menu state and the kerned font profile are not observed.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/menus/MenusOracle.java": "c10c7e58b8094bd5dbf951fa7639f7546a8da2ae421cd8c6d3a73fef4dcd5597",
+    "oracle/menus/adapters/rt4/CursorTypeList.java": "c1c2d7f862bb48c5692270ae3e0f18a28818cfdb2298ed969bf070d15c236752",
+    "oracle/menus/adapters/rt4/GlFont.java": "78ef37ea7781bd55c7cf31dcf66039a8cadce9701cc9d37431921d0c2c21eccb",
+    "oracle/menus/adapters/rt4/GlRaster.java": "b40a52ffa8551f07b548d32307b5da7d39dc3e73e90b0657a8ec5a260e912c98",
+    "oracle/menus/adapters/rt4/GlRenderer.java": "19290b1f1517a47ca0b88cf98ea803480f63b606caffb9de9f6736874c75fa70",
+    "oracle/menus/adapters/rt4/Js5.java": "df0e79c39be42e79c4f83db4521b45e8c815d789bf8770322a9fe4b1a00bafc7",
+    "oracle/menus/adapters/rt4/SoftLruHashTable.java": "c76e378c25003583e3b0ef865d470d76f31e8749dd9c2f33e684b2ab4de07fe6",
+    "oracle/menus/adapters/rt4/SoftwareFont.java": "bdb8623946b79dc887d561ca3257ff89fe5929b3756ff06c0444ce5fb4e393c6",
+    "oracle/menus/adapters/rt4/SoftwareRaster.java": "9778ea5d5cbfc9a4b27130b5d1447750c300f59aea43059c61909f3baedeb38c",
+    "oracle/menus/adapters/rt4/SoftwareSprite.java": "e497cfba0dfdce260bd8d19513e58e0da2ff7ced37a393c3e07e293a479665d3",
+    "oracle/menus/adapters/rt4/SpriteLoader.java": "290b24cdfb34eec915ec0a9c0bdcbd6b72db2dee2ebc054a506ca5e29fb966c1",
+    "reference/client/client/src/main/java/rt4/Base37.java": "3a886f6df1766521b332f5f1848a38a11f1d2a896a05cc3372b70b43e6e8860c",
+    "reference/client/client/src/main/java/rt4/BrowserControl.java": "f2c2e07139830ca4f62e81c388cb684351e3ca123f738ec8662f9ad8cfa933ea",
+    "reference/client/client/src/main/java/rt4/Buffer.java": "3930054bef9ddf3eab00a1dd1a44ddf9db7ec9a8bcc550abcdfba360554587ca",
+    "reference/client/client/src/main/java/rt4/CursorType.java": "188b21b206338dc8c8675337a3f0f9847a7690fbb3762fd56daf671532a75785",
+    "reference/client/client/src/main/java/rt4/Font.java": "9c221bab222faab302a86b73006648f3cfffdfee2a02cec298e5418f1230569d",
+    "reference/client/client/src/main/java/rt4/HashTable.java": "128b7cd4c96a0dae7396696ec8b3de1f4344296feedb432fdc74f2e2727405f1",
+    "reference/client/client/src/main/java/rt4/IndexedSprite.java": "fffdb139c9265b28b69f6f5fa9e0419711d93f2ffd0fae0577a9468128598ed6",
+    "reference/client/client/src/main/java/rt4/JagString.java": "1f9aca0704ff1b983c1c800541cd252670a81d4ede63a1621edff602ed0366f5",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/SecondaryNode.java": "cc63cf2bc58e142f7b11ee7a6f13a468779fc8d6aa73f7cce45d47131ea3fd4e",
+    "reference/client/client/src/main/java/rt4/StringInterface.java": "62f2327f5f7db0ee79e83b277b4f871b212cbe0e4afb5c0853e135e85b8265f1",
+    "reference/client/client/src/main/java/rt4/StringNode.java": "d43075d5dfa1d0945538c1a583c95a782df77fe0693eb95bf24505f2fa713f43"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

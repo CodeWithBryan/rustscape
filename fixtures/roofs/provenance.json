@@ -1,0 +1,87 @@
+{
+  "cases": {
+    "scene": 4,
+    "step": 2560,
+    "stepAll": 123,
+    "stepFreeCamera": 360,
+    "stepNever": 54,
+    "stepNothingHidden": 593,
+    "stepRoofsHidden": 1430
+  },
+  "copiedMethodsSha256": {
+    "SceneGraph: public static boolean addEntity(": "713f2bdacc16c2b1ed7e68ea933dd24e618191ae597c2ca2527ead8939328351",
+    "SceneGraph: public static boolean addSceneryEntity(": "cbece48c45206c45e711f7de8676bf7c2f8cf81763ebd9673ccbdc5c25407b62",
+    "SceneGraph: public static boolean allLevelsAreVisible() {": "805844d901541eaf20e0705bf16e637ac2a1b2d683e8cd5e357ad2290668b28d",
+    "SceneGraph: public static int getLocCollisionMask(": "36f468d1f3899eb24dc4350d66a9a904211d40a2161e2e8361f4f74daead38cf",
+    "SceneGraph: public static int getTileHeight(": "7d570dfbcbaa91b53ec9875b052f538357538a1fad56f410c8c42baed76c1717",
+    "SceneGraph: public static void bridgeTile(": "7f07eae99f048609859578f0687f580312bec9763a4903fde976626ce1514cc3",
+    "SceneGraph: public static void readLocs(": "daa8c58a48cd55693528d4515986a510265b3715a07b31e23dc87b9543d83e3d",
+    "SceneGraph: public static void setWall(": "0f60967fbe3dedee33ff04e90c2ee55c7dd7d84ff04bc48027d7dfafcc01f583",
+    "ScriptRunner: private static boolean floodFillRoofVisibilityGroup(": "7a48f717b630b38c066e62b624c2589a2ed0157f9d058cc1cf3dc736f603c668",
+    "ScriptRunner: private static int getBaseRoofMode() {": "4b536de9815c30c1a7ce8e0856b26ab209a15f35bf67291ae9587fa8d2e4aab3",
+    "ScriptRunner: public static boolean floodFillRoofVisibilityGroup(": "2e2416c81a59ed8feadfce2354e0cba94123a62ac4c54226b79f91eb01525941",
+    "ScriptRunner: public static int getRoofRemovalMode() {": "ada79be317be321d03f20dc0895abbd11df142a3631d834673559f3159b1656c",
+    "ScriptRunner: public static void allocateRoofVisibilityGroupArrays(": "bc0d1d56d850f5abafec21453a1c0d358396c46444b58cbf1b8a823ecb2ab53a",
+    "ScriptRunner: public static void buildAllRoofVisibilityGroups() {": "c37418a19d90981f9833f5b494d24982ba76efe745e14eb26921e9f331e556bf",
+    "ScriptRunner: public static void fillRoofVisibility(": "4baf5576b3fb778c8522d14af2738aa8856323e2e6b2ed4e48c2ba66a19dc131",
+    "ScriptRunner: public static void updateRoofRemovalMode() {": "1c1accc2b492ea086c57fde536bf8fde0992736f6b3ded9c2f6203c9083a63d2",
+    "ScriptRunner: public static void updateRoofVisibilityGroups() {": "3658322e9dc833a72ed536473f04191414d43e7fbc03c259cd34fd64ef32550b"
+  },
+  "fixtureSha256": "869b1c38dbd6c620a6f0996cd9707a02f86ffbe4924df4a1c730b83359e9b037",
+  "format": 1,
+  "inputSha256": "94be3ac3297bff68f8125d0e9126a26d1533a914c30517d6f107ca09ddf4ac60",
+  "inputs": {
+    "main_file_cache.dat2": "b5431211b019b9403b4cfca933f4c9635c1d5278d3730995dced0d8672b1cc91",
+    "main_file_cache.idx16": "439ea312ce607992e05ffc87031703aaecd3e7aebb66ddb718bde19e04205210",
+    "main_file_cache.idx255": "83a2292c515596af0423764c48e41dfe1aac482920dca0b89ecb343db6dd4c30",
+    "main_file_cache.idx5": "32bda84b31731cd60f7bc4e90caf7d55671e966fa958d60f2ec91da16340743d"
+  },
+  "keySourceSha256": "48c1e3fe8026044182a0d709ca9f7e8ad6f573809a2d7e92f1eebfb9174a5aa0",
+  "scope": "ScriptRunner.updateRoofRemovalMode, getRoofRemovalMode, fillRoofVisibility, allocateRoofVisibilityGroupArrays, buildAllRoofVisibilityGroups, floodFillRoofVisibilityGroup and updateRoofVisibilityGroups, and SceneGraph.getTileHeight, getLocCollisionMask, setWall, addEntity, addSceneryEntity, bridgeTile and readLocs, copied unchanged out of the pinned sources into holder classes and run with the unchanged Tile, Wall, Scenery, Node and Buffer over three scenes of the pinned cache and one invented scene (random roofed blocks, bridge strips, forced-ground flags and 9480 locations of every shape on every plane, written into location files that the original readLocs decodes). Observed per step: the whole roofVisibility array (as a hash), the five roof group arrays and the tiles setShapedTile would hide; per scene: every wall and scenery link of the tile array. NOT the original: render flags, tile heights and each location type's size, shapes, model count, animation, alternatives and opcodes 82 and 98 come from the Rust decoders; SceneGraph.addLoc is replaced by a hand transcription of its setWall/addEntity decisions (SceneGraph.java.in, RoofLoc.java); the hidden test of setShapedTile and the roofCycle of the scene draw are transcribed in RoofOracle.java; the plugin API is its no-handler state. Inputs on which the original throws (a camera outside the scene, or on the player's tile below pitch 310) are not generated. Dynamic location changes, instanced scenes and the renderer's use of the result are not observed.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/adapters/rt4/JagString.java": "7cc6e5eee6fe4c6a699acff8b246ab89cd75255fed315daa39f2a5f036e06a95",
+    "oracle/roofs/RoofOracle.java": "3fdcbd399ca216adc42b9918acb30370f5c524aaf7eb6221bdb461bf3c9fc330",
+    "oracle/roofs/SceneGraph.java.in": "a34be6ca601698257c34b9bf3b3fca74670b941cb8d918cc4492dddc7be82933",
+    "oracle/roofs/ScriptRunner.java.in": "0fedf2c4bd4ac5e413911fb86c2236f618b6a18c1e918d7d72b2b9222462bb0c",
+    "oracle/roofs/adapters/plugin/api/API.java": "516127a4d7c90fbccf70dc280cbf5afad993c083fc849b53fc23b320b849a73c",
+    "oracle/roofs/adapters/rt4/Camera.java": "ab2ab3aba73af5b80666664adb9415d338f6977cddc9c157bf3bcc926ce79ec8",
+    "oracle/roofs/adapters/rt4/CollisionMap.java": "1f52b98e3863a329f71ca82487b3f8fc4d996f3a66a7d1fd3fff5339bd9dc144",
+    "oracle/roofs/adapters/rt4/Entity.java": "27bc33984e669a441cc5a2f2ab12a0aa6a6fe980998800425730950bdd41b407",
+    "oracle/roofs/adapters/rt4/GlRenderer.java": "223d0aa2838bac023a5888ebe1cdce6565d20900a82f19c34c91571ed4d48895",
+    "oracle/roofs/adapters/rt4/GroundDecor.java": "8c5332389c5cafef49a567daa838c48f0714e312a7db9b58234edaf474edf494",
+    "oracle/roofs/adapters/rt4/ObjStackEntity.java": "e6a9f2908e25c338baba855cb5b35f350c888fea92744feff56cae1bf1ef58d4",
+    "oracle/roofs/adapters/rt4/PathFinder.java": "b8cdc882a47300b7dfef5a4977ffd5010c03555adf3fe000bbe476a313982a9e",
+    "oracle/roofs/adapters/rt4/PlainTile.java": "704e598e3d2ca70b2e93b0ad9f33dc8c2c53601e6f947da919f9e7ff206131fd",
+    "oracle/roofs/adapters/rt4/Player.java": "01732ae92ac4e25ce14fcadf313e884a10d858495e146b813cc40438f0bf5222",
+    "oracle/roofs/adapters/rt4/PlayerList.java": "d3a55c01ee8750ac306d4fc90d643a4547b4846abfaef134f696b387e6319e63",
+    "oracle/roofs/adapters/rt4/Preferences.java": "4baf7c4032a9eaeeafe2d2d01f5efacdfea3f09801e177ac11c5241c284764ad",
+    "oracle/roofs/adapters/rt4/RoofLoc.java": "e8203ca2be3e397fadd1f3de0c1dcf66ae7e86df9739b35d311a6a3a21355aa0",
+    "oracle/roofs/adapters/rt4/ShapedTile.java": "5cb728da8066d6031b57545e849ca14bdae97088164c05abd89eaee1683d955f",
+    "oracle/roofs/adapters/rt4/WallDecor.java": "8a713c7fd3917ba6e462d1e6522892a30b96c67a50ff658be62164bc1660fbd0",
+    "reference/client/client/src/main/java/rt4/Buffer.java": "3930054bef9ddf3eab00a1dd1a44ddf9db7ec9a8bcc550abcdfba360554587ca",
+    "reference/client/client/src/main/java/rt4/GlTile.java": "a1af01c7ec0cfb7890acc405299f89174ebb1d1be44045d3781956952884efa6",
+    "reference/client/client/src/main/java/rt4/LocType.java": "ee83bf276c98ee020295873ea9e56424821b2070b807a3910ca7740c263f891c",
+    "reference/client/client/src/main/java/rt4/LoginManager.java": "882aefdb9fcdd3452893fe8500c194be367640da86097c4f0f20101b5707f005",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/SceneGraph.java": "eec94c9c65b1044f10f9e3c0cf9bc06c37f7d398f3ac8488bba5f68c26340166",
+    "reference/client/client/src/main/java/rt4/Scenery.java": "4966fb548a471e024a457049ec892c8267a1a84ad1ca4970d0eb5a25e670004f",
+    "reference/client/client/src/main/java/rt4/ScriptRunner.java": "86e1e9553fbc7a1c7b91cbf0510a59d5d0f112f531cac5d6b77d5a99623ddbc1",
+    "reference/client/client/src/main/java/rt4/Tile.java": "e19c47dd7492b4f31f5615a6eedc78b134dbd02c1cbed743388716f9fd8f07dd",
+    "reference/client/client/src/main/java/rt4/Wall.java": "b551694a1e58fe6cc6992bb690e3bc7258a324a4cefd07605b97a202b43b0332"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

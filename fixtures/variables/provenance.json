@@ -1,0 +1,47 @@
+{
+  "format": 1,
+  "upstream": {
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "url": "https://gitlab.com/2009scape/2009scape.git",
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only"
+    },
+    "client": {
+      "url": "https://gitlab.com/2009scape/rt4-client.git",
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only"
+    }
+  },
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/variables/Player.java": "7d72164f73bc886f6b3fb4e65e2ceeb845fbdacb333aa2494dca4d6e85c60642",
+    "oracle/variables/VarsOracle.java": "cca3d20cd8a4e157d5d7e8fb0b766bfb562db2fa2ed8a8b5dc91b6b8e743bb2f",
+    "oracle/variables/generate.py": "e957976ceec39dc7bd618959032762238ba06fc132890158e2cd4cd47e3f74d4",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/cache/def/impl/VarbitDefinition.java": "38c44f94c3578ea2f406611a3638854a64733735b0777045e6b29faa02f73e66",
+    "reference/server/Server/src/main/core/game/node/entity/player/Varbit.kt": "16cd4133796324956437de63c90edd6c8d72c02f32d0e4b8d0ee047a0a9b83ea",
+    "reference/server/Server/src/main/core/game/node/entity/player/VarpManager.kt": "6e5a422112648e6043578329c0f8b2984cf827b5e78b61110ccd4f1911303746",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/PacketDispatch.java": "48cd43b4d351759873ddc6f430ae98f6d666b89c0933f5e6d3b520b389a10873",
+    "reference/server/Server/src/main/core/game/system/config/CustomVarbitParser.kt": "6413f7d2fc112a43c79a8ed4391508b1f48d64504398a278bf6412bd5b0baa80",
+    "reference/server/Server/src/main/core/net/packet/Context.java": "0a1b6f5561f57f9717fbbaa25c60bbe21f8b781f9eafed8911c5c94ae559893c",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/OutgoingPacket.java": "c7015442a166b7751ba196da6f3c5587bbf63d162f0949890bb766cf8716789a",
+    "reference/server/Server/src/main/core/net/packet/PacketHeader.java": "a0635e12f2380381df12d534bc7695691d415c5c4dc0edf5692888082a623bc7",
+    "reference/server/Server/src/main/core/net/packet/context/ConfigContext.java": "65289d3792c51e317c512bfafc65c564d56580f69972f83ba9f77891f4611fce",
+    "reference/server/Server/src/main/core/net/packet/context/VarcUpdateContext.java": "39cf815888fa8e6d229548b0739519e6dd8f7d1022fe5ece06e900023dc65ac7",
+    "reference/server/Server/src/main/core/net/packet/out/Config.java": "ab67f3d8a3cd2956c262aad70c6f4b056607001372e9c6b91f7fca76eb151b5b",
+    "reference/server/Server/src/main/core/net/packet/out/VarcUpdate.java": "a9f1c2e5cca31b299898d2074e558a11f623849f1d0739e3965ce7b0ce447068",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "caseCount": 474,
+  "fixtureSha256": "e2f47acd216af5890427bb897b4a00d3b318cb3cb8b7122a0ea18ea43ba96433",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "customDefinitions": {
+    "gitBlob": "720b1676e05e753655d3afb0c00aba1e1fb117a0",
+    "sha256": "75f7d81e0cdbe6b2732b3fcf08fdf33b3f14618d6afed72970eba05b64e26f1c"
+  },
+  "scope": "Complete unchanged VarbitDefinition, VarpManager, Varbit and CustomVarbitParser; selected unchanged ContentAPI variable methods and PacketDispatch methods; unchanged Config/VarcUpdate and IoBuffer. Real plain HashMap public player fields, original UTF8 FileReader/JSON-simple loader in owned temporary files. Player packet/session/artificial/interface-counter and Cache index22 are explicit recording adapters, ISAAC output zero. Snapshots sort exposed maps only for diagnostics; runtime reinit compares original integer HashMap iteration including retained clear capacity, collision/tree bins, callbacks and failure prefixes. Native bounded UTF8 text parser does not establish complete FileReader cursor/alternate charset/read-ahead behavior, arbitrary exposed mapping iteration, whole Player/profile/startup/AIPlayer/session or playable banking. Original getMask nontermination for endBit MAX and spans over one million are excluded; native rejects them."
+}

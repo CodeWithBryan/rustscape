@@ -1,0 +1,30 @@
+{
+  "caseCount": 81,
+  "fixtureSha256": "1d4e5edec11856e8fbb38d0a1eb75e9d936e7faf8d1b7d3e16017bebfaef0ded",
+  "format": 1,
+  "scope": "Complete unchanged IronmanManager and IronmanMode, default/null modes, ordinal threshold short circuits, icons, actual player/manager aliases and message callback reentry/failure prefixes. Stub Player only forwards sendMessage to the explicit recording service. Canonical Rust ownership is separately regression tested; full Player/profile/content startup is not established.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/ironman/Support.java": "9f9e728e06f1108913edf7ef6bf396ca8eaed3693a5a910ee36f604e513ed80d",
+    "oracle/ironman/generate.py": "ac837793bd7dc36c9297d8b80239ab8e9720c4b35d1af77f639deef618c5e1da",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/IronmanManager.java": "fd4373aea99012e39b8c7ed03598832acd84f67705ff58c6393f2eb630d38bc1",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/IronmanMode.java": "b54c6ef4272bedfc1de3bd5581a042d0e0bc082c7bb71cc0675173c37ef63a2c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

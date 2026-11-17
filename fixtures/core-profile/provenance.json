@@ -1,0 +1,56 @@
+{
+  "caseCount": 302,
+  "fixtureSha256": "ecb8b5e942664de8b72c0746dc5beaf6587db8ca6dc9b7e152ce181315ac90d3",
+  "format": 1,
+  "scope": "Verbatim PlayerSaveParser.parseCore, PlayerSaver.saveContainer/saveCoreData, JSONUtils.parseLocation and original packed LocationHash; complete original containers/items/timer classes reused. Explicit Player/bank/equipment constructors, fail-on-use listener adapters, controlled definition/registry/content/clock bindings. Core sections and partial side effects, not complete Player construction, other profile sections, file I/O, live bank/equipment actions, scheduler or world entry.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/core-profile/Support.kt": "4c954fa70262c12b2ea3731e83d19fee7692028467589e48f9ae1ff63d70df6f",
+    "oracle/core-profile/generate.py": "90e1eab39b9a311a90ddf4f962eb6027224494a9644bf5dfdd69908850bcb5ce",
+    "oracle/inventory/InventoryOracle.java": "c7a98e3f76bd5711508b408d65121e41b62f03286c0ddd3fe7ad8e545227c5e9",
+    "oracle/inventory/generate.py": "ec994522b517f1ec218ca792101df8816e0b11e297420f22116ef97a6aa9235b",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/timers/Support.kt": "3652c80569e166e6dda4bcad6ea21c3aec5a332e7673d6b756c4e4186301e5c7",
+    "oracle/timers/generate.py": "a42c74e5748b55a3e061d33bd50a74f759c7c88c35b5e71ece83faef90bafd18",
+    "reference/server/Server/src/main/core/JSONUtils.kt": "5e76f398f14cf741c1b599620f25941454a66cc621032a8ad6c3fab602507a32",
+    "reference/server/Server/src/main/core/ServerConstants.kt": "fa28de7ee08f82432b2565044a9473a0ac4c57cc29d28dddc2f4d4454b85f0bd",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+    "reference/server/Server/src/main/core/game/container/Container.java": "8b167878e7dd251d2b61c341837cb735c965c4f29ab7dfaebde073998bb96153",
+    "reference/server/Server/src/main/core/game/container/ContainerEvent.java": "fb7acc30b486802a5fdd08e3973237c986cd80507d975796fcaf0cc37c607f4d",
+    "reference/server/Server/src/main/core/game/container/ContainerListener.java": "bb41d0a29ca3ceddf768cd07968cf3c368c1567b2aa1419cf20332a7fb50972b",
+    "reference/server/Server/src/main/core/game/container/ContainerType.java": "6e809d46708ffdf8038797b9ddfaca9e88940751d765577c2c9aa23482fed4bf",
+    "reference/server/Server/src/main/core/game/container/SortType.java": "b53e80b3c19fdcfc884cafe260faa8aeb86d143b513638bb6a3ada5ed16f71c2",
+    "reference/server/Server/src/main/core/game/container/impl/BankContainer.java": "8d1541b3b46939b52270a11668b83145dc416b37b7e77636d212f608c08f2e79",
+    "reference/server/Server/src/main/core/game/container/impl/EquipmentContainer.java": "81c78260eaeb3e9001e0d0b7a237ddf739998a778704089685b539eb487476df",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/node/entity/player/Player.java": "d3d00ccf27c0e914ae240e25bd836e7824eaa0939844a45e79aa03e7050bb8ed",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaveParser.kt": "e9f41217991cbf7c2fe80e3a75666183fcc9d271ca54b3e07f0a95ab4a44159c",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaver.kt": "2428a08efcecf5b717ae901b6cf36e63cd08e14ba32ff9a6a32c30fc92cce665",
+    "reference/server/Server/src/main/core/game/node/item/Item.java": "d43b95f9b6207e56f776c0a8b7817e04030e81cbe39bba7900cedbf67a6d8df8",
+    "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+    "reference/server/Server/src/main/core/game/system/timer/PersistTimer.kt": "385addf62953026b98e4668dfb2b40a23f63d5e07535e5383b9e5d7e0a4259fd",
+    "reference/server/Server/src/main/core/game/system/timer/RSTimer.kt": "25620d9c4cc14c76790e68eed83c023f20a1e9d9fa968edbad3ff829a425b8cc",
+    "reference/server/Server/src/main/core/game/system/timer/TimerFlag.kt": "69192a6b42bdc5c44fc8da43c5c06ed72855ef24f058bdbee0e2194658ee7a42",
+    "reference/server/Server/src/main/core/game/system/timer/TimerManager.kt": "38706b96fb08b0f8f7fd7de3bfb775aa06cbb57071002b9e24104e80ece51e5f",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "caseCount": 6827,
+  "fixtureSha256": "6bb6c95de292bff5268bdd7edd7565d620c87e02a1e3421ccc0f100ef4b7c0c8",
+  "format": 1,
+  "scope": "Selected RT4 primitives/collision and server Direction. JagString/Location are isolated test adapters. RegionManager throws.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/CacheOracle.java": "cc9e059d9e10155b1e0b6cf4cb6f91ca3caff5499520281932d0a16a074d7ff8",
+    "oracle/OracleBenchmark.java": "173ba8e3ffa44ac93e55eef41c8b975153ac59837a7567756813e737be70f8c6",
+    "oracle/OracleMain.java": "9c32a7b76a969b5a32f3c22ce346249f91fb5a6d61867edc4a3b80ec88c18111",
+    "oracle/adapters/core/game/world/map/Location.java": "a05b536c24d893156dc5efa15dbe6d07e161a9aa35436bc1a56bb8f64757d97a",
+    "oracle/adapters/core/game/world/map/RegionManager.java": "c8fca214a2c8cbb5655035b147eb01702e4dc29a1b31c4744643b198d5ae4961",
+    "oracle/adapters/rt4/JagString.java": "7cc6e5eee6fe4c6a699acff8b246ab89cd75255fed315daa39f2a5f036e06a95",
+    "reference/client/client/src/main/java/rt4/Buffer.java": "3930054bef9ddf3eab00a1dd1a44ddf9db7ec9a8bcc550abcdfba360554587ca",
+    "reference/client/client/src/main/java/rt4/BufferedFile.java": "5b7ae9be5723c771613c3f208ef79e87a4f052d6891fa3be34fe059b6ae245dd",
+    "reference/client/client/src/main/java/rt4/ByteArray.java": "1448322c20d0174d20e253bf3c5571a60dcf1fa702045e921107ba25b0db71fc",
+    "reference/client/client/src/main/java/rt4/Bzip2DState.java": "2676802ed6629f48bbeb39d3b206e4a1f1860ca77908a45775ea64d3ef645169",
+    "reference/client/client/src/main/java/rt4/Bzip2Decompressor.java": "dc209ecda1c365181b470ff06911b4a9b4048236540c11bce98512a11f00adbf",
+    "reference/client/client/src/main/java/rt4/Cache.java": "eac79274702854cc9ecfbb509972533dabdf4389649d130430149ef7c6c9b1d5",
+    "reference/client/client/src/main/java/rt4/CollisionMap.java": "dae85a8d9acd111bcd46a5c3bfb5533e87fdfabdbaf4b805cb8b45856ebb5098",
+    "reference/client/client/src/main/java/rt4/DirectByteArray.java": "b57fd644be56b95140d3c2224e3dfced73d6c13f43781dfb3624156bebd4ab90",
+    "reference/client/client/src/main/java/rt4/GlobalConfig.java": "9aea9139a1f866fdfbfb2bd71277579b9c0540a525b62db48c066da3f95a7a67",
+    "reference/client/client/src/main/java/rt4/GzipDecompressor.java": "fc06218fe1382e815764f83285007ed8c5d6e8c308fa6d141b609b531d41cb3c",
+    "reference/client/client/src/main/java/rt4/HuffmanCodec.java": "8eaa35eb89ded67da4f18399d75f6a5c91dc944899bfb6fbb316e79a65311ff3",
+    "reference/client/client/src/main/java/rt4/IntHashTable.java": "2c0ce3e127f8a2b9636406ba0b33b058d455062534fabfd33c8d5fcc40d02ee6",
+    "reference/client/client/src/main/java/rt4/IntUtils.java": "871d88d84a51c453f098959fc0ec4a231c536cf3bdf17723cee2f8fc8be05d03",
+    "reference/client/client/src/main/java/rt4/IsaacRandom.java": "e62c170cb5de4cf5b1e4dadbb4e03c710124590ce396941dfcd64ce2376a5bc2",
+    "reference/client/client/src/main/java/rt4/Js5.java": "b6c3449c5138544397539b9e052bb742be9fbdf3db34356d1f129036b786e07e",
+    "reference/client/client/src/main/java/rt4/Js5Compression.java": "43002e549bc48853389f3737c34033fde105bd75ba762434646598d68af20fc9",
+    "reference/client/client/src/main/java/rt4/Js5Index.java": "2f39eedba0969e61a80ce5bdc3571deaaf28d1fd45b0c0edacd095159d3e7c03",
+    "reference/client/client/src/main/java/rt4/Js5ResourceProvider.java": "aaeca7cbcbda12588eae25b62c8ee550ad7ea094af9aed0a99b21dfa57199acb",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/Packet.java": "34b7ba43aae4e004dedc76c2189c78c68a6e640434d5d96126ba077c8cd2df02",
+    "reference/client/client/src/main/java/rt4/RandomUtils.java": "2f568e552f562dcb9ee9de0113c821f405678a31fc119bef9537a4eaf4524c24",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalArg.java": "02d871da066e2beb21f19e88ef7a8e53e2176d07ab6bace159bd614fa9ffc697",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalClass.java": "6c952d5a5f154c15676fddf684f0aa8c6ec143b1862519cfcdffbbe741bc5905",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalMember.java": "50ee2f6ca39c833e852115b3aeb16c1eb7a8b87a66f192ba5e4ab03815d4d432",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/Pc.java": "e718ee680f92c3afd4cfac2379b29ec5c680c0c6923e6ddbc7f54f7ed0f57df2",
+    "reference/client/signlink/src/main/java/rt4/FileOnDisk.java": "e67d3cfbee54a123a86c51b68799d705deb2c9dd5da06acc86327b9b48e91c2e",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Point.java": "97f4db2276053947fdcabd78ae1207ea7fa6a630b235458d0b579fa100b8314b",
+    "reference/server/Server/src/main/core/game/world/map/path/ClipMaskSupplier.java": "93eddf62306b1f5a373dac01d149abcf6727b1e4ccd17c72c07d60709e97fa1b"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

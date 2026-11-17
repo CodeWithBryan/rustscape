@@ -1,0 +1,62 @@
+{
+  "cases": {
+    "mesh": 24,
+    "meshdump": 28,
+    "select": 40,
+    "shadow": 12
+  },
+  "extractedSha256": "513339436a163c9961eda0fb7733b7be498d489d4de556a95211a99b0e46f0d2",
+  "fixtureSha256": "782960363832a88dcd65632180cec3af585ccd2d39bb99ac38bc9817fa2f14e2",
+  "format": 1,
+  "sceneGraphMembers": [
+    "public static Tile[][][] tiles;",
+    "public static final int[][] OVERLAY_SHAPE_VERTICES =",
+    "public static final int[][] UNDERLAY_SHAPE_VERTICES =",
+    "public static Scenery getScenery(",
+    "public static void buildGlLighting(",
+    "public static void applyLightToTile(",
+    "public static int interpolateHeight("
+  ],
+  "scope": "Unchanged LightingManager (light grid, updateLightsForTile/Region/WallPiece, pruneInactiveLights, resetActiveLights, the cache reset of updateAllLightAnimations), LightMesh (addVertex, addFan, upload) and ShadowManager (addFloorShadow, isObjectInShadow), with HashTable, Node, IntNode and IntUtils. SceneGraph.buildGlLighting, applyLightToTile, interpolateHeight, getScenery and the two shape vertex tables are copied verbatim into a class of their own; the corner normals passed in repeat buildScene lines 1109-1115 by hand in LightingOracle.java. Light, Tile, Scenery, FloType, FogManager, the sprite classes, Buffer and the GL classes are adapters holding only the members read. Inputs are seeded, not cache data: light footprints, tile floors, diagonal walls, heights, floor-shadow masks. No GL call is executed; light changes are recorded as issued. renderTile's choice of which query to make for which object is not run.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/lighting/LightingOracle.java": "9024f878785f41be9e0b51bf9f4fcc600d62a4479e62fa8cc294640aa43f9feb",
+    "oracle/lighting/adapters/com/jogamp/opengl/GL2.java": "a62e4f525d35fae217c8b55df28ca0b80351092ec82afdd9767aa702c986ba06",
+    "oracle/lighting/adapters/rt4/Buffer.java": "a2f93d180c4f2cfa02ea38f8bd87a2465069adc9e54cfff79eff9dceb736199e",
+    "oracle/lighting/adapters/rt4/FloType.java": "2530230e79a6026e743092d26416bc108226454c445bcd4393257997857c87e6",
+    "oracle/lighting/adapters/rt4/FloTypeList.java": "21215778cc6595cc339f725dc280d3bc8ff342d4400d7bb374499b9f331e5b5b",
+    "oracle/lighting/adapters/rt4/FogManager.java": "f4b85a827ae3269ccd9738ed141b1b6ad468f52fed2ff742b5b553dcb942c664",
+    "oracle/lighting/adapters/rt4/GlRenderer.java": "67a5e025b0457003765866c0c46f76be3fd8ad181559d7f8bc629828cae294a9",
+    "oracle/lighting/adapters/rt4/GlVertexBufferObject.java": "22e211add9af77f7613caeebd77b41e4f2fac0f76a9bc8ba8f6e8fa81f1b6d62",
+    "oracle/lighting/adapters/rt4/Light.java": "980509af99ff96d7f7516c9e787af08e238a71ddb03e133f69f2929d75d132f0",
+    "oracle/lighting/adapters/rt4/MaterialManager.java": "b4458ccea340eae6404f75d293a998e14d6ec8ef218c48439e825db5f8e6999f",
+    "oracle/lighting/adapters/rt4/Preferences.java": "71e4fc140db9572e1f73aa80c9f1ef0e9585d9c9059a4b5574a7db814d205b11",
+    "oracle/lighting/adapters/rt4/Scenery.java": "0c55bd71573a35e3e3d68d9907f92591989b5f95701adbc784fcdc33b5960039",
+    "oracle/lighting/adapters/rt4/Shadow.java": "c7ffffecb019a62ed4b8c69619903bb7ad743e4a89fe8e2e2a0c91be30425f34",
+    "oracle/lighting/adapters/rt4/SoftwareIndexedSprite.java": "d93e555855ed6e4f229e29b8794a174fe07feba7197ccba43b78e20591b04c3d",
+    "oracle/lighting/adapters/rt4/Sprites.java": "177328351fc3cea75753cb491c55e5532ab7ff3dc3d3615b80010964a00b1402",
+    "oracle/lighting/adapters/rt4/Tile.java": "841073fd3d32cbf3361c70dfe4ffb51e21f0935f3cc19cdd6e18e780e5ab73f8",
+    "reference/client/client/src/main/java/rt4/HashTable.java": "128b7cd4c96a0dae7396696ec8b3de1f4344296feedb432fdc74f2e2727405f1",
+    "reference/client/client/src/main/java/rt4/IntNode.java": "1181c8edf37a1a7a733a8c73daa0020f4fcd6bcc14bc5b7b07a9d355ded575d3",
+    "reference/client/client/src/main/java/rt4/IntUtils.java": "871d88d84a51c453f098959fc0ec4a231c536cf3bdf17723cee2f8fc8be05d03",
+    "reference/client/client/src/main/java/rt4/LightMesh.java": "b596bd8a502248e36067e61d3a68a893dc5aabd08378f721ad6ff745b674ca21",
+    "reference/client/client/src/main/java/rt4/LightingManager.java": "0f3112324d6e7e220c799cdc9fd49731963f7fad1be4dc43b6d7a9ee293cc1f9",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/SceneGraph.java": "eec94c9c65b1044f10f9e3c0cf9bc06c37f7d398f3ac8488bba5f68c26340166",
+    "reference/client/client/src/main/java/rt4/ShadowManager.java": "45c51ce9bc09a12b90c193f9498ddf3ce319abde12272bd4ce2c67c773ddff3f"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

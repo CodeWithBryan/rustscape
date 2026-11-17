@@ -1,0 +1,1 @@
+package core.game.interaction;public class InteractPlugin {public InteractPlugin(Object owner){}}

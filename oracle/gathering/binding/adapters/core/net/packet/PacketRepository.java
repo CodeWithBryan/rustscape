@@ -1,0 +1,1 @@
+package core.net.packet;public class PacketRepository {public static void send(Class<?> type,core.net.packet.context.SkillContext context){core.game.node.entity.skill.Skills s=context.player.getSkills();int i=context.skill;oracle.Support.emit("packet.skillLevel",null,i,s.getStaticLevel(i),s.getDynamicLevels()[i],s.getExperience(i));}}

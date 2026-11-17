@@ -1,0 +1,46 @@
+{
+  "format": 1,
+  "upstream": {
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "url": "https://gitlab.com/2009scape/2009scape.git",
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only"
+    },
+    "client": {
+      "url": "https://gitlab.com/2009scape/rt4-client.git",
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only"
+    }
+  },
+  "initialBaseline": {
+    "caseCount": 1168,
+    "sha256": "844a97d15a2fa097f982ea3f7a2ad066db21286d50cf927c711ae5d8df3242e8",
+    "scope": "Initial complete unchanged InteractionListeners/InteractionListener/IntType/Script observations with declared kotlin-reflect1.5.20, independently matched by native replay before corpus extension."
+  },
+  "declaredReflectionArtifact": {
+    "version": "1.5.20",
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.5.20/kotlin-reflect-1.5.20.jar",
+    "size": 2993204,
+    "sha256": "fd6782d18bcc17ffa98221a1c34e4a42a7e3e6b4a4b72b474b5c82e14c8bab5a",
+    "scope": "Exact kotlin-reflect version declared by pinned Server/pom.xml. Used only by JVM test oracle; no JVM dependency enters Rust runtime."
+  },
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/input-prompt/reflect.lock.json": "63ea166452c4d1e52e6b8d81fc3e2a35b1f236141b58138a346e64a242a4ac7c",
+    "oracle/interaction-listeners/Oracle.kt": "739fa111f3b624b7690a5808e993edcd73329d180d7f4d0e4c8cf911dd97c2db",
+    "oracle/interaction-listeners/generate.py": "6b8c136e3cd31c4fff8ac953e7795c9b34328c8887257e1764d8b75e32d5fa65",
+    "oracle/interaction-listeners/initial.lock.json": "4baa8ff3c96c2a7cd21a91bde148e61d7ab61a373c2bbe22d63383a7cabcae94",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/pom.xml": "2b252137565127c0d93399c85e7fad291639f8f5549677c4e9596420c684b9c4",
+    "reference/server/Server/src/main/core/game/interaction/IntType.kt": "b3f4424d59503eea383dbdaf77b80434eb406bcf9d1c0c4fe99dfc50fe40ff63",
+    "reference/server/Server/src/main/core/game/interaction/InteractionListener.kt": "ff2e1d89b88043e0755c1179ddf39586b1e9cd42812a220ad8c1215c1b16718b",
+    "reference/server/Server/src/main/core/game/interaction/InteractionListeners.kt": "663f7f20d4b30b611d07e31d395767459487ff472d8ed03b068a87339eab4ed1",
+    "reference/server/Server/src/main/core/game/interaction/Script.kt": "386492193dc0b711d6bd6dcc3661a8d52376fe48f4e6bef404b95c3f7f5bff65",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "caseCount": 1278,
+  "fixtureSha256": "454fbbec282c9b384a4b55e3720d03512c56adf2514383b264fc4b51d86e5189",
+  "scope": "Complete unchanged InteractionListeners, InteractionListener, IntType and Script source. Entity/script/lock/event/zone/movement/callback bodies are mutable recording services; scheduled pulse bodies can be invoked independently. Not full ScriptProcessor/movement/world/content runtime or natural banking proof. Private maps are sorted observations; array identity text normalized only in snapshots."
+}

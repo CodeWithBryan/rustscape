@@ -1,0 +1,44 @@
+{
+  "caseCount": 269,
+  "fixtureSha256": "2c344a74b2ecc3b8114863e52613d4d8815a66bc5cd0f1cc1f563b299d8b9d86",
+  "format": 1,
+  "scope": "Verbatim RegionChunk constructor, static/dynamic scenery storage, index, copy/rebase, rotated-position and clipping-reset methods; complete unchanged Scenery, Constructed and Pulse. Definition factory, Node and chunk-flag records are explicit adapters. Scenery/location identity, sparse array contents, defaults, mutation order and constructor failures are compared. No landscape/collision behavior, entity/item lists, dynamic-region rotation, synchronization or live world-session claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/chunk/Support.java": "b422e229824e0deb2f25482dbd07203f747c85cf4ba5fdf29c939c8d8a43b1d3",
+    "oracle/chunk/generate.py": "c5db92128b156222bb1575f7bb2d80c31ca1f10889dc7341e06741b3a6932a99",
+    "oracle/doors/adapters/core/cache/def/impl/SceneryDefinition.java": "9991278b033ca54294bee1d46e23a641c60339c9d6e1b35641e630a17cf8faf2",
+    "oracle/doors/adapters/core/cache/def/impl/VarbitDefinition.java": "0ef7f362610d333bebe33624129bd11f9038f015b47215dda56fec9ba724e3a5",
+    "oracle/doors/adapters/core/game/interaction/DestinationFlag.java": "8036d0daa2078d907b8585dd933d5826522c31f8563b8d9770fdabbfc1fd8c30",
+    "oracle/doors/adapters/core/game/interaction/InteractPlugin.java": "cb4179494c870e65c1d5b307841dfd6f139c2b82b1dc4b809ee046a051d137f6",
+    "oracle/doors/adapters/core/game/node/Node.java": "7022a0fec3a4edd5aecefbbcf3ed38647361f3787185e04c37128832669e7108",
+    "oracle/doors/adapters/core/game/node/entity/impl/GameAttributes.java": "29bb2ae586bc768b57db36e8ba8fd5a8a2c8a7ecb141bf22764b456f1e1446e1",
+    "oracle/doors/adapters/core/game/node/item/Item.java": "be94485362af8494485cda78935e982fcfbd87c0c0c2840f8fb60e926578416a",
+    "oracle/doors/adapters/core/tools/Log.java": "5a330951934f2c6a37a832ddec702cc202b40f86d02fdd0e23762114f3dbb042",
+    "oracle/doors/adapters/org/jetbrains/annotations/NotNull.java": "3055e8f32cc2cc38728cd541a8ca9380bbc020584b1661629e3e01b287197e8d",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/node/scenery/Constructed.java": "ff1fe253c5e8d8b22da7a97bf5f9aa4ca4b130ea3c637039043f0340c5548b24",
+    "reference/server/Server/src/main/core/game/node/scenery/Scenery.java": "eaba60d20ec9e0e2953907641c5cc0ef366bde1ea0ce84c4af1609d474364e93",
+    "reference/server/Server/src/main/core/game/system/task/Pulse.java": "f2c9520364843507678e2859478abf48fbabc9538a59569b64f96729a2c2bf52",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/RegionChunk.java": "94932c58772b815e2799d0df32739b37b8bfa0be26233466ff006c12574b1389",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

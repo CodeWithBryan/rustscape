@@ -1,0 +1,55 @@
+{
+  "arguments": [
+    "20261116",
+    "120",
+    "400",
+    "120",
+    "60"
+  ],
+  "cases": {
+    "follow": 120,
+    "occlusion": 60,
+    "project": 120,
+    "viewport": 400
+  },
+  "fixtureSha256": "6283c133906310993e1f5c012440f0a6552bbf30b7583df76bf5090e67483491",
+  "format": 1,
+  "scope": "Unchanged Camera (updatePlayerCamera, clampCameraAngle, calculateRenderPosition) and MathUtils. Copied verbatim into adapters, because their classes cannot be compiled alone: ScriptRunner.calculateViewportBounds, projectToScreen and the follow branch of renderGameScene; SceneGraph.getTileHeight and the opcode 129 part of readTerrain; the edge arithmetic of GlRenderer.setupPerspectiveView; GameShell.calcRenderDelta and mainInputLoop; the camera lines of Protocol's drift block with Math.random() as an argument. Scene arrays are synthetic. No OpenGL matrix, input device or timing is observed.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/camera/CameraOracle.java": "58e653b214c54f63b41d04bff529395930016c508d4d57a02afab08e6f7c9715",
+    "oracle/camera/adapters/rt4/Buffer.java": "f73c538cf2b268724051d3749d10dfd5d7fe183fea77d2ff0af4ba7314295003",
+    "oracle/camera/adapters/rt4/GameShell.java": "65c8ea10f1cd91d2829455a4756a8ace5950aa7c56d545710737ced7511c8f96",
+    "oracle/camera/adapters/rt4/GlRaster.java": "83278fe2b143c28bb8afc16a40b847c6d6c8358f4cd651bc625632743f770bd0",
+    "oracle/camera/adapters/rt4/GlRenderer.java": "0773ac20b77cc43a74ddff482ebfb393a5f2af9db5c1a6ad658fcdbc851e007d",
+    "oracle/camera/adapters/rt4/InterfaceList.java": "0b71549d48742047afb223343942b310c261cacfdaafb4e1901f6a6d8ea4871c",
+    "oracle/camera/adapters/rt4/Keyboard.java": "87be5ec5d629b52faf0dc38c3bca5c1c71377961d9e2f13737435e172421d745",
+    "oracle/camera/adapters/rt4/Player.java": "770bb1a1dcb1bcd8bff5c27b251ea0cc32712fc1134c993716e46df141aaca23",
+    "oracle/camera/adapters/rt4/PlayerList.java": "276afefff06900e9bc17415e7d358a2a65cafc100ba30af83a19e8209424140f",
+    "oracle/camera/adapters/rt4/Preferences.java": "22304bde01bd22d713d4aaf37cc2fdabee24eff4b851f4f841ca37a40d711ddc",
+    "oracle/camera/adapters/rt4/Protocol.java": "edad369807604fd7aaa6e733706f3a038dcca6d7ede7cdf11459da5755c8e416",
+    "oracle/camera/adapters/rt4/SceneGraph.java": "d4efeb711eaad61abe3ffbd8fd319e4d25f2ed64221163f6fdca3c122ad27c76",
+    "oracle/camera/adapters/rt4/ScriptRunner.java": "bef43f2318f8302478a4d4fb1c358ecc6cb6a941589d1fc86bf2b20ec2ccafb9",
+    "reference/client/client/src/main/java/rt4/Camera.java": "28461c2ee97afb5886ec314796266cd1ddec74d799fb34de0247f48967f9bf17",
+    "reference/client/client/src/main/java/rt4/GameShell.java": "e504764f0d5807a8e6515eaa78214fcd6458c30bfde0062a4413a01f0c448bb3",
+    "reference/client/client/src/main/java/rt4/GlRenderer.java": "d314e4167e39e36166a348fdcd6cb874cc8346304f34bc9c44835dc09b0f3858",
+    "reference/client/client/src/main/java/rt4/MathUtils.java": "de35c8e8b133b37b8376f2ad0cfb19565e0e7c4c1ff14a772d64d0b9db53436b",
+    "reference/client/client/src/main/java/rt4/Protocol.java": "65838b0ebcdbeb2ed0fb785b15e2abe5d409fceaa1b1456c33ef6cb5cb756f02",
+    "reference/client/client/src/main/java/rt4/SceneGraph.java": "eec94c9c65b1044f10f9e3c0cf9bc06c37f7d398f3ac8488bba5f68c26340166",
+    "reference/client/client/src/main/java/rt4/ScriptRunner.java": "86e1e9553fbc7a1c7b91cbf0510a59d5d0f112f531cac5d6b77d5a99623ddbc1"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

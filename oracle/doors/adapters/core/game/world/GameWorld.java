@@ -1,0 +1,1 @@
+package core.game.world;public class GameWorld{public static Pulser getPulser(){return new Pulser();}public static class Pulser{public void submit(core.game.system.task.Pulse p){oracle.Support.submit(p);}}}

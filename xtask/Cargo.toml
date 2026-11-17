@@ -1,0 +1,20 @@
+[package]
+name = "xtask"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde_json.workspace = true
+sha2.workspace = true
+bzip2 = "0.5"
+rs09-protocol.workspace = true
+rs09-game-core.workspace = true
+rs09-cache.workspace = true
+rs09-net.workspace = true
+rs09-server = { path = "../crates/server" }
+rs09-client = { path = "../crates/client" }
+tokio.workspace = true
+mysql.workspace = true

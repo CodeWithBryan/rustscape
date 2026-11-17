@@ -1,0 +1,32 @@
+{
+  "caseCount": 141,
+  "fixtureSha256": "8f77a47f8b66b794e8ec85df7aab395ebdbb29ad57c912e73cf6a484f30936d5",
+  "format": 1,
+  "scope": "Verbatim MajorUpdateWorker.handleTickActions and Entity.tick bodies. Explicit packet/disconnect/pulse/listener/sequence/manager/flush/clock/telemetry and script/event/skill/walking/timer/mask services; sequence start can invoke the real original Entity.tick. Compares phase order, skip flag, location snapshots, moved predicate, wrapping clocks/ticks, catch/finally and exception override paths. Full UpdateSequence/repository lists, concrete services, Player/NPC extensions, native component composition and live world scheduling remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/tick/Support.java": "be49402d21f41f37e06f691fb5ccc5f260b2a332174f4e28e91ecf0d4bfcf524",
+    "oracle/tick/generate.py": "e9d7a42ebaad945df8ef9600bd65c98db2a470f46025a413f41b30e1ca1e1a84",
+    "reference/server/Server/src/main/core/game/node/entity/Entity.java": "9daf5cc74de2bed9491e7422b9998371192c7f6649cb3302aee5a603328e0668",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/worker/MajorUpdateWorker.kt": "e66648e75fdaaf93c793eef03053229589febaf9193fead25122576cf453acdd",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

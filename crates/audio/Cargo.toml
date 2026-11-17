@@ -1,0 +1,15 @@
+[package]
+name = "rs09-audio"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Portable original synthesized sound and integer PCM streams"
+
+[dependencies]
+rs09-protocol.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+rs09-cache.workspace = true
+sha2.workspace = true

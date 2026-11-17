@@ -1,0 +1,37 @@
+{
+  "caseCount": 626,
+  "fixtureSha256": "327db3f455a3549e070fd518f54b176072277ce551b349109a3614ebc92ed4ab",
+  "format": 1,
+  "scope": "Complete unchanged AnimationDefinition/Animation/Graphics/Animator/Clocks/ByteBufferUtils and EntityFlag. Actual lazy cache, partial parse fields/positions, durations/overflow, mutable reset/context identity, priorities, deadlines, clock writes, register results and graphic chunk receiver order. Cache index20, world tick, Entity clocks/masks and flag delivery are explicit reentrant recording adapters. Full mask/profile/combat/content and scene graphic delivery remain owning-world integration; native prepared bindings and actual-cache audit are separately scoped.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/animator/Support.java": "be064b6db2d3c310d93264d64f7dbf600f0a5498908067790b02151cf0c023ad",
+    "oracle/animator/generate.py": "418d0f96d741c19784d75af326c988ae6f11948e988508aa1925d3fdcb66bcdd",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/cache/def/impl/AnimationDefinition.java": "1080605fd9d6b671e76954bcdaa57ca5d3dde4dfbab64761a7f4d40d790ec696",
+    "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
+    "reference/server/Server/src/main/core/game/interaction/Clocks.kt": "d480257a27f5f627a69af4df2e540ee1930e0ed3bb9d6ef211c035fda592c10e",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/update/flag/EntityFlag.kt": "10c523b9e816fbfc2a2318ca99d8122c8eb2d4ec10c33f8b45d8e4ced2251163",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Animation.java": "73320e2e4c356dccb6f446683d18dd5bfe1be8eee41eaba540e01acdb174aded",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Graphics.java": "f78fc7aa3320b9e356973c2f9faafaf12652ff75d5a3f7111f5e2c3da73a8e7c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "format": 1,
+  "initialBankInterfaceBaseline": {
+    "caseCount": 336,
+    "sha256": "e2e77f131f733b860d115c56458fc4420bcb480dcd2cadc053b67a4cc05bdf47"
+  },
+  "initialInterfacePacketBaseline": {
+    "caseCount": 559,
+    "sha256": "12c97cc78bb17ccd1d264add65ec7aeb20a4af17dfab97b2014eabcde741b721"
+  },
+  "upstream": {
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "url": "https://gitlab.com/2009scape/2009scape.git",
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only"
+    },
+    "client": {
+      "url": "https://gitlab.com/2009scape/rt4-client.git",
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only"
+    }
+  },
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank-interface/Component.java": "54b4ed63a6be5fac50b5e0b562410b529f8a767aabc1b400950c8f8027bf82e7",
+    "oracle/bank-interface/ComponentPlugin.java": "939905215117a23d035f077f3eba88ac4c72f5ec5e9cd030b9b3a723c102a184",
+    "oracle/bank-interface/Container.java": "f59d25ab8ca67a2d887bbdd37311a038a094f19e201fee4c46a36c2a4cecab29",
+    "oracle/bank-interface/ContentAPI.kt": "97a4e67f50960a43c34f7ed0802acbec2293d63693720dd82793235986440d63",
+    "oracle/bank-interface/GameWorld.kt": "269d04998a202577071a4a777aaf05ce4a390222824e53aae63fa02df402ec0c",
+    "oracle/bank-interface/Oracle.java": "cf4a1981c53834838d21643716e70b3adf7322f9fc89d60ee67a3cb95f12c335",
+    "oracle/bank-interface/Packet.kt": "509702c29b5a7709822a62a4724cf4034ec8307bb8ff220e7c0e8294544f2e5e",
+    "oracle/bank-interface/Player.java": "ebd0615511d55369fa43c9e567e2e88b3886b84701cbd8d1c239c2e358746e05",
+    "oracle/bank-interface/Processor.kt": "d64489afe81c0c2df5188b1c24e79f0c02591d1fbb8a2f0d88e6105397f333a2",
+    "oracle/bank-interface/generate.py": "f9355533a70aedb4521d40dbb797c4f86191d216274f0a8aa64d8d8ad9a4dfc6",
+    "oracle/bank-interface/initial.lock.json": "049bce37e77dc380c238e212221df767b9258f615b0aef67c04c090386f82baa",
+    "oracle/bank-interface/packet.lock.json": "e221856ed1c60b0a278af13c28f8072252258eff77499ba51cd835753ab4a913",
+    "oracle/bank-interface/packet_cases.py": "174cc6ff7e9e3a11a2bb91ba5e8655249db90c9d6b90476648af255c804434d1",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/content/global/handlers/iface/bank/BankInterface.kt": "475da855af57028ca55ea90b660c31c3c0e22dc18f71bacfc749d517524cadeb",
+    "reference/server/Server/src/main/core/api/IfaceSettingsBuilder.kt": "bc062a7307c5d02d6518bbede3dd74fd6518c4f3972a2b81c4f2a1cd769ad6e9",
+    "reference/server/Server/src/main/core/game/interaction/InterfaceListener.kt": "bcda4519ed9e8cc52b6a7c46e28d4cac54436e048bbbbd4eb28f6a9da1976d0a",
+    "reference/server/Server/src/main/core/game/interaction/InterfaceListeners.kt": "a7faaa1c9daa9c4f9b9840c0a515f44bc06c38efa99fc4b5ea406090dd8c8b61",
+    "reference/server/Server/src/main/core/net/packet/PacketProcessor.kt": "ad2041d22d76b86cff02600eb1fba9df11ef653d2792d7561431fbef58bc0410",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "caseCount": 572,
+  "fixtureSha256": "cb17f047f5236c080b5e5a1e929d494316b5203f7836e810096610aa251c4766",
+  "externalConstants": {
+    "url": "https://gitlab.com/api/v4/projects/32237206/packages/maven/org/rs09/consts/ConstLib/1.4.28/ConstLib-1.4.28.jar",
+    "version": "1.4.28",
+    "size": 853060,
+    "sha256": "f4e687cd74099a0eb914ff0e98defe0c5f5703634dd7d6aa25ab4ac186b98459",
+    "constants": {
+      "VARBIT_IFACE_BANK_INSERT_MODE": 7000,
+      "VARBIT_IFACE_BANK_NOTE_MODE": 7001
+    },
+    "scope": "Official published artifact satisfying the original POM's [1.4.0,) range. This pins the external symbol values used by this oracle; it does not establish which exact dependency version a historical server build resolved. The original bundled1.4 jar lacks Vars. No upstream source pin or previous fixture is changed."
+  },
+  "scope": "Complete unchanged BankInterface, InterfaceListener/InterfaceListeners and IfaceSettingsBuilder; exact selected PacketProcessor IfAction/CloseIface bodies and captured anonymous login pulse. Player/container/item/definition/dispatch/attribute/dialogue/BankUtils APIs are explicit mutable recording services; bank item mutation and deferred amount input are not replaced by these adapters. Actual Kotlin callback identities, equal-label distinct objects, aliases, raw maps, late receivers and failure/reentry prefixes. Component/plugin/dialogue/lock/zone/event/scheduler/login methods are explicit mutable recording services. Not full Player, packet processor class, content/startup or live banking proof."
+}

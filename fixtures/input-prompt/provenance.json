@@ -1,0 +1,59 @@
+{
+  "format": 1,
+  "initialBaseline": {
+    "caseCount": 790,
+    "sha256": "5d213d8f971c624b2d3afd76bf15a79d98f87d0e0f09cb3b1e26e74a7a2683f6"
+  },
+  "wireBaseline": {
+    "caseCount": 1131,
+    "sha256": "fe4e484da6792ad56c72ab11debe9b196123f6729902b7cfe597a72724e1fb50"
+  },
+  "declaredReflectionArtifact": {
+    "version": "1.5.20",
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.5.20/kotlin-reflect-1.5.20.jar",
+    "size": 2993204,
+    "sha256": "fd6782d18bcc17ffa98221a1c34e4a42a7e3e6b4a4b72b474b5c82e14c8bab5a",
+    "scope": "Exact kotlin-reflect version declared by pinned Server/pom.xml. Used only by JVM test oracle; no JVM dependency enters Rust runtime."
+  },
+  "upstream": {
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "url": "https://gitlab.com/2009scape/2009scape.git",
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only"
+    },
+    "client": {
+      "url": "https://gitlab.com/2009scape/rt4-client.git",
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only"
+    }
+  },
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/input-prompt/Bridge.kt": "60eb6b06eb136efae2821ddb1fab02f66b5f8a54cae7735523a037ca46b2fb75",
+    "oracle/input-prompt/Helpers.kt": "87f38be87027b0897cc99a5e072b05a2d35053e701be7fe281614af83f292794",
+    "oracle/input-prompt/Oracle.java": "6824743c5c25adeffc01755f5c1d832878faec501b1f6809709cffeb0547640c",
+    "oracle/input-prompt/Player.java": "bb07d459a1ccd24d50fd4d866429485f17ed2c4f9e54203671661d81fe43daef",
+    "oracle/input-prompt/Wire.kt": "e2853ac763d2d519aca81195630167e11df5cc0c69f411fa81136ac7d7a65661",
+    "oracle/input-prompt/generate.py": "09d843e6a999fda4ad71e55663821934f641664b3e1209ac954f50bc4f846e35",
+    "oracle/input-prompt/initial.lock.json": "08e867686adbab2d6b332cdab4c5b1731c7a5b79d928787d5c3965637909bb27",
+    "oracle/input-prompt/reflect.lock.json": "63ea166452c4d1e52e6b8d81fc3e2a35b1f236141b58138a346e64a242a4ac7c",
+    "oracle/input-prompt/wire.lock.json": "63bce12916903b5eb5d1d9ca697beb2df5727c21f08d1a5e679473796b9bcad0",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/pom.xml": "2b252137565127c0d93399c85e7fad291639f8f5549677c4e9596420c684b9c4",
+    "reference/server/Server/src/main/content/global/handlers/iface/bank/BankUtils.kt": "16b872aafbf73e1fad245ef17635e0c7a9da7159a407c2d9c58c7bce90f9b691",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/api/InputType.kt": "ca9fc545864360cebc7603e566a424ce8464fb10e24c08aa036a1bc51435caa3",
+    "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/PacketProcessor.kt": "ad2041d22d76b86cff02600eb1fba9df11ef653d2792d7561431fbef58bc0410",
+    "reference/server/Server/src/main/core/net/packet/in/Decoders530.kt": "e98d3d67cc804a9b379f717225cbb32db5405f817f6b4fbbf86e5281bf0057df",
+    "reference/server/Server/src/main/core/net/packet/in/RunScript.kt": "86daf2afdfe63704c305846f02df90993eeba7863e2fb7289438ff7ab82ce4b1",
+    "reference/server/Server/src/main/core/tools/StringUtils.java": "51365165036173a8b2df93b9ea108b5cc01d8aa6b86dc23383719f1ff5482e13",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "caseCount": 1137,
+  "fixtureSha256": "298abfcce3d57b2cf415ac8ba1c2733434f9944149bb62250d9346f4f276e35f",
+  "scope": "Complete unchanged modern RunScript.kt, InputType and BankUtils; exact selected ContentAPI prompt/PacketProcessor input branch, three Decoders530 input methods and IoBuffer/StringUtils/ByteBufferUtils helper methods. Player/attributes/locks/interpreter/bank/callback APIs are mutable recording services; not full Entity/events, bank item mutation, dialogue rendering, canonical callbacks or live acceptance."
+}

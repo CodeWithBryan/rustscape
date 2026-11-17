@@ -1,0 +1,30 @@
+{
+  "caseCount": 134,
+  "fixtureSha256": "0d3e96c625d4458b6ad8f037eb4c63d2ee6e2c5d79089bf80c22082da7e3e7ec",
+  "format": 1,
+  "scope": "Unchanged ItemDefinition getOptionHandler/setOptionHandler/getOptionHandlers and Definition.getConfiguration bodies, original forId fallback body under a recording lookup adapter. Native handler identity, nullable global keys/values, local type failures, case-sensitive keys, shared map aliases, lookup/config/log reentry and failure prefixes. Map content snapshots use authored sorted keys, not HashMap iteration. Java iterator/views/serialization, default locale, plugin execution/startup and live Take remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/item-option-registry/Support.java": "6f822327f3052c73a29f64ac9e1bc3c8d698a50cc3660b35234381015bd78ef5",
+    "oracle/item-option-registry/generate.py": "7f482732d1190eaecb2121b7e3fd8f21bf0f287b046323e50949de4c5760e739",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

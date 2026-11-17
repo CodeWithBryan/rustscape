@@ -1,0 +1,50 @@
+{
+  "caseCount": 259,
+  "fixtureSha256": "6419df31e739038d5e2960bf482ae43541b37adf64917f93ee292fecbee4a3d5",
+  "format": 1,
+  "scope": "Complete unchanged GroundItem, Item/ObjectUpdateFlag, UpdateFlag and ChunkUpdateTracker; verbatim RegionChunk sync/update/drawItems/flag/reset/item-list methods and outgoing writers. Original scenery equality/layer and integer IoBuffer methods. Item/Node constructors, player identity/clock/attributes, clipping, foreign flag bodies and session are explicit adapters. No full ground-item manager, region activity, live fanout or capacity claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/chunk-sync/Support.java": "ca158d3201b95cb034741382ef53d43765c3c6c3df808746733f9cb068eec0db",
+    "oracle/chunk-sync/adapters/core/game/node/entity/Entity.java": "b9b605e9595a8f477fa635ae35cb8660de906b2a8110da6970c95664b5d47190",
+    "oracle/chunk-sync/adapters/core/game/node/entity/player/Player.java": "08bd9a774a90c91e3e7fc66598ef4455bc81e31360729cee453d2a786008d174",
+    "oracle/chunk-sync/adapters/core/game/node/item/Item.java": "b5c2cbbf22c55ea05ff04199174c19a001276d280d2f80435124fc461c85a73e",
+    "oracle/chunk-sync/adapters/core/game/world/GameWorld.java": "121c45d7f63f540c577fe9d8d56f6005197ac80f66411595c3f08f4127cae467",
+    "oracle/chunk-sync/adapters/core/game/world/map/RegionManager.java": "95e63b6a425c4585aea32d9291f4ac458115f12747d6a6d628831f041a9e5e36",
+    "oracle/chunk-sync/adapters/org/rs09/consts/Items.java": "522531ad65ed3589eb26e4dee5938a6f77b6e36ea89d1143464516c5124fdfb4",
+    "oracle/chunk-sync/generate.py": "3ec1c4125e796a25624cf197e919b7bb9fc2f0b658f79bcf7c0596755362d4cd",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/node/item/GroundItem.java": "5191834bbb8e596dce48e2ec884796352ec179d42489181dd20f37afb8fa447a",
+    "reference/server/Server/src/main/core/game/node/scenery/Scenery.java": "eaba60d20ec9e0e2953907641c5cc0ef366bde1ea0ce84c4af1609d474364e93",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/RegionChunk.java": "94932c58772b815e2799d0df32739b37b8bfa0be26233466ff006c12574b1389",
+    "reference/server/Server/src/main/core/game/world/update/ChunkDirtyListener.kt": "0faba8801ef762f85a5016bf181ec6aaa8f61db738927eb37ed61d95e3b838b7",
+    "reference/server/Server/src/main/core/game/world/update/flag/UpdateFlag.java": "75ce9e8785c0e3d1994bb35044a49c92c76b67cf56587aa13a66404c5665455b",
+    "reference/server/Server/src/main/core/game/world/update/flag/chunk/ItemUpdateFlag.java": "c08057a3bf5579134193ce67278d2fc00b1929cbcccc545210c61e5a0a9e4f6c",
+    "reference/server/Server/src/main/core/game/world/update/flag/chunk/ObjectUpdateFlag.java": "d36cf1f241d53c13b31b4f8211d29e31c0ff541c6a716954d78e25fe263cb23b",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/out/ClearGroundItem.java": "6888d9098cc9a35b6da785e9876f8e9c1e0c64456b33614802c763a0156c7070",
+    "reference/server/Server/src/main/core/net/packet/out/ClearScenery.java": "32db3ba5eebb5ddeef5ca92a5ac97a7acde8adbbba032656aa2c0a64f8150ad9",
+    "reference/server/Server/src/main/core/net/packet/out/ConstructGroundItem.java": "662a07b110bec9eb856b342ed4670111964426b89fed420c3f593aecfd99f947",
+    "reference/server/Server/src/main/core/net/packet/out/ConstructScenery.java": "7ca18ac17f703833ec821fac2a316c1e4ddfa79ab65d216e92078d1a94c69ba8",
+    "reference/server/Server/src/main/core/net/packet/out/UpdateAreaPosition.java": "b99484713121eeb46cd364c651321d25080eba88c08647acb814bb68c9f6fc52",
+    "reference/server/Server/src/main/core/net/packet/out/UpdateGroundItemAmount.java": "27296c8dd7c1ae6579a0cc3937a54ff04db557ed92f9e7dc0caa5f3b71ce214f",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

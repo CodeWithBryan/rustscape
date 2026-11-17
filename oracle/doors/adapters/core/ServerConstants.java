@@ -1,0 +1,1 @@
+package core;public class ServerConstants{public static String CONFIG_PATH="";}

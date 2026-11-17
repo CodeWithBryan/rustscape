@@ -1,0 +1,34 @@
+{
+  "caseCount": 357,
+  "fixtureSha256": "1b39856f926158d1fede095fe9810ef15a10ae28853cb25b625c2f49c2af2a2a",
+  "format": 1,
+  "scope": "Verbatim original NPC.tick/handleTickActions/walkToNextDest/setNextWalk/getMovementDestination including anonymous return-arrival body, original Vector/Location arithmetic and selected RandomFunction methods using seeded java.util.Random. Explicit region/locks/combat/dialogue/behavior/entity/attributes/pulse/path services. Compares state, destinations, seeded RNG draws, query/event order and partial failures/reentry. Full NPC class, concrete combat/content/definition/configuration, route/queue/world bindings remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/npc-tick/NPC.java": "3f96655c5f766df81ed3c9c1ee246cc05e2a46ddc7688ee8ba89264e4daaa729",
+    "oracle/npc-tick/Support.java": "b782d955f402010ba0d7876fb58b2434a6148f7134dccd894a64cff89dd5eb9d",
+    "oracle/npc-tick/generate.py": "99dc0dcc4c54dc63e1102525d2bc203226950bec2f6528712d3a525f2cbbd25a",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/game/node/entity/npc/NPC.java": "94c42d1425150d5a231e9deb77ec247fc0ef6de03188a860f4b4cae48a73d3f5",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/tools/RandomFunction.java": "054fb47b8718ce25da6fe35af85765f3cdea3b2056ef0e4d678435b230ad559e",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

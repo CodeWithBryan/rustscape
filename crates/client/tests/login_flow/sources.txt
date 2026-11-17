@@ -1,0 +1,22 @@
+# SHA-256 of the inputs that produced java_trace.txt (JDK 25, javac --release 8).
+# LoginManager.java is used as lines 12-17, 38-77 and 159-600; the other reference files whole.
+# The harness (rt4.LoginOracle) and its stand-in classes are not in this repository yet; see tests/login_flow.rs.
+266edfa18c444d9a8284df31e891f5403f7b11c0e444c146d6868ea92ab4bd10  reference/client/client/src/main/java/rt4/LoginManager.java
+5ebe37b6d0d65acbbd3c47c9503f853afb689d07c2d3f42616653ef1e69d6180  reference/client/client/src/main/java/rt4/CreateManager.java
+0b55f28e7a66014a04556ac77d53ce96f20ca335a4060fc967d83ca526a39509  reference/client/client/src/main/java/rt4/WorldList.java
+118382f472f5cd5a4c6931e47c41af61b61c9db7846becfaf5e2d5d696ac3166  reference/client/client/src/main/java/rt4/World.java
+daa0283cbbb12d217181490e6cceaa5e37de1f485bf791452be82dd24e40c3d7  reference/client/client/src/main/java/rt4/AbstractWorld.java
+6d3f7a792ccdc14ed6ea3725b54e503cc41855f8ae8c64d6c7fc5fb2b3958d2c  reference/client/client/src/main/java/rt4/WorldInfo.java
+5430ebd067ef595e5851bad1dbda52637a83855c262884b375df8ec16f9fd54d  reference/client/client/src/main/java/rt4/Base37.java
+63b850357f4719c2be08ddf7fe5229048ba6932600fbcac135ef1f76992eb92c  reference/client/client/src/main/java/rt4/JagString.java
+50cc21ef88d8f843244ccabad9b32dc3dc351b26dc9bfeec775368ba2c251ea0  reference/client/client/src/main/java/rt4/StringInterface.java
+ebcfc6b8dce16f8695200366587e482c935637e68f7fbab27c0ed7479669859f  reference/client/client/src/main/java/rt4/BrowserControl.java
+d84f2ded9a3e17e2f38aa181535567814efaba3d099993b9238f14f15daf7a52  reference/client/client/src/main/java/rt4/Buffer.java
+9171dc6f6f305a3ece710437e4d66a45f9d09aff68eab23a12b31cfc78dfaf9a  reference/client/client/src/main/java/rt4/Packet.java
+cf3ed2bf84f0bc1546ee20a4cb09460d789177260f94fcc521f635617c86ddbd  reference/client/client/src/main/java/rt4/IsaacRandom.java
+2ce5df867f910d20c11d4e18c95c55ddd725002a60d9da38e29249ec49234c7b  reference/client/client/src/main/java/rt4/GlobalConfig.java
+fea42fabe6d088f5feb0c85f33ba35aa201d602f4233c1f4aa045d8cef84638a  reference/client/client/src/main/java/rt4/Node.java
+fa6dad058d1c70e9416f04c080d277d31717a84059c11d973a219936e21efef3  reference/client/client/src/main/java/rt4/HashTable.java
+d1a9cfeda03eca91644dca977301644db74722f5800a40fc39c406e1f5d9a4d7  reference/client/client/src/main/java/rt4/StringNode.java
+742d84a49c61ac538d4552290e25d1911e1116cf24580dbd1032c3ad0ed12bb1  reference/client/signlink/src/main/java/rt4/PrivilegedRequest.java
+1d14fd0823cdcff2c274aa77b5c7579fbe53c2ee5b9f6f0b303a06f88405ec5f  crates/client/tests/login_flow/scenarios.txt

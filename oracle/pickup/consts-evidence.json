@@ -1,0 +1,12 @@
+{
+  "source": "reference/server git 9921b98d49308edd0489dd50ee98011d53914a57:Server/libs/ConstLib-1.4.jar",
+  "gitBlob": "0e948625a9db43e60cf16b191922afb5f2bc8889",
+  "bytes": 733299,
+  "sha256": "aab8fa4d71f3a5e846f34a7b1cfba5c5fef5ee1094d806d240abc4941802a983",
+  "soundsClassSha256": "91b26205db9a4a1a52068a6561c33579a6a3046629e32894686ff03c7e5be87a",
+  "missingNamedConstant": "PICK2_2582",
+  "numericAdapter": {
+    "PICK2_2582": 2582
+  },
+  "limitation": "The pinned bundled1.4jar lacks the named constant used by PickupHandler. Its POM permits newer externalConstLib versions. ID2582 is an explicit numeric test binding, not proof of that missing external dependency. Full constants/dependency parity remains open."
+}

@@ -1,0 +1,35 @@
+{
+  "caseCount": 77,
+  "configSha256": "af244a794f204bd5f0ec2ef08262fb0b2f7dd78d450ab597f9b8015e75b1fe84",
+  "fixtureSha256": "9242501d5833ca59b44a80852450fc467f4476f39e4edfa99eaf986f0f55a36b",
+  "format": 1,
+  "pinnedConfigRows": 3225,
+  "pinnedNpcCount": 13709,
+  "scope": "Complete unchanged NPCSpawner.load and Direction, original packed Location. Complete pinned npc_spawns.json plus grammar/coercion/trim/ordinal/failure cases. NPC factory/definition/init, attributes and logging are explicit observable services. Does not claim NPC subclasses/content, complete initialization or world repository integration.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/npc-spawns/Support.java": "f81d49c5f90824e2927d4575593db625575d5143b3bab97b48e2cb876b81bc24",
+    "oracle/npc-spawns/generate.py": "e74dc234c0ec4b4361f3fc0f2de04f1850cae277bed27ec5dc0d641b5353e2a0",
+    "reference/server/Server/src/main/core/game/system/config/NPCSpawner.kt": "1a017b17639c3103c38f0adbb58a1e2ad497343fb6f9545c640191e87b26a297",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

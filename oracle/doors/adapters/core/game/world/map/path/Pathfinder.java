@@ -1,0 +1,1 @@
+package core.game.world.map.path;import core.game.node.entity.Entity;import core.game.world.map.Location;public class Pathfinder{public static Path find(Entity e,Location l){oracle.Support.emit("find",oracle.Support.coords(l));return new Path();}public static class Path{public boolean isMoveNear(){return oracle.Support.moveNear;}}}

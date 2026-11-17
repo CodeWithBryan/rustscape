@@ -1,0 +1,1 @@
+package core.game.world.map;public class RegionChunk{public final Location base;public RegionChunk(Location b){base=b;}public void flag(core.game.world.update.flag.UpdateFlag<?> f){oracle.Support.flag(this,(core.game.world.update.flag.chunk.ObjectUpdateFlag)f);}}

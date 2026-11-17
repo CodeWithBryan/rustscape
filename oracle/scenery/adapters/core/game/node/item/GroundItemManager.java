@@ -1,0 +1,1 @@
+package core.game.node.item;public class GroundItemManager{public static void create(GroundItem i){oracle.Support.ground(i);}}

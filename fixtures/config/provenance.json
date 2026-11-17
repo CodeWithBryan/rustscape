@@ -1,0 +1,46 @@
+{
+  "caseCount": 742,
+  "fixtureSha256": "c5a60d08313ea8a37f296369b54ef884256dd93093a66addbd6d02c8fa116b1b",
+  "format": 1,
+  "scope": "Complete original ServerConfigParser and ServerConstants classes compiled unchanged; original GameSettings constructor/getters and Database constructor exercised. Explicit log, world holder, shutdown, unrelated teleport initialization and Location-construction adapters; original nested LocationHash. JVM exit/version controlled by harness. No native startup/world gameplay or complete legacy TOML grammar claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "fixtures/config/default.conf": "3b343f3f11d81ee99bb68e12dfb3543235d5e9e0411dda4802b0778b2a869dc2",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/config/Api.kt": "49122f6f79751ba14564fbdc1564d0d9017ef09d8e47b0e97a8b706389334f33",
+    "oracle/config/CastleWars.kt": "2fc199d43df93822615125cf7847a5fabef697383c419ff4c4be792bbf32ceeb",
+    "oracle/config/ConfigOracle.kt": "2d0d089948c2b3f1a11f2d621ea9d4875bfba9026a72df35fa9723fd983fea53",
+    "oracle/config/GameWorld.kt": "70284b38834b2fec4fd40475a94956627c8f63aab7c28adcaf63288a92cab10c",
+    "oracle/config/Shutdown.kt": "1e46b0d3abb6132c9f0d594422c8e43063083eed1820ab28ca7b1055a9dae1e1",
+    "oracle/config/artifacts.lock.json": "1b07c50100a2487e58f5ce8008dca23bec20ab6c69b7e6e6c6fa692d90f2116a",
+    "oracle/config/generate.py": "609dfc57cae2b99e5fe5398188141483c266206327da5a91737f3e7e6b682288",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/pom.xml": "2b252137565127c0d93399c85e7fad291639f8f5549677c4e9596420c684b9c4",
+    "reference/server/Server/src/main/core/Server.kt": "6f2de8e6ea2d73a8a1b447277f278cc66a6560f95428590efbc0e9dafa274278",
+    "reference/server/Server/src/main/core/ServerConstants.kt": "fa28de7ee08f82432b2565044a9473a0ac4c57cc29d28dddc2f4d4454b85f0bd",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/game/system/config/ServerConfigParser.kt": "fadab3b55ca7d66524a2f2ea57ffc54a6dde7e16ef99a951a91c5610489849d0",
+    "reference/server/Server/src/main/core/game/world/GameSettings.kt": "398bf11632d2b5f938234b475bd249e67ee2387441a9b3831c488927005c15d0",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/tools/SystemLogger.kt": "7119ef8a19c691f0d5054a978295b080d4ea5f94921e1e7a7545fd5b02cae561",
+    "reference/server/Server/src/main/core/tools/TickUtils.kt": "1438dfd87ea5ab7d26e927677cb60387a3bb710486160fc1d2f6bce9eb1940c9",
+    "reference/server/Server/src/main/core/tools/mysql/Database.java": "afcc578487884d8886e03c96858cfeb7f993512eb66994676d929746855cf704",
+    "reference/server/Server/worldprops/default.conf": "3b343f3f11d81ee99bb68e12dfb3543235d5e9e0411dda4802b0778b2a869dc2",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

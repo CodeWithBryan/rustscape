@@ -1,0 +1,39 @@
+{
+  "caseCount": 285,
+  "fixtureSha256": "61b614ca7bc29fadb26f3b13f22bb2575f473520c19b91f8e332d5beb1901d3e",
+  "format": 1,
+  "scope": "Unmodified complete original player metadata and communication classes, exercised for account/legacy SQLTable data parsing, serialization, partial mutations, detail save/delegates, UID data, client modes and rank enum data, plus verbatim LoginReadEvent metadata suffix. Explicit clocks, column/storage/session and throwing world adapters. Login.proceedWith is a recording boundary returning offline. Social actions, world entry, clan repositories, lootshare pulses, Rights player attributes and UID debug output remain unsupported.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/player/PlayerOracle.java": "ece0ef2d505bb4f36953ca857ee10680e8b7ed1f655ff0c9ddb8b2ea347651e3",
+    "oracle/player/generate.py": "beeb3ef64231880632c21151ef1a5abad6588b4079b150d7f3a40aa1812fc5ca",
+    "reference/server/Server/src/main/core/auth/UserAccountInfo.kt": "a9c91566bee0f654b7a21ddf932fdfcf36daa20d0be5ac840826c2c569858730",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/ClientInfo.java": "4947e5c82fe3084233d13730913a4cc6b3a70844f4ce950613dd3c7cd5bcdf21",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/PlayerDetails.java": "45672698373ae865372464596a2b422fb423584d3702de15680cf7a332726b4e",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/Rights.java": "4f1bcbb6bb11d3dfbc08ec2e0ccbef7aeeef3393b92e52ea76399a74acaf1e8d",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/UIDInfo.java": "3f22ca72e7ffc3f42a2598f98839efc17f26517aec000612cd33e3d97863424a",
+    "reference/server/Server/src/main/core/game/system/communication/ClanRank.java": "a874aaaa1b65937ca1d5518f96ecca7883cd757a9ee08e1ee068036071d2a1e5",
+    "reference/server/Server/src/main/core/game/system/communication/CommunicationInfo.java": "9e6a5b51935b8248a8c29db32ea9ab8fa54987cd987ca43e2aed2dbd3a45ba50",
+    "reference/server/Server/src/main/core/game/system/communication/Contact.java": "730f52b9426c0e644b392fdffd98e7aff59e8f5c13a8d309cc546d4f4656081f",
+    "reference/server/Server/src/main/core/net/event/LoginReadEvent.kt": "6c70ed10f1a170c82c2e0f423ac89e07966d95292f2751073cbf52a374b88762",
+    "reference/server/Server/src/main/core/storage/AccountStorageProvider.kt": "bf60b498289cd8e2b06d55d1246c0b8b9a7f38cc7146f964957266cf1b54a299",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "caseCount": 2049,
+  "fixtureSha256": "634de207b5e65be54bf48e46d5a069849871f603b85a985f90de4a2e36528911",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "scope": "Verbatim LoginManager packet-writing slice, selected original Kotlin Login decoder/RSA methods, complete LoginInfo/ISAAC/AuthResponse/ByteBufferUtils, and original LoginWriteEvent methods. Explicit byte-storage, static client state, logger, online-name lookup and reply-I/O adapters. No authentication backend, world entry, UI or game simulation.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/adapters/rt4/JagString.java": "7cc6e5eee6fe4c6a699acff8b246ab89cd75255fed315daa39f2a5f036e06a95",
+    "oracle/login/Log.kt": "5a3750a59d26f4a264f1af6c7ba24f87dd5a83e3d92ed6e0e69d70117bce4a4a",
+    "oracle/login/Logging.kt": "d57e4bfe84961a5ebc80e7356c5e8fee627f73b2023d320a67f97c43763efdcd",
+    "oracle/login/LoginOracle.kt": "09b4223588461bce3fb16ba2efce5bbc80248a7fa78cfc43583a187565628d72",
+    "oracle/login/LoginProbe.kt": "0213c867a9cc843ba17a530a31b9a66066a238123e1f8f2129e1dadf5c5dd1ae",
+    "oracle/login/LoginReplies.java": "f3ba013453d56c3afc2497846c971b41c59bc58857a41c88b5a3305629f12083",
+    "oracle/login/Repository.kt": "e90fd9854c539b4fcfc2d10de0684afbef4e102beed108ec73b7bcb84197a2fb",
+    "oracle/login/WriterSupport.java": "3e984b8e83be84580a2aa7718f67824a9c3dfb3ac48f662ee1c6d9c67637f15d",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/client/client/src/main/java/rt4/Buffer.java": "3930054bef9ddf3eab00a1dd1a44ddf9db7ec9a8bcc550abcdfba360554587ca",
+    "reference/client/client/src/main/java/rt4/GlobalConfig.java": "9aea9139a1f866fdfbfb2bd71277579b9c0540a525b62db48c066da3f95a7a67",
+    "reference/client/client/src/main/java/rt4/JagString.java": "1f9aca0704ff1b983c1c800541cd252670a81d4ede63a1621edff602ed0366f5",
+    "reference/client/client/src/main/java/rt4/LoginManager.java": "882aefdb9fcdd3452893fe8500c194be367640da86097c4f0f20101b5707f005",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalArg.java": "02d871da066e2beb21f19e88ef7a8e53e2176d07ab6bace159bd614fa9ffc697",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalClass.java": "6c952d5a5f154c15676fddf684f0aa8c6ec143b1862519cfcdffbbe741bc5905",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalMember.java": "50ee2f6ca39c833e852115b3aeb16c1eb7a8b87a66f192ba5e4ab03815d4d432",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/Pc.java": "e718ee680f92c3afd4cfac2379b29ec5c680c0c6923e6ddbc7f54f7ed0f57df2",
+    "reference/server/Server/src/main/core/ServerConstants.kt": "fa28de7ee08f82432b2565044a9473a0ac4c57cc29d28dddc2f4d4454b85f0bd",
+    "reference/server/Server/src/main/core/auth/AuthResponse.kt": "96e34874e438ed72a3be4f7479415d0834e3c98577d4a34a1a794b9838f868ef",
+    "reference/server/Server/src/main/core/cache/crypto/ISAACCipher.kt": "5b0512534295c6e141b44cb2b0f059ae1090bbbe45b415f484da2fd4a25c9af7",
+    "reference/server/Server/src/main/core/cache/crypto/ISAACPair.kt": "27176f5bec007bbed1cecb4d1339ede8d85d64b25e4e400021afd045ffe915db",
+    "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
+    "reference/server/Server/src/main/core/net/Constants.java": "d7b9dd0f0a7983294a324fcbd58469948cbe0d659b442576613129915be7dafd",
+    "reference/server/Server/src/main/core/net/event/LoginWriteEvent.java": "46a796d10da0be5f8e7690def2bedeeb59c113af92cf8700198e15f2b0656e50",
+    "reference/server/Server/src/main/core/net/packet/in/Login.kt": "fb591971c7f88cdaac3fbf394db1b797c9f6413b6dc03e288d5c12ef6c5c7aaf",
+    "reference/server/Server/src/main/core/net/packet/in/LoginInfo.kt": "53770b09af736dcb4286e4afd0675daa382037334df34481965167e02f4613e4",
+    "reference/server/Server/src/main/core/tools/StringUtils.java": "51365165036173a8b2df93b9ea108b5cc01d8aa6b86dc23383719f1ff5482e13",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "caseCount": 261,
+  "fixtureSha256": "a2fb6f8ac573a7ac28a763f94635a0153d81c7d38354a9fdcab44f4676863352",
+  "format": 1,
+  "scope": "Verbatim NPC.create/init/initConfig bodies and selected Definition/NPCDefinition methods, complete Animation/Graphics/Direction and original packed Location. Explicit constructors/prototypes, entity/properties/skills, familiar attributes, metadata lookup, repository, regions, configure/behavior/interact services. State, pointer capture, partial errors and callback mutations are compared; does not establish complete NPC/Entity/skills/properties/content/init/world integration.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/npc-init/NPC.java": "8b366ca8edeb3c327e74a00a5cfdec69d4b9bc30edb51d72f8566ba469b6219e",
+    "oracle/npc-init/Support.java": "c941c688b0b21847032fac4e4a7c5be120b333a7e51fd66f5be99ed2a65e21e5",
+    "oracle/npc-init/generate.py": "75b01bc7304cd4d7172e42e4238920a4f5965387c35baf1792839f1dfd0a2fb9",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/NPCDefinition.java": "1dd281295779abafe230aa43a609917ca570b26531a10806772f1e3bd2c7aaa3",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
+    "reference/server/Server/src/main/core/game/node/entity/npc/NPC.java": "94c42d1425150d5a231e9deb77ec247fc0ef6de03188a860f4b4cae48a73d3f5",
+    "reference/server/Server/src/main/core/game/system/config/NPCConfigParser.kt": "c5ab551e7d5e92089b75f99f48fdc784fe10631b3e37a3a7db9bc696bde2b1a9",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Animation.java": "73320e2e4c356dccb6f446683d18dd5bfe1be8eee41eaba540e01acdb174aded",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Graphics.java": "f78fc7aa3320b9e356973c2f9faafaf12652ff75d5a3f7111f5e2c3da73a8e7c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

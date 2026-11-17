@@ -1,0 +1,23 @@
+[package]
+name = "rs09-cache"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Native revision 530 cache decoding"
+
+[dependencies]
+rs09-protocol.workspace = true
+flate2 = "1"
+
+# The C library natively, as before. The browser build has no C toolchain, so
+# it takes the same crate over its Rust implementation of libbzip2.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+bzip2 = "0.5"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+bzip2 = { version = "0.5", default-features = false, features = ["libbz2-rs-sys"] }
+
+[dev-dependencies]
+serde_json.workspace = true
+sha2.workspace = true

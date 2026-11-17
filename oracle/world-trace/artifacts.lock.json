@@ -1,0 +1,98 @@
+{
+  "classgraph-4.8.146.jar": {
+    "sha256": "184b8319c463656672e3480dead3bdb77d7b116d55f3a618f4f5564e8f6fa0a4",
+    "size": 557577,
+    "url": "https://repo.maven.apache.org/maven2/io/github/classgraph/classgraph/4.8.146/classgraph-4.8.146.jar",
+    "why": "POM"
+  },
+  "colormath-jvm-3.2.0.jar": {
+    "sha256": "11cc96affebb3934176e06ffa7472987cc0bc99995171c8f0768ed0deae5e812",
+    "size": 350981,
+    "url": "https://repo.maven.apache.org/maven2/com/github/ajalt/colormath/colormath-jvm/3.2.0/colormath-jvm-3.2.0.jar",
+    "why": "compile dependency of mordant-jvm 2.0.0-beta6"
+  },
+  "ConstLib-1.4.28.jar": {
+    "sha256": "f4e687cd74099a0eb914ff0e98defe0c5f5703634dd7d6aa25ab4ac186b98459",
+    "size": 853060,
+    "url": "https://gitlab.com/api/v4/projects/32237206/packages/maven/org/rs09/consts/ConstLib/1.4.28/ConstLib-1.4.28.jar",
+    "why": "POM org.rs09.consts:ConstLib [1.4.0,): the published version already pinned by oracle/bank/constants.lock.json"
+  },
+  "error_prone_annotations-2.9.0.jar": {
+    "sha256": "f947bdc33ae27a6b4aa44799e6c21e1944797bd0010ba43eb82d11446e163694",
+    "size": 15994,
+    "url": "https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.9.0/error_prone_annotations-2.9.0.jar",
+    "why": "POM"
+  },
+  "gson-2.8.1.jar": {
+    "sha256": "4f65e7dca6528d644031c43d159f1614f2ed58db7daf75f1e91a9fc1b57818d4",
+    "size": 232620,
+    "url": "https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.8.1/gson-2.8.1.jar",
+    "why": "compile dependency of toml4j 0.7.2"
+  },
+  "Java-WebSocket-1.5.7.jar": {
+    "sha256": "28d8392a882660e636603c0a72d3e1ed5da1993210214645754e93655c0d806a",
+    "size": 140213,
+    "url": "https://repo.maven.apache.org/maven2/org/java-websocket/Java-WebSocket/1.5.7/Java-WebSocket-1.5.7.jar",
+    "why": "POM"
+  },
+  "json-simple-1.1.1.jar": {
+    "sha256": "4e69696892b88b41c55d49ab2fdcc21eead92bf54acc588c0050596c3b75199c",
+    "size": 23931,
+    "url": "https://repo.maven.apache.org/maven2/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar",
+    "why": "POM"
+  },
+  "kotlin-reflect-1.5.20.jar": {
+    "sha256": "fd6782d18bcc17ffa98221a1c34e4a42a7e3e6b4a4b72b474b5c82e14c8bab5a",
+    "size": 2993204,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.5.20/kotlin-reflect-1.5.20.jar",
+    "why": "POM"
+  },
+  "kotlinx-coroutines-core-jvm-1.4.2.jar": {
+    "sha256": "4cd24a06b2a253110d8afd250e9eec6c6faafea6463d740824743d637e761f12",
+    "size": 1674933,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.4.2/kotlinx-coroutines-core-jvm-1.4.2.jar",
+    "why": "POM"
+  },
+  "markdown-jvm-0.3.1.jar": {
+    "sha256": "044cde39958de780bdccb782c1be8d045250ea7324f9ae628ecaee7cbda4d035",
+    "size": 528305,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/markdown-jvm/0.3.1/markdown-jvm-0.3.1.jar",
+    "why": "runtime dependency of mordant-jvm 2.0.0-beta6"
+  },
+  "mordant-jvm-2.0.0-beta6.jar": {
+    "sha256": "6ca2593516cea478bf95c39cded96ed9df01e172189afd31ab7fecc7860eb462",
+    "size": 441225,
+    "url": "https://repo.maven.apache.org/maven2/com/github/ajalt/mordant/mordant-jvm/2.0.0-beta6/mordant-jvm-2.0.0-beta6.jar",
+    "why": "POM"
+  },
+  "mysql-connector-java-8.0.29.jar": {
+    "sha256": "d4e32d2a6026b5acc00300b73a86c28fb92681ae9629b21048ee67014c911db6",
+    "size": 2519547,
+    "url": "https://repo.maven.apache.org/maven2/mysql/mysql-connector-java/8.0.29/mysql-connector-java-8.0.29.jar",
+    "why": "POM (no connection is ever opened)"
+  },
+  "protobuf-java-3.19.4.jar": {
+    "sha256": "e8f524c2ad5965aae31b0527bf9d4e3bc19b0dfba8c05aef114fccc7f057c94d",
+    "size": 1681869,
+    "url": "https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-java/3.19.4/protobuf-java-3.19.4.jar",
+    "why": "compile dependency of mysql-connector-java 8.0.29; the proto.management classes need it"
+  },
+  "slf4j-api-2.0.6.jar": {
+    "sha256": "2f2a92d410b268139d7d63b75ed25e21995cfe4100c19bf23577cfdbc8077bda",
+    "size": 62531,
+    "url": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.6/slf4j-api-2.0.6.jar",
+    "why": "compile dependency of Java-WebSocket 1.5.7"
+  },
+  "sqlite-jdbc-3.36.0.3.jar": {
+    "sha256": "af3a3376391e186a0fed63ecd414b72a882bf452667b490a0be3abf85b637d3f",
+    "size": 9731064,
+    "url": "https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.36.0.3/sqlite-jdbc-3.36.0.3.jar",
+    "why": "POM"
+  },
+  "toml4j-0.7.2.jar": {
+    "sha256": "f5475e63e7e89e5db62223489aec7a56bd303543772077a17c2cb54c19ca3a20",
+    "size": 62621,
+    "url": "https://repo.maven.apache.org/maven2/com/moandjiezana/toml/toml4j/0.7.2/toml4j-0.7.2.jar",
+    "why": "POM"
+  }
+}

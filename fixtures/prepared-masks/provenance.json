@@ -1,0 +1,43 @@
+{
+  "caseCount": 440,
+  "fixtureSha256": "036ab4a9f8dd0d0bd0bcab0375e7855e26022aaaaf38a21db7d7921991b93838",
+  "format": 1,
+  "scope": "Complete original UpdateMasks with controlled clock plus unchanged Entity.face/faceLocation and Entity/Player getClientIndex, concrete Animate/SpotAnim/FaceEntity/FaceLocation/AnimationSequence subclasses and complete IoBuffer. Original packed LocationHash/getters. Registry and immutable animation/graphics field records are explicit adapters; fresh actual impact queues are empty. Joined status/byte histories include persistent facing, clear during preparation, signed indices, context mutation and ordering. Native tests also use canonical target leases and actual prepared-body data. Full appearance/body preparation, combat/content/registry startup and live Take remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/prepared-masks/Support.java": "fa23d7a46ed85ad3f340ad05fe49f15521a2a6e18727467083d659c118c67e1e",
+    "oracle/prepared-masks/generate.py": "3bd4dc93a35c179bd774005f8a5c2180738f120de2b68370b30d64e749efa70f",
+    "oracle/scenery/adapters/core/cache/crypto/ISAACCipher.java": "290c851c9e96a9ef730a37fe901aaca74ad75d06316c10171e73d6c53d65eafd",
+    "oracle/scenery/adapters/core/cache/misc/buffer/ByteBufferUtils.java": "d10e96e4e5d2aad74c4d9a7684f131cf61d2f179b5d8040f2dd0256e0dcd01a5",
+    "oracle/update-masks/generate.py": "712be82c195005e12c94ce55cec5428c1e30ae05d7c41fa21db8f9d15273c4d0",
+    "reference/server/Server/src/main/core/game/node/entity/Entity.java": "9daf5cc74de2bed9491e7422b9998371192c7f6649cb3302aee5a603328e0668",
+    "reference/server/Server/src/main/core/game/node/entity/player/Player.java": "d3d00ccf27c0e914ae240e25bd836e7824eaa0939844a45e79aa03e7050bb8ed",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/update/UpdateMasks.kt": "72de99405a5174d6a6f95ce073144bd5643dcc4f7f10fdf3f8a47a6e0b34a667",
+    "reference/server/Server/src/main/core/game/world/update/flag/EFlagProvider.kt": "3891d71d07886d720fca22f7790d295147496cc91459e35f450a63021a296712",
+    "reference/server/Server/src/main/core/game/world/update/flag/EntityFlag.kt": "10c523b9e816fbfc2a2318ca99d8122c8eb2d4ec10c33f8b45d8e4ced2251163",
+    "reference/server/Server/src/main/core/game/world/update/flag/NPCFlags530.kt": "417e5748e277b994f8c0a8883e2149ec1e78f504f137794aec2d610460c29bb2",
+    "reference/server/Server/src/main/core/game/world/update/flag/PlayerFlags530.kt": "6e99cdde92f6517d08d8acfc41e70c065e12aad5ed4317caf29d95a428496e67",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/HitMark.java": "a383feac05874340cb48761f42ac93e6052d7a9a3bae3f8500bbb57c51fd09d9",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/PacketHeader.java": "a0635e12f2380381df12d534bc7695691d415c5c4dc0edf5692888082a623bc7",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

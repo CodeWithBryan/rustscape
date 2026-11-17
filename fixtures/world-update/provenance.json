@@ -1,0 +1,36 @@
+{
+  "caseCount": 257,
+  "fixtureSha256": "89f390149cf1559eef05747a2ad71b7ea8675256879030f53e8024f76c22c3ca",
+  "format": 1,
+  "scope": "Complete unchanged InitializingNodeList, InitializationEntry and UpdateSequence with verbatim PacketProcessor.enqueue/processQueue and MajorUpdateWorker.handleTickActions, including joined tick replays. Concrete nodes, packet dispatch, exception text, clock, telemetry, packet output, chunks and ground items are explicit observable services. Repository-backed ArrayList lobby/InitializingNodeList players and CopyOnWriteArrayList NPC iteration are explicit. Compares deferred duplicates/removals, immediate ordinary-list changes, live queues, aliasing, iterator snapshots/modification checks, sequence captures/phases, partial failures, wrapping clocks/ticks, nested packet processing, global NoProcess and cumulative error logs. Full Player/NPC initialization/content and packet handlers remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/world-update/Support.java": "e491f85d6b0f24830efcc5d8d671e2664a78ccc1687582488075587c5f01f70d",
+    "oracle/world-update/generate.py": "92983e2408cec8e947e05e7f774372e637a47691b0fc4723c6eadd8285287fd5",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/world/repository/InitializationEntry.java": "72dc7eba2b9636077e650cea09c2d14af4fc74aa70de2405891843451d7ca5ac",
+    "reference/server/Server/src/main/core/game/world/repository/InitializingNodeList.java": "7ffebac651ee19dd838cb4e0907c1a1cd0ef808af9c11b293909c40af8a85c99",
+    "reference/server/Server/src/main/core/game/world/repository/Repository.kt": "34746e34469ca84966cce1300d8505d6645f03b5e2e894630ca17c6c68f97e4e",
+    "reference/server/Server/src/main/core/game/world/update/UpdateSequence.kt": "df151ed86af7678e081b6d42f497e802d071ae7069ef73525c944e1a5cd4e0ec",
+    "reference/server/Server/src/main/core/net/packet/PacketProcessor.kt": "ad2041d22d76b86cff02600eb1fba9df11ef653d2792d7561431fbef58bc0410",
+    "reference/server/Server/src/main/core/worker/MajorUpdateWorker.kt": "e66648e75fdaaf93c793eef03053229589febaf9193fead25122576cf453acdd",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

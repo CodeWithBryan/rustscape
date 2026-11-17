@@ -1,0 +1,13 @@
+[package]
+name = "rs09-audio-worklet"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Rust PCM engine for the browser audio rendering thread"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rs09-audio.workspace = true

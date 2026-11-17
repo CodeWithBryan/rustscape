@@ -1,0 +1,9 @@
+{
+  "jdk": "Temurin 11.0.32.1+1",
+  "sources": {
+    "java.base/java/lang/ConditionalSpecialCasing.java": "cf359240ba02befb358edcc544f53ea19543360050e0eb4c3e2367dc2d67e4a7",
+    "java.base/sun/text/RuleBasedBreakIterator.java": "9b01b18dcf9b2e7abc85d69f21a32d1ef05de6d1dc2186fb018926a8290b72af"
+  },
+  "license": "GPL-2.0-only WITH Classpath-exception-2.0",
+  "scope": "ROOT contextual lowercasing and forward word automaton; native data authored from JDK observations"
+}

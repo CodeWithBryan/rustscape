@@ -1,0 +1,272 @@
+{
+  "activeAfterShutdown": 0,
+  "assetObjects": {
+    "main_file_cache.dat2": {
+      "sha256": "b5431211b019b9403b4cfca933f4c9635c1d5278d3730995dced0d8672b1cc91",
+      "size": 91702293
+    },
+    "main_file_cache.idx0": {
+      "sha256": "eca6bae3333edbca742e34674145d33255138a06ae9911152ff6b934a200bee4",
+      "size": 16344
+    },
+    "main_file_cache.idx1": {
+      "sha256": "13d64ed2f9e96ccdc1d9700ced80683aaf6b3ebff8226a182dcdf83a99160677",
+      "size": 14610
+    },
+    "main_file_cache.idx10": {
+      "sha256": "135006f0eb0321655f0353f46cb1ca77725f71fc84c3732d091964bd9fbfb66d",
+      "size": 12
+    },
+    "main_file_cache.idx11": {
+      "sha256": "de9903eb965d5787b622c3bfceb3c5c15756c041a4884a552e95a2548bc09748",
+      "size": 2340
+    },
+    "main_file_cache.idx12": {
+      "sha256": "dbd9a67fcea896a456ba5de71b2059046915a44a6522b1a73252e5e405fc7007",
+      "size": 12390
+    },
+    "main_file_cache.idx13": {
+      "sha256": "6b2a8543ee5056487859600cb5540bf3afd0602b2126c590991a582bad8ac652",
+      "size": 9552
+    },
+    "main_file_cache.idx14": {
+      "sha256": "3b2b03216a0f5fe2a8b4058942de2ec39b15fdb345de1cd7006b3754da2448b3",
+      "size": 3834
+    },
+    "main_file_cache.idx15": {
+      "sha256": "7eedc5947eaebf12d253b7dc21b03c1a77a061000b8d87038e6ebb566ad7cfc4",
+      "size": 1596
+    },
+    "main_file_cache.idx16": {
+      "sha256": "439ea312ce607992e05ffc87031703aaecd3e7aebb66ddb718bde19e04205210",
+      "size": 990
+    },
+    "main_file_cache.idx17": {
+      "sha256": "423fb227f50447805e11bbf281c30c17c389c4f7a4d3cf615f97144ce2990f73",
+      "size": 54
+    },
+    "main_file_cache.idx18": {
+      "sha256": "7a0ef062e8417cfcb1776c89ca5b59503b0c2c1dbe7f29227918ade80383c345",
+      "size": 408
+    },
+    "main_file_cache.idx19": {
+      "sha256": "3e8d1f3dd00aed753029371a37eb75f2068a6bfb902d481891a2e15afd3a9f34",
+      "size": 348
+    },
+    "main_file_cache.idx2": {
+      "sha256": "e134ffb243ad976a8267cc0c90e2594600f5d61c691f0883767fdb98b7fa8746",
+      "size": 210
+    },
+    "main_file_cache.idx20": {
+      "sha256": "4016ef195600feba273419b45fb5fc88c707d243549b1b042af309644c3d25b8",
+      "size": 528
+    },
+    "main_file_cache.idx21": {
+      "sha256": "8d49e0bf352c7c05f2ab29ad0f29953db9d203a232f6ba1ab9fe64931320f0f4",
+      "size": 48
+    },
+    "main_file_cache.idx22": {
+      "sha256": "5c0056aec21f859d1a18901ccd53f83175a7b06a466b19c30f374fd798facc58",
+      "size": 36
+    },
+    "main_file_cache.idx23": {
+      "sha256": "eb19eba5eddf90cf89e619ad41c4051a861a514156783914e6b7e6c1ce6e2b96",
+      "size": 18
+    },
+    "main_file_cache.idx24": {
+      "sha256": "90116f2a73d0d3fafd5ef3c284deb8c8a17b7ea882c6375b31175078fb7407db",
+      "size": 12
+    },
+    "main_file_cache.idx25": {
+      "sha256": "d5f7249f0d239de5cc25a3697f55a7e1c713e5e95ba1bf1d6d4e8e53f1588408",
+      "size": 12
+    },
+    "main_file_cache.idx255": {
+      "sha256": "83a2292c515596af0423764c48e41dfe1aac482920dca0b89ecb343db6dd4c30",
+      "size": 174
+    },
+    "main_file_cache.idx26": {
+      "sha256": "0b48aa88d7b2665f659f5282fa4c51e9725634474a184e67ef54bc47ad1125d0",
+      "size": 6
+    },
+    "main_file_cache.idx27": {
+      "sha256": "e9794503b85d9d79d71a40f60c144be9a3a77920a4efcf6e5b519b2691e163fb",
+      "size": 12
+    },
+    "main_file_cache.idx28": {
+      "sha256": "7653833b04b7b0adcb4115c71f9a7e73fd0e138b1f3dcd959dccd35c281a466f",
+      "size": 48
+    },
+    "main_file_cache.idx3": {
+      "sha256": "18aa0ae07970bc27ec13134f6210eae5d2b80093e04090e72e143c1098a0edf3",
+      "size": 5028
+    },
+    "main_file_cache.idx4": {
+      "sha256": "edb2b78b49a0d7433b1bcd8b154ff84842b0db51475955de53c211d847e32787",
+      "size": 40500
+    },
+    "main_file_cache.idx5": {
+      "sha256": "32bda84b31731cd60f7bc4e90caf7d55671e966fa958d60f2ec91da16340743d",
+      "size": 22188
+    },
+    "main_file_cache.idx6": {
+      "sha256": "a9ba71c8e7ee594791f5840bdfecbcbe12900728a2ff893dad85ae0cfc1f937e",
+      "size": 4008
+    },
+    "main_file_cache.idx7": {
+      "sha256": "3e86f53e678f5f149502232332fb5147094982644635f59019fff61b47002206",
+      "size": 272838
+    },
+    "main_file_cache.idx8": {
+      "sha256": "4f0142ec0412674ff9e60c531d766418fe781d44f06b9f7c5be006e5ed5ff8c3",
+      "size": 10254
+    },
+    "main_file_cache.idx9": {
+      "sha256": "8758dcdbf08f48ac5033c7be75d22d5822681efa2053a64d7cd6a98e04c6b902",
+      "size": 4080
+    }
+  },
+  "format": 1,
+  "headlessExecutableSha256": "b9309216d9ccbcf1f3e72dac9b6aff91d479e702db43900637818e0d3bef478a",
+  "nativeBuild": {
+    "architecture": "x86_64",
+    "os": "windows",
+    "profile": "debug",
+    "rustc": "rustc 1.86.0 (05f9846f8 2025-03-31)",
+    "serviceHostExecutableSha256": "6868466da3df9bc6f20eb4ba800e2ae59b934c14f6cae8a79b9f8a4123af58fb"
+  },
+  "packetPreparations": 1,
+  "peakQueuedBytes": 15616,
+  "queuedAfterShutdown": 0,
+  "results": [
+    {
+      "archive": 10,
+      "bytes": 595000,
+      "checksum": "4ac8f8df2794449470b60e9a07defa674d0b3fd4763545948b3e41f4f29c0e76",
+      "clients": 500,
+      "group": 1,
+      "requests": 5000,
+      "scope": "cache transport, not active game players",
+      "seconds": 0.5419798,
+      "websocket": false
+    },
+    {
+      "archive": 10,
+      "bytes": 595000,
+      "checksum": "4ac8f8df2794449470b60e9a07defa674d0b3fd4763545948b3e41f4f29c0e76",
+      "clients": 500,
+      "group": 1,
+      "requests": 5000,
+      "scope": "cache transport, not active game players",
+      "seconds": 0.5440994,
+      "websocket": true
+    }
+  ],
+  "scope": "500 concurrent cache connections per backend, not game actors or player capacity",
+  "serverRequests": 10000,
+  "serverSentBytes": 1221000,
+  "sources": {
+    "Cargo.lock": "a927d163189ee542a5b7933559a2a66ebe0611f90a7615be8fd8f32b32dfdb2d",
+    "Cargo.toml": "8dedf39efaad968ec8f13b86842a4caae46d3df0691af6931de21e5ec71ca6f8",
+    "crates/cache/Cargo.toml": "76a316e2b12689b9365949caa6be4e0a38b2a34e26853a93820674ff9cd5edd7",
+    "crates/cache/src/archive.rs": "477ed59bebac7b2794ca646c6f9772913d1d47aa727c2d609a5c9539808b507b",
+    "crates/cache/src/group.rs": "9feeec641c44f71d59bda2cf5a9bd6b3600b33f533ff9f9930150be349ae3086",
+    "crates/cache/src/index.rs": "ec71e23451650a314f20dcd34f92380241ffbaff3e5b36d9c66c24a44ae6c673",
+    "crates/cache/src/lib.rs": "0bd5743db4ed4158bea0df9dc04db06f5347e56978793c4dc023766544ca773d",
+    "crates/cache/src/store.rs": "6510aeda8a4eb76a1b404aef30eb60500543a644b2aca533fd33cdca853ddb84",
+    "crates/game-core/Cargo.toml": "77b2022714c82d69799985961badf96494f4424f96e1720ffc4e9e3abf85989a",
+    "crates/game-core/src/collision.rs": "f049ca01a78541787c8baa44a054681910f074d8394738b657996dc98f34e918",
+    "crates/game-core/src/direction.rs": "fe4df3fd6793790975c6ea50cf80f9288d68109a94a6915caa3eff772a7ff5e0",
+    "crates/game-core/src/int_utils.rs": "cf8dfa7b56f132074fdd4ae59f84397db997171a5c4a5aad976d8d9d93904bc8",
+    "crates/game-core/src/java_map.rs": "d5e59920cd8c653d2050fb62f1166d5376eb11991348ceeadab43419cd837e61",
+    "crates/game-core/src/java_string.rs": "b5b629ea4a095db22a5f8ea0334549ccc0486f3b353f2b18096d910a203e06c4",
+    "crates/game-core/src/lib.rs": "c54bc1b087adc478e8832ef5a3a0c88ff376f5bd88c1d9270392a435e70def53",
+    "crates/game-core/src/random.rs": "2a2f8466d893b6902458f4f676182006fbeb3a6c55d916e2e1b63becd3ef4e69",
+    "crates/headless/Cargo.toml": "14de2de337dae807f24e0f3e43b1e6c339b524ba72b9afaf80cd514498ac9472",
+    "crates/headless/src/main.rs": "2f49732fe6a2b25fe63405589752915490b990f98b07cea41b96b9af97eafe5f",
+    "crates/net/Cargo.toml": "83f847813fbab637c65a1bebfd1150b6ca1914c28179d0516743e61b80319ebd",
+    "crates/net/src/lib.rs": "35ea65048ccd25dd9cae6ea34cd770c4e88cf7884eed0861460aef1f7fa27f1f",
+    "crates/net/src/login.rs": "14e5a1dd08bf747e3b83d4a88fe338c2273498b90438b4d24610e85b0dd93377",
+    "crates/net/src/peer.rs": "fe168e5d9e29fe87c1dc8d21e0dc3876b5ba852548ee2c6e53612f12f89b8289",
+    "crates/protocol/Cargo.toml": "ae9a285354e1d1037acd6e8d15bd14a0cef953641085f1c6b02bf7ed4468b3dd",
+    "crates/protocol/src/buffer.rs": "c77e22b9884cc63c53c2ada4f8751cc50012e4198c7447ea4854888c203c547e",
+    "crates/protocol/src/checksum.rs": "d2d447762d4cd8a9ecd333b71f479972c0579ab05462575ae8aa18c086227947",
+    "crates/protocol/src/huffman.rs": "c1d05f937535abfa59b684f4db198d72777fe4c78c9305a2a366fe0a133549a5",
+    "crates/protocol/src/isaac.rs": "7aee2f2868aa8186af4dcd2bf6cd8d70cf3173562c205bcff54019e4f5202181",
+    "crates/protocol/src/js5.rs": "fc187b265a74a7781bffac43b6899bbe557ae56561e053ea9218914ebe05c1b8",
+    "crates/protocol/src/lib.rs": "1de5ea182b3b4f2d4b46d9a44482007e979dba3dc0db1d090c67586a5d4f9867",
+    "crates/protocol/src/lobby.rs": "42b828757dc87c8639b6a4129571e738e0325aaa05bb3270edcf3c9f1b67309e",
+    "crates/protocol/src/login.rs": "41660b9181f9e909ed949c18882733dd1fbd95dca38105b7beeccfb38e817e25",
+    "crates/protocol/src/profile.rs": "3181d2144bd7bea38354be22726ba790d0ee7d9d7c71365902929df425555957",
+    "crates/protocol/src/session.rs": "7f740dec8e56b0b285e8a718bc43994a5ed899af9e23b3a355510615a3ed5f16",
+    "crates/protocol/src/xtea.rs": "302cca5e913d28fbd7b178ae1fb8f67144ef213549cab037f3bfa9c1f6c4001a",
+    "crates/server/Cargo.toml": "d21d99cc6eff7154efbcb032b67c5260402e1427620a9e5af105356aa4f3bb88",
+    "crates/server/src/auth/account.rs": "a6307b6829ae5d793828ceaa543e0d0889f7ef413c3f5ffc9d67ee6f3ed71cbc",
+    "crates/server/src/auth/admission.rs": "25a3a9d617d280b011ff31d231797788143f46b394b27dce72ffadbf9aa04500",
+    "crates/server/src/auth/factory.rs": "e1e6a8573bc602f857bc7f613a934d4504d7f6999959c2766ed1e529b144c7c6",
+    "crates/server/src/auth/mod.rs": "5dcbac00e34d4a111bd43c692219d3dcca6acb1e4ad58b30dd3cb66374bea15f",
+    "crates/server/src/auth/password.rs": "1e1ceac9b8bedaebd6e83c81f8c01bb59c958c33b2cd2ae491e223fea043e686",
+    "crates/server/src/auth/sql.rs": "b203ce2a981cddc6f68135a4ce66d6bc4e1e656037c4bc7d6587f5395aeb4215",
+    "crates/server/src/auth/storage.rs": "8775cfecdbda9ed51abcc5cbfe3f685f454f5f5d1ab7659a87d1fa3ffc11caf0",
+    "crates/server/src/catalog.rs": "c6b1a7a10126e6a02040c58f9acbf56e03cd4e829a20dce58adf20e7b9b6290d",
+    "crates/server/src/config/mod.rs": "7de0238abf7768a7f1d2970f710d34cabcdb1f43b6640964673fdb4cccc5faa2",
+    "crates/server/src/config/schema.rs": "35191268254d9f3b9c116f0b001a70362c3ec65fb0287a99a7f48e58bbdf70fd",
+    "crates/server/src/config/toml_compat.rs": "65e826ea5f1b8adf2b02b4a84d7cf925f283f8a03ca0530949d0adefb5b6fa7c",
+    "crates/server/src/lib.rs": "dfaffee54b534e9b61d9124098c938d2019a0983b7a06b40a5504f852b847030",
+    "crates/server/src/main.rs": "6d438a6ca6d8063615ab47e12770df78aa6fbccce6e444f640417ab9617cd7a7",
+    "crates/server/src/player/communication.rs": "9addfe22c86aad1646071d5ebdd0269333930d2317fab8e11a53d0f93cf4e0d0",
+    "crates/server/src/player/details.rs": "4e55fb1c713f16978a0a99062f6b43bb50b3c51a6db4bbd061858105b74a2d4c",
+    "crates/server/src/player/mod.rs": "299f48588c82a3ed28e5a8d04032f1611d30fa584e5345733ab6e44e8328a94a",
+    "crates/server/src/runtime.rs": "ee1c6da037b3fdc3838cb96c1c7b1919ec33daff3d71cf084b37973e392d0eda",
+    "crates/server/src/startup.rs": "cc37b93e2bcf1fe4b2a4151c40d69157830eed01d3f890a677869c65adb8bca2",
+    "crates/server/tests/admission.rs": "113d0f1f2070b67f1ec698688f8a6cded2f884456348c844659f769b15b974b3",
+    "crates/server/tests/auth.rs": "d2947008baf3d84117a2e7a9aff39f884245f5ca39d12d90074a863ebf4572d4",
+    "crates/server/tests/config.rs": "e485a3e399b8527683b7087c164553dc53f49b4cb51d5395336bf27780ca4732",
+    "crates/server/tests/crowd.rs": "7f98bc8d1b0eeeb4ee868a982d3c3b8d0b96d96cf67078aa2ddb0b018c2e3941",
+    "crates/server/tests/login.rs": "ee6fe1aa9d98ee4aeae368c099f44175e03cc6f7689fbc4a6ed3a5285a6d504d",
+    "crates/server/tests/player.rs": "1c0aefdb8164fb0ad6e4577dee943f2916c508c3aa0de681a4984d300b3e4186",
+    "crates/server/tests/transport.rs": "339a5ae0dd80b0c3f957fdb6e81155453bac5425b895419dfc8d6e365d8b281b",
+    "xtask/Cargo.toml": "928e38657f421db6009d7e2be5579c063f42c72326a66bb4249d22a0be11de16",
+    "xtask/src/auth_oracle.rs": "621afdc8379dacbfa11d0bac2d4c216bde0fc479589b8b2c9da4f8378778b8e0",
+    "xtask/src/benchmark.rs": "4dc4a474bee36a9b3d9d84026dea7fba6fe3e53642823139730c2aabd80477f4",
+    "xtask/src/cache_assets.rs": "3bc9c8565d0ed0c62a22317b565b2bb13fbc89393fde54ee9925a48be1f87c91",
+    "xtask/src/cache_oracle.rs": "a227145cda0819b48a102607c95e067d120e90939565db37e426c7815764a659",
+    "xtask/src/config_oracle.rs": "f48057e6276ede47485bf7450f603fa4f07464aaed50e70a79ae645aa5da8c4a",
+    "xtask/src/login_oracle.rs": "5950baf8a1600678d78f57cf9f4668be4d92054756cf0ebb12af1fd6337c569f",
+    "xtask/src/main.rs": "ddb7d8d88d64a584b8a24b98ae141a1d7c3a086031160f42243c3acec89524fa",
+    "xtask/src/network_oracle.rs": "05cbab25cca10c0d9c663dafbc68f9a8253764170a4fa6f997918a93517de41a",
+    "xtask/src/player_oracle.rs": "9eaf2fd28578172c0efee26ed96f0cf71469542651a0a39a798ce88db8d732cc",
+    "xtask/src/sql_oracle.rs": "e3aa50452f82758332b2970bb3926b3a695a723c9f7c87f9b4cc656f77541e0a",
+    "xtask/tests/cache.rs": "edf90f5af9770c78e807c1a3d46e19122e502b4f0d786e1fbaad88db0b9986f0",
+    "xtask/tests/login.rs": "36ed6d630fec25f27fe012d15842e80eea9f93473a0e4cdef5a21a6423c4ece6",
+    "xtask/tests/network.rs": "a036a11fce3f1137cce6af87b1abd18a17f39f6d9665debaac3ff24f0ba25e7c",
+    "xtask/tests/oracle.rs": "958568a7e36e4f26fc2a66a8bc6fcf7ac313e20e08ca4e32982f171d96e19167",
+    "xtask/tests/sql.rs": "4c21be7edd7376b74f4ef1bea816407f6f5733829f97854142d44715ce14570c"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  },
+  "workload": {
+    "archive": 10,
+    "catalogReuse": "one catalog shared by TCP then WebSocket probes",
+    "clientsPerBackend": 500,
+    "group": 1,
+    "interpretation": "functional smoke run, not a throughput benchmark",
+    "repetitionsPerBackend": 1,
+    "requestsPerClient": 10,
+    "scheduling": "spawn all client tasks; no synchronized-start barrier",
+    "timingIncludes": "connect, protocol handshake, requests, response hashing, close",
+    "warmupRuns": 0
+  }
+}

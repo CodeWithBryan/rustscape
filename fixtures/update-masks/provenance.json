@@ -1,0 +1,35 @@
+{
+  "caseCount": 396,
+  "fixtureSha256": "018616f9a4251dad61ed5dd0c5d4beb39b98838a05d9cbac56c8d4c3e845b2b7",
+  "format": 1,
+  "scope": "Complete UpdateMasks with sole currentTimeMillis call redirected to controlled clock; complete EntityFlag, EFlagProvider and HitMark. Original provider constructor table extracted from PlayerFlags530/NPCFlags530. Provider registry, byte-recording encoders, entity/impact queues and logger are explicit reentrant services. Header bytes, retained contexts/providers, current versus persistent slots, prepare and failed write prefixes are compared. This does not establish concrete flag encoder, impact/combat, live Actor/renderer or full registry startup parity.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/update-masks/Support.java": "cd7b9b8bcfbd1fe11c2393b095c8119abc2b1539dd2a45c9f6b686e92ee43427",
+    "oracle/update-masks/generate.py": "712be82c195005e12c94ce55cec5428c1e30ae05d7c41fa21db8f9d15273c4d0",
+    "reference/server/Server/src/main/core/game/world/update/UpdateMasks.kt": "72de99405a5174d6a6f95ce073144bd5643dcc4f7f10fdf3f8a47a6e0b34a667",
+    "reference/server/Server/src/main/core/game/world/update/flag/EFlagProvider.kt": "3891d71d07886d720fca22f7790d295147496cc91459e35f450a63021a296712",
+    "reference/server/Server/src/main/core/game/world/update/flag/EntityFlag.kt": "10c523b9e816fbfc2a2318ca99d8122c8eb2d4ec10c33f8b45d8e4ced2251163",
+    "reference/server/Server/src/main/core/game/world/update/flag/NPCFlags530.kt": "417e5748e277b994f8c0a8883e2149ec1e78f504f137794aec2d610460c29bb2",
+    "reference/server/Server/src/main/core/game/world/update/flag/PlayerFlags530.kt": "6e99cdde92f6517d08d8acfc41e70c065e12aad5ed4317caf29d95a428496e67",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/HitMark.java": "a383feac05874340cb48761f42ac93e6052d7a9a3bae3f8500bbb57c51fd09d9",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "caseCount": 14670,
+  "fixtureSha256": "d08a7adc7906e6b1333c3d7297e4ac447ad8e15ae1e98fce14b9e4dd3dce0c51",
+  "format": 1,
+  "scope": "Complete unchanged ActivityData/QuestData/GlobalData/SavedData; verbatim PlayerSaveParser.parseSavedData and PlayerSaver saveSavedData/saveActivityData/saveQuestData/saveGlobalData methods. Explicit player/clock/GodBook-ordinal/item-field adapters and reflection state setup. Includes JDK 11 Double formatting/parsing. No item definitions/interaction, complete profile or playable world claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/saved-data/SavedOracle.java": "de033942ba8418316372717b2122effaf110a702b0930de54e395ee9f38ba043",
+    "oracle/saved-data/generate.py": "324766cc829f0015d8b74754658cfd33db116fa8a6dc8fd47390500d22ed55ce",
+    "reference/server/Server/src/main/content/data/GodBook.java": "5b57ed2b2b06f0606fd375483b2ee99806649f6aac8f5bb6ecb42a7db8f10211",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaveParser.kt": "e9f41217991cbf7c2fe80e3a75666183fcc9d271ca54b3e07f0a95ab4a44159c",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaver.kt": "2428a08efcecf5b717ae901b6cf36e63cd08e14ba32ff9a6a32c30fc92cce665",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/ActivityData.java": "f711f0c7318eff56826c5652251530e1ebf444dc010f63f49fb43875e6cc8e5c",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/GlobalData.java": "5cb0bedaf2ba3fd226c18d8c20b4a066f7a4c4654ad0ff8c641fad552d7c2570",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/QuestData.java": "4f0b0bccfa91041f967ecc8675c8f9950980b835b532e9e4a415528f5b676369",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/SavedData.java": "3b9ef127ed52399cf32de3b1de7e1a74a994e8da78cbdb772e9c1c2259a9612b",
+    "reference/server/Server/src/main/core/game/node/item/Item.java": "d43b95f9b6207e56f776c0a8b7817e04030e81cbe39bba7900cedbf67a6d8df8",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

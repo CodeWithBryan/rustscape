@@ -1,0 +1,38 @@
+{
+  "caseCount": 1064,
+  "fixtureSha256": "26acba8ecbc529a3784387c26b155196c4f66ff194e97b7ad06d48d75ba1d7b0",
+  "format": 1,
+  "scope": "Verbatim Entity.delayed, Player.hasModalOpen, InterfaceManager.isOpened/hasChatbox, Component.getId, Node center and Scenery center/dimension methods; verbatim isStunned/finishedMoving and complete unchanged Clocks.kt. Packed LocationHash/transform are original. Entity/UI/node construction, field inputs and GameWorld clock are explicit adapters. This covers host helper bindings, not complete Entity/Player/scenery or tick/content/lock/projectile dispatch.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/script-runtime/Support.java": "af28b688c1a15fdf08cbfae02e4ee5348618c7d8576561925848204c6d1bf2e6",
+    "oracle/script-runtime/generate.py": "e21bf37431512ab5076153603c665fb688af46ae9075a09708cba0f1f7384aa3",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/game/component/Component.java": "08ef31c0d364de267f5ae664402ed0375eeacfc9bc3ce1dcac2a52cde86c2a33",
+    "reference/server/Server/src/main/core/game/interaction/Clocks.kt": "d480257a27f5f627a69af4df2e540ee1930e0ed3bb9d6ef211c035fda592c10e",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/node/entity/Entity.java": "9daf5cc74de2bed9491e7422b9998371192c7f6649cb3302aee5a603328e0668",
+    "reference/server/Server/src/main/core/game/node/entity/player/Player.java": "d3d00ccf27c0e914ae240e25bd836e7824eaa0939844a45e79aa03e7050bb8ed",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/InterfaceManager.java": "9ddbde8bc355c1c166083e988af02e65730ca16ac56afa93b72e3ed97dbf8ca5",
+    "reference/server/Server/src/main/core/game/node/scenery/Scenery.java": "eaba60d20ec9e0e2953907641c5cc0ef366bde1ea0ce84c4af1609d474364e93",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+[package]
+name = "rs09-server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Native 530 server migration; cache/lobby transport, gameplay pending"
+
+[dependencies]
+rs09-protocol.workspace = true
+rs09-game-core.workspace = true
+rs09-cache.workspace = true
+rs09-net.workspace = true
+tokio.workspace = true
+bytes.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+blowfish = { version = "=0.9.1", features = ["bcrypt"] }
+getrandom = "=0.3.4"
+mysql.workspace = true
+chrono = { version = "=0.4.42", default-features = false, features = ["std"] }
+toml = { version = "=0.8.23", default-features = false, features = ["parse"] }
+toml_edit = { version = "=0.22.27", default-features = false, features = ["parse"] }
+roxmltree = "=0.20.0"
+encoding_rs = "=0.8.35"
+
+[dev-dependencies]
+sha2.workspace = true
+futures-util.workspace = true
+tokio-tungstenite = { workspace = true, features = ["connect"] }

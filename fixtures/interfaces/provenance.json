@@ -1,0 +1,71 @@
+{
+  "caseCount": 628,
+  "configRows": 162,
+  "configSha256": "09f673928a0db8406569442cb7a9d9c00e40c07738a69d5fc8746d617ea9e70e",
+  "fixtureSha256": "c417c84ec25c0b855ad012e0ed71e90125bf4a1ce870caef034371fa195a15c4",
+  "format": 1,
+  "initialInterfaceBaseline": {
+    "caseCount": 238,
+    "sha256": "8bd66ca179a83d64599984863b6fd8803e7f43cbb5fd7999bed0304a7fdd2dfd"
+  },
+  "scope": "Complete original InterfaceManager class including open/close/single-tab/overlay/tab removal/restoration/lookup; original full Component with non-observable constructor identity recorder, full ComponentPlugin and Plugin default methods, typed plugin/close aliases, reentry/retirement and setUnclosable; complete ComponentDefinition/InterfaceType/ClientInfo, InterfaceConfigParser with string-reader input, IoBuffer and WindowsPane/Interface/Config writers. Constant component IDs resolved from pinned symbolic suffixes. Player, component content/listeners/weapon/familiar/friends/tutorial/config services, ISAACzero, packet sink and empty login-plugin list are explicit. Not complete UI/classes/content/startup or live gameplay proof.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/interfaces/ManagerSupport.java": "5fe276f667f7c2063c563e27a624c73f63fd5e35519ea514c2d63d05e1443611",
+    "oracle/interfaces/ObjectsSupport.java": "5e3c7c7b60bf2d6e8613a9b850ee3f2f6b5a513148da54183e5b836f4fbe3098",
+    "oracle/interfaces/Player.java": "4fa178296d524e5a2401406f5972a8cc437f282e2ba0507c8fa7eb9c7de9fa66",
+    "oracle/interfaces/Support.java": "44a0b8ff61aa4684c6450e18a9bb7a0418951b52349da833706d569f4a7f8e9e",
+    "oracle/interfaces/generate.py": "f978a28de773fc89f704ecbe6470ee1f1002fee805f47a79fdb3979ee3aefcd4",
+    "oracle/interfaces/initial.lock.json": "3d3fb1af7683728c4713ca87777f157543b429e6c6cb97ba6812f4020ea51dd0",
+    "oracle/interfaces/manager_cases.py": "68302cac67ee3e5858ae1e6c819dd5ff8f1304d38ac508f57da95c6565575a49",
+    "oracle/interfaces/object_cases.py": "b95d2a5b68f655ef7b7fea83ab3e77b76f5ed3e66615fb55f8ecdf4388b314ca",
+    "oracle/interfaces/objects.lock.json": "24702862c8bca4781ef8c6652095c14c7ba1b7d4eb630ec240a3db9a32fb2a5b",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/component/CloseEvent.java": "72a0b410dfa627379ba08e6bbd16845073bfed2c8ab3931c6176dd8d5a5f6227",
+    "reference/server/Server/src/main/core/game/component/Component.java": "08ef31c0d364de267f5ae664402ed0375eeacfc9bc3ce1dcac2a52cde86c2a33",
+    "reference/server/Server/src/main/core/game/component/ComponentDefinition.java": "b2cd5aefb9beb02c660c68cfdbcdbd81efa8882899aec35fb14f6440d4b67a3a",
+    "reference/server/Server/src/main/core/game/component/ComponentPlugin.java": "a67edaab4e6da673b22c40b76f0182a508e53385605d61a7e0a6e908b7309f7a",
+    "reference/server/Server/src/main/core/game/component/InterfaceType.java": "9bf9ab1e21683e3412335d47a32af946880dbd5a4515ed4370a870824e34f435",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/ClientInfo.java": "4947e5c82fe3084233d13730913a4cc6b3a70844f4ce950613dd3c7cd5bcdf21",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/LoginConfiguration.java": "d956716aa18de8b7496c566d487eb2c6b3c4f2937bacfc33d69e9404001993fa",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/InterfaceManager.java": "9ddbde8bc355c1c166083e988af02e65730ca16ac56afa93b72e3ed97dbf8ca5",
+    "reference/server/Server/src/main/core/game/system/config/InterfaceConfigParser.kt": "bbde0c1a2f74b1c4c1b3a5aad4314a38f4237acd5a0bab5077fb183d70ffac74",
+    "reference/server/Server/src/main/core/net/packet/Context.java": "0a1b6f5561f57f9717fbbaa25c60bbe21f8b781f9eafed8911c5c94ae559893c",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/OutgoingPacket.java": "c7015442a166b7751ba196da6f3c5587bbf63d162f0949890bb766cf8716789a",
+    "reference/server/Server/src/main/core/net/packet/PacketHeader.java": "a0635e12f2380381df12d534bc7695691d415c5c4dc0edf5692888082a623bc7",
+    "reference/server/Server/src/main/core/net/packet/context/ConfigContext.java": "65289d3792c51e317c512bfafc65c564d56580f69972f83ba9f77891f4611fce",
+    "reference/server/Server/src/main/core/net/packet/context/InterfaceConfigContext.java": "975c9d1c0b0f4bd86df40ce0d1d6906fd3f1c850ddec1cf735e9bf762e103b22",
+    "reference/server/Server/src/main/core/net/packet/context/InterfaceContext.java": "af842523c34873c7313f62c8aeabd5b15862b01e8358f948abfd658fcddc757a",
+    "reference/server/Server/src/main/core/net/packet/context/RunScriptContext.java": "054f7103d8a07f9bb6944e23d545bf5a63632d60fdcf3f474943977284a6dc07",
+    "reference/server/Server/src/main/core/net/packet/context/WindowsPaneContext.java": "509d64b5c84058a75041214b7cebdaf7cb9377c76f0999f89c089dcd07acc27b",
+    "reference/server/Server/src/main/core/net/packet/out/CloseInterface.java": "6d9a6ed89918e66dc91a544e178b03c79c15175180c2e1da693ee9137e12b9ae",
+    "reference/server/Server/src/main/core/net/packet/out/Config.java": "ab67f3d8a3cd2956c262aad70c6f4b056607001372e9c6b91f7fca76eb151b5b",
+    "reference/server/Server/src/main/core/net/packet/out/Interface.java": "80a173b1966de8e41644ac6f0402959f05dd4313f7cc4b66834ee63207444f59",
+    "reference/server/Server/src/main/core/net/packet/out/InterfaceConfig.java": "740abd80ce691fc5b1464b084549d7403b787c0654234df6cc0abd9542a66a4e",
+    "reference/server/Server/src/main/core/net/packet/out/RunScriptPacket.java": "7faedba033740bd16102fa0b6ae523cfcce62182565c1d07e31df4e8ef581246",
+    "reference/server/Server/src/main/core/net/packet/out/WindowsPane.java": "48ba681e70e0f963c106de79d8350946155b308fb6d77dd4d892e356628be7b4",
+    "reference/server/Server/src/main/core/plugin/Plugin.java": "642ad4f3a2999d3d1194916fd323c7e7c508e20aaa308d024822694ab4a1f764",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "typedObjectsBaseline": {
+    "caseCount": 351,
+    "sha256": "6289b0d8ce515bd300cd670c16076a7adc5c4be10ca7e8ecb7e97e7f0222166f"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

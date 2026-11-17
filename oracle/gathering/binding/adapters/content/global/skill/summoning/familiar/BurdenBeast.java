@@ -1,0 +1,1 @@
+package content.global.skill.summoning.familiar;public class BurdenBeast extends Familiar {public BurdenBeast(core.game.world.map.Location l){super(l);}public core.game.container.Container getContainer(){throw new UnsupportedOperationException();}}

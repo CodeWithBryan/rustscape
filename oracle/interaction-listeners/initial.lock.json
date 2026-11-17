@@ -1,0 +1,5 @@
+{
+  "caseCount": 1168,
+  "sha256": "844a97d15a2fa097f982ea3f7a2ad066db21286d50cf927c711ae5d8df3242e8",
+  "scope": "Initial complete unchanged InteractionListeners/InteractionListener/IntType/Script observations with declared kotlin-reflect1.5.20, independently matched by native replay before corpus extension."
+}

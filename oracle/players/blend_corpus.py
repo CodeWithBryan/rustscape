@@ -1,0 +1,24 @@
+"""Original GL dual animation against real pinned body models and frame pairs."""
+import hashlib,json,random,subprocess,os
+def generate(root,visual,check=False):
+    sources=visual.generate(build_only=True)
+    run=root/'runs/players-oracle/blend';run.mkdir(parents=True,exist_ok=True)
+    code=r'''import java.io.*;import java.nio.file.*;import java.security.*;import java.util.*;
+public class BlendProbe{public static void main(String[]args)throws Exception{Path dir=Path.of(args[0]);Rasteriser.textureProvider=new VisualMaterials(Files.readAllBytes(dir.resolve("materials.bin")));BufferedReader r=new BufferedReader(new InputStreamReader(System.in));String line;while((line=r.readLine())!=null){String[]p=line.split(";");String[]files=p[0].split(",");RawModel[]parts=new RawModel[files.length];for(int i=0;i<parts.length;i++)parts[i]=new RawModel(Files.readAllBytes(dir.resolve(files[i])));RawModel m=new RawModel(parts,parts.length);m.triangleSources=new short[m.triangleCount];for(int i=0;i<m.triangleCount;i++)m.triangleSources[i]=(short)i;GlModel g=new GlModel(m,64,850,true);g.createBones();AnimBase base=new AnimBase(Integer.parseInt(p[1]),Files.readAllBytes(dir.resolve(p[2])));AnimFrame a=new AnimFrame(Files.readAllBytes(dir.resolve(p[3])),base),b=new AnimFrame(Files.readAllBytes(dir.resolve(p[4])),base),c=new AnimFrame(Files.readAllBytes(dir.resolve(p[7])),base),d=new AnimFrame(Files.readAllBytes(dir.resolve(p[8])),base);boolean[]mask=null;if(!p[11].equals("null")){mask=new boolean[256];for(int i=0;i<256;i++)mask[i]=p[11].charAt(i)=='1';}g.applyDualAnimation(new AnimFrameset(a),0,new AnimFrameset(b),0,Integer.parseInt(p[5]),Integer.parseInt(p[6]),new AnimFrameset(c),0,new AnimFrameset(d),0,Integer.parseInt(p[9]),Integer.parseInt(p[10]),mask,Boolean.parseBoolean(p[12]));ByteArrayOutputStream bytes=new ByteArrayOutputStream();DataOutputStream out=new DataOutputStream(bytes);for(int i=0;i<m.vertexCount;i++){out.writeInt(g.vertexX[i]);out.writeInt(g.vertexY[i]);out.writeInt(g.vertexZ[i]);}int[]lookup=new int[m.triangleCount];Arrays.fill(lookup,-1);for(int i=0;i<g.triangleCount;i++)lookup[g.triangleSources[i]&65535]=i;for(int i=0;i<m.triangleCount;i++){int index=lookup[i];if(index<0)continue;for(int v:new int[]{g.triangleVertexA[index]&65535,g.triangleVertexB[index]&65535,g.triangleVertexC[index]&65535}){out.writeInt(g.normalX[v]);out.writeInt(g.normalY[v]);out.writeInt(g.normalZ[v]);out.writeInt(g.normalMagnitude[v]);}}for(int i=0;i<m.triangleCount;i++){int n=lookup[i];if(n>=0){out.writeShort(g.triangleColors[n]);out.writeByte(g.triangleAlpha[n]);}}System.out.println(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray())));}}}
+'''
+    (run/'BlendProbe.java').write_text(code,encoding='utf-8');subprocess.run(['javac','-encoding','UTF-8','-d',str(run),*[str(p)for p in visual.RUN.glob('*.java')],str(run/'BlendProbe.java')],check=True)
+    fixture=json.loads((root/'fixtures/visual/oracle.json').read_text());poses=[c for c in fixture['cases']if c['kind']=='glpose'];rng=random.Random(5302);cases=[];inputs=[]
+    for i in range(512):
+        first=rng.choice(poses);second=rng.choice([c for c in poses if c['base_id']==first['base_id']]);mask=None if i%8==0 else [False]*256 if i%8==1 else [True]*256 if i%8==2 else [bool(rng.randrange(2))for _ in range(256)]
+        normals=bool(i%2);case=dict(first=first,second=second,mask=mask,normals=normals);cases.append(case)
+        inputs.append(';'.join(map(str,[','.join(first['files']),first['base_id'],first['base'],first['first'],first['next'],first['delta'],first['length'],second['first'],second['next'],second['delta'],second['length'],'null'if mask is None else ''.join('1'if b else'0'for b in mask),str(normals).lower()])))
+    result=subprocess.run(['java','-cp',str(run),'BlendProbe',str(root/'fixtures/visual')],input='\n'.join(inputs)+'\n',text=True,capture_output=True,check=True).stdout.splitlines();assert len(result)==len(cases)
+    for c,line in zip(cases,result):c['expected']=line
+    files=set(['materials.bin'])
+    for c in cases:
+        for pose in [c['first'],c['second']]:files.update(pose['files']);files.update([pose['base'],pose['first'],pose['next']])
+    path=root/'fixtures/players/blend.json';content=json.dumps(dict(sources=sources,inputs={name:hashlib.sha256((root/'fixtures/visual'/name).read_bytes()).hexdigest()for name in sorted(files)},bindings='Unchanged Model.applyDualAnimation/applyAnimationBlend and GlModel transforms, original real cache bodies/materials/frames; existing visual GL/archive adapters. Same-base dual poses; slot part masks/BAS transforms outside this corpus.',cases=cases),separators=(',',':')).encode()+b'\n'
+    if check:
+        if path.read_bytes()!=content:raise SystemExit('Dual pose corpus differs')
+    else:path.write_bytes(content)
+    print(f'Original GL dual action/movement poses: {len(cases)} full vertex/normal/color/alpha comparisons')

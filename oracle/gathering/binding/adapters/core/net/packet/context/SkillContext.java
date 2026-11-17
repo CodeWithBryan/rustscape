@@ -1,0 +1,1 @@
+package core.net.packet.context;public class SkillContext {public core.game.node.entity.player.Player player;public int skill;public SkillContext(core.game.node.entity.player.Player p,int s){player=p;skill=s;}}

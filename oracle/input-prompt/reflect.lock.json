@@ -1,0 +1,7 @@
+{
+  "version": "1.5.20",
+  "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.5.20/kotlin-reflect-1.5.20.jar",
+  "size": 2993204,
+  "sha256": "fd6782d18bcc17ffa98221a1c34e4a42a7e3e6b4a4b72b474b5c82e14c8bab5a",
+  "scope": "Exact kotlin-reflect version declared by pinned Server/pom.xml. Used only by JVM test oracle; no JVM dependency enters Rust runtime."
+}

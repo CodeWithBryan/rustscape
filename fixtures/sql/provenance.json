@@ -1,0 +1,42 @@
+{
+  "caseCount": 139,
+  "fixtureSha256": "3a2c31b31023a7a018f3ddde632b5cce262de615099e87ace7425465dad9be43",
+  "format": 1,
+  "scope": "Complete original SQLStorageProvider and UserAccountInfo on real MariaDB with pinned schema. Original Contact/ClanRank and verbatim parseContacts method; controlled wall clock and online-player lookup. No game-world or playable-login claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "fixtures/sql/schema.provenance.json": "9be4e12697eca7650d45ee86963367a9591a8706e9ebd38682a0f6354dd48b02",
+    "fixtures/sql/schema.sql": "6ecf06675b9d398918ec9710a56d2d85c83a110062adeae29bf7ce0b79f5b28e",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/sql/Clock.kt": "f591c896958309228beeb5d9b1bcb1d642a5100a4f3b41c6f64a126970d6959f",
+    "oracle/sql/Repository.kt": "3b7d16b7595fb41d97bfcc734a14f568f70bb499c689657706443348b82871d7",
+    "oracle/sql/SqlOracle.kt": "373a9f2f0735e48e05fc4a31db48edc7291088eb0cbad954cbf726762c1f9907",
+    "oracle/sql/StorageClock.kt": "93149d4d931ba295cfd8682d2bc4fb7c9cbd83ad5d48490ed527a5e9a2784ae6",
+    "oracle/sql/artifacts.lock.json": "d2f2b569cd19899825f8ac792957841d7220b1c08d134e5699d1ca0d30445d93",
+    "oracle/sql/database.py": "31323440045be7eb5cffc4fb4dd700d9afb32358a36208863a30060ee03e7306",
+    "oracle/sql/generate.py": "ed72c92abf51d9f18ec029be7b6b0276728b45d17be8b055671aa99b2f4301b5",
+    "reference/server/Server/src/main/core/auth/UserAccountInfo.kt": "a9c91566bee0f654b7a21ddf932fdfcf36daa20d0be5ac840826c2c569858730",
+    "reference/server/Server/src/main/core/game/system/communication/ClanRank.java": "a874aaaa1b65937ca1d5518f96ecca7883cd757a9ee08e1ee068036071d2a1e5",
+    "reference/server/Server/src/main/core/game/system/communication/CommunicationInfo.java": "9e6a5b51935b8248a8c29db32ea9ab8fa54987cd987ca43e2aed2dbd3a45ba50",
+    "reference/server/Server/src/main/core/game/system/communication/Contact.java": "730f52b9426c0e644b392fdffd98e7aff59e8f5c13a8d309cc546d4f4656081f",
+    "reference/server/Server/src/main/core/storage/AccountStorageProvider.kt": "bf60b498289cd8e2b06d55d1246c0b8b9a7f38cc7146f964957266cf1b54a299",
+    "reference/server/Server/src/main/core/storage/SQLStorageProvider.kt": "a7464937d992bc6bb4aff6e1ac72df5166192a3eef308aa5c5b4ad1d32208991",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

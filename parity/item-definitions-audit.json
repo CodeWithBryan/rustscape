@@ -1,0 +1,313 @@
+{
+  "assetObjects": {
+    "main_file_cache.dat2": {
+      "sha256": "b5431211b019b9403b4cfca933f4c9635c1d5278d3730995dced0d8672b1cc91",
+      "size": 91702293
+    },
+    "main_file_cache.idx0": {
+      "sha256": "eca6bae3333edbca742e34674145d33255138a06ae9911152ff6b934a200bee4",
+      "size": 16344
+    },
+    "main_file_cache.idx1": {
+      "sha256": "13d64ed2f9e96ccdc1d9700ced80683aaf6b3ebff8226a182dcdf83a99160677",
+      "size": 14610
+    },
+    "main_file_cache.idx10": {
+      "sha256": "135006f0eb0321655f0353f46cb1ca77725f71fc84c3732d091964bd9fbfb66d",
+      "size": 12
+    },
+    "main_file_cache.idx11": {
+      "sha256": "de9903eb965d5787b622c3bfceb3c5c15756c041a4884a552e95a2548bc09748",
+      "size": 2340
+    },
+    "main_file_cache.idx12": {
+      "sha256": "dbd9a67fcea896a456ba5de71b2059046915a44a6522b1a73252e5e405fc7007",
+      "size": 12390
+    },
+    "main_file_cache.idx13": {
+      "sha256": "6b2a8543ee5056487859600cb5540bf3afd0602b2126c590991a582bad8ac652",
+      "size": 9552
+    },
+    "main_file_cache.idx14": {
+      "sha256": "3b2b03216a0f5fe2a8b4058942de2ec39b15fdb345de1cd7006b3754da2448b3",
+      "size": 3834
+    },
+    "main_file_cache.idx15": {
+      "sha256": "7eedc5947eaebf12d253b7dc21b03c1a77a061000b8d87038e6ebb566ad7cfc4",
+      "size": 1596
+    },
+    "main_file_cache.idx16": {
+      "sha256": "439ea312ce607992e05ffc87031703aaecd3e7aebb66ddb718bde19e04205210",
+      "size": 990
+    },
+    "main_file_cache.idx17": {
+      "sha256": "423fb227f50447805e11bbf281c30c17c389c4f7a4d3cf615f97144ce2990f73",
+      "size": 54
+    },
+    "main_file_cache.idx18": {
+      "sha256": "7a0ef062e8417cfcb1776c89ca5b59503b0c2c1dbe7f29227918ade80383c345",
+      "size": 408
+    },
+    "main_file_cache.idx19": {
+      "sha256": "3e8d1f3dd00aed753029371a37eb75f2068a6bfb902d481891a2e15afd3a9f34",
+      "size": 348
+    },
+    "main_file_cache.idx2": {
+      "sha256": "e134ffb243ad976a8267cc0c90e2594600f5d61c691f0883767fdb98b7fa8746",
+      "size": 210
+    },
+    "main_file_cache.idx20": {
+      "sha256": "4016ef195600feba273419b45fb5fc88c707d243549b1b042af309644c3d25b8",
+      "size": 528
+    },
+    "main_file_cache.idx21": {
+      "sha256": "8d49e0bf352c7c05f2ab29ad0f29953db9d203a232f6ba1ab9fe64931320f0f4",
+      "size": 48
+    },
+    "main_file_cache.idx22": {
+      "sha256": "5c0056aec21f859d1a18901ccd53f83175a7b06a466b19c30f374fd798facc58",
+      "size": 36
+    },
+    "main_file_cache.idx23": {
+      "sha256": "eb19eba5eddf90cf89e619ad41c4051a861a514156783914e6b7e6c1ce6e2b96",
+      "size": 18
+    },
+    "main_file_cache.idx24": {
+      "sha256": "90116f2a73d0d3fafd5ef3c284deb8c8a17b7ea882c6375b31175078fb7407db",
+      "size": 12
+    },
+    "main_file_cache.idx25": {
+      "sha256": "d5f7249f0d239de5cc25a3697f55a7e1c713e5e95ba1bf1d6d4e8e53f1588408",
+      "size": 12
+    },
+    "main_file_cache.idx255": {
+      "sha256": "83a2292c515596af0423764c48e41dfe1aac482920dca0b89ecb343db6dd4c30",
+      "size": 174
+    },
+    "main_file_cache.idx26": {
+      "sha256": "0b48aa88d7b2665f659f5282fa4c51e9725634474a184e67ef54bc47ad1125d0",
+      "size": 6
+    },
+    "main_file_cache.idx27": {
+      "sha256": "e9794503b85d9d79d71a40f60c144be9a3a77920a4efcf6e5b519b2691e163fb",
+      "size": 12
+    },
+    "main_file_cache.idx28": {
+      "sha256": "7653833b04b7b0adcb4115c71f9a7e73fd0e138b1f3dcd959dccd35c281a466f",
+      "size": 48
+    },
+    "main_file_cache.idx3": {
+      "sha256": "18aa0ae07970bc27ec13134f6210eae5d2b80093e04090e72e143c1098a0edf3",
+      "size": 5028
+    },
+    "main_file_cache.idx4": {
+      "sha256": "edb2b78b49a0d7433b1bcd8b154ff84842b0db51475955de53c211d847e32787",
+      "size": 40500
+    },
+    "main_file_cache.idx5": {
+      "sha256": "32bda84b31731cd60f7bc4e90caf7d55671e966fa958d60f2ec91da16340743d",
+      "size": 22188
+    },
+    "main_file_cache.idx6": {
+      "sha256": "a9ba71c8e7ee594791f5840bdfecbcbe12900728a2ff893dad85ae0cfc1f937e",
+      "size": 4008
+    },
+    "main_file_cache.idx7": {
+      "sha256": "3e86f53e678f5f149502232332fb5147094982644635f59019fff61b47002206",
+      "size": 272838
+    },
+    "main_file_cache.idx8": {
+      "sha256": "4f0142ec0412674ff9e60c531d766418fe781d44f06b9f7c5be006e5ed5ff8c3",
+      "size": 10254
+    },
+    "main_file_cache.idx9": {
+      "sha256": "8758dcdbf08f48ac5033c7be75d22d5822681efa2053a64d7cd6a98e04c6b902",
+      "size": 4080
+    }
+  },
+  "decodedInputBytes": 583421,
+  "definitionCount": 14659,
+  "differences": 0,
+  "format": 1,
+  "lendTemplates": 220,
+  "missingFiles": 5,
+  "nativeBuild": {
+    "architecture": "x86_64",
+    "os": "windows",
+    "profile": "release",
+    "rustc": "rustc 1.86.0 (05f9846f8 2025-03-31)",
+    "serviceHostExecutableSha256": "8045cb1321723f081de898703cdefac027c54617cde848bd5a0479c10607ac76"
+  },
+  "nativeSources": {
+    "Cargo.lock": "0d7a52f91f3c9734061e6da21d88498edeb05bd50221cf322dae7d9d87929b6a",
+    "Cargo.toml": "8dedf39efaad968ec8f13b86842a4caae46d3df0691af6931de21e5ec71ca6f8",
+    "crates/cache/Cargo.toml": "76a316e2b12689b9365949caa6be4e0a38b2a34e26853a93820674ff9cd5edd7",
+    "crates/cache/src/archive.rs": "477ed59bebac7b2794ca646c6f9772913d1d47aa727c2d609a5c9539808b507b",
+    "crates/cache/src/group.rs": "9feeec641c44f71d59bda2cf5a9bd6b3600b33f533ff9f9930150be349ae3086",
+    "crates/cache/src/index.rs": "ec71e23451650a314f20dcd34f92380241ffbaff3e5b36d9c66c24a44ae6c673",
+    "crates/cache/src/lib.rs": "0bd5743db4ed4158bea0df9dc04db06f5347e56978793c4dc023766544ca773d",
+    "crates/cache/src/store.rs": "6510aeda8a4eb76a1b404aef30eb60500543a644b2aca533fd33cdca853ddb84",
+    "crates/game-core/Cargo.toml": "49026347eec30820ec301aade8bf8d744422b05be5f07453c88aa193b1e20d37",
+    "crates/game-core/src/collision.rs": "f049ca01a78541787c8baa44a054681910f074d8394738b657996dc98f34e918",
+    "crates/game-core/src/direction.rs": "fe4df3fd6793790975c6ea50cf80f9288d68109a94a6915caa3eff772a7ff5e0",
+    "crates/game-core/src/int_utils.rs": "cf8dfa7b56f132074fdd4ae59f84397db997171a5c4a5aad976d8d9d93904bc8",
+    "crates/game-core/src/java_case.rs": "edfc634a89134620a33217efd1d434caaee4d3096648368980625f0e5e1906d6",
+    "crates/game-core/src/java_double.rs": "5d8c2c278d680c12af3377cfd568fe2aa017f6b51842c78b5a44056d3fe86f00",
+    "crates/game-core/src/java_json.rs": "f66b3e5ee84e94a97c26428e68807b4d5f62af9606cb4c2f6bc3a779ac7b0be2",
+    "crates/game-core/src/java_map.rs": "d88b507387b7e70325ddb63ba09cbcb3d8ebcd6b9d2dde0d9dd235fffef294ad",
+    "crates/game-core/src/java_string.rs": "9f12f7defb04a77a138def54c46412e7bc24550d29a8bcdfcad99d639a21c8ba",
+    "crates/game-core/src/lib.rs": "024a80de0c5af50d6dc4264893dd96cc92f9bedc40a8bd848863ac33e8d4dbd2",
+    "crates/game-core/src/random.rs": "2a2f8466d893b6902458f4f676182006fbeb3a6c55d916e2e1b63becd3ef4e69",
+    "crates/headless/Cargo.toml": "14de2de337dae807f24e0f3e43b1e6c339b524ba72b9afaf80cd514498ac9472",
+    "crates/headless/src/main.rs": "2f49732fe6a2b25fe63405589752915490b990f98b07cea41b96b9af97eafe5f",
+    "crates/net/Cargo.toml": "83f847813fbab637c65a1bebfd1150b6ca1914c28179d0516743e61b80319ebd",
+    "crates/net/src/lib.rs": "35ea65048ccd25dd9cae6ea34cd770c4e88cf7884eed0861460aef1f7fa27f1f",
+    "crates/net/src/login.rs": "14e5a1dd08bf747e3b83d4a88fe338c2273498b90438b4d24610e85b0dd93377",
+    "crates/net/src/peer.rs": "fe168e5d9e29fe87c1dc8d21e0dc3876b5ba852548ee2c6e53612f12f89b8289",
+    "crates/protocol/Cargo.toml": "ae9a285354e1d1037acd6e8d15bd14a0cef953641085f1c6b02bf7ed4468b3dd",
+    "crates/protocol/src/buffer.rs": "c77e22b9884cc63c53c2ada4f8751cc50012e4198c7447ea4854888c203c547e",
+    "crates/protocol/src/checksum.rs": "d2d447762d4cd8a9ecd333b71f479972c0579ab05462575ae8aa18c086227947",
+    "crates/protocol/src/huffman.rs": "c1d05f937535abfa59b684f4db198d72777fe4c78c9305a2a366fe0a133549a5",
+    "crates/protocol/src/isaac.rs": "7aee2f2868aa8186af4dcd2bf6cd8d70cf3173562c205bcff54019e4f5202181",
+    "crates/protocol/src/js5.rs": "fc187b265a74a7781bffac43b6899bbe557ae56561e053ea9218914ebe05c1b8",
+    "crates/protocol/src/lib.rs": "1de5ea182b3b4f2d4b46d9a44482007e979dba3dc0db1d090c67586a5d4f9867",
+    "crates/protocol/src/lobby.rs": "42b828757dc87c8639b6a4129571e738e0325aaa05bb3270edcf3c9f1b67309e",
+    "crates/protocol/src/login.rs": "41660b9181f9e909ed949c18882733dd1fbd95dca38105b7beeccfb38e817e25",
+    "crates/protocol/src/profile.rs": "3181d2144bd7bea38354be22726ba790d0ee7d9d7c71365902929df425555957",
+    "crates/protocol/src/session.rs": "7f740dec8e56b0b285e8a718bc43994a5ed899af9e23b3a355510615a3ed5f16",
+    "crates/protocol/src/xtea.rs": "302cca5e913d28fbd7b178ae1fb8f67144ef213549cab037f3bfa9c1f6c4001a",
+    "crates/server/Cargo.toml": "7c712f33c8be69a29d729305bc5890bb14bf7a7e3ff333d401a970231d3a041e",
+    "crates/server/src/auth/account.rs": "a6307b6829ae5d793828ceaa543e0d0889f7ef413c3f5ffc9d67ee6f3ed71cbc",
+    "crates/server/src/auth/admission.rs": "25a3a9d617d280b011ff31d231797788143f46b394b27dce72ffadbf9aa04500",
+    "crates/server/src/auth/factory.rs": "e1e6a8573bc602f857bc7f613a934d4504d7f6999959c2766ed1e529b144c7c6",
+    "crates/server/src/auth/mod.rs": "5dcbac00e34d4a111bd43c692219d3dcca6acb1e4ad58b30dd3cb66374bea15f",
+    "crates/server/src/auth/password.rs": "1e1ceac9b8bedaebd6e83c81f8c01bb59c958c33b2cd2ae491e223fea043e686",
+    "crates/server/src/auth/sql.rs": "b203ce2a981cddc6f68135a4ce66d6bc4e1e656037c4bc7d6587f5395aeb4215",
+    "crates/server/src/auth/storage.rs": "8775cfecdbda9ed51abcc5cbfe3f685f454f5f5d1ab7659a87d1fa3ffc11caf0",
+    "crates/server/src/catalog.rs": "c6b1a7a10126e6a02040c58f9acbf56e03cd4e829a20dce58adf20e7b9b6290d",
+    "crates/server/src/config/mod.rs": "7de0238abf7768a7f1d2970f710d34cabcdb1f43b6640964673fdb4cccc5faa2",
+    "crates/server/src/config/schema.rs": "35191268254d9f3b9c116f0b001a70362c3ec65fb0287a99a7f48e58bbdf70fd",
+    "crates/server/src/config/toml_compat.rs": "65e826ea5f1b8adf2b02b4a84d7cf925f283f8a03ca0530949d0adefb5b6fa7c",
+    "crates/server/src/definitions/item.rs": "e3586dfa84fda8c31f990fd878fd61cd5f248b2f36f930f474e1d05efdfbae99",
+    "crates/server/src/definitions/item_config/constants.rs": "37ec0637942fef32663e0cfcd0af115543029b0bad95fd79a2f1d3cf48f0e908",
+    "crates/server/src/definitions/item_config/json.rs": "4eac488eb37f0a3dfc7c063475bbe7e5dabac333368f4bbd5e03fb5ad4e7b28b",
+    "crates/server/src/definitions/item_config/mod.rs": "5458396fed07261aa291c81eca9ce69d744fadb90b49d723a2febd915fd08b6c",
+    "crates/server/src/definitions/mod.rs": "39d38ae61a935e92e352e9449f64f086e12f49254e9f87217214ea5d784d80f1",
+    "crates/server/src/definitions/property.rs": "955aa475c6f67560c4dc8b1876f31a74fcec1123dcfe94478fbe06f5fd522d70",
+    "crates/server/src/inventory/container.rs": "7c07822718578c229aa79ad009d6acbc2ce148f7fd912844edbb707f51550676",
+    "crates/server/src/inventory/item.rs": "415fccb0abd2a77d2cfbfa3b1300c7d4cb52e90891423cd05d1c53b8c37da00b",
+    "crates/server/src/inventory/mod.rs": "6fbf293121c3b8f1346327a944919d0c6a1dd6314a24a96341eddc52c41e1a6d",
+    "crates/server/src/lib.rs": "6310d711e5a39557398b31027ef09d73106dae251fb388a48fbbf53d1fac4420",
+    "crates/server/src/main.rs": "6d438a6ca6d8063615ab47e12770df78aa6fbccce6e444f640417ab9617cd7a7",
+    "crates/server/src/player/attributes.rs": "40e8c39bf3e68130601053d0521a8b9d7e7e9cb248cec57e815fe178ab8a0eee",
+    "crates/server/src/player/attributes/legacy.rs": "f24ac00b6630b33fe29f1c2849232fafdaee9cb9e7430c1622cf98bbb353add3",
+    "crates/server/src/player/attributes/text.rs": "15f7c45b1b77aaa994818726679bbea16e3f5c5beff4cb8ee9d3ed95ef843b93",
+    "crates/server/src/player/communication.rs": "9addfe22c86aad1646071d5ebdd0269333930d2317fab8e11a53d0f93cf4e0d0",
+    "crates/server/src/player/core_data.rs": "eebc2c743d239ca1491d4c73fbe40244231f41117179b16f78ceb07d7465bc9d",
+    "crates/server/src/player/details.rs": "4e55fb1c713f16978a0a99062f6b43bb50b3c51a6db4bbd061858105b74a2d4c",
+    "crates/server/src/player/mod.rs": "50106296999108b4a4af11ec51724fd8c81b3b4bbae7d3959af73ab20fb22b1a",
+    "crates/server/src/player/saved_data/json.rs": "0cd4458368e5c81fa8e99298aae1349c509712c4a93692dc8b42b3d9f7a76bed",
+    "crates/server/src/player/saved_data/mod.rs": "1b7b157e8276fc6270caf84c6a45787b6958987a391f570e80a01790a6ee835b",
+    "crates/server/src/player/saved_data/records.rs": "82319538a91236bc86078c7659833439d7bf3f54561fd74aeb4fafa9ae8ce94f",
+    "crates/server/src/player/skills.rs": "5ea2578913ae4b53005634c0daee38a18a269e43ca588083637d274b7d4e9873",
+    "crates/server/src/runtime.rs": "ee1c6da037b3fdc3838cb96c1c7b1919ec33daff3d71cf084b37973e392d0eda",
+    "crates/server/src/startup.rs": "cc37b93e2bcf1fe4b2a4151c40d69157830eed01d3f890a677869c65adb8bca2",
+    "crates/server/src/timers.rs": "03c580eaabe83c3be38bf33224a08c5414ddff864fdd32370e370b563d93edec",
+    "crates/server/tests/admission.rs": "113d0f1f2070b67f1ec698688f8a6cded2f884456348c844659f769b15b974b3",
+    "crates/server/tests/attributes.rs": "8c7a5de29eb90465e30dffe0272be7fcd6f2729d73cf1187d9f4cb488b9996ef",
+    "crates/server/tests/auth.rs": "d2947008baf3d84117a2e7a9aff39f884245f5ca39d12d90074a863ebf4572d4",
+    "crates/server/tests/config.rs": "e485a3e399b8527683b7087c164553dc53f49b4cb51d5395336bf27780ca4732",
+    "crates/server/tests/core_data.rs": "fe72071ecb4605a9854cc6230a92347ad642bb0ddd1ec2167bab1c2a4da1a084",
+    "crates/server/tests/crowd.rs": "7f98bc8d1b0eeeb4ee868a982d3c3b8d0b96d96cf67078aa2ddb0b018c2e3941",
+    "crates/server/tests/inventory.rs": "8fa6d90c34817692f35d21b6b7f95fa2fc70e98b225fc2c8992abfa441834be0",
+    "crates/server/tests/item_config.rs": "51a1da118b85f323e4b07be9ab104f3797ebcbd62a6f03058903e72b13b735d8",
+    "crates/server/tests/item_definitions.rs": "2e5d915d6a65822ab05f51eef37f5205e27d17861f364e1731085e6d75f38b02",
+    "crates/server/tests/login.rs": "ee6fe1aa9d98ee4aeae368c099f44175e03cc6f7689fbc4a6ed3a5285a6d504d",
+    "crates/server/tests/player.rs": "1c0aefdb8164fb0ad6e4577dee943f2916c508c3aa0de681a4984d300b3e4186",
+    "crates/server/tests/saved_data.rs": "803a9ba03680a022bf8f74464fb7c003f4a7aa10970466965e11cd8755c9a2dd",
+    "crates/server/tests/skills.rs": "3f0c3945b7313b106ed98f99ccda87404ab712c90b5133b51f62f430c9175beb",
+    "crates/server/tests/timers.rs": "2a659874ee883d36cdf04fa609cd08d555c5029ff57edd0157e3b64475c33b3d",
+    "crates/server/tests/transport.rs": "339a5ae0dd80b0c3f957fdb6e81155453bac5425b895419dfc8d6e365d8b281b",
+    "oracle/items/native.rs": "3e4c373df676592889bd9b0f53db1d709fdc1614a8fa287d740876d93ad2c076",
+    "xtask/Cargo.toml": "928e38657f421db6009d7e2be5579c063f42c72326a66bb4249d22a0be11de16",
+    "xtask/src/attributes_oracle.rs": "4837b378ac1a542ef932e56d03b44c5b220e9093c4e384b5360d8b6cb66af073",
+    "xtask/src/auth_oracle.rs": "621afdc8379dacbfa11d0bac2d4c216bde0fc479589b8b2c9da4f8378778b8e0",
+    "xtask/src/benchmark.rs": "4dc4a474bee36a9b3d9d84026dea7fba6fe3e53642823139730c2aabd80477f4",
+    "xtask/src/cache_assets.rs": "3bc9c8565d0ed0c62a22317b565b2bb13fbc89393fde54ee9925a48be1f87c91",
+    "xtask/src/cache_oracle.rs": "a227145cda0819b48a102607c95e067d120e90939565db37e426c7815764a659",
+    "xtask/src/config_oracle.rs": "f48057e6276ede47485bf7450f603fa4f07464aaed50e70a79ae645aa5da8c4a",
+    "xtask/src/inventory_oracle.rs": "8a99b81a8462e9e5d8e23a00dd8aeca74d70dd291b070028582adbc9b9693bf1",
+    "xtask/src/item_config_oracle.rs": "b027ffbf582623c97369660e9f74ebc50f09f9575e3fdf80756e6b1eec7d344c",
+    "xtask/src/item_oracle.rs": "5d72cc853b8847d8e29fb76e30c8173626a1872e2ec72f042d8c81352a8a428a",
+    "xtask/src/login_oracle.rs": "5950baf8a1600678d78f57cf9f4668be4d92054756cf0ebb12af1fd6337c569f",
+    "xtask/src/main.rs": "fd248f2f56347bab025b1fffe378f69d4064104cc423821377a5a909c8968288",
+    "xtask/src/network_oracle.rs": "05cbab25cca10c0d9c663dafbc68f9a8253764170a4fa6f997918a93517de41a",
+    "xtask/src/player_oracle.rs": "9eaf2fd28578172c0efee26ed96f0cf71469542651a0a39a798ce88db8d732cc",
+    "xtask/src/profile_oracle.rs": "2da7a550b5933d04b4e7751da6d0fbd79afd3607e035fa02c102fc15341d28df",
+    "xtask/src/saved_data_oracle.rs": "07fa47f9d5dc2f95332f3185db504b121e94b26445f1c1499ea2696819d5e8f3",
+    "xtask/src/skills_oracle.rs": "6912a3df9a626ff2c7275f4f18ae9ff0d0e3e719071354af5052a5b3a06c9ba2",
+    "xtask/src/sql_oracle.rs": "e3aa50452f82758332b2970bb3926b3a695a723c9f7c87f9b4cc656f77541e0a",
+    "xtask/tests/cache.rs": "edf90f5af9770c78e807c1a3d46e19122e502b4f0d786e1fbaad88db0b9986f0",
+    "xtask/tests/login.rs": "36ed6d630fec25f27fe012d15842e80eea9f93473a0e4cdef5a21a6423c4ece6",
+    "xtask/tests/network.rs": "a036a11fce3f1137cce6af87b1abd18a17f39f6d9665debaac3ff24f0ba25e7c",
+    "xtask/tests/oracle.rs": "958568a7e36e4f26fc2a66a8bc6fcf7ac313e20e08ca4e32982f171d96e19167",
+    "xtask/tests/sql.rs": "4c21be7edd7376b74f4ef1bea816407f6f5733829f97854142d44715ce14570c"
+  },
+  "noteTemplates": 3329,
+  "observationSha256": "8a2ca753332f7086c1b097845f271e91b4131c776deb621f10f69d3ee6ff65c3",
+  "oracle": {
+    "caseCount": 1831,
+    "fixtureSha256": "d21d95010eeb62e043b966616677dd4908a8e699f54805ce1723bbc2db9b9a51",
+    "format": 1,
+    "scope": "Verbatim ItemDefinition stored fields, constructor, parseDefinition/parse/forId/defineTemplates, all note/lend/recolour transfers, stackability/player-type/actions/special-bar/quest/archive/file helpers. Unchanged complete Definition.java and ByteBufferUtils.kt. JDK 11 char upper/lower pairs for every UTF-16 code unit and original String.equalsIgnoreCase observations. Explicit isolated cache index/file adapter and numeric TRADEABLE constant; no content configurations, plugins, inventory/equipment/world or complete ItemDefinition class claim. Snapshots include mutable-array/map and definition identity, relative read positions, partial registry loads and failures.",
+    "sourceHashAlgorithm": "sha256, CR removed",
+    "sources": {
+      "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+      "oracle/items/ItemOracle.java": "475648a01ba9be790ca466ad3634fa1578e00c508444aaf045997b8674984b5b",
+      "oracle/items/cache-samples.json": "99f126cbf45d4f4becb9400ec7dbcab3cce3846d4c1973ec593cf7b4e9c7efaf",
+      "oracle/items/generate.py": "f7312f764fe480539cb01a685fc01fb42ad0154f0ab0f141ec2e615cb16a244d",
+      "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+      "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+      "reference/server/Server/src/main/core/cache/Cache.java": "9d117d2f703f030fbcb02f294674a00d2671f311d50e0c226ba658825739d57a",
+      "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+      "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+      "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
+      "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+      "reference/server/Server/src/main/core/tools/StringUtils.java": "51365165036173a8b2df93b9ea108b5cc01d8aa6b86dc23383719f1ff5482e13",
+      "tools/port_jdk_case.py": "48367d297c9d23c1981b5a0615fe7d956c430873b27d8f3fa707b535467e7ee5",
+      "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+    },
+    "upstream": {
+      "client": {
+        "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+        "license": "AGPL-3.0-only",
+        "url": "https://gitlab.com/2009scape/rt4-client.git"
+      },
+      "format": 1,
+      "revision": 530,
+      "server": {
+        "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+        "license": "AGPL-3.0-only",
+        "url": "https://gitlab.com/2009scape/2009scape.git"
+      }
+    }
+  },
+  "presentFiles": 14654,
+  "rawFileSha256": "255592c11e2799ab6a78d5fbf05681458a629f59aca9a34fc9871691eddfedf7",
+  "recolourTemplates": 0,
+  "scope": "Entire pinned server item-cache archive before SQL/content configuration. Original parse/template methods compared field-for-field, including aliases, against the public native strict archive loader. Cache decompression has a separate whole-cache JVM audit. No complete item class, plugin, equipment, container, profile, gameplay or performance claim.",
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

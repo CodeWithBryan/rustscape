@@ -1,0 +1,36 @@
+{
+  "caseCount": 1565,
+  "fixtureSha256": "0fb6dceebf12647fd09f6c5017803b6f27965c0c9a2d2ad35db98e6bda69854e",
+  "format": 1,
+  "scope": "Unchanged complete Skills and BrawlingGloves enum; verbatim profile parseSkills/saveSkills and assist skill-index mapping. Explicit controlled entity/world ticks, equipment, assist decisions, glove manager, perks, plugins, level-up, packet/event, news and logging adapters. Traces and synchronous callback/failure effects tested; dependent systems and packet bytes are not emulated or claimed complete. No playable-world/full-profile claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/skills/Model.java": "7fc5af27e6523adfd68454f656a7b58825110ebfa4dad817847dbbb3a68a0f3a",
+    "oracle/skills/SkillBenchmark.java": "af5122824e352140e082c9b1ce6f91eec3428822ceaafead7ba5e068705d3fec",
+    "oracle/skills/SkillOracle.java": "df806218b5251b3576b49c3868f310d5dd34129226cf93cd5eaa26977948e5a3",
+    "oracle/skills/generate.py": "fc2cddb8d776e6cef8c92d06ffa4efc38e04b8ad5cf89cbe2649f6d86c0c6640",
+    "reference/server/Server/src/main/content/global/handlers/item/equipment/brawling_gloves/BrawlingGloves.java": "e4228ffc11782973bf743b5e9bc3e2e96272b8955afeba3d373ee01e7d43ba42",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaveParser.kt": "e9f41217991cbf7c2fe80e3a75666183fcc9d271ca54b3e07f0a95ab4a44159c",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaver.kt": "2428a08efcecf5b717ae901b6cf36e63cd08e14ba32ff9a6a32c30fc92cce665",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/request/assist/AssistSession.java": "3612f56dd7f5dc822cb1de6a677186c96a1e49d03da9cfc31371f2ad2c560017",
+    "reference/server/Server/src/main/core/game/node/entity/skill/Skills.java": "b442b260cc591406dc903d46cd729db27976b9470413bc039d6766bd4fe1f0db",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

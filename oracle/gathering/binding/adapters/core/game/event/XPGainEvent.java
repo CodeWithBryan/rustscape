@@ -1,0 +1,1 @@
+package core.game.event;public class XPGainEvent {public final int skill;public final double amount;public XPGainEvent(int s,double a){skill=s;amount=a;}@Override public String toString(){return "XPGainEvent("+skill+","+oracle.Support.bits(amount)+")";}}

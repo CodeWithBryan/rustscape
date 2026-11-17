@@ -1,0 +1,506 @@
+{
+  "archives": [
+    {
+      "archive": 0,
+      "bytes": 34992031,
+      "clientFallbackGroups": [],
+      "files": 219678,
+      "groups": 2724,
+      "sha256": "8710e6e82a60e413dc60548a7d3437934c8c29d419b8acea4a30c4058cf20bee"
+    },
+    {
+      "archive": 1,
+      "bytes": 1218336,
+      "clientFallbackGroups": [],
+      "files": 2435,
+      "groups": 2435,
+      "sha256": "bc2a1bc80fd632b22ddb5d97db8ae6e371f0280604e2f7ad2c890954a428e1ac"
+    },
+    {
+      "archive": 2,
+      "bytes": 30428,
+      "clientFallbackGroups": [],
+      "files": 8288,
+      "groups": 20,
+      "sha256": "a6dfe9a4fdcf4003214594bb02ba2b9a1b0b89e658a6a7baeebbb544f35a751f"
+    },
+    {
+      "archive": 3,
+      "bytes": 2369985,
+      "clientFallbackGroups": [],
+      "files": 31622,
+      "groups": 834,
+      "sha256": "cdebe886e0a201c47c362c750c015bc886d8f251e5d8caf4d4b18aa44be1a858"
+    },
+    {
+      "archive": 4,
+      "bytes": 2273956,
+      "clientFallbackGroups": [],
+      "files": 6750,
+      "groups": 6750,
+      "sha256": "3429a391dc13ca38a990e8e82e0908fb9346249411dbd753b60dca2a1f074ea6"
+    },
+    {
+      "archive": 5,
+      "bytes": 52383908,
+      "clientFallbackGroups": [
+        1443,
+        1445,
+        1449,
+        1491,
+        1493,
+        1495,
+        1497,
+        1503,
+        1505,
+        1507,
+        1509,
+        1607,
+        1613,
+        1615,
+        1625,
+        1641,
+        1647,
+        1649,
+        1651,
+        1653,
+        1663,
+        1665,
+        1667,
+        1669,
+        1675,
+        1677,
+        1681,
+        1683,
+        1685,
+        1687,
+        1689,
+        1691,
+        1693,
+        1695,
+        1697,
+        1699,
+        1701,
+        1703,
+        1705,
+        1707,
+        1709,
+        1711,
+        1713,
+        1715,
+        1717,
+        1719,
+        1721,
+        1723,
+        1725,
+        1773,
+        1777,
+        1835,
+        1885,
+        1907,
+        1909,
+        1925,
+        1927,
+        1931,
+        1937,
+        1941,
+        1955,
+        1957,
+        1959,
+        1969,
+        2055,
+        2145,
+        3498,
+        3514,
+        3636,
+        3684,
+        3686,
+        3690
+      ],
+      "files": 3682,
+      "groups": 3682,
+      "sha256": "ced14e0e0c934bb2af277825c11d8518e1a196f0fb2bc7e07b4933a8ff54f815"
+    },
+    {
+      "archive": 6,
+      "bytes": 31707221,
+      "clientFallbackGroups": [],
+      "files": 668,
+      "groups": 668,
+      "sha256": "fddf4a7afc0066c9310e615b64aca27ccc85c775941f14cd3f562ae45a4c658a"
+    },
+    {
+      "archive": 7,
+      "bytes": 142668053,
+      "clientFallbackGroups": [],
+      "files": 45472,
+      "groups": 45472,
+      "sha256": "02fcb6dcf75891b598355d60471a27118d098dd7b4dcbd99f2e684df8bb31405"
+    },
+    {
+      "archive": 8,
+      "bytes": 5197685,
+      "clientFallbackGroups": [],
+      "files": 1709,
+      "groups": 1709,
+      "sha256": "2c276c807469f1fbef57a2f9b4cbbcc99fe9dc92371c1ccceade33696397c1ea"
+    },
+    {
+      "archive": 9,
+      "bytes": 77892,
+      "clientFallbackGroups": [],
+      "files": 680,
+      "groups": 680,
+      "sha256": "a38a1a81922fec854f245e595dd0ba096300fba9e89a7ec96cd24a9242767445"
+    },
+    {
+      "archive": 10,
+      "bytes": 256,
+      "clientFallbackGroups": [],
+      "files": 1,
+      "groups": 1,
+      "sha256": "64087d25699d3d4f9202a51471e8198fe174cca881616238de86958543a2a407"
+    },
+    {
+      "archive": 11,
+      "bytes": 1801106,
+      "clientFallbackGroups": [],
+      "files": 390,
+      "groups": 390,
+      "sha256": "67816fcef782600f839573c32ccf1ef45f325dd251c57efaf615156a28d0e012"
+    },
+    {
+      "archive": 12,
+      "bytes": 1271200,
+      "clientFallbackGroups": [],
+      "files": 2063,
+      "groups": 2063,
+      "sha256": "af4b22e6df65e5c5141d0b320ace91b75643ac5594914a40556f10ad993241b2"
+    },
+    {
+      "archive": 13,
+      "bytes": 4626,
+      "clientFallbackGroups": [],
+      "files": 18,
+      "groups": 18,
+      "sha256": "3ba4bd459dbd5b1e460e39bc32e2195d0ec90bec2270ab3436acd7f9bb76b34e"
+    },
+    {
+      "archive": 14,
+      "bytes": 2391279,
+      "clientFallbackGroups": [],
+      "files": 486,
+      "groups": 486,
+      "sha256": "aeefbbb4a6c2fbadb27253903b0db0072243a4d064d8c6b1fdbc2bd889fc7a3f"
+    },
+    {
+      "archive": 15,
+      "bytes": 48951,
+      "clientFallbackGroups": [],
+      "files": 148,
+      "groups": 148,
+      "sha256": "93ab03bc06f63f300287013f5b98f21d8d415a79e5dea17b7d89809579d70edd"
+    },
+    {
+      "archive": 16,
+      "bytes": 1190913,
+      "clientFallbackGroups": [],
+      "files": 42004,
+      "groups": 165,
+      "sha256": "0f6dba621b06a204a59bd045bfae719097003f4cba914824c5c31ac0c1fe970e"
+    },
+    {
+      "archive": 17,
+      "bytes": 196444,
+      "clientFallbackGroups": [],
+      "files": 2196,
+      "groups": 9,
+      "sha256": "f919939f0953034fc98425110b933cf8f28b767ef30a1b5b3d6cf781777abefc"
+    },
+    {
+      "archive": 18,
+      "bytes": 521680,
+      "clientFallbackGroups": [],
+      "files": 8590,
+      "groups": 68,
+      "sha256": "855d5c970adafa2b49a061d46dfa362bce9b34ee7c1e7a693288a451d36c1b85"
+    },
+    {
+      "archive": 19,
+      "bytes": 583421,
+      "clientFallbackGroups": [],
+      "files": 14654,
+      "groups": 58,
+      "sha256": "9f96a144df50a589aa7e4532b1b4b4c9cfd73165ef4fd014840fb1b437103d13"
+    },
+    {
+      "archive": 20,
+      "bytes": 1802997,
+      "clientFallbackGroups": [],
+      "files": 11155,
+      "groups": 88,
+      "sha256": "d165a6007bcc5b6f1a4a068dc926d0a77773d07c312f3478de5ba274323f59ed"
+    },
+    {
+      "archive": 21,
+      "bytes": 23372,
+      "clientFallbackGroups": [],
+      "files": 1993,
+      "groups": 8,
+      "sha256": "3dc9894f834a68840bf43e22254dc7b9471a3df95a12e55b09148f3de6cb7857"
+    },
+    {
+      "archive": 22,
+      "bytes": 28811,
+      "clientFallbackGroups": [],
+      "files": 5826,
+      "groups": 6,
+      "sha256": "62c8c4f44d1302814389e7155146ebcb6dd7d4025b97630b40feaddb06e00066"
+    },
+    {
+      "archive": 23,
+      "bytes": 10373125,
+      "clientFallbackGroups": [],
+      "files": 216,
+      "groups": 3,
+      "sha256": "09cdbea948462b25617a58326605213be735c410b974705a3ce8eb93c392aa22"
+    },
+    {
+      "archive": 24,
+      "bytes": 32879,
+      "clientFallbackGroups": [],
+      "files": 1031,
+      "groups": 2,
+      "sha256": "121d21e7a37d6de6c4949abe7ea933028f8e377610e136fef8cc201eed1cfaf3"
+    },
+    {
+      "archive": 25,
+      "bytes": 1806,
+      "clientFallbackGroups": [],
+      "files": 86,
+      "groups": 2,
+      "sha256": "678d9838afb09019b28112801ef609fb78f01daaa0b58492fb3ceece1f39308c"
+    },
+    {
+      "archive": 26,
+      "bytes": 7482,
+      "clientFallbackGroups": [],
+      "files": 1,
+      "groups": 1,
+      "sha256": "e9f4341be52617365a248747c368642e2c6b30624f19d6b6be4be9e31ca4cc35"
+    },
+    {
+      "archive": 27,
+      "bytes": 18,
+      "clientFallbackGroups": [],
+      "files": 1,
+      "groups": 1,
+      "sha256": "9b3307c2b1fb0869abc3a57e306c80c45f1628e487af4bc8b6ca645afdbbb939"
+    },
+    {
+      "archive": 28,
+      "bytes": 9690140,
+      "clientFallbackGroups": [],
+      "files": 20,
+      "groups": 8,
+      "sha256": "3aea5c1cdb12e7940fd3600f3d1f15420c284984a6b38d76d56186ba7db00ad3"
+    }
+  ],
+  "assetObjects": {
+    "main_file_cache.dat2": {
+      "sha256": "b5431211b019b9403b4cfca933f4c9635c1d5278d3730995dced0d8672b1cc91",
+      "size": 91702293
+    },
+    "main_file_cache.idx0": {
+      "sha256": "eca6bae3333edbca742e34674145d33255138a06ae9911152ff6b934a200bee4",
+      "size": 16344
+    },
+    "main_file_cache.idx1": {
+      "sha256": "13d64ed2f9e96ccdc1d9700ced80683aaf6b3ebff8226a182dcdf83a99160677",
+      "size": 14610
+    },
+    "main_file_cache.idx10": {
+      "sha256": "135006f0eb0321655f0353f46cb1ca77725f71fc84c3732d091964bd9fbfb66d",
+      "size": 12
+    },
+    "main_file_cache.idx11": {
+      "sha256": "de9903eb965d5787b622c3bfceb3c5c15756c041a4884a552e95a2548bc09748",
+      "size": 2340
+    },
+    "main_file_cache.idx12": {
+      "sha256": "dbd9a67fcea896a456ba5de71b2059046915a44a6522b1a73252e5e405fc7007",
+      "size": 12390
+    },
+    "main_file_cache.idx13": {
+      "sha256": "6b2a8543ee5056487859600cb5540bf3afd0602b2126c590991a582bad8ac652",
+      "size": 9552
+    },
+    "main_file_cache.idx14": {
+      "sha256": "3b2b03216a0f5fe2a8b4058942de2ec39b15fdb345de1cd7006b3754da2448b3",
+      "size": 3834
+    },
+    "main_file_cache.idx15": {
+      "sha256": "7eedc5947eaebf12d253b7dc21b03c1a77a061000b8d87038e6ebb566ad7cfc4",
+      "size": 1596
+    },
+    "main_file_cache.idx16": {
+      "sha256": "439ea312ce607992e05ffc87031703aaecd3e7aebb66ddb718bde19e04205210",
+      "size": 990
+    },
+    "main_file_cache.idx17": {
+      "sha256": "423fb227f50447805e11bbf281c30c17c389c4f7a4d3cf615f97144ce2990f73",
+      "size": 54
+    },
+    "main_file_cache.idx18": {
+      "sha256": "7a0ef062e8417cfcb1776c89ca5b59503b0c2c1dbe7f29227918ade80383c345",
+      "size": 408
+    },
+    "main_file_cache.idx19": {
+      "sha256": "3e8d1f3dd00aed753029371a37eb75f2068a6bfb902d481891a2e15afd3a9f34",
+      "size": 348
+    },
+    "main_file_cache.idx2": {
+      "sha256": "e134ffb243ad976a8267cc0c90e2594600f5d61c691f0883767fdb98b7fa8746",
+      "size": 210
+    },
+    "main_file_cache.idx20": {
+      "sha256": "4016ef195600feba273419b45fb5fc88c707d243549b1b042af309644c3d25b8",
+      "size": 528
+    },
+    "main_file_cache.idx21": {
+      "sha256": "8d49e0bf352c7c05f2ab29ad0f29953db9d203a232f6ba1ab9fe64931320f0f4",
+      "size": 48
+    },
+    "main_file_cache.idx22": {
+      "sha256": "5c0056aec21f859d1a18901ccd53f83175a7b06a466b19c30f374fd798facc58",
+      "size": 36
+    },
+    "main_file_cache.idx23": {
+      "sha256": "eb19eba5eddf90cf89e619ad41c4051a861a514156783914e6b7e6c1ce6e2b96",
+      "size": 18
+    },
+    "main_file_cache.idx24": {
+      "sha256": "90116f2a73d0d3fafd5ef3c284deb8c8a17b7ea882c6375b31175078fb7407db",
+      "size": 12
+    },
+    "main_file_cache.idx25": {
+      "sha256": "d5f7249f0d239de5cc25a3697f55a7e1c713e5e95ba1bf1d6d4e8e53f1588408",
+      "size": 12
+    },
+    "main_file_cache.idx255": {
+      "sha256": "83a2292c515596af0423764c48e41dfe1aac482920dca0b89ecb343db6dd4c30",
+      "size": 174
+    },
+    "main_file_cache.idx26": {
+      "sha256": "0b48aa88d7b2665f659f5282fa4c51e9725634474a184e67ef54bc47ad1125d0",
+      "size": 6
+    },
+    "main_file_cache.idx27": {
+      "sha256": "e9794503b85d9d79d71a40f60c144be9a3a77920a4efcf6e5b519b2691e163fb",
+      "size": 12
+    },
+    "main_file_cache.idx28": {
+      "sha256": "7653833b04b7b0adcb4115c71f9a7e73fd0e138b1f3dcd959dccd35c281a466f",
+      "size": 48
+    },
+    "main_file_cache.idx3": {
+      "sha256": "18aa0ae07970bc27ec13134f6210eae5d2b80093e04090e72e143c1098a0edf3",
+      "size": 5028
+    },
+    "main_file_cache.idx4": {
+      "sha256": "edb2b78b49a0d7433b1bcd8b154ff84842b0db51475955de53c211d847e32787",
+      "size": 40500
+    },
+    "main_file_cache.idx5": {
+      "sha256": "32bda84b31731cd60f7bc4e90caf7d55671e966fa958d60f2ec91da16340743d",
+      "size": 22188
+    },
+    "main_file_cache.idx6": {
+      "sha256": "a9ba71c8e7ee594791f5840bdfecbcbe12900728a2ff893dad85ae0cfc1f937e",
+      "size": 4008
+    },
+    "main_file_cache.idx7": {
+      "sha256": "3e86f53e678f5f149502232332fb5147094982644635f59019fff61b47002206",
+      "size": 272838
+    },
+    "main_file_cache.idx8": {
+      "sha256": "4f0142ec0412674ff9e60c531d766418fe781d44f06b9f7c5be006e5ed5ff8c3",
+      "size": 10254
+    },
+    "main_file_cache.idx9": {
+      "sha256": "8758dcdbf08f48ac5033c7be75d22d5822681efa2053a64d7cd6a98e04c6b902",
+      "size": 4080
+    }
+  },
+  "elapsedSeconds": 1.3933423999999999,
+  "failures": [],
+  "format": 1,
+  "java": "openjdk version \"25.0.3\" 2026-04-21 LTS\r\nOpenJDK Runtime Environment Temurin-25.0.3+9 (build 25.0.3+9-LTS)\r\nOpenJDK 64-Bit Server VM Temurin-25.0.3+9 (build 25.0.3+9-LTS, mixed mode, sharing)",
+  "jvmVerified": true,
+  "nativeExtractionSeconds": 1.095812,
+  "rustc": "rustc 1.86.0 (05f9846f8 2025-03-31)",
+  "scope": "Decoded cache file bytes in RT4 compatibility mode, including explicit original fallback groups; not interpreted definitions, live gameplay, or a performance benchmark.",
+  "sourceSha256": {
+    "Cargo.lock": "0d7a52f91f3c9734061e6da21d88498edeb05bd50221cf322dae7d9d87929b6a",
+    "crates/cache/src/archive.rs": "477ed59bebac7b2794ca646c6f9772913d1d47aa727c2d609a5c9539808b507b",
+    "crates/cache/src/group.rs": "9feeec641c44f71d59bda2cf5a9bd6b3600b33f533ff9f9930150be349ae3086",
+    "crates/cache/src/index.rs": "ec71e23451650a314f20dcd34f92380241ffbaff3e5b36d9c66c24a44ae6c673",
+    "crates/cache/src/lib.rs": "0bd5743db4ed4158bea0df9dc04db06f5347e56978793c4dc023766544ca773d",
+    "crates/cache/src/store.rs": "6510aeda8a4eb76a1b404aef30eb60500543a644b2aca533fd33cdca853ddb84",
+    "crates/protocol/src/buffer.rs": "c77e22b9884cc63c53c2ada4f8751cc50012e4198c7447ea4854888c203c547e",
+    "crates/protocol/src/checksum.rs": "d2d447762d4cd8a9ecd333b71f479972c0579ab05462575ae8aa18c086227947",
+    "crates/protocol/src/xtea.rs": "302cca5e913d28fbd7b178ae1fb8f67144ef213549cab037f3bfa9c1f6c4001a",
+    "oracle/CacheOracle.java": "cc9e059d9e10155b1e0b6cf4cb6f91ca3caff5499520281932d0a16a074d7ff8",
+    "oracle/OracleBenchmark.java": "173ba8e3ffa44ac93e55eef41c8b975153ac59837a7567756813e737be70f8c6",
+    "oracle/OracleMain.java": "9c32a7b76a969b5a32f3c22ce346249f91fb5a6d61867edc4a3b80ec88c18111",
+    "oracle/adapters/core/game/world/map/Location.java": "a05b536c24d893156dc5efa15dbe6d07e161a9aa35436bc1a56bb8f64757d97a",
+    "oracle/adapters/core/game/world/map/RegionManager.java": "c8fca214a2c8cbb5655035b147eb01702e4dc29a1b31c4744643b198d5ae4961",
+    "oracle/adapters/rt4/JagString.java": "7cc6e5eee6fe4c6a699acff8b246ab89cd75255fed315daa39f2a5f036e06a95",
+    "reference/client/client/src/main/java/rt4/Buffer.java": "3930054bef9ddf3eab00a1dd1a44ddf9db7ec9a8bcc550abcdfba360554587ca",
+    "reference/client/client/src/main/java/rt4/BufferedFile.java": "5b7ae9be5723c771613c3f208ef79e87a4f052d6891fa3be34fe059b6ae245dd",
+    "reference/client/client/src/main/java/rt4/ByteArray.java": "1448322c20d0174d20e253bf3c5571a60dcf1fa702045e921107ba25b0db71fc",
+    "reference/client/client/src/main/java/rt4/Bzip2DState.java": "2676802ed6629f48bbeb39d3b206e4a1f1860ca77908a45775ea64d3ef645169",
+    "reference/client/client/src/main/java/rt4/Bzip2Decompressor.java": "dc209ecda1c365181b470ff06911b4a9b4048236540c11bce98512a11f00adbf",
+    "reference/client/client/src/main/java/rt4/Cache.java": "eac79274702854cc9ecfbb509972533dabdf4389649d130430149ef7c6c9b1d5",
+    "reference/client/client/src/main/java/rt4/CollisionMap.java": "dae85a8d9acd111bcd46a5c3bfb5533e87fdfabdbaf4b805cb8b45856ebb5098",
+    "reference/client/client/src/main/java/rt4/DirectByteArray.java": "b57fd644be56b95140d3c2224e3dfced73d6c13f43781dfb3624156bebd4ab90",
+    "reference/client/client/src/main/java/rt4/GlobalConfig.java": "9aea9139a1f866fdfbfb2bd71277579b9c0540a525b62db48c066da3f95a7a67",
+    "reference/client/client/src/main/java/rt4/GzipDecompressor.java": "fc06218fe1382e815764f83285007ed8c5d6e8c308fa6d141b609b531d41cb3c",
+    "reference/client/client/src/main/java/rt4/HuffmanCodec.java": "8eaa35eb89ded67da4f18399d75f6a5c91dc944899bfb6fbb316e79a65311ff3",
+    "reference/client/client/src/main/java/rt4/IntHashTable.java": "2c0ce3e127f8a2b9636406ba0b33b058d455062534fabfd33c8d5fcc40d02ee6",
+    "reference/client/client/src/main/java/rt4/IntUtils.java": "871d88d84a51c453f098959fc0ec4a231c536cf3bdf17723cee2f8fc8be05d03",
+    "reference/client/client/src/main/java/rt4/IsaacRandom.java": "e62c170cb5de4cf5b1e4dadbb4e03c710124590ce396941dfcd64ce2376a5bc2",
+    "reference/client/client/src/main/java/rt4/Js5.java": "b6c3449c5138544397539b9e052bb742be9fbdf3db34356d1f129036b786e07e",
+    "reference/client/client/src/main/java/rt4/Js5Compression.java": "43002e549bc48853389f3737c34033fde105bd75ba762434646598d68af20fc9",
+    "reference/client/client/src/main/java/rt4/Js5Index.java": "2f39eedba0969e61a80ce5bdc3571deaaf28d1fd45b0c0edacd095159d3e7c03",
+    "reference/client/client/src/main/java/rt4/Js5ResourceProvider.java": "aaeca7cbcbda12588eae25b62c8ee550ad7ea094af9aed0a99b21dfa57199acb",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/Packet.java": "34b7ba43aae4e004dedc76c2189c78c68a6e640434d5d96126ba077c8cd2df02",
+    "reference/client/client/src/main/java/rt4/RandomUtils.java": "2f568e552f562dcb9ee9de0113c821f405678a31fc119bef9537a4eaf4524c24",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalArg.java": "02d871da066e2beb21f19e88ef7a8e53e2176d07ab6bace159bd614fa9ffc697",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalClass.java": "6c952d5a5f154c15676fddf684f0aa8c6ec143b1862519cfcdffbbe741bc5905",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/OriginalMember.java": "50ee2f6ca39c833e852115b3aeb16c1eb7a8b87a66f192ba5e4ab03815d4d432",
+    "reference/client/deob-annotations/src/main/java/org/openrs2/deob/annotation/Pc.java": "e718ee680f92c3afd4cfac2379b29ec5c680c0c6923e6ddbc7f54f7ed0f57df2",
+    "reference/client/signlink/src/main/java/rt4/FileOnDisk.java": "e67d3cfbee54a123a86c51b68799d705deb2c9dd5da06acc86327b9b48e91c2e",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Point.java": "97f4db2276053947fdcabd78ae1207ea7fa6a630b235458d0b579fa100b8314b",
+    "reference/server/Server/src/main/core/game/world/map/path/ClipMaskSupplier.java": "93eddf62306b1f5a373dac01d149abcf6727b1e4ccd17c72c07d60709e97fa1b",
+    "xtask/src/cache_assets.rs": "3bc9c8565d0ed0c62a22317b565b2bb13fbc89393fde54ee9925a48be1f87c91",
+    "xtask/src/cache_oracle.rs": "a227145cda0819b48a102607c95e067d120e90939565db37e426c7815764a659"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  },
+  "xteaSourceSha256": "48c1e3fe8026044182a0d709ca9f7e8ad6f573809a2d7e92f1eebfb9174a5aa0"
+}

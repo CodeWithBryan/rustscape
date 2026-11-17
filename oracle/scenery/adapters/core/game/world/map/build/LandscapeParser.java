@@ -1,0 +1,1 @@
+package core.game.world.map.build;import core.game.node.scenery.Scenery;public class LandscapeParser{public static Scenery removeScenery(Scenery o){return oracle.Support.remove(o);}public static void addScenery(Scenery o){oracle.Support.add(o);}}

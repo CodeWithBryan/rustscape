@@ -1,0 +1,40 @@
+{
+  "caseCount": 112,
+  "fixtureSha256": "9496bee4a69d062e44161df8e95dab408c0106d82de5e8187a1a699e578544c6",
+  "format": 1,
+  "scope": "Complete unchanged InteractPlugin, Option, OptionHandler and PickupPlugin classes; original ItemDefinition forId/getOptionHandler/setOptionHandler/getOptionHandlers, Definition.getConfiguration, ground/inventory array getters and Item ID/charge bodies. Joined default initialization, real global/local typed handler identities, cached definitions versus ID lookups, retained arrays, ROOT locale and failed prefixes. Node/Item construction, metadata fields, profile/pickup execution and transport are adapters. No approach/arrival, authoritative Take, complete startup or content parity claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/ground-options/Support.java": "d595bfe2e5ead2a3e5ea9c51bccd84209922fe4342c7cc1336968ff0dda0c6cb",
+    "oracle/ground-options/generate.py": "1bbfdf81e68cfe8ae0ddd7400831807915ba275d06b0d85b3c729fd629a512b7",
+    "oracle/legacy-interaction/generate.py": "9ae180071d00c686f76bf9d8e1eeb0c37552bde3250cc05f92968ccf13d59fa1",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/content/global/handlers/item/PickupPlugin.java": "118422ba32f484473f19d411b74aa7e00ae81afe4cb4d8ca7b327a570f50d71b",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+    "reference/server/Server/src/main/core/game/interaction/InteractPlugin.java": "4bb74609996f0518f35facfaab454a3d963cfc4028302ce384874fc863dab31f",
+    "reference/server/Server/src/main/core/game/interaction/Option.java": "3b3627c1a5c069329f068fc211f59252f5b880d73c1500c4c332e31d3128163b",
+    "reference/server/Server/src/main/core/game/interaction/OptionHandler.java": "fa8138e9f13a34ca4a8222fe026694a03ceda053575c214dcbf7dc8cd321646b",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/node/item/Item.java": "d43b95f9b6207e56f776c0a8b7817e04030e81cbe39bba7900cedbf67a6d8df8",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

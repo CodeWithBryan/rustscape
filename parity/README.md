@@ -1,0 +1,428 @@
+# Parity ledger
+
+Target: 100% replacement of the Java/Kotlin runtime with equivalent Rust
+behavior, against upstream.lock.json. Current status: foundation in progress.
+
+source-inventory.json records every tracked Java/Kotlin file from both pinned
+repositories, its Git blob ID, and its replacement status. All entries currently
+remain not_replaced: the ports below replace selected behaviors, not whole
+runtime classes or integration paths.
+
+## Verified behavior
+
+Evidence: fixtures/rt4-v1.jsonl, fixtures/rt4-v1.provenance.json,
+xtask/tests/oracle.rs, and cargo xtask oracle --check.
+
+| Original behavior | Rust location | Limits |
+| --- | --- | --- |
+| ZoneBorders, MapZone base members, RegionZone, ZoneBuilder.configure, MusicZone, ZoneMonitor; Region active flag, viewers, activity pulse, unload, region zones and music; BankZone, KaramjaZone, ModeratorZone, MultiwayCombatZone | server/world/zones.rs, region_activity.rs, zone_impls.rs | 1,019 JVM cases / 15,261 actions / 41,772 recorded calls compile those classes, Region.java and Pulse unchanged: border geometry on every edge and plane, exceptions, registration order, enter/leave sequences across overlapping and nested zones with teleports and logout, every monitor query, refusals and failures midway, seeded weighted draws, viewer counts, the 50-tick pulse over runner ticks, unload refusals and reactivation. The native replay uses the real regions, chunk lists, Region.load and pulse runner. Every outside system is a required service; dynamic regions fail explicitly. WildernessZone, DarkZone, ZoneBuilder.startup and cleanItems are not ported and no session binds the libraries; see docs/zones.md. |
+| Gathering tables, SkillingTool selection and the WoodcuttingListener/WoodcuttingSkillPulse, MiningListener/MiningSkillPulse/ProspectListener, FishingListener/FishingPulse bodies with Fish/FishingOption/FishingSpot; binding of their skill, inventory, equipment-slot and item-name services to native state | server/world/gathering/ | 10,504 unchanged-source JVM cases (the first 9,281 byte-identical to the woodcutting/mining corpus): all 88/391/481/36 node, resource and tool rows and 31/17/11 fish, option and spot rows, lookups, respawn arithmetic, 17,878 RandomFunction calls and 5,155 listener/pulse scenarios (339,468 recorded service calls, 462 injected failures) replayed with native generators. Every outside system is a required service; adapter world state, item names, the en-US locale, player direction and the per-tick driver are inputs. A second corpus of 362 cases runs the unmodified listeners and pulses over the original Skills, Container and Item and is replayed over native player::skills and inventory::container through binding::Host, comparing levels, experience, every slot and the recorded calls per operation. Equipment there is a base 14-slot Container, not EquipmentContainer; scripts/clocks, pulses, the listener registry, attributes, scenery, inEquipment and all other systems remain required services; no live world. Barbarian fishing, pickaxe repair, spot movement and the FishingPulse option handlers are not ported; see docs/gathering.md. |
+| Limited multiplayer gameplay alpha | controlled `npc_session` and `examples/common/{combat,skilling,profiles}.rs` | Normal NPC Attack packets, base unarmed melee, shared kills and respawns, ordinary-tree Woodcutting with a bronze axe and canonical log/XP rewards, and saved alpha characters across restart. Configured private-network hosting and shared Windows sessions. Original content breadth, special combat, loot and complete profile parity remain open; see `docs/playable-alpha.md`. |
+| PlayerSaver/PlayerSaveParser whole character save file | server/player/save.rs, save/parser.rs and save/order.rs | 2,637 original JVM cases / 5,291 steps compile both files unchanged and compare written text and files, parsed state, hand-offs, clock reads, logs and failures. Core data/timers, attributes, skills, settings, saved data, appearance, PIN, ironman and spellbook sections join the existing native libraries. Quests, house, familiars, music, diaries, emotes, autocast, graves, pouches, POH storage and content hooks are required host services, not ports. Four large classes are selected-member adapters in this oracle. Java-below-11 output, default charset, unpaired UTF-16 escapes, most I/O failures and all login/logout/alpha call sites remain open; docs/player-save.md. |
+| Projectile pathfinding and script line of sight | server/world/pathfinding/projectile.rs, scene.rs and controlled script host | 403 original JVM scenarios match ordered path, flag calls and footprint selection. A composed pre-movement test verifies blocking from both collision layers and actual callback execution after clearance. Combat actions, ranged damage, projectile visuals and full content remain open; docs/projectile.md. |
+| Combat swing calculations and swing-time BattleState assembly | server/world/combat_swing.rs | 4,461 original JVM cases / 20,762 operations compile the four swing handlers, BattleState, CombatStyle, InteractionType and their equipment data classes unmodified. Accuracy, defence, maximum hit, set multipliers, the hit probability (bit for bit), both random sources and their draw order, melee/range/magic `swing` state, service-call order and 615 injected failures are compared. A library only: what runs around and after a swing is the next row; other bolt effects, the ranged config loader and every prayer/equipment/NPC/spell binding remain open, and no session uses it; docs/combat-swing.md. |
+| Combat pulse, impact handling and the handler members around a swing | server/world/combat_pulse/ | 7,377 original JVM cases / 24,619 operations compile CombatPulse, ImpactHandler, Pulse, the four swing handlers, their data classes and the projectile pathfinder unmodified. canSwing/isAttackable/canStepTowards/canMelee (line of sight joined to the native projectile traversal), adjustBattleState, formatted hits, experience, ammunition use, visuals, impact, onImpact, ArmourSet effects, special registration, the pulse's per-tick decisions and attack timing, the impact/second-hit/delayed-hit pulses, handleImpact, recoil and kill credit are compared with ordered service calls, draws, owned state and 2,577 injected failures, including 108 multi-tick fights. A library only: the stand-ins' world model and tick runner are oracle inputs; removeFor, bolt-effect overrides, special-attack handlers, spells, DeathTask, graves, poison, prayer drain, degradation, Entity.onImpact and auto-retaliation, and every binding to canonical actors, server::pulses, skills, equipment or a session remain open; docs/combat-pulse.md. |
+| Complete ActionLocks/Lock/LockElapse and canonical admission | server/world/action_locks.rs, player_walk.rs and controlled host bindings | 309 complete unchanged-source cases preserve the independent initial baseline: signed clock sampling, nullable keys/events/equipment, aliases and failed/reentrant prefixes. Real shared script/walk/NPC/UI/input locks, typed callback bodies and ownership collection regressions pass. Full content/world/modern arrivals, UI/dialogue closure, projectile dispatch and measured performance remain open; docs/action-locks.md. |
+| Canonical script state, real tick phases and native callback ownership | server/scripts.rs, world/script_runtime.rs, player/owned.rs, player/owned/components.rs | 328 original script scenarios preserve initial295;1064 original host-helper cases compare modal/UI gates, actual delay/clock inequalities and packed Node/Scenery centers. Bare actors/NPCs and later Player admission share actual processor/function/node fields. Real nested native queue/tick/reset regressions and ownership collection pass. UI closure/dialogue, combat projectiles, modern arrivals and natural banker/booth admission remain required; docs/scripts.md. |
+| Modern interaction registries and listener scheduling | server/world/interaction_listeners.rs | 1278 unchanged-source JVM cases preserve initial1168: scalar/bulk registration, locale keys, typed function identity, wildcard mutation, equip/use/action result differences, metadata/legacy dispatch and failure/reentry prefixes. Canonical script phases/native objects exist; remaining UI/projectile/modern context services, movement arrival and natural banker/booth/world content remain unbound; docs/interaction-listeners.md. |
+| Modern RunScript/BankUtils and shared244/65/23 input; actual controlled X callbacks | server/world/input_prompt.rs, protocol/game/actions.rs, examples/common/ui_input.rs | 1137 unchanged-source scenarios preserve initial790/1131. Real TCP/WS X/error/Continue/Close with spectator isolation; actual browser input and Windows protocol-assisted prompt rendering have separate candidate receipts. Eight graph regressions and five composed regressions per live example. Natural banker/PIN/full locks/actions/profile/content and native OS input remain open; docs/input-prompt.md. |
+| Plain dialogue splitting/sender and Continue dispatch | server/world/plain_dialogue.rs and interface_packets.rs | 430 original comparisons preserve initial424, mutable message arrays, late getters, queue/listener/plugin order and failure prefixes. Controlled210 error and132 Continue use actual packets. Nonpositive limits/nonprogressing tagged resource failures explicitly rejected; full dialogue/content remains open; docs/plain-dialogue.md. |
+| DialogueInterpreter stage machine/registry/send forms, DialoguePlugin and DialogueFile base contracts, EmptyPlugin, Topic/IfTopic, SimpleDialoguePlugin, FacialExpression | server/world/dialogue/ | 1586 complete unchanged-class JVM scenarios / 5406 snapshots, all pinned as the initial baseline: ordered service calls, late getters, stage/file/topic bookkeeping, open/close/reentry and failure prefixes. Player/NPC/UI/packet/definition/world services are recording stand-ins and scripted content; a library that nothing installs. Packet bytes, real bindings, Continue/modern-context joins, DialogueBuilder, DialogueLabeller, SkillDialogueHandler, ActivateEnchantedGem, capture-graph tracing of plugin/file cycles and all concrete dialogue content remain open; docs/dialogue.md. |
+| BankInterface content, listener registry and selected IfAction/CloseIface packet bodies | server/world/bank_interface.rs, interface_listeners.rs, interface_packets.rs and examples/common/ui_bank_content.rs | 572 original scenarios preserve initial336/559 observations, real callback identity/arity, late receivers and failed/reentrant prefixes. Canonical packet/container/close/ownership regressions and finite real TCP/WS bank transactions use an explicit once-per-player controller after real Take. Windows protocol-driven rendering and browser mouse QA have separate receipts. Banker/booth admission, X/PIN/dialogues, complete locks/zones/events/login/map/profile/content remain open; docs/bank-interface.md. |
+| Canonical bank runtime/listener and variable-archive binding | server/player/owned/inventory.rs, owned/variables.rs, world/player_walk.rs and examples/common/ui_bank.rs | Real typed BankListener dispatch during normal inventory operations; actual active-bank variables, captured recipients and archive22 ownership. Canonical and composed regressions cover deposit/withdraw, exact BankClose wire order, restrictions, foreign rejection and disconnected cycles. Separate existing JVM corpora remain unchanged. Later BankInterface stage joins registration and basic transactions; banker/booth admission, PIN entry/deposit rendering, X/dialogues and full content remain required; docs/bank-runtime.md. |
+| Typed component plugin/close objects and canonical capture graph | server/world/component_objects.rs, interfaces.rs and player/owned/components.rs | 351 original interface cases preserve the first238; actual callback identity, alias/replacement/reentry, close guards and failure prefixes. Seven native graph regressions plus real controlled-example PIN/guard dispatch and foreign-world rejection cover supported node/PIN/container captures. Full listener/content/PIN/profile/bank services and arbitrary opaque plugin GC remain open. See docs/component-objects.md. |
+| Full BankPinManager/PinStatus kernel and BankPinInterface program | server/player/bank_pin.rs and player/owned.rs | 855 original JVM scenarios retain the initial836 observations and compare UTF16 text, keypad RNG, clocks, status/recovery/try arithmetic, captured manager/event identity and failed/reentrant prefixes. Canonical manager/close-event ownership and final release are regression tested. Full component close/plugin dispatch, profiles, default content registration, real frames and playable live PIN/banking remain open. See docs/bank-pin.md. |
+| Player varp/varbit/varc algorithms, definitions and legacy/custom loading | server/player/variables.rs, player/owned/variables.rs and definitions/varbit.rs | 474 original JVM scenarios compare mutations, aliases, map iteration/callback failures and actual packet bytes. Canonical manager/view/map lifetime, foreign-world rejection, retired-player delivery, custom bank definitions and shared UI counter are regression tested. Controlled chatbox varps now mutate actual player state; full profiles, original AIPlayer/session services, FileReader cursor/charset and live banking remain open. See docs/variables.md. |
+| Complete BankContainer/private BankListener and canonical bank item ownership | server/inventory/bank.rs, player/item_ownership.rs and player/owned.rs | 546original JVM scenarios retain the first488; actual container/event/array/listener identity, notes/charges/tabs/open overloads and failed callbacks. Canonical primary/secondary/drop-log owners and collection are regression tested, and actual66cape restrictions query real active stores. Full runtime bank listener/var/UI/PIN/content/profile/live opening remain open; see docs/bank.md. |
+| Managed data-only connection lifecycle | headless/session/managed.rs | Original20ms/51idle-write/751unread boundaries,136 unchanged-block JVM scenarios, independent async reads/writes, bounded queues and explicit failure prefixes. No inference/renderer dependency; full reconnect/AFK input/world state/content and measured capacity remain open. See docs/headless-lifecycle.md. |
+| Shared scenery writer/queue and reusable headless sessions | protocol/game/actions.rs, client-data/scenery.rs and headless/session.rs/scenery.rs | All48 original location writer cases retained; original client aliases/queue stay shared. Data-only adaptive and scheduled Open/Close succeed on real TCP/WS, with private sound fields and accepted server handlers. Static maps/collision/assets, other action coverage and full game startup remain open. See docs/headless-scenery.md. |
+| Owning-world scenery options and ordinary door request/arrival/Scene binding | server/world/scenery_options.rs, scenery_runtime.rs, door_runtime.rs and examples/common/scenery.rs | 77 original JVM table cases plus native ownership, accepted Open/Close/collision/sound/two-viewer and 500-pulse regression coverage. Exact typed handlers and cached/current definition distinction; one canonical scheduler and original13x13 fanout. Controlled probe still lacks full locks/profile/morph values/autowalk/diaries/trapdoor Properties/content startup. See docs/live-doors.md. |
+| Late player appearance writer over actual native Appearance | server/player/appearance_writer.rs | 604 original JVM cases preserve late receiver captures, actual body preparation, nullable services, shared/reentrant output and failed byte prefixes; first 468 observations and 127 older field encodings stay exact. Full Properties/skull/familiar/skills/player/provider integration and accepted Equip remain open. Growing output subset is not full IoBuffer. See docs/appearance-writer.md. |
+| Full player appearance, body parts/gender and actual configured Animation identity | server/player/appearance.rs, owned.rs and owned/appearance.rs, server/world/animation.rs, definitions/property.rs | 448 complete unchanged-class JVM cases compare constructor/default/copy/parse and nullable getter/array identity, equipped body preparation, transforms/carts/copters, actual animation objects, callbacks and failed prefixes. Actual canonical equipment/render-info preparation and retirement/array/default/animation-cache regressions exist. Late writer runtime binding, player properties/attributes/skills/familiar/profile/content services, accepted Equip and measured performance remain pending. See docs/player-appearance.md. |
+| EquipmentContainer, private EquipmentListener and bonus/stat updates | server/inventory/equipment.rs, container.rs, definitions/plugin.rs | 415 complete unchanged-class JVM scenarios compare original overloads, transfer/rollback quirks, exact container frames, bonus narrowing, callback reentry and failed prefixes. Four native canonical lifecycle tests cover the class owner and real listener fields, retained lists/receivers and disconnected-cycle release. Actual player weapon/combat/appearance/requirements/perk services, plugin graphs, profile and live Equip integration remain pending. Development admission still uses base equipment data. See docs/equipment.md. |
+| Canonical player fields and retained listener receiver dispatch | server/player/owned.rs and owned/inventory.rs, server/world/player_walk.rs, server/examples/common/ui_inventory.rs | 88 original JVM scenarios compare distinct players' actual container/listener/Settings/writer effects and exact recipients, preserving184 prior cases. Native regressions cover listener-only recovery after UI retirement, own-inventory weight versus callback-container pouch/packets, empty-list release, mutual listener/self-facing cycles, retained Settings/counters, domain rejection and final binding. Full Player/profile/saves, remaining Settings/skills/Animator joins, equipment/bank/content and parallel collection remain pending. See docs/owned-player.md. |
+| Actual native ContainerListener objects and captured typed receivers | server/inventory/container_listener.rs, container.rs and player_binding.rs | 104 original JVM scenarios / 2,066 snapshots compare distinct equal-label objects, named aliases, retirement/rebinding, direct refresh, list edits, reentry and failed prefixes. Previous389/207 corpora stay unchanged. Native regressions verify exact allocation/weak lifetime and list-only retention. UI and core save-state construction use actual objects; no primary numeric listener selects InventoryListener. Complete Player backreferences/graph collection, other concrete listeners, bank/equipment subclass behavior and authoritative gameplay remain open. See docs/container-listeners.md. |
+| Shared Container identity, exposed listener lists and retained player inventory component | server/inventory/container.rs and player_binding.rs, server/examples/common/ui_inventory.rs and ui.rs | 207 original JVM scenarios / 5,172 snapshots cover aliased receivers, nested callbacks, structural versus nonstructural list changes, self-copy, retirement/reuse and failed prefixes. The 389-case baseline stays byte-identical. Actual UI fields now use captured containers/settings/listener/body/counter, with native foreign-world/reused-wire-index/release regressions and canonical frame delivery. Full profiles/saves, bank/equipment subtypes, listener-object graph GC and authoritative Take remain pending. See docs/container-ownership.md. |
+| Server animation definitions, Animation/Graphics records and Animator; actual prepared Actor binding | server/definitions/animation.rs, server/world/animation.rs and prepared_animation.rs, server/examples/player_session.rs and movement_session.rs | 626 complete original JVM scenarios cover decoder prefixes, every stored field, duration arithmetic, cached/reset identities, priority and callback ordering. Every one of the 11,155 pinned archive20 records matches original fields and duration calculations. Actual actors share owning-world reset factories and retain clock/mask contexts; preview animations now use Animator. Native tests cover late ID encoding, rejected/reset clock writes, world separation and retirement. Full profiles, combat/content, Graphics.send scene delivery and authoritative Take remain pending. See docs/animator.md. |
+| Actual prepared-player Actor masks and entity facing | server/world/prepared_masks.rs, server/examples/player_session.rs and movement_session.rs | 440 joined original JVM scenarios cover Entity.face/faceLocation, actual 530 encoders, complete IoBuffer and retained mask lifecycle. Actual Actor/host/render/reset and inventory/skills body state now share that binding. Canonical target leases, late indices, new viewers and retirement have native regressions. Full profile/body preparation, combat and other providers, mutable registry startup and authoritative Take remain pending. See docs/prepared-masks.md. |
+| UpdateMasks registration, persistent synchronization, write traversal and impact preparation | server/world/update_masks.rs | 396 original JVM scenarios compile the complete class with one controlled clock substitution and complete EntityFlag/EFlagProvider/HitMark. Provider tables come from original constructor arguments. Retained contexts/providers, current versus synced slots, recursive encoder writes, signed headers, impact queues and failed prefixes are compared. Concrete registry/encoder services remain boundaries; prepared Actor integration is tracked separately. Full registry startup and authoritative Take remain pending. See docs/update-masks.md. |
+| RegionManager landscape, clipping, teleport and water predicates | server/world/region_queries.rs, server/world/scene.rs | 1,002 original JVM scenarios cover repeated lookup/load/array reads, location mutation, captured values, signed masks and failed prefixes. Actual Scene integration uses loaded terrain and absolute flag keys independent of mutable chunk bases. Ground navigation's host permission now calls this binding; full region lifecycle, water-NPC supplier, facing/profile/arrival and live Take remain pending. See docs/region-queries.md. |
+| Complete Ironman manager/mode kernel and canonical player value attributes | server/player/ironman.rs and player/owned/attributes.rs | 81 unchanged whole-class JVM cases cover defaults/nulls, ordinal thresholds/icons, real player aliases and message reentry/failure. Canonical native regressions prove exact-player retention after disconnect/index reuse and final graph release. Value attributes preserve null/false key presence and typed failures. Full profiles, object attributes and all Entity/content services remain open. See docs/ironman.md. |
+| Original packet-to-Pickup using actual canonical inventory and owning-world ground state | server/world/pickup_runtime.rs, server/examples/common/ground_pickup.rs and movement_session.rs | Both real TCP/WS actor/spectator runs and both example regression targets prove actual66/movement/arrival, inventory transfer, double weight1.35/integer label1kg, private sound and both ground removals for a controlled bronze-axe spawn. Current570workspace/73example tests and60affected original comparisons pass; full bank/dialogue/plugins/audit/content/profile/Drop and missing sound-constant provenance remain open. See docs/live-take.md. |
+| Ground packet dispatch joined to canonical option selection and legacy arrival | server/world/ground_runtime.rs, ground_action.rs and ground_options.rs | Ten integration regressions cover the actual Take frame/manager/table/scheduler, original null-option identity, late table replacement, exact target retention, partial-table failure and foreign/nonplayer rejection. All323 original ground-click and112 default-table cases remain unchanged;42 original comparisons and final566 workspace /67 example tests pass. Full Pickup/player/container services and live Take remain open. See docs/ground-runtime.md. |
+| Owning-world ground default tables and real native handler bindings | server/world/ground_options.rs, server/examples/common/ground.rs | 112 joined original JVM scenarios combine complete InteractPlugin/Option/OptionHandler/PickupPlugin with actual ItemDefinition lookup/registration methods. Native regressions cover cached versus current-ID lookup, partial failures, array/handler lifetime and foreign domains sharing a runner. Both example constructors install actual Take tables. Packet/navigation/arrival/profile/content bindings and live Take remain open; arena retention is conservative and no performance gain is claimed. See docs/ground-options.md. |
+| Owning-player inventory listener, weight and live gameframe binding | server/inventory/player_binding.rs, server/examples/common/ui_inventory.rs, headless/src/world.rs | 184 original joined JVM scenarios cover actual containers/definition fields, cached definitions after charge changes, weight bits, full/partial/string bytes, counters, reentry and failures. Native example tests join real inventory/equipment/Settings and pre-render appearance updates, with disconnect lease release. Headless exposes bounded shared-decoder inventory events and label bytes. Full equipment/familiar/profile/content, late render masks, logical client UI state and authoritative Take/Drop remain open; see docs/player-inventory.md. |
+| InventoryListener and inventory packet delivery inputs | server/inventory/listener.rs, server/inventory/pouch_ids.rs | 1,468 complete unchanged-class JVM scenarios compare full/partial packet bytes, real Container.update dispatch, live arrays, manager rebinding, recursive callbacks and failed prefixes. Original SummoningPouch.get over all 65,536 Item IDs agrees with 83 native keys. Fresh-player inventory/weight/session bindings now exist in player_binding; full equipment/familiar/profile/content and authoritative Take remain open; see docs/inventory-listener.md. |
+| Player SpotAnim payload and controlled live visual input | server/world/appearance.rs, server/examples/player_session.rs, headless/src/world.rs | 880 original JVM spot cases plus232 unchanged appearance/animation/audio cases cover truncation, wrapping addition and transformed bytes. Native regressions compose extended self/nearby masks and admission-relative replacement/clear events. Two TCP and two WebSocket observers each receive12 self and24 nearby spot events with exact raw payload fragments. Client runtime visuals/audio have separate evidence; spell/combat/content and full Player integration remain open. See docs/player-spot-probe.md. |
+| Item option handler registry and native Pickup program registration | server/definitions/option_handler.rs, server/world/pickup.rs | 134 original JVM scenarios cover local/global precedence, exact/null keys, null values, wrong types, aliases, callback reentry and failed prefixes. Native registration retains the actual executable Pickup Program object. Shared handle storage is16bytes on measured Windows x86_64 versus24 before, preserving weak-owner tests; this is inline storage, not total memory or speed. Map iteration/views, full owning-world dispatch and live Take remain pending; see docs/item-option-registry.md. |
+| Canonical ground approach targets, subtype views and graph ownership | server/world/player_walk.rs, server/world/player_walk/ground_targets.rs, server/definitions/item.rs | 172 joined original ground/walking scenarios cover native manager-independent target geometry/activity, GroundItem path dispatch, captured targets/options and mutation/failure prefixes. Native release regressions cover subtype/Item/base views, weak anchor retirement, duplicate tiles, foreign identities and disconnected single/cross-actor cycles. Full owning-world option/packet/inventory/content bindings and live Take remain pending; see docs/ground-targets.md. |
+| Retained interaction option tables/default selection and ground-item click dispatch | server/world/interaction_options.rs, server/world/ground_action.rs | 730 unchanged-class option-table and 323 unchanged-method ground-click JVM scenarios cover array/Option identity, defaults, reentry/failure prefixes, canonical manager lookup, plugin/listener order and receiver replacement. Actual native manager/actors/chunks/options are used in the ground replay. Owning-world registry/locale/packet bindings, ground navigation/arrival, content/profile services and live Take remain pending; see docs/interaction-options.md. |
+| PickupHandler and PickupPlugin ordered transfer/restrictions | server/world/pickup.rs, server/world/pickup_types.rs | 800 unchanged-source JVM scenarios / 5,112 command snapshots cover manager/subtype/UID checks, attributes, captured Item and inventory/plugin receivers, cape/pouch queries, logging, animation/audio/event order, reentry and failed prefixes. Actual native Container regressions cover charged stack transfer, insufficient space, no second-actor duplication, same-item respawn and failures after insertion. Profile/listener delivery, ground packet/approach/default-option wiring and live Take remain open. The bundled constants JAR lacks the referenced sound symbol; numeric2582 is an explicit adapter, not full dependency parity. See docs/pickup.md. |
+| Canonical owning-world ground items and live session fanout | server/world/ground_world.rs, server/examples/common/ground.rs | Existing native items/manager/spawns/loader, actor/account identity, Scene chunks/dirty flags, retained 13x13 viewports and one actor/scenery/spawn runner are joined. Both example targets cover private updates, two-viewer lifetime, expiry, rebase/plane ordering, foreign-world rejection and retired-owner release. The isolated live server with 717 spawns server delivered exactly 19 initial-build entries to each of three TCP and three WebSocket clients, with no metadata fallbacks. Full profiles, item plugins, Take/Drop integration, region inactivity and live rebuilds remain open; see docs/ground-world.md. |
+| ClearRegionChunk.send and viewport clear packets | server/world/chunk_sync.rs | 136 complete unchanged-source JVM scenarios cover 104 tile bounds, retained scene/live base reads, reentry and failed prefixes. Typed opcode112 frames feed the shared client reducer. Plane/rebase integration is covered by native example tests; live rebuilds remain unverified. |
+| GroundItemManager, chunk item mutation and private packet streams | server/world/ground_manager.rs, server/world/ground_item.rs, inventory/item.rs | 405 original scenarios / 2,755 command snapshots cover all entry points, tradeability, plugins, snapshot/iterator behavior, expiry/AI cleanup, subtype dispatch, private/broadcast decisions and partial failures. Native tests validate shared-client packet delivery and canonical owner retention/release. Opt-in canonical world/scene/session fanout now exists; full profile/plugin services and Take/inventory remain pending; see docs/ground-manager.md. |
+| GroundSpawn subtype and captured respawn scheduling | server/world/ground_spawn.rs | Original Kotlin subtype, GroundItemManager and Pulse/PulseRunner are joined in 108 scenarios. Preserves rate normalization, Kotlin infix packing, floating population adjustment, escaped failed-constructor subtype identity, receiver capture and fixed queue prefix. Native ownership checks cover queued tasks and exposed Item views. Opt-in owning-world/session scheduling now exists; full profile/activity/content services and Take remain pending; see docs/ground-spawns.md. |
+| GroundSpawnLoader parsing and initialization | server/world/ground_spawn_loader.rs | Full unchanged Kotlin loader joins actual native subtype/manager creation. Pinned177rows initialize717spawns;86 scenarios cover partial rows, argument order, callbacks/logging, reentrant reader state, cached names and native filesystem boundaries. UTF8/reader/log-format limits and full profile/content/Take bindings remain explicit; see docs/ground-spawn-loader.md. |
+| Shared RT4 ground item packets, lists and pile selection | protocol/game/ground.rs, protocol/game/updates.rs, headless/src/ground.rs | 475 unchanged-source scenarios / 6,614 snapshots cover ordering, duplicate IDs, value overflow, owner slots, retained lists/nodes, callbacks/failures and sparse rebase equivalence. Native tests cover reclamation, dirty publication and fragmented frames. Headless consumes the same reducer and shared cache/template decoder, with an owned TCP regression and pinned 14,654-definition smoke. Visual integration is undergoing separate QA; real terrain observations and Take/content remain pending. The opt-in server now supplies live configured ground items. See docs/ground-items.md. |
+| RegionChunk rebuild/update queues and GroundItem-owned state | server/world/chunk_sync.rs, server/world/ground_item.rs, server/world/scene.rs | 259 original scenarios cover scenery layers, item visibility/UID rebinding, integer/clock boundaries, debug draws, retained flag snapshots, partial failures and exact writer bytes. Native regressions verify actor/capture lifetime and distinct replaced chunks at equal coordinates. Scene now queues on exact chunk identity and dirty reset releases old chunks. Canonical actor/account/manager/shared-consumer and opt-in live fanout bindings now exist; complete profile/activity/foreign payload services remain pending; see docs/chunk-synchronization.md. |
+| Original MapChunkRenderer viewport traversal | server/world/map_chunk_render.rs | 104 unchanged-class scenarios cover retained arrays, exact chunk identity, scene-anchor/current-plane selection, callback mutation, ordered region membership and failed partial publication. Chunk synchronization/serialization and opt-in live fanout are now bound to the canonical Scene; complete region activity remains an explicit service; see docs/map-chunk-render.md. |
+| Shared entity/scenery pulse phase and domain-correct check dispatch | server/world/player_walk.rs, server/world/scene.rs, server/examples/movement_session.rs | 61 joined original scenarios/794 command snapshots cover callbacks in both directions, original fixed prefixes, 500-tick timing and errors. Both controlled probe owners now drive one queue; three native ownership regressions cover shared identity, actor cleanup and foreign scene rejection. Opt-in viewport/chunk synchronization now exists; full profile/registries/activity and live doors remain pending; see docs/world-pulses.md. |
+| Canonical legacy dispatch/arrival binding and ordinary delayed/unhandled pulses | server/world/legacy_runtime.rs, server/world/player_walk.rs | 323 joined original scenarios and 3,706 command snapshots share the real native movement/manager/runner/queue/tick stack. Three ownership regressions cover detached checks, 192 task replacements and foreign-world receivers. Profile locks/zones/handlers/face masks and live scenery lifecycle remain explicit; see docs/interaction-runtime.md. |
+| Cached RT4 UI model widgets, animation clocks, legacy conditions and model/position packet reducers | client/ui_model_render.rs, client/ui/model.rs, client/ui/model_animation.rs, client/ui/cs1.rs, protocol/game/updates.rs | Native Windows and browser previews render cached models and conditional casket states. Original geometry/camera/clock/wire corpora include 29,308 item models; 2,050 CS1 and 512 model-dispatch cases cover active models/sequences. Runtime casket states change 10 to 15 visible models without diagnostics. Legacy text/sprite styling, hover/hierarchy, character design, equipment/body overrides and authoritative dialogue/bank/shop/casket handlers remain pending; see docs/visual-client.md. |
+| Selected InteractPlugin orchestration, actual anonymous arrivals and Node facing geometry | server/world/legacy_interaction.rs | 4,865 unchanged-source scenarios with mutable recording world APIs. Concrete profile/zone/plugin/mask services, delayed-task runtime, item actions, option initialization and live scene delivery remain pending. |
+| Canonical scenery targets and retained interaction approaches | server/world/player_walk.rs, server/world/interaction.rs | Joined movement corpus grows from 111 to 190 original scenarios; ownership regressions include 192 replacements and captured manager/routing receiver changes. Native geometry/path/queue/scheduler composition is covered. The optional legacy_runtime binding connects selected arrival bodies; original option initialization, full profile/content and live door/scene delivery remain pending. |
+| Complete selected scenery packet dispatcher and DoorManagingPlugin decisions | server/world/scenery_action.rs, server/world/door_option.rs | 1,229 unchanged-method/class scenarios plus actual RT4 Open bytes. Lookup/morph/options, registration, furniture/trapdoors and callback ordering are covered with explicit world services. Approach/arrival, full content registration, locale selection and live door delivery remain pending; see docs/scenery-actions.md. |
+| Player Settings operations and saved-setting parse | server/player/settings.rs | 871 unchanged-class scenarios with owning-player/property/container/item/packet adapters; complete Player and live settings controls/configuration remain pending. |
+| Server component metadata/configuration and InterfaceManager lifecycle | server/world/interfaces.rs | 628 whole-original-Manager scenarios, first351 byte-identical, plus162 pinned configurations. Physical fixed owner, nullable shared tabs, main/chat/single/overlay close, tab restoration/removal/view and lookup preserve callbacks/failure order. Canonical PIN-close and foreign-owner regressions join the controlled UI. Complete event/listener/content/bank/PIN/profile services and live banking remain pending; docs/interface-manager.md. |
+| RT4 Buffer integer formats and Packet bit reads | protocol/buffer.rs | RSA, float writers, length patching, reverse data copy, allocation pooling, and some convenience methods pending |
+| Buffer string framing | protocol/buffer.rs | Raw byte framing implemented; real JagString encoding/collation and differential string fixtures pending |
+| IsaacRandom and GlobalConfig toggle behavior | protocol/isaac.rs | Enabled streams and disabled/resume verified; full login/packet dispatch integration pending |
+| HuffmanCodec symbol-order coding | protocol/huffman.rs | Valid synthetic fixed, unsorted, and 32-bit tables verified; actual world chat pipeline pending |
+| Buffer tinydec | protocol/xtea.rs | Complete blocks after JS5 header verified, including untouched tail; encryptor pending |
+| Buffer checksum/table behavior | protocol/checksum.rs | CRC32 function and CRC64 using original table; no CRC64 Buffer method exists to invoke |
+| IntUtils | game-core/int_utils.rs | Wrapping and quirks verified, including zero reporting as a power of two |
+| java.util.Random and RT4 RandomUtils | game-core/random.rs | Tested APIs/seeded streams; integration with original server RNG sources pending |
+| CollisionMap clear, wall/scenery/decor flags, isPathClear | game-core/collision.rs | Object/wall interaction reach tests and client route finding pending |
+| Server Direction selection, codes, opposite, walk flags, canMoveFrom | game-core/direction.rs | Test Location adapter and explicit clip supplier; RegionManager integration and canMove(Location) pending |
+| Js5Compression valid types 0/1/2 | cache/lib.rs | Raw, GZip, multi-block BZip2; fixed header/raw DEFLATE preserves ignored GZip CRC/ISIZE |
+| Cache read, Js5Index, Js5 unpack/fetch bytes | cache/store.rs, index.rs, group.rs, archive.rs | Sectors, sparse tables/names, encrypted/striped files; writes, network provider, and non-ASCII name folding pending |
+| Cache.getArchiveData/generateReferenceData and JS5WriteEvent | protocol/js5.rs, server/catalog.rs | Block markers, priority, XOR and original padding/master quirks; no runtime definition interpretation |
+| HSReadEvent/HSWriteEvent and JS5ReadEvent | protocol/session.rs, server/runtime.rs | Cache/login handshake bytes, key/controls, close, fragmented streams; registration/world entry pending |
+| WorldList and IoBuffer lobby encoding | protocol/lobby.rs | Static cache-only world snapshot; live player population and game tick stamp pending |
+| Js5NetQueue response blocks and request quotas | protocol/js5.rs, net/peer.rs | 20 outstanding requests per priority; original client interoperability verified; retries, disk writes and full resource-provider state pending |
+| LoginManager writing slice and Buffer.rsaenc | protocol/login.rs | Exact request fields/CRCs/flags and signed RSA; client retry/UI state machine and world entry pending |
+| Kotlin Login.decodeFromBuffer/decryptRSABuffer, LoginInfo and ISAAC seed pairing | protocol/login.rs, server/runtime.rs | Response/metadata/lookup order and account-backend integration verified; active-character lookup/world entry pending |
+| LoginWriteEvent reply bytes and LoginManager reply reads | protocol/login.rs, net/login.rs | Rights/index/details, nonce fields and coalesced game-byte retention; live game stream pending |
+| UserAccountInfo values, change tracking, equality and hash codes | server/auth/account.rs | Timestamp reference aliasing and signed boundaries verified; world/player wiring pending |
+| InMemoryStorageProvider | server/auth/storage.rs | Exact key/missing-record/alias/UID behavior; protected maps and records, with disjoint parallel replay checked |
+| DevelopmentAuthenticator and ProductionAuthenticator rules | server/auth/mod.rs | Configured bounded workers, original clock/password/error/ban ordering and mutation side effects; live world entry pending |
+| EncryptionManager and BCrypt | server/auth/password.rs | RustCrypto Blowfish with original format, UTF-8, truncation and cost-31 overflow; real default-cost entropy interop checked |
+| SQLStorageProvider | server/auth/sql.rs | Original queries/quirks and row mutations compared against real MariaDB over plaintext/TLS; configured workers use it, world wiring pending |
+| JDK String/Integer HashMap insertion/iteration | game-core/java_map.rs | Contact and container-format ordering including collisions, resize and tree bins; no general mutable-map API |
+| Auth.configure provider factory | server/auth/factory.rs | Fresh providers, SQL configuration, failures, partial reconfiguration and identity traces; startup wired, world integration pending |
+| ServerConfigParser assignments, paths/locations and GameSettings construction | server/config/, game-core/java_string.rs, server/startup.rs | Selected startup paths/ports/account policy wired; full legacy TOML grammar, JSON GameSettings parsing and world integration pending |
+| LoginReadEvent prefix through authentication | server/auth/admission.rs | Original response/ready decisions, clock effects and errors compared; profile/world boundary pending |
+| LoginReadEvent metadata suffix, PlayerDetails/UIDInfo/ClientInfo and communication data | server/player/ | 285 original JVM cases for account/column parsing, save order, nulls, clocks, modes and contact/rank data; configured endpoints wired, world/social actions pending; see docs/player-metadata.md |
+| ActivityData, QuestData, GlobalData, SavedData record behavior and their profile JSON sections | server/player/saved_data/, game-core/java_double.rs | 14,670 saved-data/numeric JVM cases; exact scope and adapters in docs/saved-data.md; full profile/file/world integration and external Java aliases pending |
+| GameAttributes store and profile attribute JSON/XML paths | server/player/attributes/ | 503 original JVM sequences, including exact JVM XML input bytes; see docs/attributes.md for adapters, encoding/XML limits and pending Entity/profile/world integration |
+| Skills state/rules and profile skill sections | server/player/skills.rs | 1,565 original cases for state, ordered context effects and partial profiles; measured cached XP lookup, see docs/skills.md; live entity/content/world and packet bindings pending |
+| ItemDefinition cache decoder, registry and note/lend/recolour templates | server/definitions/item.rs | 1,831 item/JDK cases, plus all 14,659 pinned cache definitions compared before content configuration; preserves field values, aliases and partial-load behavior; see docs/item-definitions.md; configuration, plugins, full Item/Container and world integration pending |
+| JDK 11 String.equalsIgnoreCase | game-core/java_string.rs, java_case.rs | Exhaustive char upper/lower observation data for all UTF-16 units plus actual String comparisons, including supplementary-character quirks; native data authored offline, runtime needs no JVM |
+| Item state, Container/ContainerEvent mutations and listener ordering | server/inventory/ | 389 original scenarios cover over 4,800 commands, shared items/events/arrays, reentrant/failed callbacks and JSON loads. Complete original classes compile with explicit Node/world/plugin/degradation adapters. Inventory/bank/equipment subclasses, profile and packet integration remain pending; see docs/inventory.md |
+| ItemConfigParser loader, typed configuration values and JSON-simple DOM behavior | server/definitions/item_config/, property.rs | 1,087 original cases and all 12,006 pinned rows over 14,659 definitions; scalar/array/map types, constructor values, field order, partial failures and aliases compared. Animation execution, gameplay configuration consumers and world/profile bindings pending; see docs/item-configuration.md |
+| WeightBasedTable/NPCDropTable structures, DropTableParser, the rare and six weighted-chance shared tables, and the table roll with its draw order | server/world/drop_tables.rs, drop_tables/ | 510 unchanged-class JVM cases / 8,386 actions: all 444 pinned rows (2,152 NPC ids, 9,414 entries) as the original holds them, 4,695 rolls including two of every pinned NPC id, every slot hand-off, boundary draws, and per-action advance of the three generators. Looter, clue registry, definition lookup and inventory are explicit inputs. Behaviour content and loader start-up order remain open; the drop and the death are the next row; see docs/drop-tables.md |
+| NPCDropTables drop/createDrop/getLooter/sendDropMessage/handleBoneCrusher, announceIfRare, DeathTask, kill credit, NPC finalizeDeath/handleDrops, drop tables on NPC definitions | server/world/drop_tables/drop.rs, drop_tables/definitions.rs, world/npc_death.rs, definitions/npc | 474 JVM cases / 1,400 actions / 38,185 recorded service calls with unchanged NPCDropTables, GroundItemManager, GroundItem, DeathTask, NodeTask, Pulse, PulseManager and Bones and inserted original Entity/NPC/ImpactHandler method text: 1,992 ground items with owner and timers, 86 finished deaths over 2,428 ticks, both damage logs in map order, generator positions. Joined to the native ground manager, items, pulse manager/runner, NPC tick state and NPC definitions; the complete pinned drop_tables.json on native definitions matches the original for all 2,152 ids. Every other system is a required service. No session or alpha binding; a player's death, getContainers, the rest of handleImpact and NPC.clear are not ported; see docs/npc-death.md |
+| NodeList/NodeListIterator, Repository, DisconnectionQueue and the Player.clear/finishClear/allowRemoval, PacketDispatch.sendLogout and IoSession.disconnect/getPlayer it drives | server/world/repository.rs, repository/{node_list,hash_map}.rs, world/disconnection.rs | 625 JVM cases compile the four classes, TaskExecutor and TickUtils unchanged with inserted original Player/IoSession/PacketDispatch members: 501 scenarios / 7,876 actions / 26,255 recorded service calls / 214 injected failures / 194 forced clears, plus 124 java.util.HashMap cases (59,670 steps) for the iteration order the queue and name map expose. Every outside system is a required service. A library: no session, login or tick driver installs it; AIPlayer.clear, the wealth check body, the save itself and concurrency are not ported; docs/repository.md. |
+
+Core profile sections and timer management now add 302 and 242 original scenarios;
+see [core-profiles.md](../docs/core-profiles.md). Native code covers the core
+inventory/banks/equipment save/load, tab/location/varp state and timer queue,
+callback and base persistence behavior. The oracles use complete original timer/
+container classes and verbatim core-profile methods with explicit world/content/
+constructor/registry adapters. Full profiles, concrete listeners/timers, automatic
+timer startup integration and world scheduling remain pending. The native timer
+registry now has 226 additional original scenarios for registration, typed/ID
+factories, automatic installation and API wrappers; see
+[timer-registry.md](../docs/timer-registry.md). Native JDK 11 ROOT casing has
+20,105 string/word scenarios and exhaustive code-point data;
+[string-case.md](../docs/string-case.md) distinguishes it from pending JVM
+default-locale behavior in authentication and SQL.
+
+Base Pulse, entity PulseManager and the world PulseRunner queue now have 262
+original scenarios and a native parallel-producer/serial-replay check. Original
+virtual dispatch, wrapping ticks, node-check aliases, stopped-slot priorities,
+HashMap callback traversal and the fixed per-tick queue prefix are preserved.
+Controlled clock, enum identity hashes and content/world/telemetry boundaries
+are recorded in [pulses.md](../docs/pulses.md). The running world driver and
+concrete gameplay pulses remain pending.
+
+The native walking queue now has 284 original JVM scenarios for path-point
+consumption, walk/run ordinals, energy, scene boundaries, teleports, zone vetoes,
+aliases and callback failures. Its explicit services and pending pathfinder/world
+integration are documented in [walking.md](../docs/walking.md). The live transport
+fixture remains stationary until the authoritative movement integration is ready.
+
+SmartPathfinder A*/BFS, Java heap ties, full search state and the five original
+reach predicates now add 5,287 JVM cases. The native scene supplies loaded
+collision and a door/open/500-tick-restore route regression. Live actions and
+complete world scheduling remain pending; see
+[pathfinding.md](../docs/pathfinding.md).
+
+MovementPulse, DestinationFlag and truncateLoc now add 626 original scenarios for
+constructor replacement, region/script/facing/interaction order, moving/combat
+targets, truncation, retained handles and partial callbacks. Queue/pathfinder,
+entity/content and packet services remain explicit bindings; see
+[movement.md](../docs/movement.md).
+
+Pathfinder Node/entity/location destination dispatch adds 1,954 original JVM
+cases. Native Navigator now joins actual MovementPulse, SmartPathfinder, DumbPathfinder and
+canonical shared WalkingQueue handles in 167 original JVM scenarios, with
+per-command queue, energy, direction, callback and alias comparisons. The scene
+door regression also routes through Navigator. Explicit command phases and
+external entity/script/zone/content services do not establish complete world
+scheduling or live walk handling; see [navigation.md](../docs/navigation.md).
+Remaining finders, Path.walk and production player/world startup remain open.
+
+The player-walking assembly adds 978 original walk-handler cases, 141 major/entity
+tick cases and 111 fully joined request/manager/runner/search/queue scenarios.
+Native ownership regressions cover repeated replacement, retained handles,
+captured-player lifetime and wire-index reuse. A separate TCP43600/WS43601 probe
+uses real pinned cache collision; shared headless clients can issue absolute
+walk/run requests and consume authoritative trajectories. Complete Player/profile
+startup, complete repository/world transitions, concrete content services and full packet dispatch remain
+pending; see [player-walking.md](../docs/player-walking.md).
+
+The packet queue, deferred initializing list and UpdateSequence now match 257
+original JVM scenarios, including their composition under the major tick kernel.
+The controlled movement probe uses these kernels with bounded shared ingress and
+node leases through deferred removal. Concurrent producer, cancelled-admission,
+first-tick activation, stale-input and owner-release regressions pass. Concrete
+Player/NPC/content and full packet dispatch remain open; see
+[world-update.md](../docs/world-update.md).
+
+Native NPC tick/wander/return kernels add 357 original scenarios, NPC rendering
+221, DUMB routing 638, and the complete spawn loader 77 including 13,709 pinned
+spawns. Five joined movement/ownership/wire regressions and 64 original NPC
+streams/1,536 frames verify shared graphics-free observations. Complete server
+definitions/configuration, NPC factory/init/content, region/repository startup
+and live NPC sessions remain pending. See [npcs.md](../docs/npcs.md), including
+the explicit pinned server/client running-bit discrepancy.
+
+Server NPC metadata adds 1,749 original decoder/configuration scenarios and a
+whole-cache audit of 8,591 slots / 8,590 files before and after all 8,033 pinned
+configuration rows. Stored fields and outer aliases match; the unserialized
+drop-table field is verified in docs/npc-death.md, not by this audit; remaining
+class helpers, factory/init/content and world startup remain incomplete. See
+[npc-definitions.md](../docs/npc-definitions.md).
+
+Script state/forms, ScriptProcessor and ContentAPI script helpers now have 328
+original scenarios. They cover live callbacks/equality, indexed queue mutation,
+retained active handles, timing, movement phases, packed location geometry and
+partial reset/error effects, preserving the initial295 byte-for-byte. The canonical
+Player shares the actor's actual processor/native function/node objects with
+traced captures and detached typed cycle cleanup. Real script tick/pulse phases
+and entity clocks now join through the owning-world adapter, with a separate1064
+original host-helper corpus. Concrete handlers, events, projectile/interface/lock
+implementations and world wiring remain pending; see
+[scripts.md](../docs/scripts.md) for the exact oracle bindings and limits.
+
+Gameplay packet framing, 69 numeric client opcodes, outgoing scene/UI/container
+bytes and typed RT4 field reads have a 3,989-case JVM corpus. This supplies the
+shared client/server wire contract; authoritative actions, reducers and live
+world startup remain pending. See [game-packets.md](../docs/game-packets.md).
+
+Door decisions, geometry, configuration and autowalk pulse bodies have 463 JVM
+scenarios, including all 514 original configuration rows. In that corpus,
+scenery replacements remain explicit bindings.
+See [doors.md](../docs/doors.md).
+
+Separate native SceneryBuilder replacement/restoration and server ChunkFlags
+libraries have 240 and 1,244 JVM scenarios. Shared object/pulse handles, late wire
+field reads, masks, border calls and partial failures are compared. Landscape
+storage is now ported separately with 269 chunk-storage and 179 landscape
+scenarios for placement/removal, collision application and location streams.
+Native region loading/routing now joins these kernels with door rules, builder
+pulses and packet output; see [scene.md](../docs/scene.md). Live world integration
+remains pending.
+
+Server scenery cache decoding, registry/configuration order, child selection and
+action/options queries now have 1,940 JVM scenarios. The public strict loader
+matches all 42,005 definitions (42,004 present files and 42,006 registry entries)
+for all instance fields and aliases. Examine caching, concrete handler execution
+and varbit cache parsing remain separate; see
+[scenery-definitions.md](../docs/scenery-definitions.md). Terrain/floor clipping
+has 343 full-state hash scenarios. Landscape uses the shared native definition
+type; actual region delivery, constructor bindings and world startup remain
+incomplete.
+
+Do not infer complete gameplay equivalence from these tests. Combat, skills,
+quests, pathfinding integration, NPC behavior, trading, banking, economy,
+interfaces, chat delivery, persistence, and world tick execution remain pending.
+Client rendering/audio work has its own tests and must establish its own
+coverage rather than inheriting this table's claims.
+
+Cache evidence also includes fixtures/cache, xtask/tests/cache.rs and the
+cache-oracle command, using complete original RT4 classes. The full data corpus
+comparison covers 68,499 groups and 411,863 files in 29 archives, including
+72 original client decompression fallbacks. See docs/cache.md and cache-audit.json.
+
+Network evidence includes 1,311 original JVM cases under fixtures/network,
+xtask/tests/network.rs, native TCP/WebSocket integration tests, and
+network-interop.json. The original RT4 cache queue parsed 312 group/reference
+replies; an additional master-index and two lobby responses bring the live
+interoperability run to 315 checks. network-smoke.json records a functional run
+of 500 native cache connections per transport. None of this measures game-world
+player capacity. Configured account validation is available; playable world entry is not.
+
+Login evidence includes fixtures/login, xtask/tests/login.rs and native login
+transport tests. All 2,049 original Java/Kotlin cases match. Live TCP codec probes
+send 64 original JVM client requests into Rust and eight native sessions into the
+original JVM parser/reply methods. Account/world/session integration is explicitly
+adapted; the probes do not establish playable login. See login-interop.json and
+docs/login.md.
+
+Account evidence includes 368 original Java/Kotlin cases under fixtures/auth and
+server/tests/auth.rs. Whole original account, storage, auth, factory and password classes
+compile with explicit clock/entropy/provider adapters. This establishes the
+tested in-memory/policy/factory behavior; an adapter records SQL configuration
+fields but does not execute SQL in this harness. World integration remains pending.
+Default cost-12 hashes with real OS salts are checked by the opposite runtime in
+both directions; see auth-interop.json and docs/accounts.md.
+
+SQL evidence includes 139 original-provider/collection cases under fixtures/sql,
+six portable regression tests, and a real database comparison over plaintext
+and TLS. The canonical schema and test artifacts are pinned. Both runtimes'
+record snapshots and database rows match, including preserved SQL errors and
+timestamp/UID boundaries. This does not establish authentication-to-world
+integration. See sql-oracle.json and docs/sql-storage.md.
+
+Configuration evidence includes 742 original parser/path/location cases under
+fixtures/config and five native tests. Whole original parser/constants compile
+unchanged with explicit external adapters. Every selected constant, world field,
+retained TOML policy and observed failure is compared. This does not establish
+native startup, world admission or the complete legacy TOML grammar. See
+docs/configuration.md.
+
+Item evidence includes fixtures/items and five native regression tests. The
+oracle compiles unchanged ByteBufferUtils/Definition and verbatim selected
+ItemDefinition fields/methods with an explicit isolated cache adapter. The full
+archive audit compares 14,654 present files plus five missing/default records,
+3,329 note and 220 lend templates, including mutable aliases. Recolour transfers
+have synthetic reference cases; the pinned archive has no recolour templates.
+See item-definitions-audit.json and docs/item-definitions.md. This is the data
+layer before content configuration, not a complete ItemDefinition class or a
+usable inventory. All source-inventory entries remain not_replaced.
+
+Item-instance/container evidence includes fixtures/inventory and five native tests.
+The oracle compiles complete unchanged Item, Container, ContainerEvent and listener/
+enum classes, unchanged Definition, and selected verbatim Node/ItemDefinition
+methods. It compares full retained state and reference relationships after each
+operation, callback observations, partial failures and integer-map formatting.
+This establishes tested state rules, not world interactions, actual plugins or
+playable inventories. See docs/inventory.md for the integration boundaries.
+
+Item configuration evidence includes fixtures/item-config, four native tests and
+item-config-audit.json. The complete original loader, Audio and Animation classes
+compile with explicit external adapters. The full pinned file contains 12,006
+rows; 12,001 registered definitions receive configuration. Missing IDs follow the
+original unregistered-default lookup behavior. Constructor state and metadata
+coverage do not establish animation execution, equipment rules or a working world.
+
+## Deliberate invalid-input differences
+
+The reference often throws an array exception, partially advances a buffer,
+allocates directly from unchecked lengths, or reads malformed compressed data.
+Native APIs return errors/None/false for invalid lengths, missing terminators,
+invalid Huffman tables, truncated input, invalid wall coordinates, and JS5
+resource-limit failures. A wall outside the map does not partially mutate it.
+Client collision line queries with an invalid source return false; the reference
+may throw. The same-point early return is preserved.
+
+The item archive loader applies a caller-selected record cap before allocation
+and rejects an empty/overflowing archive capacity. Item decoder underflow returns
+a native error; tests compare the original relative-read position. Unknown
+opcodes intentionally return the decoded prefix, matching the pinned source.
+
+Container construction rejects negative capacities and capacities above one million
+before allocation. Cyclic noted-item alchemy references return a bounded native
+error rather than overflowing the JVM stack. These cases are outside the original
+valid gameplay flow; ordinary container/charge/overflow behavior is preserved.
+
+The native configuration reader uses UTF-8, bounds text to 64 MiB and nesting to
+256, and rejects unpaired UTF-16 escapes. JSON-simple's other observed separator,
+escape, numeric and coercion quirks are preserved. Legacy platform encodings and
+arbitrary Java object/string interoperability are outside this loader's current
+claim. The complete pinned UTF-8 file is compared separately against actual JVM
+FileReader input with its encoding explicitly selected.
+
+Native varints reject more than five bytes. JS5 accepts defined compression
+types 0, 1, and 2 and validates decoded length; the reference routes any nonzero,
+non-BZip2 type to GZip and has weaker corruption checks. Valid-input outputs
+are compared; matching behavior for malformed input is not claimed.
+
+The native session decoder retains partial handshakes/controls across reads and
+accepts coalesced packets; the original handler can underflow on a fragmented
+handshake. Native buffers, payloads, queues, worker counts and connection slots
+are bounded. Oversized frames and invalid configuration return errors rather
+than reproducing unchecked allocation or channel panics. Plain TCP and ws are
+implemented; configured TLS/wss remains pending.
+
+Native login encoding rejects embedded NUL strings, an empty RSA integer, negative
+RSA exponents/nonpositive moduli and lengths that cannot fit the signed login
+frame or unsigned RSA length byte. These errors are outside the valid pinned
+client flow. The original parser's signed dimensions, signed-byte string quirk,
+unused CRC values, RSA-underflow sentinel and partial-info results are preserved.
+
+GZip trailer checksum/size fields are deliberately ignored, matching the edited
+reference cache. An explicit Rt4Client failure policy preserves Js5's
+decompression fallback and exposes diagnostics. Strict loaders return errors.
+
+## Remaining acceptance gates
+
+Ready-world admission and live player/appearance streams now have native
+TCP/WebSocket integration evidence across Windows, browser and headless targets.
+The controlled stationary fixture does not complete profile/world startup or
+gameplay; see [world-sessions.md](../docs/world-sessions.md).
+
+Native scenery constructors, Region.load ordering and the joined scenery/door
+scene have separate JVM corpora and ownership regressions. The scene can produce
+door-open and timed-restoration wire frames for client replay; its real-cache
+audit and explicit player/service boundaries are described in
+[scene.md](../docs/scene.md). Live world delivery and the acceptance gates below
+remain incomplete.
+
+1. Load exact cache data, definitions, collision maps, and client scripts natively.
+2. Run a native server through handshake, login, world streaming, and logout.
+3. Run the same input traces against reference/native worlds and compare
+   authoritative state, packet traces, ticks, timers, RNG consumption, and saves.
+4. Port all game systems and content with boundary and scenario tests.
+5. Complete visual/audio/client interface comparisons and shared headless behavior.
+6. Compare serial and parallel replay before enabling each parallel execution path.
+7. Measure sparse-world and crowded-area workloads, including chat/AI traffic,
+   save bursts, backpressure, tail tick time, memory, and bandwidth.
+8. Remove Java/Kotlin from runtime packaging only after these gates pass.
+
+The dependency order and test strategy are in docs/architecture.md. An unchecked
+gate is pending work; neither a compatibility shim nor a toy replacement clears it.
+
+A world-trace oracle now boots the whole pinned server headless and records
+four scripted runs tick by tick (start-up; one new character; two characters;
+a returning character): the bytes sent to each session, repository lists, tick
+counter, generator positions and saves. It is evidence about the original
+only. No native world replays it, so gates 2 and 3 remain unchecked. See
+[world-trace.md](../docs/world-trace.md).
+
+World-positioned client SpotAnim17/spatial56 now has a separate640case original
+packet/lifetime corpus (5,120 snapshots, including128 cached-sequence scenarios)
+and native client integration. It retains captured terrain height, delayed start,
+strict frame bounds and original removal/draw order. Windows/WASM runtime and
+whole-workspace receipts are tracked separately under
+`runs/client-world-spot-validation/`. Actor56, projectiles, particles, full scene
+streaming and authoritative combat remain open; this is not whole-client parity.
+
+Cached widget sprite preparation now retains original alpha-mode selection,
+trim offsets, flip/pad/outline/shadow order, wrapping keys and power-of-two upload
+bytes in6,042 original cases. An additional2,176 original type5 GL-routing cases
+cover natural/scaled/tiled/rotated/alpha decisions and callback arguments. Native
+and browser captures, texture readback and final shared gates belong to the
+separate `runs/client-widget-sprite-validation-v2/` receipt. Soft-reference/GC,
+concrete plugin callbacks, complete UI pixels/text/item composition and live
+bank/shop acceptance remain open.
+
+Ordinary widget conditional styling now has2,048 source-pinned original text/
+rectangle cases,1,024 selected legacy hover/hidden/reference cases and256 waiting/
+close lifecycles (8,192 snapshots). Runtime Windows/WASM review is a separate
+client step under `runs/client-widget-style-validation-v2/`; another768 complete
+original button-callback cases cover captured references and wire order. Unfinished input,
+glyph pixels, plugin/localization/DNS and authoritative bank/shop services remain
+explicit. This does not mark a whole source file or client as replaced.
+
+Legacy text-list/tooltip/line drawing adds1,536 original complete-branch cases
+and14 tooltip-timer observations. Native State binding tests cover selected
+tooltip reference replacement and shared-delay behavior. Windows static GPU and
+actual WASM pointer review are under `runs/client-widget-legacy-validation-v2/`;
+font/glyph pixels, the full input hierarchy, native plugin services and live
+bank/shop/PIN/profile/content remain separate. The pack builder declares the
+original `p12_full` name, independently resolved and byte-checked against the
+pinned cache. Neither this step nor the preceding closed style receipt marks
+whole-source replacement or100% client parity.

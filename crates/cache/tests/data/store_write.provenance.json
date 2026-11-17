@@ -1,0 +1,17 @@
+{
+    "format":  1,
+    "scope":  "Unmodified rt4.Cache over BufferedFile and FileOnDisk, opened with the client\u0027s buffer sizes and size limits, driven by oracle/StoreWriteOracle.java. Results of 34 writes and 58 reads, and the length and SHA-256 of the data file and three index files at three points. Writes past the FileOnDisk size limit are not covered.",
+    "command":  "javac --release 8 -encoding UTF-8 -d CLASSES \u003cthe sources of xtask cache-oracle\u003e oracle/StoreWriteOracle.java; java -cp CLASSES StoreWriteOracle EMPTY_DIR \u003e crates/cache/tests/data/store_write.jsonl",
+    "java":  "openjdk version \"25.0.3\" 2026-04-21 LTS",
+    "clientCommit":  "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+    "sourceHashAlgorithm":  "sha256, CR removed",
+    "sources":  {
+                    "oracle/StoreWriteOracle.java":  "db0456a9e339bea8c90aba535ab3af304ee1dbf79383b93c5644378c0b0df0e4",
+                    "oracle/OracleMain.java":  "9c32a7b76a969b5a32f3c22ce346249f91fb5a6d61867edc4a3b80ec88c18111",
+                    "reference/client/client/src/main/java/rt4/Cache.java":  "eac79274702854cc9ecfbb509972533dabdf4389649d130430149ef7c6c9b1d5",
+                    "reference/client/client/src/main/java/rt4/BufferedFile.java":  "5b7ae9be5723c771613c3f208ef79e87a4f052d6891fa3be34fe059b6ae245dd",
+                    "reference/client/signlink/src/main/java/rt4/FileOnDisk.java":  "e67d3cfbee54a123a86c51b68799d705deb2c9dd5da06acc86327b9b48e91c2e"
+                },
+    "fixtureSha256":  "289e70eaee4fc2e2f73a251d9327d52b8cdd6c58be947462bd7664e087f3f722",
+    "caseCount":  105
+}

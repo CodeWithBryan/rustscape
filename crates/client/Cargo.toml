@@ -1,0 +1,23 @@
+[package]
+name = "rs09-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Native and WebAssembly revision 530 visual compatibility workbench"
+
+[dependencies]
+rs09-protocol.workspace = true
+rs09-client-data.workspace = true
+rs09-audio.workspace = true
+rs09-game-core.workspace = true
+rs09-cache.workspace = true
+rs09-net.workspace = true
+macroquad = { version = "0.4.14", features = ["audio"] }
+# 0.9.5 uses integer_sign_cast, unavailable on our pinned Rust 1.86.
+fontdue = "=0.9.3"
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+sha2.workspace = true

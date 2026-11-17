@@ -1,0 +1,13 @@
+[package]
+name = "rs09-game-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only AND (GPL-2.0-only WITH Classpath-exception-2.0)"
+description = "Deterministic game primitives for the 2009scape Rust replacement"
+
+[dependencies]
+num-bigint = "=0.4.8"
+
+[dev-dependencies]
+serde_json.workspace = true

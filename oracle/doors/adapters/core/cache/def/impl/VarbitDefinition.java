@@ -1,0 +1,1 @@
+package core.cache.def.impl;public class VarbitDefinition{}

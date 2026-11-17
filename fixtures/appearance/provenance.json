@@ -1,0 +1,41 @@
+{
+  "caseCount": 1112,
+  "fixtureSha256": "397bdc18b8cd478686dca4af45110c2d62695b9ae02c40c558bb813f84119f15",
+  "format": 1,
+  "scope": "Verbatim original PlayerFlags530.Appearance/Animate/SpotAnim subclasses, Appearance.prepareBodyData/body helpers and StringUtils.stringToLong; complete Gender/BodyPart/Graphics/IoBuffer; original AudioPacket.write global/area wire bytes. Explicit player/settings/render/equipment records. Empty-equipment preparation and arbitrary already-prepared bodies compared for all appearance field bytes, PvP/summoning/NPC/name/length branches. Spot ID truncation and wrapping height-shift-plus-delay packing include signed extremes and carry cases. Graphics.send static chunk delivery is not executed; its external RegionManager/chunk/GraphicUpdateFlag adapters throw if called. Equipped-body preparation, content/combat/familiar resolution, live graphics dispatch and full Appearance APIs remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/appearance/Support.java": "88bb4df42f99fd3a00b0b0d62ab72489ed18f0df462ecf331f97feb0278a8f53",
+    "oracle/appearance/generate.py": "377061d4fae2186320a2139a34a9c77049b7de067778cdee343024439502f65d",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/scenery/adapters/core/cache/crypto/ISAACCipher.java": "290c851c9e96a9ef730a37fe901aaca74ad75d06316c10171e73d6c53d65eafd",
+    "oracle/scenery/adapters/core/cache/misc/buffer/ByteBufferUtils.java": "d10e96e4e5d2aad74c4d9a7684f131cf61d2f179b5d8040f2dd0256e0dcd01a5",
+    "reference/server/Server/src/main/core/game/container/impl/EquipmentContainer.java": "81c78260eaeb3e9001e0d0b7a237ddf739998a778704089685b539eb487476df",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/appearance/Appearance.java": "f6730135f4e9d2517d88950f4c2de34c732f1271d04cee2bae619d72ef893897",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/appearance/BodyPart.java": "acb254b082c945da369e41c03e17ad3e2a49a090ba719007637b74b853970fa8",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/appearance/Gender.java": "1a9f7e7ecc3ff7ef174620040480ae75cd6e13d956542925e1dba790d5630360",
+    "reference/server/Server/src/main/core/game/world/update/flag/PlayerFlags530.kt": "6e99cdde92f6517d08d8acfc41e70c065e12aad5ed4317caf29d95a428496e67",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Graphics.java": "f78fc7aa3320b9e356973c2f9faafaf12652ff75d5a3f7111f5e2c3da73a8e7c",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/PacketHeader.java": "a0635e12f2380381df12d534bc7695691d415c5c4dc0edf5692888082a623bc7",
+    "reference/server/Server/src/main/core/net/packet/out/AudioPacket.java": "af2a0a4f8a96e62c74386719b8909cd4ce81c5e6a8231fa05069450f1bc3c90b",
+    "reference/server/Server/src/main/core/tools/StringUtils.java": "51365165036173a8b2df93b9ea108b5cc01d8aa6b86dc23383719f1ff5482e13",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

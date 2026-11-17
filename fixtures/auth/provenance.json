@@ -1,0 +1,47 @@
+{
+  "caseCount": 368,
+  "fixtureSha256": "691975d1f4588798a3f46c18060d76333b902222412f8c6243c027910f9cbf00",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "scope": "Complete original Auth.configure, UserAccountInfo, in-memory storage, development/production auth rules and EncryptionManager/BCrypt, plus verbatim LoginReadEvent prefix through authentication. Explicit controlled clock including elapsed password/storage work, hash entropy/cost, constants, player-password, packet-decoder/world-boundary and failing-provider adapters. SQL configuration fields observed through adapter; SQL execution is unsupported and throws. No communication/world/playable login claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/AdmissionSupport.kt": "f7497071000ee87cb005a01a2e53518911336202839c5fbaf29cb0df36496859",
+    "oracle/auth/AuthOracle.kt": "f77239aca6e1603c255bf48353f5c108e5aba8928b67be01adbfecf1c8fedf81",
+    "oracle/auth/Clock.kt": "df7bb3e8ca14269f8be703c2594cc074aa3cec5bde173d6154b760e2df3e5b99",
+    "oracle/auth/Player.kt": "5f87aae8ada5b5810c3f9993733c200f744e208afb0884e818072cf38939494e",
+    "oracle/auth/Repository.kt": "74070519666329e1fe26952a7e099860ee35b5a0134e1486a7ffea56e19617f4",
+    "oracle/auth/SqlStorage.kt": "72167330eb79e9bc73aaf1531ed63c42bcf97ff49c9427f7ca55dc7025a39b5c",
+    "oracle/auth/SystemManager.java": "5139abc21251e48543314f8da198b3842d064c2f9914b56fa0fb403483471e97",
+    "oracle/auth/generate.py": "f3a49bebd54a7cd0d49f40810bb954d0dd6c44e6c44a0dffdcadc1ed665e927c",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/ServerConstants.kt": "fa28de7ee08f82432b2565044a9473a0ac4c57cc29d28dddc2f4d4454b85f0bd",
+    "reference/server/Server/src/main/core/auth/Auth.kt": "4a8b2e960a86806b2d708c41fc1b4aa296beb9d47424612e7e89aefba08992ea",
+    "reference/server/Server/src/main/core/auth/AuthProvider.kt": "3344906461b713c20fae5615a16ffab1d6290548d09c6232dc4c093d36b98f58",
+    "reference/server/Server/src/main/core/auth/AuthResponse.kt": "96e34874e438ed72a3be4f7479415d0834e3c98577d4a34a1a794b9838f868ef",
+    "reference/server/Server/src/main/core/auth/DevelopmentAuthenticator.kt": "876bfb338d35b9848dde9860cf38988fb157b670c1889996e1867ec90cd83a4e",
+    "reference/server/Server/src/main/core/auth/ProductionAuthenticator.kt": "44fc6af6ab09ab179c9122f830b9055ae967c1320a54345a3917d578481b5f59",
+    "reference/server/Server/src/main/core/auth/UserAccountInfo.kt": "a9c91566bee0f654b7a21ddf932fdfcf36daa20d0be5ac840826c2c569858730",
+    "reference/server/Server/src/main/core/game/system/security/EncryptionManager.java": "d65c7cdf9d5a3987cfb57518927e6285985d4f3adecfc35992f7fa603079fb8d",
+    "reference/server/Server/src/main/core/net/event/LoginReadEvent.kt": "6c70ed10f1a170c82c2e0f423ac89e07966d95292f2751073cbf52a374b88762",
+    "reference/server/Server/src/main/core/storage/AccountStorageProvider.kt": "bf60b498289cd8e2b06d55d1246c0b8b9a7f38cc7146f964957266cf1b54a299",
+    "reference/server/Server/src/main/core/storage/InMemoryStorageProvider.kt": "ccd2bd1615e574491c4e052af862d2d3338dee7c97d241e3dc3512b6205567d0",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

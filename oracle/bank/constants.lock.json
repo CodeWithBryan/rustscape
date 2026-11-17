@@ -1,0 +1,8 @@
+{
+  "url": "https://gitlab.com/api/v4/projects/32237206/packages/maven/org/rs09/consts/ConstLib/1.4.28/ConstLib-1.4.28.jar",
+  "version": "1.4.28",
+  "size": 853060,
+  "sha256": "f4e687cd74099a0eb914ff0e98defe0c5f5703634dd7d6aa25ab4ac186b98459",
+  "constants": {"VARBIT_IFACE_BANK_INSERT_MODE": 7000, "VARBIT_IFACE_BANK_NOTE_MODE": 7001},
+  "scope": "Official published artifact satisfying the original POM's [1.4.0,) range. This pins the external symbol values used by this oracle; it does not establish which exact dependency version a historical server build resolved. The original bundled1.4 jar lacks Vars. No upstream source pin or previous fixture is changed."
+}

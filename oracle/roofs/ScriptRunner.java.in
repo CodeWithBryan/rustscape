@@ -1,0 +1,20 @@
+package rt4;
+
+import org.openrs2.deob.annotation.OriginalArg;
+import org.openrs2.deob.annotation.OriginalMember;
+import org.openrs2.deob.annotation.Pc;
+import plugin.api.API;
+
+/**
+ * The roof methods of the original ScriptRunner, on their own.
+ *
+ * `cargo xtask roof-oracle` writes this class. The field declarations and the
+ * methods are copied from the pinned ScriptRunner.java without change; the
+ * generator refuses to run when one of them is no longer found there. Nothing
+ * else of ScriptRunner is present.
+ */
+public final class ScriptRunner {
+// @FIELDS@
+
+// @METHODS@
+}

@@ -1,0 +1,47 @@
+{
+  "arguments": [
+    "20261116",
+    "200",
+    "600"
+  ],
+  "cases": {
+    "build": 200,
+    "scene": 624,
+    "view": 600
+  },
+  "fixtureSha256": "efb2c7186f8b2230dfa18688b2db5fd2214414abf26f88e201dffff8bc7dbf10",
+  "format": 1,
+  "scope": "Text copied unchanged from SceneGraph (isOccluded, isTileOccluded, isTileVisible, isWallVisible, isAreaVisible, buildActiveOccluders, the occluder loop that ends buildScene, buildScene's statements for one tile from reading its floor ids to its occlusion mark, addLoc's occlusion marks under the original's own shape-chain conditions, renderTile, setShapedTile without its GL block, the camera part of setPlainTile, addSceneryEntity, add, setWall, setWallDecor, setGroundDecor, setObjStack, removeScenery, bridgeTile, setBaseLevel) and LocType (its shape constants), compiled with the unchanged Occluder, Tile, Scenery, Wall, WallDecor, GroundDecor, ObjStackEntity, MathUtils, Node, LinkedList and GlobalConfig. Models are stand-ins that record being drawn and report a given getMinY; GL, lighting and raster calls are empty; ground kinds, heights, floor ids, the visibility map and roof-group bounds are set directly. Not observed: how addLoc reaches its marks from a map file (readLocs, the opcode-82 return's place in the whole method), FloType decoding, drawPlainTile's own tests, the client's wiring of these into its frame.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/occlusion/OcclusionOracle.java": "2d7162cd9dab905a5f5357ecc1578d55bc47bd06c8fdd6d6f38dc197fd4a7f15",
+    "oracle/occlusion/adapters/rt4/Adapters.java": "7db8f43d5ef41adc5a312530fe9933f2f4b7025e30fd6bdbda431d83dc738883",
+    "reference/client/client/src/main/java/rt4/GlobalConfig.java": "9aea9139a1f866fdfbfb2bd71277579b9c0540a525b62db48c066da3f95a7a67",
+    "reference/client/client/src/main/java/rt4/GroundDecor.java": "6e670ba52193abec7e08da35202a2b4e171bdeb3a94b0ae9ad8b512fce648bd6",
+    "reference/client/client/src/main/java/rt4/LinkedList.java": "a333bb8ed5160e7b38888c4e1503b00ef50ce023ae8a79b15c2326658155c84f",
+    "reference/client/client/src/main/java/rt4/LocType.java": "ee83bf276c98ee020295873ea9e56424821b2070b807a3910ca7740c263f891c",
+    "reference/client/client/src/main/java/rt4/MathUtils.java": "de35c8e8b133b37b8376f2ad0cfb19565e0e7c4c1ff14a772d64d0b9db53436b",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/ObjStackEntity.java": "2ccb0479d1357fe4fd12153fd9951e50d01cdb785ea941d213d721ef07fae524",
+    "reference/client/client/src/main/java/rt4/Occluder.java": "dc0f4fb91e7bdd8af2f8a0657eef87a5d7e2211289b9e1b40e9ee060c403867a",
+    "reference/client/client/src/main/java/rt4/SceneGraph.java": "eec94c9c65b1044f10f9e3c0cf9bc06c37f7d398f3ac8488bba5f68c26340166",
+    "reference/client/client/src/main/java/rt4/Scenery.java": "4966fb548a471e024a457049ec892c8267a1a84ad1ca4970d0eb5a25e670004f",
+    "reference/client/client/src/main/java/rt4/Tile.java": "e19c47dd7492b4f31f5615a6eedc78b134dbd02c1cbed743388716f9fd8f07dd",
+    "reference/client/client/src/main/java/rt4/Wall.java": "b551694a1e58fe6cc6992bb690e3bc7258a324a4cefd07605b97a202b43b0332",
+    "reference/client/client/src/main/java/rt4/WallDecor.java": "bf1e70c4c12a419c81dbded3f11b0348b60aafede5d9e1e2752a5f033c506718"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

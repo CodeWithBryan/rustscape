@@ -1,0 +1,42 @@
+[workspace]
+members = ["crates/protocol", "crates/game-core", "crates/cache", "crates/client-data", "crates/audio", "crates/audio-worklet", "crates/client", "crates/net", "crates/server", "crates/headless", "xtask"]
+resolver = "2"
+exclude = ["vendor/macroquad"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.86"
+license = "AGPL-3.0-only"
+
+[workspace.dependencies]
+rs09-protocol = { path = "crates/protocol" }
+rs09-client-data = { path = "crates/client-data" }
+rs09-audio = { path = "crates/audio" }
+rs09-game-core = { path = "crates/game-core" }
+rs09-cache = { path = "crates/cache" }
+rs09-net = { path = "crates/net" }
+mysql = { version = "=26.0.1", default-features = false, features = ["minimal-rust", "native-tls"] }
+tokio = { version = "1.53.3", features = ["rt-multi-thread", "macros", "net", "io-util", "sync", "time", "signal"] }
+bytes = "1"
+futures-util = { version = "0.3", features = ["sink"] }
+tokio-tungstenite = { version = "0.26.2", default-features = false, features = ["handshake"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+# The synthesizer runs in real time in development builds too. Overflow checks
+# stay on there, so a missed wrapping operation shows up in tests.
+[profile.dev.package.rs09-audio]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[profile.bench]
+lto = "thin"
+codegen-units = 1
+
+[patch.crates-io]
+macroquad = { path = "vendor/macroquad" }

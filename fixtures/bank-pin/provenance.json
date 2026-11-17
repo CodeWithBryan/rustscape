@@ -1,0 +1,50 @@
+{
+  "format": 1,
+  "upstream": {
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "url": "https://gitlab.com/2009scape/2009scape.git",
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only"
+    },
+    "client": {
+      "url": "https://gitlab.com/2009scape/rt4-client.git",
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only"
+    }
+  },
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank-pin/PinOracle.java": "ff86da71d64d5039205ede9deb9a509609a24bb2d539bbf7917fda8561124b95",
+    "oracle/bank-pin/Player.java": "4079a21e3e266ec1d259cfbfeace4465146edb512db0c0e4b83f060907488675",
+    "oracle/bank-pin/generate.py": "734de0eb881eca3071a0051d8477bf8707b3e5b5aea21e4fbee4ff75cab8a05b",
+    "oracle/bank-pin/initial.lock.json": "18824d54bc952bf0b5b248c88bddc36e4614ff9addff4910778ed05eac862030",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "reference/server/Server/src/main/content/global/handlers/iface/bank/BankPinInterface.java": "8cb6a50f74608e015dddb81a232476aaabddc81ad93e1f30f538e8d1566d2bf8",
+    "reference/server/Server/src/main/core/game/component/CloseEvent.java": "72a0b410dfa627379ba08e6bbd16845073bfed2c8ab3931c6176dd8d5a5f6227",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/BankPinManager.java": "baa38cb099089b41e754b8366176a7a8057e35cc133216ff9bd6c4ddfb723dc7",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "caseCount": 855,
+  "fixtureSha256": "7ff8dba9bce6bec9650a510216761b702d653b63d209d58ac3868bee77bbe637",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "constantsArtifact": {
+    "url": "https://gitlab.com/api/v4/projects/32237206/packages/maven/org/rs09/consts/ConstLib/1.4.28/ConstLib-1.4.28.jar",
+    "version": "1.4.28",
+    "size": 853060,
+    "sha256": "f4e687cd74099a0eb914ff0e98defe0c5f5703634dd7d6aa25ab4ac186b98459",
+    "constants": {
+      "VARBIT_IFACE_BANK_INSERT_MODE": 7000,
+      "VARBIT_IFACE_BANK_NOTE_MODE": 7001
+    },
+    "scope": "Official published artifact satisfying the original POM's [1.4.0,) range. This pins the external symbol values used by this oracle; it does not establish which exact dependency version a historical server build resolved. The original bundled1.4 jar lacks Vars. No upstream source pin or previous fixture is changed."
+  },
+  "initialBaseline": {
+    "caseCount": 836,
+    "sha256": "913addf7ca62cd3203d6f2dcbb748935adec53738c03cedf618037b1bfda3086"
+  },
+  "clockSubstitutions": 7,
+  "scope": "Complete original BankPinManager/PinStatus with only7 System.currentTimeMillis calls redirected to a controlled clock; unchanged full BankPinInterface including registration/handle. Original Collections.shuffle with private static Random explicitly seeded by test-only JDK11 reflection. Player/UI/packet/varp/audio/GE/world services and RandomFunction samples are recording adapters. Private initial-state injection is an explicit fixture adapter; Java UTF16 pin/message units are compared. Does not establish full interface/plugin/session/profile/content startup, random distribution of RandomFunction, emitted wire frames, full reflection/subclass API or live banking."
+}

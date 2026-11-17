@@ -1,0 +1,35 @@
+{
+  "arguments": [
+    "20261116",
+    "18",
+    "12"
+  ],
+  "format": 1,
+  "keyboardLines": 20772,
+  "keyboardSha256": "a300bdeab3f8c460e4ca6c490c41715c7fb4d0c760a91eaf00afe8a190f62049",
+  "mouseLines": 4677,
+  "mouseSha256": "12e047b4b7a114a1d7f67b15d9864fe66b8211caff558c7b08964e5fcb2a556b",
+  "scope": "Unchanged rt4.Keyboard and rt4.Mouse called as AWT calls them, with real java.awt.event KeyEvent, MouseEvent and FocusEvent objects on a headless Canvas, in seeded scenarios: every listener method, loop, nextKey, setIdleLoops, stop and quit, all three Keyboard.init branches, both rings filled past their 128 entries, and javax.swing.SwingUtilities.isMiddleMouseButton as the running JDK implements it (JDK 9 and later test the extended button-2 mask). SignLink supplies the two values Keyboard.init reads; MonotonicClock is a scripted clock. Static state is reset between scenarios to the field initializers. No window, native peer, operating-system key translation or auto-repeat is observed, and event consumption is not recorded.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/input/InputOracle.java": "1fa6108e8a2b0522291d322c974261d4b3e5811779cf8d0f28ebd5d6f02315e4",
+    "oracle/input/adapters/rt4/MonotonicClock.java": "3a6a265343c763a8faa9bf66d87acc546c6f491d56bc2ef29b87a5d117ccf20f",
+    "oracle/input/adapters/rt4/SignLink.java": "11e330dc53aa8f67eee1ff0fe9a367ab02d564d14988f1530f63d42ec33e6363",
+    "reference/client/client/src/main/java/rt4/Keyboard.java": "e1ae831ac0a1fa47766ea2d097fd471891c8931e57b239d63298f2079beacfee",
+    "reference/client/client/src/main/java/rt4/Mouse.java": "8d6ce7881e79779b69f3938f44ed45fdb0243bedd821390952c446b24dc5616a"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "caseCount": 871,
+  "fixtureSha256": "772094eca1f85b9450f2435049b3368f753220cf430356f832e4065b7526dcb0",
+  "format": 1,
+  "scope": "Complete unchanged Settings.java. Player getters/properties, captured container/item/definition identities, config lookup, packet dispatch, IO buffer sink and synchronous callback/failure hooks are explicit adapters. Not complete Player, item/content integration, profile lifecycle or live settings proof.",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/settings/Support.java": "3a4debe0a302d109e2460f96b68b43e9cb500e2362ffdb02842ab01ff5422e11",
+    "oracle/settings/generate.py": "82c67f5b6dd49e0135545726f4269c9983e70bbf02f4b4ed5f4fd91f2168a8db",
+    "reference/server/Server/src/main/core/game/node/entity/player/link/Settings.java": "77c02e60c17ef7f9a458a920880491370b3190443fabba3cb2c739bf5fdf7e5a",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

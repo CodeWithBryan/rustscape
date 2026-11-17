@@ -1,0 +1,30 @@
+{
+  "caseCount": 1244,
+  "fixtureSha256": "4f69550e07659a2d2290dd8d6dd096accb5bfd54a67e3a3a444eb7a942ef7ff8",
+  "format": 1,
+  "scope": "Complete unchanged server ChunkFlags.java with explicit sparse getFlags and border-region routing adapters. Tests compare all fields, flags, movement/projectile defaults, call ordering and partial callback failures. Actual RegionManager/region loading, LandscapeParser and scene integration are separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/clipping/Support.java": "72483fc01837c66ac74f859c7fbd66aa8ef9d70a600670e1fb7e3c4db4b012ea",
+    "oracle/clipping/generate.py": "c220c05c452576e433881aa25d823c6ebeb8943d22c48fd99d9a496b6f82411e",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/game/world/map/build/ChunkFlags.java": "cd9bf1d8334189d374e68fa210104c1ca288c582b28ab5d387bc340bc7436354",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

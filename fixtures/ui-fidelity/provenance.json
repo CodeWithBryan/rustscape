@@ -1,0 +1,55 @@
+{
+  "arguments": [
+    "20261116",
+    "260",
+    "6",
+    "160"
+  ],
+  "cases": {
+    "countText": 160,
+    "font": 4,
+    "kerning": 6,
+    "number": 435,
+    "walk": 260
+  },
+  "fixtureSha256": "af7801e16a0845558973b511dba94547b56fb598f8d2632c671eb591e52e73f5",
+  "format": 1,
+  "scope": "Unchanged InterfaceList (layoutTopLevel, calculateSize, calculatePosition, processComponents, handleScrollbar), Inv.renderObjectSprite and formatObjAmount, Font and SoftwareFont (decode, calculateKerning, getStringWidth, render, renderGlyph), SoftwareRaster and JagString.parseHexString over seeded inputs. Component is an adapter holding the fields InterfaceList touches; every other class InterfaceList and Inv name is an adapter without behaviour, except Cs1ScriptRunner.startComponentDrag and getDragParent (the original's bodies) and SoftwareModel.setCamera (copies a staged picture in place of rendering a model). The walk driver stages what Protocol.loop does around processSubInterface (clears the hovered and tooltip components and the drag, fills the key queue, increments transmitTimer) and reads the three request lists without running scripts. Not observed: component key bindings (all keyCodes null), the world map component 1400, a click while an inventory item is held, an IF1 tooltip or scrollbar in a walk that also starts a drag, Protocol.loop's discard of requests for replaced created components, item models, outlines, shadows, notes and count variants, and any GL drawing.",
+  "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
+  "sources": {
+    "oracle/ui-fidelity/adapters/rt4/Adapters.java": "40e382c00a5ed842619b11c52e3163d05bf5d41806ecbb335c253fd879ee32a4",
+    "oracle/ui-fidelity/rt4/UiFidelityOracle.java": "5d097ba664fe4261abd30f38c62a722099abaaf41b50d82918ffb0a66de091c3",
+    "reference/client/client/src/main/java/rt4/Base37.java": "3a886f6df1766521b332f5f1848a38a11f1d2a896a05cc3372b70b43e6e8860c",
+    "reference/client/client/src/main/java/rt4/ComponentPointer.java": "4bb6e93332e410bd0d8f1a677d52101bef113384e91266eade4e0b43eca8d0e4",
+    "reference/client/client/src/main/java/rt4/Font.java": "9c221bab222faab302a86b73006648f3cfffdfee2a02cec298e5418f1230569d",
+    "reference/client/client/src/main/java/rt4/HashTable.java": "128b7cd4c96a0dae7396696ec8b3de1f4344296feedb432fdc74f2e2727405f1",
+    "reference/client/client/src/main/java/rt4/HashTableIterator.java": "31e707f1a05e5695586972a4c6927e40c16863bad876620e172dfbd21a8b2b7d",
+    "reference/client/client/src/main/java/rt4/HookRequest.java": "0666fc60bfe1c8f8504ef30a96ba36ccbbbb789596033e29c3477066f3d69171",
+    "reference/client/client/src/main/java/rt4/IndexedSprite.java": "fffdb139c9265b28b69f6f5fa9e0419711d93f2ffd0fae0577a9468128598ed6",
+    "reference/client/client/src/main/java/rt4/InterfaceList.java": "bba84813d0803e1cb3e632b033f6bf7b09994a46887c07982ee8f876a1a28454",
+    "reference/client/client/src/main/java/rt4/Inv.java": "f53b0e4b588189d1eacf1088686b2780b061a667fd92f92af872180729774ea6",
+    "reference/client/client/src/main/java/rt4/JagString.java": "1f9aca0704ff1b983c1c800541cd252670a81d4ede63a1621edff602ed0366f5",
+    "reference/client/client/src/main/java/rt4/LinkedList.java": "a333bb8ed5160e7b38888c4e1503b00ef50ce023ae8a79b15c2326658155c84f",
+    "reference/client/client/src/main/java/rt4/Node.java": "2c9f9d50ebe466014cb13b5d017131f4a0936605cadfe30691446fbaa527de96",
+    "reference/client/client/src/main/java/rt4/SecondaryNode.java": "cc63cf2bc58e142f7b11ee7a6f13a468779fc8d6aa73f7cce45d47131ea3fd4e",
+    "reference/client/client/src/main/java/rt4/ServerActiveProperties.java": "8266b4c6d9df89e9b2ee32e4badbf36dd981efcfc7ffb30ebc3f8bb04af68d12",
+    "reference/client/client/src/main/java/rt4/SoftwareFont.java": "c79cec901c96ce178060adb6b9ac54fc954ff02d846eddc11f4c4f3a05ca69e4",
+    "reference/client/client/src/main/java/rt4/SoftwareRaster.java": "88eb7394e5db4cb7eedb0f455a712314f4932d7458aac85fb32b8e0fbd367dd1",
+    "reference/client/client/src/main/java/rt4/StringInterface.java": "62f2327f5f7db0ee79e83b277b4f871b212cbe0e4afb5c0853e135e85b8265f1",
+    "reference/client/client/src/main/java/rt4/StringNode.java": "d43075d5dfa1d0945538c1a583c95a782df77fe0693eb95bf24505f2fa713f43"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

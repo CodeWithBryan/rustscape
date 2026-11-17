@@ -1,0 +1,11 @@
+{
+  "repeatTicks": 16,
+  "events": [
+    {"tick": 2, "id": 111, "height": 0, "delay": 0},
+    {"tick": 4, "id": 369, "height": 128, "delay": 60},
+    {"tick": 5, "id": 111, "height": 64, "delay": 0},
+    {"tick": 7, "id": -1, "height": 0, "delay": 0},
+    {"tick": 9, "id": 369, "height": 256, "delay": 30},
+    {"tick": 11, "id": -1, "height": 0, "delay": 0}
+  ]
+}

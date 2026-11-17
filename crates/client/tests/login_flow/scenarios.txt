@@ -1,0 +1,830 @@
+# Scripted scenarios run by both the JVM oracle (original LoginManager loop
+# methods, CreateManager and WorldList) and the Rust login flow. The trace the
+# JVM produces is java_trace.txt; tests/login_flow.rs must reproduce it.
+#
+# Tokens: hex bytes, 'text (ASCII, no spaces) or - (empty).
+#   scenario NAME                     fresh client; config 0 1 1 0
+#   config MODEWHERE WORLD SELECTDEFAULT TITLESCENE [MGMT ADDRESS WORLD PORT WLPORT]
+#   env WINDOW WIDTH HEIGHT AA UID SETTINGS AFFILIATE PREFS VERIFY CRCBASE ADVERT
+#   random D...                       queue of Math.random() results (0.0 after)
+#   state N / setstate N              store / client.setGameState
+#   login USER PASS TYPE, continue, resetlogin            commands 5600-5602
+#   checkinfo D M Y C, checkname NAME, create D M Y C NAME PASS AFFILIATE,
+#   resetcreate, names                                    commands 5603-5606, 5610
+#   fetch NOW, hop ID, sort A B C D, list, get ID         WorldList
+#   connect ok|fail, recv TOKENS, recvlen TOKENS, eof, ioerr     the server side
+#   lost TIMER                        Protocol.handleConnectionLost
+#   tick N                            N client cycles
+
+scenario login-success
+state 10
+random 0.25 0.75
+env 2 1024 768 1 0102030405060708090a0b0c0d0e0f101112131415161718 'cookie 99 1234567 77 1000 0
+login 'Zezima 'secret 0
+tick 1
+tick 3
+connect ok
+tick 1
+tick 2
+recv 00
+tick 1
+recv 0102030405
+tick 1
+recv 060708
+tick 1
+tick 1
+recv 02
+tick 1
+recv 02 05 01 00 01 01 00 01f4 01 01
+tick 1
+recv a2 0003
+tick 1
+recv aabb
+tick 1
+recv cc
+tick 1
+tick 2
+
+scenario login-coalesced
+state 10
+env 0 765 503 0 - - 0 0 0 0 1
+random 0.999999999 0.000000001
+login 'a 'b 3
+tick 1
+connect ok
+recv 00 1122334455667788 02 00 00 00 00 00 00 00 0001 00 00 a2 0000
+tick 1
+tick 1
+
+scenario login-names
+state 10
+login 5a657a696d61205f31 70c3a4737377c3b672 0
+tick 1
+connect ok
+recv 00 ffffffffffffffff 04
+tick 1
+resetlogin
+login 'abcdefghijklmnopqrstuvwxyz 'x 0
+tick 1
+connect ok
+recv 00 8000000000000000 0a
+tick 1
+
+scenario handshake-rejected
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+recv 09
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+tick 1
+eof
+tick 1
+tick 1
+
+scenario connect-fails
+state 10
+login 'user 'pass 0
+tick 1
+connect fail
+tick 1
+tick 1
+connect fail
+tick 1
+tick 1
+
+scenario connect-timeout
+state 10
+login 'user 'pass 0
+tick 2000
+tick 1
+tick 1999
+tick 1
+tick 1
+tick 1
+
+scenario reply-codes
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000001
+tick 1
+recv 03
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000002 15
+tick 1
+tick 1
+recv 05
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000003 1d
+tick 2
+recv 07
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000004 0f
+tick 1
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000005 ff
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000006 00
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000007 07
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000008 0e
+tick 1
+
+scenario reply-23
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000001 17
+tick 1
+tick 1
+connect ok
+recv 00 0000000000000001 17
+tick 1
+tick 1
+
+scenario delayed-login
+state 10
+random 0.5 0.125
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 00000000deadbeef 01
+tick 1
+tick 5
+continue
+tick 1
+recv 01
+tick 1
+continue
+continue
+tick 1
+recv 02 00000000000000 0007 0000 a2 0001 99
+tick 1
+
+scenario io-error
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00
+tick 1
+ioerr
+tick 1
+tick 1
+connect ok
+tick 1
+ioerr
+tick 1
+tick 1
+
+scenario write-error
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+ioerr
+tick 1
+tick 1
+connect ok
+recv 00 0000000000000001
+ioerr
+tick 1
+tick 1
+
+scenario read-timeout
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+tick 1500
+tick 1
+tick 1
+connect ok
+tick 1501
+tick 1
+
+scenario reconnect
+state 10
+random 0.1 0.2 0.3 0.4 0.6 0.7
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000009 02 00000000000000 0003 0000 a2 0002 0102
+tick 1
+setstate 30
+lost 0
+tick 1
+connect ok
+recv 00 000000000000000a
+tick 1
+recv 0f
+tick 1
+tick 1
+lost 0
+tick 1
+connect ok
+recv 00 000000000000000b 02 01000000000000 0004 0001 a2 0000
+tick 1
+setstate 30
+lost 0
+tick 1
+connect ok
+recv 00 000000000000000c 05
+tick 1
+tick 1
+
+scenario reconnect-fails
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000001 02 00000000000000 0001 0000 a2 0000
+tick 1
+setstate 30
+lost 0
+tick 1
+connect fail
+tick 2
+connect fail
+tick 1
+tick 1
+
+scenario reconnect-times-out
+config 0 1 1 1
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000001 02 00000000000000 0001 0000 a2 0000
+tick 1
+setstate 30
+lost 0
+tick 2001
+tick 2000
+tick 1
+setstate 10
+
+scenario lost-with-timer
+state 10
+login 'user 'pass 0
+tick 1
+connect ok
+recv 00 0000000000000001 02 00000000000000 0001 0000 a2 0000
+tick 1
+setstate 30
+lost 250
+tick 1
+
+scenario login-empty
+state 10
+login - 'pass 0
+login 'user - 0
+resetlogin
+login - - 5
+state 30
+resetlogin
+login 'user 'pass 0
+state 10
+
+scenario hop
+config 0 1 0 0
+state 10
+fetch 10000
+connect ok
+recv 00
+recvlen 01 01 02 80e1 00 'USA 00 4d 00 'UK 00 01 03 03 00 00 00000001 00 '- 00 00 'w1.example 00 01 01 00000009 00 'Trade 00 00 'w2.example 00 02 00 00000006 00 'Castle 20 'Wars 00 00 '127.0.0.1 00 0000abcd 00 0064 01 ffff 02 05dc
+fetch 10000
+list
+random 0.5 0.25 0.75
+login 'user 'pass 0
+outbound
+tick 1
+connect ok
+tick 1
+recv 65
+tick 1
+recv 0002
+tick 1
+connect ok
+recv 00 0000000000000001 03
+tick 1
+
+# With these draws the encrypted hop request is one byte shorter and fits the
+# original's 128-byte buffer, so the hop goes through.
+scenario hop-fits
+config 0 1 0 0
+state 10
+fetch 10000
+connect ok
+recv 00
+recvlen 01 01 02 80e1 00 'USA 00 4d 00 'UK 00 01 03 03 00 00 00000001 00 '- 00 00 'w1.example 00 01 01 00000009 00 'Trade 00 00 'w2.example 00 02 00 00000006 00 'Castle 20 'Wars 00 00 '127.0.0.1 00 0000abcd 00 0064 01 ffff 02 05dc
+fetch 10000
+random 0.5 0.001235 0.75
+login 'user 'pass 0
+outbound
+tick 1
+connect ok
+tick 1
+recv 65
+tick 1
+recv 0002
+tick 1
+connect ok
+recv 00 0000000000000001 03
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+
+scenario hop-mode2config 2 1 0 0
+state 10
+fetch 10000
+connect ok
+recv 00
+recvlen 01 01 01 00 00 'X 00 05 07 02 00 00 00000000 00 '- 00 00 'five 00 02 00 00000000 00 '- 00 00 'seven 00 00000001 00 0001 02 0002
+fetch 10000
+hop 6
+hop 4
+hop 8
+login 'user 'pass 0
+tick 1
+connect ok
+recv 65 0007
+tick 1
+hop 5
+connect ok
+recv 00 0000000000000001 03
+tick 1
+hop 5
+list
+
+scenario hop-refused
+config 0 1 0 0
+state 10
+random 0.5 0.25 0.75
+login 'user 'pass 0
+tick 1
+connect ok
+recv 07
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+recv 65 0005
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect fail
+tick 1
+tick 1
+connect fail
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+tick 1
+eof
+tick 1
+resetlogin
+login 'user 'pass 0
+tick 1
+connect ok
+tick 1
+ioerr
+tick 1
+tick 1
+connect ok
+tick 1500
+tick 1
+tick 1
+
+scenario hop-timeout
+config 0 1 0 0
+state 10
+login 'user 'pass 0
+tick 1500
+tick 1
+tick 1499
+tick 1
+tick 1
+tick 1
+
+scenario create
+state 10
+checkname 436f6f6c204e616d65
+outbound
+tick 1
+connect ok
+recv 02
+tick 1
+resetcreate
+checkname 'taken
+tick 1
+connect ok
+tick 1
+recv 15
+tick 1
+recv 03
+tick 1
+recv 0000000000000001 00000000000005a6
+tick 1
+recv 000000000000055b
+tick 1
+names
+names
+resetcreate
+checkinfo 31 12 1990 225
+outbound
+tick 1
+connect ok
+recv 02
+tick 1
+random 0.5 0.1 0.2 0.3 0.4
+create 31 12 1990 225 'newuser 'hunter22 1234
+outbound
+tick 1
+connect ok
+recv 02
+tick 1
+checkname -
+checkname 2d2d
+outbound
+create 1 1 2000 1 2d 'password 0
+random 0.99999 0.99999999 0.99999999 0.99999999 0.99999999
+create 255 256 65536 -1 'a_b_c_d_e_f_ 'p 70000
+outbound
+
+scenario create-suggestions
+state 10
+checkname 'bob
+tick 1
+connect ok
+recv 15 02 0000000000000001 0000000000000025
+tick 1
+names
+names
+checkname 'bob
+tick 1
+connect ok
+recv 15 00
+tick 1
+names
+checkname 'bob
+tick 1
+connect ok
+recv 15 06 0000000000000001 0000000000000002 0000000000000003 0000000000000004 0000000000000005 0000000000000006
+tick 1
+names
+checkname 'bob
+tick 1
+connect ok
+recv 15 03 5b5b5b5b5b5b5b5b 5b5b5b5b5b5b5b5a ffffffffffffffff
+tick 1
+names
+
+scenario create-failures
+state 10
+checkname 'bob
+tick 1
+connect fail
+tick 2
+connect fail
+tick 1
+resetcreate
+checkname 'bob
+tick 2001
+tick 2000
+tick 1
+resetcreate
+checkname 'bob
+tick 1
+connect ok
+tick 1
+eof
+tick 1
+resetcreate
+checkname 'bob
+tick 1
+connect ok
+recv 15
+tick 1
+ioerr
+tick 1
+tick 1
+connect ok
+tick 1
+ioerr
+tick 1
+
+scenario guards
+state 10
+checkname 'bob
+login 'user 'pass 0
+checkinfo 1 1 2000 1
+create 1 1 2000 1 'name 'password 0
+resetcreate
+tick 1
+connect ok
+recv 02
+tick 1
+login 'user 'pass 0
+checkname 'bob
+checkinfo 1 1 2000 1
+resetlogin
+continue
+tick 1
+hop 1
+connect ok
+recv 00 0000000000000001 03
+tick 1
+fetch 10000
+login 'user 'pass 0
+checkname 'bob
+connect ok
+recv 00
+recvlen 01 00
+fetch 10000
+login 'user 'pass 0
+
+scenario worldlist
+state 10
+fetch 4000
+fetch 5000
+fetch 5001
+connect ok
+fetch 5002
+recv 00
+fetch 5003
+recv 00
+fetch 5004
+recv 02
+fetch 5005
+recv 01
+fetch 5006
+recv 00
+fetch 5007
+list
+get 1
+fetch 9000
+fetch 10007
+connect ok
+recv 00
+recvlen 01 01 02 80e1 00 'USA 00 4d 00 'UK 00 01 03 03 00 00 00000001 00 '- 00 00 'w1.example 00 01 01 00000009 00 'Trade 00 00 'w2.example 00 02 00 00000006 00 'Castle 20 'Wars 00 00 '127.0.0.1 00 0000abcd 00 0064 01 ffff 02 05dc
+fetch 10008
+list
+get 2
+get 4
+get 0
+fetch 20000
+connect ok
+recv 00
+recvlen 01 00 00 0001 01 0002 02 ffff
+fetch 20000
+list
+hop 2
+hop 9
+fetch 30000
+connect ok
+recv 00
+recvlen 01 01 01 05 00 'Z 00 0a 0b 01 01 00 0000000f 00 'New 00 00 'eleven 00 12345678 01 0007
+fetch 30000
+list
+get 2
+get 11
+get 10
+fetch 40000
+connect ok
+recv 00
+recvlen 01 01 01 05 00 'Z 00 0a 0b 02 01 00 00000000 00 'First 00 00 'h 00 01 00 00000001 00 'Second 00 00 'i 00 00000002 01 0001 01 0002
+fetch 40000
+list
+
+scenario worldlist-sort
+state 10
+fetch 10000
+connect ok
+recv 00
+recvlen 01 01 05 01 00 'Sweden 00 02 00 'Belgi e6 00 03 00 'Belgie 00 04 00 'Stra df 'e 00 05 00 'Strasse 00 01 09 09 00 00 00000001 00 '- 00 00 'a 00 01 01 00000002 00 'Fishing 00 00 'b 00 02 02 00000004 00 'fishing 00 00 'c 00 03 03 00000008 00 '- 00 00 'd 00 04 04 0000000f 00 'Trade 00 00 'e 00 05 00 00000000 00 'Duel 20 'Arena 00 00 'f 00 06 01 00000003 00 'Trade 00 00 'g 00 07 02 00000005 00 'Clan 20 'Wars 00 00 'h 00 08 04 0000000a 00 c9 'cole 00 00 'i 00 00000000 00 0064 01 ffff 02 0000 03 07d0 04 0064 05 ffff 06 05dc 07 0001 08 07d1
+fetch 10000
+list
+sort 1 0 -1 0
+list
+sort 1 1 -1 0
+list
+sort 1 0 0 0
+list
+sort 1 1 0 1
+list
+sort 2 0 -1 0
+list
+sort 2 1 0 0
+list
+sort 2 0 1 1
+list
+sort 3 0 -1 0
+list
+sort 3 1 -1 1
+list
+sort 3 0 1 0
+list
+sort 4 0 0 0
+list
+sort 4 1 1 0
+list
+sort 5 0 0 1
+list
+sort 6 0 2 0
+list
+sort 6 1 3 1
+list
+sort 7 0 0 0
+list
+sort 7 1 -1 0
+list
+sort 0 0 -1 0
+list
+sort 0 1 -1 0
+list
+sort 9 0 7 1
+list
+sort 1 0 1 1
+list
+
+scenario worldlist-errors
+state 10
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect ok
+recv 07
+fetch 10000
+fetch 10000
+connect ok
+recv 00
+recvlen 02 00
+fetch 10000
+fetch 10000
+connect ok
+fetch 10000
+ioerr
+fetch 10000
+fetch 10000
+fetch 40001
+fetch 40002
+connect ok
+fetch 40003
+eof
+fetch 40004
+fetch 40005
+connect ok
+recv 09
+fetch 40006
+fetch 40007
+connect ok
+recv 09
+fetch 40008
+fetch 40009
+connect ok
+recv 09
+fetch 40010
+fetch 40011
+connect ok
+recv 09
+fetch 40012
+fetch 40013
+connect ok
+recv 00 0003 01
+fetch 40014
+recv 00
+ioerr
+fetch 40015
+
+# The code a fifth failure in a row reports.
+scenario worldlist-error-codes
+state 10
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect ok
+recv 00
+recvlen 03
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect ok
+ioerr
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000
+connect ok
+recv 00 0005 01 01 01
+fetch 10000
+ioerr
+fetch 10000
+
+scenario json-config
+config 2 3 1 0 mgmt.example game.example 3 5000 6000
+state 10
+login 'user 'pass 0
+tick 1
+connect fail
+tick 2
+connect ok
+recv 00 0000000000000001 03
+tick 1
+checkname 'bob
+tick 1
+connect ok
+recv 02
+tick 1
+fetch 10000
+connect fail
+fetch 10000
+fetch 10000

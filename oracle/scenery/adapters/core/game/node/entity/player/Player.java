@@ -1,0 +1,1 @@
+package core.game.node.entity.player;public class Player extends core.game.node.entity.Entity{public core.net.IoSession getSession(){return oracle.Support.session;}public Player getPlayerFlags(){return this;}public core.game.world.map.Location getLastSceneGraph(){return new core.game.world.map.Location(0,0,0);}}

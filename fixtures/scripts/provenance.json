@@ -1,0 +1,40 @@
+{
+  "caseCount": 328,
+  "fixtureSha256": "7dbfb87d19f209f9cdbfdc91d7c1cf500f05e0a5780039a620289bd4d72f0870",
+  "format": 1,
+  "initialBaseline": {
+    "caseCount": 295,
+    "scope": "Independent initial unchanged ScriptProcessor/Script/Clocks/API observations, retained before shared processor/generic runtime migration.",
+    "sha256": "9116d5713e991288523af07dd392a6f248be0fb1ea647342881abb43e97749d1"
+  },
+  "scope": "Complete unchanged Script.kt, ScriptProcessor.kt and Clocks.kt; verbatim ContentAPI script wrappers. Explicit entity/node/interface/animator/lock/pathfinding/LOS/clock/log/executor bindings, including function equality and deterministic callback exception text. Original LocationHash, distance, equality and cardinal-tile algorithms in a location adapter. No full nodes, pathfinding, combat, interfaces, event dispatch, concrete script content, or world-entry claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/scripts/Support.kt": "04a62c312da536587a361bee4b2cd0b7a9010cb0fa77e361a939d910186c65f8",
+    "oracle/scripts/generate.py": "2e83d93ecfe6abb5105576a9c8b550a65cafdc89d0c70c53f1a8407f6da423ef",
+    "oracle/scripts/initial.lock.json": "458893c26f01b50180aff12b6af8d12f2dd01ce5696e201267819ee85d8241f7",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/game/interaction/Clocks.kt": "d480257a27f5f627a69af4df2e540ee1930e0ed3bb9d6ef211c035fda592c10e",
+    "reference/server/Server/src/main/core/game/interaction/Script.kt": "386492193dc0b711d6bd6dcc3661a8d52376fe48f4e6bef404b95c3f7f5bff65",
+    "reference/server/Server/src/main/core/game/interaction/ScriptProcessor.kt": "dbf8fd7d7e2064556176e472fd03eadc2b83f8108dd2aa9ef8cfe14bec0eed61",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

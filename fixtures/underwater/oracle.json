@@ -1,0 +1,365 @@
+{
+  "format": 1,
+  "inputSha256": "81018ee3d4fc80d31fb134a3f2d9097448407bf5a8db691a3e22ae0839cd548d",
+  "scenes": [
+    {
+      "base": [
+        3168,
+        3168
+      ],
+      "name": "lumbridge"
+    },
+    {
+      "base": [
+        3376,
+        3312
+      ],
+      "name": "salve"
+    },
+    {
+      "base": [
+        3568,
+        3504
+      ],
+      "name": "phasmatys"
+    },
+    {
+      "base": [
+        3760,
+        3504
+      ],
+      "name": "coast"
+    },
+    {
+      "base": [
+        2672,
+        10096
+      ],
+      "name": "cave"
+    },
+    {
+      "base": [
+        2672,
+        3696
+      ],
+      "name": "west"
+    },
+    {
+      "base": [
+        1936,
+        4776
+      ],
+      "name": "south"
+    }
+  ],
+  "sections": {
+    "cave/colors": {
+      "bytes": 43264,
+      "sha256": "f054f053d98eddf23f0756984a305e4174dbe2ef2406b5c3d0085d8d3ea00383"
+    },
+    "cave/diag": {
+      "bytes": 10816,
+      "sha256": "5c2570cd96f9b406c27d6a2731d5741a5053aada9d1894187f5580889c1c7f90"
+    },
+    "cave/exists": {
+      "bytes": 10816,
+      "sha256": "561e037f2441195cd4913f1dc8895823823d33c1fe50fbc1641e57bcb3a0dc15"
+    },
+    "cave/heights": {
+      "bytes": 44100,
+      "sha256": "02e641524d03f6508e02aa4b121cfb619e22220ea31729cecc3c4d602ccd4562"
+    },
+    "cave/light": {
+      "bytes": 43264,
+      "sha256": "cb218c2edc86c94856e63e2067d0f81dd822daf3210c8a9ebfe678f7f0a0cb90"
+    },
+    "cave/locs": {
+      "bytes": 7100,
+      "sha256": "81be0824840b768d59b230161e7b0597b1893253c510e69cbb6dde6eeb40ce93"
+    },
+    "cave/plain": {
+      "bytes": 82348,
+      "sha256": "bc02735a05dc075e501c1bc85d9b9b701729e1f3119fe414efe50c47a3403055"
+    },
+    "cave/shadow": {
+      "bytes": 11025,
+      "sha256": "05868e1e96bc07541d29d920594aa2948d2b4a8d931b552af435986c43ac85a4"
+    },
+    "cave/tiles": {
+      "bytes": 43264,
+      "sha256": "42d2f238590931e93a3d65f9f66402eb2f513c27c7252a41c0cabc2bc32dcf9f"
+    },
+    "cave/water0": {
+      "bytes": 43264,
+      "sha256": "76f71c7ebba5758105293ede63a6cfa8997516bce1db551b607621116eb05baa"
+    },
+    "cave/water1": {
+      "bytes": 43264,
+      "sha256": "76f71c7ebba5758105293ede63a6cfa8997516bce1db551b607621116eb05baa"
+    },
+    "coast/colors": {
+      "bytes": 43264,
+      "sha256": "6ef8672575360ba7d8ad528ae8f6536bb1dbadb1dcde1e7e1be3a31fd4e57833"
+    },
+    "coast/diag": {
+      "bytes": 10816,
+      "sha256": "b381d847e58c5ab17d5696c9684bbe6d3a8f75c9a26c976ad70510cb0bdafebe"
+    },
+    "coast/exists": {
+      "bytes": 10816,
+      "sha256": "b2e47c686a36706c5f6f30224fb92a7931a32d1c3efeca7c683410a9fa491071"
+    },
+    "coast/heights": {
+      "bytes": 44100,
+      "sha256": "42cf2c42aa7aab5cadd416356a62544fd2ba68148b9386d80b2d80230900dcb4"
+    },
+    "coast/light": {
+      "bytes": 43264,
+      "sha256": "cb218c2edc86c94856e63e2067d0f81dd822daf3210c8a9ebfe678f7f0a0cb90"
+    },
+    "coast/locs": {
+      "bytes": 60552,
+      "sha256": "59c534322ba926d154c3074d1a86b1c5804e64b3abf78a2375d3ad76ec08c9f6"
+    },
+    "coast/plain": {
+      "bytes": 808582,
+      "sha256": "32c9e9e3525ea047327659ed3470199162aa363c29a5b0459fc44b83af16a957"
+    },
+    "coast/shadow": {
+      "bytes": 11025,
+      "sha256": "05868e1e96bc07541d29d920594aa2948d2b4a8d931b552af435986c43ac85a4"
+    },
+    "coast/tiles": {
+      "bytes": 43264,
+      "sha256": "b030def2f7efd74bb1f5a9760a49e624b8de158686c27169be0a3bdef581e9ca"
+    },
+    "coast/water0": {
+      "bytes": 43264,
+      "sha256": "25cd78a367f37bfc49e46c64368ad90ad4cbe8c7bf7ed8e69d68ec3e791e12d1"
+    },
+    "coast/water1": {
+      "bytes": 43264,
+      "sha256": "25cd78a367f37bfc49e46c64368ad90ad4cbe8c7bf7ed8e69d68ec3e791e12d1"
+    },
+    "lumbridge/colors": {
+      "bytes": 43264,
+      "sha256": "f9ac826d4a474353774e46a7217c6c673370914ef3542101ff0bc9d9cbb43170"
+    },
+    "lumbridge/diag": {
+      "bytes": 10816,
+      "sha256": "73809ee2d94284d6a7b43d5f6b79ae283be15ffbdb2351f9f4a5f09c5adb744a"
+    },
+    "lumbridge/exists": {
+      "bytes": 10816,
+      "sha256": "3cd981125094ad8d55ca22e41c95155c383244fc656c10b5b77fe7d43340fbbe"
+    },
+    "lumbridge/heights": {
+      "bytes": 44100,
+      "sha256": "093e9e459de12fdd012a7656cfe150619ce26e848bce4ee0a482a6fa2188f64b"
+    },
+    "lumbridge/light": {
+      "bytes": 43264,
+      "sha256": "c043f4e9d141151fa0e3cc4f89498497d43c85024d8969dfc5b0e3a420f02340"
+    },
+    "lumbridge/locs": {
+      "bytes": 131528,
+      "sha256": "6ae94d2b833cd07352863ebf1fd3c14f7b7fefcf8114ada816a8153da5ae19a8"
+    },
+    "lumbridge/plain": {
+      "bytes": 206896,
+      "sha256": "a8838c857db692ec7ef09c0b4d1ae5276b7ee6a1572cb51581e98ce5d8293f3b"
+    },
+    "lumbridge/shadow": {
+      "bytes": 11025,
+      "sha256": "ba9f7cdb8d9c4c78015827b5518cc8cfa81b33f1580ee1ab9fc5cadbd62c5387"
+    },
+    "lumbridge/tiles": {
+      "bytes": 43264,
+      "sha256": "45dc0df5fc59e0083fe7a4c2e11ef029e643ca404a591becc52ef85a688f1f68"
+    },
+    "lumbridge/water0": {
+      "bytes": 43264,
+      "sha256": "b5213fbbc387de71ec1a6c11e40d2a8985b84b0a1bf57dd016317d2b3753eb86"
+    },
+    "lumbridge/water1": {
+      "bytes": 43264,
+      "sha256": "de66f0cf0b512c012a74d049698f8aece26a743267412e7c6d5e1fb307f47ede"
+    },
+    "phasmatys/colors": {
+      "bytes": 43264,
+      "sha256": "c31265fc896db8c8e6576877f95fd70b3cc51b3f7fb177c0e6b54b69793c011d"
+    },
+    "phasmatys/diag": {
+      "bytes": 10816,
+      "sha256": "1bb6b1d8c478ac2e950ac5d5e1fe51858a602991817f23167c210d9aa44aef8c"
+    },
+    "phasmatys/exists": {
+      "bytes": 10816,
+      "sha256": "b2e47c686a36706c5f6f30224fb92a7931a32d1c3efeca7c683410a9fa491071"
+    },
+    "phasmatys/heights": {
+      "bytes": 44100,
+      "sha256": "b215d52680c22e3371d8fb730676b3ffa97e1e180385a715cad1ec17c2f5e7ce"
+    },
+    "phasmatys/light": {
+      "bytes": 43264,
+      "sha256": "cb218c2edc86c94856e63e2067d0f81dd822daf3210c8a9ebfe678f7f0a0cb90"
+    },
+    "phasmatys/locs": {
+      "bytes": 216577,
+      "sha256": "84e27e8c7fce24877d46f64a827d913ebf721db839c1a9ed90ebfff8d2d8d841"
+    },
+    "phasmatys/plain": {
+      "bytes": 760212,
+      "sha256": "2820c4dfe64f421dfe80d99395ce0a782bdf63f8ab5848a647ac804d6f943683"
+    },
+    "phasmatys/shadow": {
+      "bytes": 11025,
+      "sha256": "05868e1e96bc07541d29d920594aa2948d2b4a8d931b552af435986c43ac85a4"
+    },
+    "phasmatys/tiles": {
+      "bytes": 43264,
+      "sha256": "e6c54eb3cc8adb39efce22415225e45fababb8a04a462b3dd8881c8f6eeaf086"
+    },
+    "phasmatys/water0": {
+      "bytes": 43264,
+      "sha256": "d246d15bef95aabe227235f570dcfabad2e9586f4be26cdb900898131bdc6ab5"
+    },
+    "phasmatys/water1": {
+      "bytes": 43264,
+      "sha256": "d246d15bef95aabe227235f570dcfabad2e9586f4be26cdb900898131bdc6ab5"
+    },
+    "salve/colors": {
+      "bytes": 43264,
+      "sha256": "184242900f29be23ee89afde79808becdfe7b4503d279b67e272b40f6f11c376"
+    },
+    "salve/diag": {
+      "bytes": 10816,
+      "sha256": "37ac5f3f9eb4a0c4bb8e4005170324b81423f2921f8e16c5f55cde82a3d7462f"
+    },
+    "salve/exists": {
+      "bytes": 10816,
+      "sha256": "6b8fceb5c43112212def46c3d990fe7dd2cb904e6bb91ee7c2024b6ac9e7a781"
+    },
+    "salve/heights": {
+      "bytes": 44100,
+      "sha256": "2873029a282fd0de9a8f9831d85a467e9d1f61851dd2adabaad24acf4070d362"
+    },
+    "salve/light": {
+      "bytes": 43264,
+      "sha256": "a562c14578c7c7560b17f3d028c2b52181ba2429c61197d227cae3db2f46c165"
+    },
+    "salve/locs": {
+      "bytes": 844716,
+      "sha256": "3d998d71fa46b1b0b18a25456f923605d44753acd52dc08a8fa10ff9c7eb3d63"
+    },
+    "salve/plain": {
+      "bytes": 639494,
+      "sha256": "e1339d9e0ab4dbb4454b0b10deb85bcc68678ef1ccc363e1c99ea4eee0f4d958"
+    },
+    "salve/shadow": {
+      "bytes": 11025,
+      "sha256": "a502268871b0b02e76efe7fbaadf585ec9c312decfb54777cdad1c5e413063dd"
+    },
+    "salve/tiles": {
+      "bytes": 43264,
+      "sha256": "7ae65751e90ed4f447b0d4f6289a703af998fef5840074d32b6712186a450236"
+    },
+    "salve/water0": {
+      "bytes": 43264,
+      "sha256": "dadcab1af5172d716ce476d3567fd0f6b583cff60e5f5683f1c5cda715403bd0"
+    },
+    "salve/water1": {
+      "bytes": 43264,
+      "sha256": "33203ff5a1f23b52be533b3e1d03d4a66c430d6b80171a8f9153ebf503b993dc"
+    },
+    "south/colors": {
+      "bytes": 43264,
+      "sha256": "7f434da484f908c5fbe8800313ee3f187a69ba640510aa2f796657b866277e1e"
+    },
+    "south/diag": {
+      "bytes": 10816,
+      "sha256": "ae1ed2b1bb7fc533477f95108f9d934d31f0749bf4958dcd507eeccb6e9aa29e"
+    },
+    "south/exists": {
+      "bytes": 10816,
+      "sha256": "7a6c138169f0dadbbf22db835b4a92e6c24a0169ed9b52ec8f769304e7cfa488"
+    },
+    "south/heights": {
+      "bytes": 44100,
+      "sha256": "cd82c05f11563cff26f373040784461dcf91fcc5b3376a38ff59d4fb562e2479"
+    },
+    "south/light": {
+      "bytes": 43264,
+      "sha256": "18e8762f94cadcf5db060b57e56f616677d94673033436cc90bdfd7f32aaee51"
+    },
+    "south/locs": {
+      "bytes": 182513,
+      "sha256": "aad4f7c0b060669821282d150eeb7448e1dd1a6bb8b9e2e973362ba481251201"
+    },
+    "south/plain": {
+      "bytes": 660076,
+      "sha256": "9b06a68b384a75ff82862bf346c7665250cafe47e99c0617afc29c630c2055a3"
+    },
+    "south/shadow": {
+      "bytes": 11025,
+      "sha256": "afff70df07ac93bbf38b7265fc4e9e594e80120ae29ef5c23ccadcca0799c4dd"
+    },
+    "south/tiles": {
+      "bytes": 43264,
+      "sha256": "f0aa14280827f04d886b3896cc19f2bcd874100915d03acd214b9716dec5b916"
+    },
+    "south/water0": {
+      "bytes": 43264,
+      "sha256": "333947330bb8259c3a3aba36b0db939ec5c7cdb79f004eb138bdf646eb0fea7e"
+    },
+    "south/water1": {
+      "bytes": 43264,
+      "sha256": "333947330bb8259c3a3aba36b0db939ec5c7cdb79f004eb138bdf646eb0fea7e"
+    },
+    "west/colors": {
+      "bytes": 43264,
+      "sha256": "1e835902e64a72fb46ef9caa71445b2a0712d8fcc4b8ab8bfeacceb674294683"
+    },
+    "west/diag": {
+      "bytes": 10816,
+      "sha256": "84371b3cd46e84489c3760207909c902ac891066eb28adfe83eab4520f7cefcd"
+    },
+    "west/exists": {
+      "bytes": 10816,
+      "sha256": "9ff5ee278093adbb4896c5c8851b60efc0b53c8fe2835fb705f1af16c5142a15"
+    },
+    "west/heights": {
+      "bytes": 44100,
+      "sha256": "e68d34b63fe3d274eaef2a84e7641d0f186c80569034c9ffe44f327d517b326b"
+    },
+    "west/light": {
+      "bytes": 43264,
+      "sha256": "5099b5d08197542f74e40a92cd8a7e4285e1952cb2c9c0ab7077ac87d27cc6af"
+    },
+    "west/locs": {
+      "bytes": 23188,
+      "sha256": "b3fd55abbb1976510f1c6901a54f4f9800e1b6bdd295bc7b37e04287adb672ac"
+    },
+    "west/plain": {
+      "bytes": 403496,
+      "sha256": "dc82c4e8597412ae4158bafbbcb3a65206290dbc7ea4c7ff511771dab6804f48"
+    },
+    "west/shadow": {
+      "bytes": 11025,
+      "sha256": "7a03c89c718bff681a1cb104b66493f6fa20bb5be1cbe18bdb9757b5f3db36d2"
+    },
+    "west/tiles": {
+      "bytes": 43264,
+      "sha256": "d023d18fad32fc6828468b9cd4957149dc88cb9256ce564b0764dbcf18e0086c"
+    },
+    "west/water0": {
+      "bytes": 43264,
+      "sha256": "f2a5cff4f07dffe74703b0834bfb5d894fb159b85c2abf50119cab297fa86160"
+    },
+    "west/water1": {
+      "bytes": 43264,
+      "sha256": "a347fb0da7d025cb787bb51f005861570a65e579bcfda020c1d603cf5ec5667e"
+    }
+  }
+}

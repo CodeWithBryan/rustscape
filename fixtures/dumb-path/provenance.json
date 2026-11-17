@@ -1,0 +1,43 @@
+{
+  "caseCount": 638,
+  "fixtureSha256": "250f5c17e86311a51a75b8b2ddf8ccd6d9e9e3db81bd60577d72c2e92cc9317b",
+  "format": 1,
+  "scope": "Complete unchanged DumbPathfinder with original Path/Point/Direction and original five reach helpers. Explicit sparse supplier/global clipping, mutable packed locations and reflected field/reentrant callback controls. Compares success/near/ordered points, retained singleton fields, ordered clipping queries, nested results and failure prefixes. Path.walk and NPC/scene/world content binding remain separate; malformed native iterations bounded to65536.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/dumb-path/Support.java": "9db2be9852a207d2648e94b17f08d7a262c922db8e80ed82a423b16085e34ba8",
+    "oracle/dumb-path/generate.py": "c4f5cde21f6f6317d1934692fa02a0bee8b9f7e184ccdfb8190acaf7581b0317",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/pathfinding/Support.java": "545d5c5a2b5f1e25f5bc3207df186fc72b982026f0366ab221347387f85feee7",
+    "oracle/pathfinding/generate.py": "55d6d2b0c4de93a4be99fc49a5c0f427ccf365e3ba17e3935fecb4c03be7e654",
+    "reference/server/Server/src/main/core/ServerConstants.kt": "fa28de7ee08f82432b2565044a9473a0ac4c57cc29d28dddc2f4d4454b85f0bd",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/Point.java": "97f4db2276053947fdcabd78ae1207ea7fa6a630b235458d0b579fa100b8314b",
+    "reference/server/Server/src/main/core/game/world/map/path/ClipMaskSupplier.java": "93eddf62306b1f5a373dac01d149abcf6727b1e4ccd17c72c07d60709e97fa1b",
+    "reference/server/Server/src/main/core/game/world/map/path/DumbPathfinder.java": "3bd0c8b74480bbb529952c153444b02e2a331def7fcfd718244bfdde939458db",
+    "reference/server/Server/src/main/core/game/world/map/path/Path.java": "0d7fd30e97ec020b8dec9013cd5a1330131e98f64a03496fa50b5994de24a6d7",
+    "reference/server/Server/src/main/core/game/world/map/path/Pathfinder.java": "81a9f20cff3bd34381984d0888600bdeb3e670d3725cc4b3d1e92ed26d0c993e",
+    "reference/server/Server/src/main/core/game/world/map/path/SmartPathfinder.kt": "9f9f9bc0c2f5f86fc7d3e3378f8fb9e2c1f360994dc798dcde4a23d027750ac6",
+    "tools/port_dumb.py": "fcebbb2da86445e3d50ea2433ff15ebd8bbed9b5de01f23918282047a876ceb7",
+    "tools/port_reach.py": "f9e2a961cb57f3c01421953f4d1bf84f96e82a1fe240140c083205caf1db2f0b",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

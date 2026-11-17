@@ -1,0 +1,42 @@
+{
+  "caseCount": 207,
+  "fixtureSha256": "761ea0d6d81a22513a288fd89b0161a09ab0113df818b7999762b16ef9d97fe6",
+  "format": 1,
+  "scope": "Complete unchanged PlayerRenderer, RenderInfo, UpdateSceneGraph, IoBuffer and original game writer. Explicit mutable player/mask/spatial/XTEA services and original packed location/distance observations. Compares frame bytes, local-list aliases/order/mutations, appearance stamps, callback/failure prefixes and normal rebuild publication. Concrete mask contents, region spatial enumeration, full entity/profile/startup/tick/socket integration remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/player-render/Support.java": "f3c50b51e14e236642f080b318439add142c8734c1b0c01baaba480288669070",
+    "oracle/player-render/generate.py": "f565a5387ab0ef6924081e2d2a39e0e104f007edfa41ec5dfaa5f572124dd15e",
+    "oracle/scenery/adapters/core/cache/crypto/ISAACCipher.java": "290c851c9e96a9ef730a37fe901aaca74ad75d06316c10171e73d6c53d65eafd",
+    "oracle/scenery/adapters/core/cache/misc/buffer/ByteBufferUtils.java": "d10e96e4e5d2aad74c4d9a7684f131cf61d2f179b5d8040f2dd0256e0dcd01a5",
+    "reference/server/Server/src/main/core/game/node/entity/player/info/RenderInfo.java": "080193f90af1d4f5b00fbb6ed269bb03e7e9893590222ad9624c1fa737ad2f91",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/update/PlayerRenderer.kt": "fec2dfada473744f91fff3254c6e4f91b986d6e4ffd7c2a5c2ca246c33b7fe66",
+    "reference/server/Server/src/main/core/net/IoWriteEvent.java": "c4c9df7723807af657fe8ec345a4c9450eb21155545a73e72494745344b84861",
+    "reference/server/Server/src/main/core/net/event/GameWriteEvent.java": "f841d3073e5577ae133ddbcdd772f9f0e1373d6c9e45119ac13ab8bf07c1d839",
+    "reference/server/Server/src/main/core/net/packet/Context.java": "0a1b6f5561f57f9717fbbaa25c60bbe21f8b781f9eafed8911c5c94ae559893c",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/OutgoingPacket.java": "c7015442a166b7751ba196da6f3c5587bbf63d162f0949890bb766cf8716789a",
+    "reference/server/Server/src/main/core/net/packet/PacketHeader.java": "a0635e12f2380381df12d534bc7695691d415c5c4dc0edf5692888082a623bc7",
+    "reference/server/Server/src/main/core/net/packet/context/SceneGraphContext.java": "8ab051a2a5e4d8aedcccc6e11d03c461c8e0c3745a64c8667d2b2e13f4076c07",
+    "reference/server/Server/src/main/core/net/packet/out/UpdateSceneGraph.java": "14f153b302298469f91db71ef1312907b5eabb5d3867259f70e3afb82d7ce71c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

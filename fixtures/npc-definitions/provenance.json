@@ -1,0 +1,42 @@
+{
+  "caseCount": 1749,
+  "configSha256": "2d0204672db5a104c138cf46c261c9599031fe41ed89d4296b97aaa953139790",
+  "fixtureSha256": "a425e653b8b66ed1c0f515a4f07ac27aa795f49c2cec55c3f1663720436fd868",
+  "format": 1,
+  "pinnedConfigRows": 8033,
+  "scope": "Complete unchanged NPCDefinition, Definition, ByteBufferUtils, Animation and Graphics compiled. Tests stored scalar/array/handler state excluding opaque dropTables service, raw decode/partial fields/positions, lazy cache identity and child/options queries; complete original NPCConfigParser conversions/field order with full pinned configuration, typed constructor values and partial loads. Explicit cache, varbit/player, NPC/drop-table/content/world services. No complete NPC class, drop tables, concrete animation execution or live world-startup claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/npc-definitions/Support.java": "9b315cbc8e8ba9741967bd0f6313061bf4a498d83a8de0fb6af3255fb8b3466b",
+    "oracle/npc-definitions/generate.py": "a38a48ff0ee28ff0609bfbf0c18e17772ae94a8b2ec700f4c4fa2da7106a27ab",
+    "reference/server/Server/src/main/content/global/activity/ttrail/ClueLevel.java": "31988715fd135261d20ed6af022633e484ac7b0a0051dcaa5439fb33348b19da",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/NPCDefinition.java": "1dd281295779abafe230aa43a609917ca570b26531a10806772f1e3bd2c7aaa3",
+    "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
+    "reference/server/Server/src/main/core/game/node/entity/combat/CombatStyle.java": "644ab7dd06d777766746cbc50ee0a6265e7abe00c44cbeb4a77912b16402fb16",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
+    "reference/server/Server/src/main/core/game/system/config/NPCConfigParser.kt": "c5ab551e7d5e92089b75f99f48fdc784fe10631b3e37a3a7db9bc696bde2b1a9",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Animation.java": "73320e2e4c356dccb6f446683d18dd5bfe1be8eee41eaba540e01acdb174aded",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Graphics.java": "f78fc7aa3320b9e356973c2f9faafaf12652ff75d5a3f7111f5e2c3da73a8e7c",
+    "reference/server/Server/src/main/core/tools/StringUtils.java": "51365165036173a8b2df93b9ea108b5cc01d8aa6b86dc23383719f1ff5482e13",
+    "tools/port_npc_schema.py": "455f9e192ce9faa2883715250203196f8108c7b8b01bf345f631382624816dca",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

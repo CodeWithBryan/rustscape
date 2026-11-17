@@ -1,0 +1,91 @@
+{
+  "arch": "x86_64",
+  "corpus": "ISAAC seed [1,2,3,4]; g4 input[i]=(i*17+i/7) modulo 256, 1024 bytes repeatedly read.",
+  "format": 1,
+  "java": "openjdk version \"25.0.3\" 2026-04-21 LTS\r\nOpenJDK Runtime Environment Temurin-25.0.3+9 (build 25.0.3+9-LTS)\r\nOpenJDK 64-Bit Server VM Temurin-25.0.3+9 (build 25.0.3+9-LTS, mixed mode, sharing)",
+  "os": "windows",
+  "profile": "release; thin LTO; codegen-units=1",
+  "results": [
+    {
+      "checksum": "16334547248625572067",
+      "iterations": 4000000,
+      "jvmOverRust": 1.060066844092344,
+      "jvmSamplesNs": [
+        11104200,
+        10213700,
+        10187600,
+        10239800,
+        10656200,
+        10293300,
+        10162400,
+        10421100,
+        10276500
+      ],
+      "name": "isaac_keys",
+      "rustSamplesNs": [
+        9692500,
+        9677400,
+        9682300,
+        9727300,
+        9694200,
+        9739600,
+        9713300,
+        9717100,
+        9655900
+      ]
+    },
+    {
+      "checksum": "16005595366658999162",
+      "iterations": 4000000,
+      "jvmOverRust": 1.5511587128572106,
+      "jvmSamplesNs": [
+        3235600,
+        3233000,
+        3236800,
+        3393000,
+        3258500,
+        3294400,
+        3313200,
+        3493100,
+        3273100
+      ],
+      "name": "buffer_g4",
+      "rustSamplesNs": [
+        2104600,
+        2111900,
+        2110100,
+        2119700,
+        2110300,
+        2106200,
+        2104600,
+        2110500,
+        2107100
+      ]
+    }
+  ],
+  "rustc": "rustc 1.86.0 (05f9846f8 2025-03-31)",
+  "samples": 9,
+  "scope": "Synthetic isolated primitives, sequential process runs; includes per-run object setup, excludes process startup. No world, content, networking, AI inference, or player-capacity claim.",
+  "sourceSha256": {
+    "Cargo.lock": "b84bd7edc625fd0b4fb251e67eb98965448387e71d85dcc3d088e92119b3be5f",
+    "crates/protocol/src/buffer.rs": "c77e22b9884cc63c53c2ada4f8751cc50012e4198c7447ea4854888c203c547e",
+    "crates/protocol/src/isaac.rs": "7aee2f2868aa8186af4dcd2bf6cd8d70cf3173562c205bcff54019e4f5202181",
+    "oracle/OracleBenchmark.java": "173ba8e3ffa44ac93e55eef41c8b975153ac59837a7567756813e737be70f8c6",
+    "xtask/src/benchmark.rs": "4dc4a474bee36a9b3d9d84026dea7fba6fe3e53642823139730c2aabd80477f4"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  },
+  "warmups": 20
+}

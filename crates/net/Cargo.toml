@@ -1,0 +1,22 @@
+[package]
+name = "rs09-net"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Desktop TCP/WebSocket transport around the shared portable 530 protocol"
+
+[dependencies]
+rs09-protocol.workspace = true
+rs09-cache.workspace = true
+
+# The browser build takes only the JS5 update client (js5_client,
+# js5_provider, js5_stream); sockets there come from the page.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio.workspace = true
+bytes.workspace = true
+futures-util.workspace = true
+tokio-tungstenite.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

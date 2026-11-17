@@ -1,0 +1,1 @@
+package core.game.node.entity.impl;public class GameAttributes{}

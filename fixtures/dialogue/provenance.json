@@ -1,0 +1,52 @@
+{
+  "format": 1,
+  "initialBaseline": {
+    "caseCount": 1586,
+    "sha256": "4a6fd2d0759be4d995c0a81cd455018a56b5091155ec2aa80c6da18b548cacc8"
+  },
+  "upstream": {
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "url": "https://gitlab.com/2009scape/2009scape.git",
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only"
+    },
+    "client": {
+      "url": "https://gitlab.com/2009scape/rt4-client.git",
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only"
+    }
+  },
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/dialogue/Harness.java": "8ee19a01f15f2d3f6c710c0fed7223a541779fa4bb7af4183e512b63efba61c5",
+    "oracle/dialogue/Standins.java": "05bc3d57d468f2bb4523dcd44cfaf0a54aad68a5dc8fd04a06af2fdf50655750",
+    "oracle/dialogue/cases.py": "0c7dbd9d0b7bf050497be1461103f3f0d7c97cb9ac1eb5478d3399847d9bd279",
+    "oracle/dialogue/generate.py": "019242a4fa38707d54e249b2761dd6f62ae4f0fc692121cf709aacb5b53db04e",
+    "oracle/dialogue/initial.lock.json": "81f048592eafe232a513b36a01f9a7f08a5df5c5c6995e98f4cb11655e2f13ce",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/api/DialUtils.kt": "b13320cd1dd18e265de5f68dd96051820ebf8c2d01c6eff518cbfddfaae67f23",
+    "reference/server/Server/src/main/core/game/dialogue/DialogueAction.java": "af8424edbb22c4bf485e4c819538fb785e58280ce1b5d14227c7c389d9cc8acc",
+    "reference/server/Server/src/main/core/game/dialogue/DialogueFile.kt": "46d07760ad00ccc3001bb55d45113ca522c26783781d8f20b4c19a111c5dd5d1",
+    "reference/server/Server/src/main/core/game/dialogue/DialogueInterpreter.java": "807e93f4feaf60645284cb4d1ffacc63968d92b735fa500a5e47b628504a4d8e",
+    "reference/server/Server/src/main/core/game/dialogue/DialoguePlugin.java": "02b1e4dff6da337838cabd3c4dce465b729d9b204e0516a33c0c46b1a983a3bf",
+    "reference/server/Server/src/main/core/game/dialogue/DialogueTopic.kt": "d7a0531cc62397e96bb892f82b303cef90789dee5ca057c1c6541f7717404b94",
+    "reference/server/Server/src/main/core/game/dialogue/EmptyPlugin.kt": "571834c2268ffe98101de6a7ee2dcc1751d4e6a53252eb3bc445263005520a53",
+    "reference/server/Server/src/main/core/game/dialogue/FacialExpression.java": "6209ae0111899e343dc3769c63ffe6ce802741748280bba23c7b3e292221db3c",
+    "reference/server/Server/src/main/core/game/dialogue/SimpleDialoguePlugin.java": "364bb4badabfee1bea39002e43d81e4653c977f1208b0294d79c5fdb63b353c0",
+    "reference/server/Server/src/main/core/game/event/Event.kt": "bb2ea9af3e51c32b7c44ba7b545e0fbd8e42cb940301a6f8ea682a74788d224c",
+    "reference/server/Server/src/main/core/game/event/Events.kt": "3c1910c93db730dfbec2a0206954bbef0d72b09463d27124f8b303a9f00985d3",
+    "reference/server/Server/src/main/core/plugin/Initializable.java": "46ae44725f9a53d802cc6d9d083c1657ae2186c88cb9938e72a199658b8dde5c",
+    "reference/server/Server/src/main/core/plugin/Plugin.java": "642ad4f3a2999d3d1194916fd323c7e7c508e20aaa308d024822694ab4a1f764",
+    "reference/server/Server/src/main/core/plugin/PluginManifest.java": "ecdd947dd0684d876523514081f85245c5f4b44a00038954c84b217e3cbf4159",
+    "reference/server/Server/src/main/core/plugin/PluginType.java": "439c2998e151b10b4102f0ac41d4c2bfb7f9f2f1dacc3c7a2516bc2689188d41",
+    "reference/server/Server/src/main/core/tools/DialogueConst.kt": "1286c5c62c7433a1a0b6bd6dd2dcff30677fdb7bc29eb74eca1864b39de5940b",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "caseCount": 1586,
+  "snapshotCount": 5406,
+  "fixtureSha256": "4a6fd2d0759be4d995c0a81cd455018a56b5091155ec2aa80c6da18b548cacc8",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "scope": "Complete unchanged DialogueInterpreter.java, DialoguePlugin.java, DialogueFile.kt, EmptyPlugin.kt, DialogueTopic.kt, FacialExpression.java, DialogueAction.java, SimpleDialoguePlugin.java, DialUtils.kt, DialogueConst.kt, Event.kt and the plugin annotations/interface, plus the three dialogue event classes copied verbatim from Events.kt at generation time. Player, NPC, Entity, Component, InterfaceManager, PacketDispatch, Item, ItemDefinition, NPCDefinition, GameWorld settings, PacketRepository, logging and System.err are recording stand-ins; scripted plugin/file content calls only inherited original methods. Reflection observes private fields and empties the static plugin registry between scenarios. Not packet bytes, real definitions, real interface lifecycle, concrete NPC/quest content, DialogueBuilder, DialogueLabeller, SkillDialogueHandler or a live session."
+}

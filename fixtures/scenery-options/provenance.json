@@ -1,0 +1,39 @@
+{
+  "caseCount": 77,
+  "fixtureSha256": "68c50eb8256e184252a6151b5a909c2110f7c9921fa67cc3eb5842487bff4731",
+  "format": 1,
+  "scope": "Complete unchanged InteractPlugin, Option and OptionHandler; original SceneryDefinition forId/getOptionHandler/setOptionHandler/getOptions and Definition.getConfiguration; original DoorManagingPlugin.newInstance registration. Cached definitions versus live IDs, retained arrays/options/handlers, ROOT locale, partial failures, and inherited walk/delay defaults. Scenery construction/metadata and other content methods are adapters. Native ownership is tested separately; these observations do not establish full content/startup or live doors.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/legacy-interaction/generate.py": "9ae180071d00c686f76bf9d8e1eeb0c37552bde3250cc05f92968ccf13d59fa1",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/scenery-options/Support.java": "8f1ae8eba9b7a0359d3ca0d70904d1ef2a5e6f3ec5cad364edad9257233b53c3",
+    "oracle/scenery-options/generate.py": "fb4d2ad063f98acbb10a3464e5de4b8ba583ec07e0c71108d76eb0a382f5d081",
+    "reference/server/Server/src/main/content/global/handlers/scenery/DoorManagingPlugin.java": "3bb19cfbf4ffb4833dcc7b2022665da8f2e833cf8838b380d5c67c955516d91f",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/SceneryDefinition.java": "25116188ca884e6580e3c273a254ede57b811fddc68ef82be2b6a05f43374312",
+    "reference/server/Server/src/main/core/game/interaction/InteractPlugin.java": "4bb74609996f0518f35facfaab454a3d963cfc4028302ce384874fc863dab31f",
+    "reference/server/Server/src/main/core/game/interaction/Option.java": "3b3627c1a5c069329f068fc211f59252f5b880d73c1500c4c332e31d3128163b",
+    "reference/server/Server/src/main/core/game/interaction/OptionHandler.java": "fa8138e9f13a34ca4a8222fe026694a03ceda053575c214dcbf7dc8cd321646b",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

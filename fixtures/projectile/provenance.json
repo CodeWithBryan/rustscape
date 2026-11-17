@@ -1,0 +1,39 @@
+{
+  "caseCount": 403,
+  "fixtureSha256": "1578b738f1f893d57c481a79585cd063e1acb4311e63c231b395668a8ce29347",
+  "format": 1,
+  "scope": "Unchanged ProjectilePathfinder, Point, Path and Direction, and verbatim isProjectileClipped/hasLineOfSight with packed LocationHash and transform. Minimal node/location and region-flag adapters record ordered queries and failure prefixes. Does not cover all combat or a reentrant JVM singleton.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/projectile/Support.java": "a4158b453825d8e511c4021e906a6991d404dacf0d17eb4fd73dd6e49dd4559f",
+    "oracle/projectile/generate.py": "4a2e4590602dee20dc63cb6f145b5b72830b83169b1992f14d021067ae1c2ce1",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/node/entity/combat/CombatSwingHandler.kt": "223f19b0e8d3c641c83554058b16dc23b69d6bee230cd28c1e002aff24636835",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/Point.java": "97f4db2276053947fdcabd78ae1207ea7fa6a630b235458d0b579fa100b8314b",
+    "reference/server/Server/src/main/core/game/world/map/path/ClipMaskSupplier.java": "93eddf62306b1f5a373dac01d149abcf6727b1e4ccd17c72c07d60709e97fa1b",
+    "reference/server/Server/src/main/core/game/world/map/path/Path.java": "0d7fd30e97ec020b8dec9013cd5a1330131e98f64a03496fa50b5994de24a6d7",
+    "reference/server/Server/src/main/core/game/world/map/path/Pathfinder.java": "81a9f20cff3bd34381984d0888600bdeb3e670d3725cc4b3d1e92ed26d0c993e",
+    "reference/server/Server/src/main/core/game/world/map/path/ProjectilePathfinder.java": "aebdacbac7ecddf48d521f25d6251428590b254b285c2bea06b02c7e83b2cdf5",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

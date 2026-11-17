@@ -1,0 +1,13 @@
+[package]
+name = "rs09-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Revision 530 wire codecs, verified against the pinned RT4 client"
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[dependencies]
+num-bigint = "=0.4.8"

@@ -1,0 +1,1 @@
+package core.game.node.entity.skill;public class LevelUp {public static void levelup(core.game.node.entity.player.Player p,int slot,int amount){oracle.Support.emit("levelUp.levelup",null,slot,amount);}public static void sendFlashingIcons(core.game.node.entity.player.Player p,int skill){oracle.Support.emit("levelUp.sendFlashingIcons",null,skill);}}

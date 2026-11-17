@@ -1,0 +1,38 @@
+{
+  "caseCount": 389,
+  "fixtureSha256": "70ea82ccece59456eb5a0de3eb16715a651a7c62db333d2a2542a60773d6787b",
+  "format": 1,
+  "scope": "Complete unchanged Item, Container, ContainerEvent, ContainerListener and enum classes; complete Definition and verbatim selected ItemDefinition/Node methods. Explicit controlled degradation/ground-item and opaque plugin/interaction/Node-world adapters. Isolated definitions/listeners and mutable NULL_ITEM reset per scenario. State, aliases, event/array retention, partial failures, synchronous callbacks, integer-map output and JSON container loading are compared. No complete Node, item content configuration/plugin/degradation, actual ground spawning, live inventory/bank/equipment profile or world integration claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/inventory/InventoryOracle.java": "c7a98e3f76bd5711508b408d65121e41b62f03286c0ddd3fe7ad8e545227c5e9",
+    "oracle/inventory/generate.py": "ec994522b517f1ec218ca792101df8816e0b11e297420f22116ef97a6aa9235b",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
+    "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
+    "reference/server/Server/src/main/core/game/container/Container.java": "8b167878e7dd251d2b61c341837cb735c965c4f29ab7dfaebde073998bb96153",
+    "reference/server/Server/src/main/core/game/container/ContainerEvent.java": "fb7acc30b486802a5fdd08e3973237c986cd80507d975796fcaf0cc37c607f4d",
+    "reference/server/Server/src/main/core/game/container/ContainerListener.java": "bb41d0a29ca3ceddf768cd07968cf3c368c1567b2aa1419cf20332a7fb50972b",
+    "reference/server/Server/src/main/core/game/container/ContainerType.java": "6e809d46708ffdf8038797b9ddfaca9e88940751d765577c2c9aa23482fed4bf",
+    "reference/server/Server/src/main/core/game/container/SortType.java": "b53e80b3c19fdcfc884cafe260faa8aeb86d143b513638bb6a3ada5ed16f71c2",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/node/item/Item.java": "d43b95f9b6207e56f776c0a8b7817e04030e81cbe39bba7900cedbf67a6d8df8",
+    "reference/server/Server/src/main/core/game/system/config/ItemConfigParser.kt": "5b4bf5b5e95a5094fe66a1d3e1cf933653faa6f01b9fa3aa15a8262f47208e33",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

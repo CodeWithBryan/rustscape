@@ -1,0 +1,36 @@
+{
+  "caseCount": 730,
+  "fixtureSha256": "604b32b3e97b99f5f196bccc886deca70b5c5a3bfa13c3efb1fd6d84895e14eb",
+  "format": 1,
+  "scope": "Complete unchanged pinned InteractPlugin, Option and OptionHandler classes; constructor, init, setDefault, set/remove/get/options/initialized/sendOption and Option.defaultHandler. Original immutable names/indices, canonical static Option identity, exposed arrays, live loop bounds, reentrant callbacks and partial failures. Runtime node classes, definition/handler registry, default ROOT locale and packet delivery are explicit recording services. Other approach/arrival methods are not executed by this corpus. Native owning-world/default-registry and live action bindings remain separate.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/interaction-options/Support.java": "a77b7f9b0df66e2b450867839055728deda5604281e1f2528406fc0b3dcdb259",
+    "oracle/interaction-options/generate.py": "09378158b19949cf6eddd4202f0b2604b65a4fed8d165c3f0a0353f500282e16",
+    "oracle/legacy-interaction/generate.py": "9ae180071d00c686f76bf9d8e1eeb0c37552bde3250cc05f92968ccf13d59fa1",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/game/interaction/InteractPlugin.java": "4bb74609996f0518f35facfaab454a3d963cfc4028302ce384874fc863dab31f",
+    "reference/server/Server/src/main/core/game/interaction/Option.java": "3b3627c1a5c069329f068fc211f59252f5b880d73c1500c4c332e31d3128163b",
+    "reference/server/Server/src/main/core/game/interaction/OptionHandler.java": "fa8138e9f13a34ca4a8222fe026694a03ceda053575c214dcbf7dc8cd321646b",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

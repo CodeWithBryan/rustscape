@@ -1,0 +1,37 @@
+{
+  "caseCount": 309,
+  "fixtureSha256": "bbb6a6d4d307c6ea191807925bc6b022ed71f19e323a1840a2129c4e43405d42",
+  "format": 1,
+  "initialBaseline": {
+    "caseCount": 309,
+    "scope": "Independent initial complete unchanged ActionLocks/Lock/LockElapse observations before further runtime integration.",
+    "sha256": "bbb6a6d4d307c6ea191807925bc6b022ed71f19e323a1840a2129c4e43405d42"
+  },
+  "scope": "Complete unchanged ActionLocks.java, Lock.java and LockElapse.java; explicit GameWorld clock samples/failures/reentry and native callback recording. Reflection observes private fields and aliases without changing reference source. No gameplay relies on diagnostic IDs, map inspection order or recording executors. Runtime ownership, actor integration, native elapse and world admission are separately regression-tested.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/action-locks/Support.java": "fa181aaa9f8f712f68597ea0e23dbca7d4825fa1581e7e82a41be118a77a62f1",
+    "oracle/action-locks/generate.py": "d75b02a28c2ca7f319b304b8a61aa690ffb7cfaa456adb5436cd1bab3762ec38",
+    "oracle/action-locks/initial.lock.json": "cb6c656577f4a85638db7df64e5fea221882f6cc3fce04fa2f77d71a12f4d805",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "reference/server/Server/src/main/core/game/node/entity/lock/ActionLocks.java": "0f7fa7d9371d83dd14ac892b6ddf1f7d489dfbd2b23f0abbb78ada91474f04d3",
+    "reference/server/Server/src/main/core/game/node/entity/lock/Lock.java": "bf22391d7f7c069cc9cc8c32eabeb57ae15fc0487b852fe351b8170fd57e81a9",
+    "reference/server/Server/src/main/core/game/node/entity/lock/LockElapse.java": "b3a098ea249c7a1dba9447f7b1734b7d3144c87bb1c225e500aae509218ed27a",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

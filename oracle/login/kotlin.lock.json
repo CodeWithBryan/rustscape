@@ -1,0 +1,42 @@
+{
+  "annotations-13.0.jar": {
+    "sha256": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478",
+    "size": 17536,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar"
+  },
+  "jna-5.6.0.jar": {
+    "sha256": "5557e235a8aa2f9766d5dc609d67948f2a8832c2d796cea9ef1d6cbe0b3b7eaf",
+    "size": 1509440,
+    "url": "https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.6.0/jna-5.6.0.jar"
+  },
+  "kotlin-compiler-embeddable-1.8.20.jar": {
+    "sha256": "5655386be55d45a78d887372bbd59d03e06750f7756108d14139e8d7e4b2e179",
+    "size": 55371917,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/1.8.20/kotlin-compiler-embeddable-1.8.20.jar"
+  },
+  "kotlin-daemon-embeddable-1.8.20.jar": {
+    "sha256": "4602bd521a708f32deced0921d06c7977056c5887359cdabfc7070e9732cb353",
+    "size": 395040,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/1.8.20/kotlin-daemon-embeddable-1.8.20.jar"
+  },
+  "kotlin-reflect-1.6.10.jar": {
+    "sha256": "3277ac102ae17aad10a55abec75ff5696c8d109790396434b496e75087854203",
+    "size": 3038560,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar"
+  },
+  "kotlin-script-runtime-1.8.20.jar": {
+    "sha256": "4bddc06cad20bb843fbd24094b1dc3c31f55508c6918885e8b548f2ebaa8a93e",
+    "size": 42831,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/1.8.20/kotlin-script-runtime-1.8.20.jar"
+  },
+  "kotlin-stdlib-1.8.20.jar": {
+    "sha256": "4395647b1961d9fb730a34e8dbe56c293157bc0759004cca63d9b5ee6653e5c7",
+    "size": 1670469,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.8.20/kotlin-stdlib-1.8.20.jar"
+  },
+  "trove4j-1.0.20200330.jar": {
+    "sha256": "c5fd725bffab51846bf3c77db1383c60aaaebfe1b7fe2f00d23fe1b7df0a439d",
+    "size": 572985,
+    "url": "https://repo.maven.apache.org/maven2/org/jetbrains/intellij/deps/trove4j/1.0.20200330/trove4j-1.0.20200330.jar"
+  }
+}

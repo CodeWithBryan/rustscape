@@ -1,0 +1,34 @@
+{
+  "caseCount": 242,
+  "fixtureSha256": "3594f641ada1840911e2202ff02c847f0fd9b46c2833e756b48c3953113e232e",
+  "format": 1,
+  "scope": "Complete unchanged TimerManager, RSTimer, PersistTimer and TimerFlag; verbatim nullable ContentAPI registerTimer. Actual JSON-simple parser/HashMap persistence and original Kotlin reflective instance construction. Explicit entity/player/modal/script/clock/log adapters, controlled registry lookup and scripted content subclasses. No full TimerRegistry registration/auto timers, concrete gameplay timers, world scheduler, profile or world entry claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/timers/Support.kt": "3652c80569e166e6dda4bcad6ea21c3aec5a332e7673d6b756c4e4186301e5c7",
+    "oracle/timers/generate.py": "a42c74e5748b55a3e061d33bd50a74f759c7c88c35b5e71ece83faef90bafd18",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/game/system/timer/PersistTimer.kt": "385addf62953026b98e4668dfb2b40a23f63d5e07535e5383b9e5d7e0a4259fd",
+    "reference/server/Server/src/main/core/game/system/timer/RSTimer.kt": "25620d9c4cc14c76790e68eed83c023f20a1e9d9fa968edbad3ff829a425b8cc",
+    "reference/server/Server/src/main/core/game/system/timer/TimerFlag.kt": "69192a6b42bdc5c44fc8da43c5c06ed72855ef24f058bdbee0e2194658ee7a42",
+    "reference/server/Server/src/main/core/game/system/timer/TimerManager.kt": "38706b96fb08b0f8f7fd7de3bfb775aa06cbb57071002b9e24104e80ece51e5f",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

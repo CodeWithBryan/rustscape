@@ -1,0 +1,1 @@
+package core.game.node.scenery;public class SceneryBuilder{public static boolean replace(Scenery a,Scenery b){return oracle.Support.replace(a,b,null,true);}public static boolean replace(Scenery a,Scenery b,int ticks,boolean clip){return oracle.Support.replace(a,b,ticks,clip);}}

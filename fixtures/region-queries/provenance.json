@@ -1,0 +1,32 @@
+{
+  "caseCount": 1002,
+  "fixtureSha256": "10991382612aa2f9179090be8166a7e02267e61f178e45a2f76ff7334329a933",
+  "format": 1,
+  "scope": "Unchanged selected RegionManager clipping/landscape/teleport/clipped/water bodies and original getFlags body under recording wrapper; original Location getters/hash and complete ChunkFlags. Region lookup/load and chunk arrays are explicit mutable recording services. Captured flags, repeated chunk reads, location mutations, null/jagged landscapes, callback reentry/failures and signed masks are observed. Owning-world Scene integration has separate native tests; no live Take/full RegionManager startup/parallel or capacity claim.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/region-queries/Support.java": "99636c51ae339a887c63991e39bf0408d0f1795c902bdbad0962f74effd788b5",
+    "oracle/region-queries/generate.py": "cd311a8cd057a8776eff16d9204dbd40e221c164ae0a705651007f813c7e8f39",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/RegionManager.kt": "c2b3bbc5b205e9ea6e8322a1eceb53dfc081975706db23a182b48af68707f7e3",
+    "reference/server/Server/src/main/core/game/world/map/build/ChunkFlags.java": "cd9bf1d8334189d374e68fa210104c1ca288c582b28ab5d387bc340bc7436354",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}
