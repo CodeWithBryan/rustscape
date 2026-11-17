@@ -50,6 +50,7 @@ pub mod npc_init;
 pub mod npc_render;
 pub mod npc_spawns;
 pub mod npc_walk;
+pub mod packet_handlers;
 pub mod packet_queue;
 pub mod pathfinding;
 pub mod pickup;

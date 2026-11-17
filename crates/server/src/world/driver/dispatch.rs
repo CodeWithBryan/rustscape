@@ -251,6 +251,24 @@ pub enum Handler {
     /// `processTrackingPacket`'s display update: the client info fields and
     /// `world::interfaces::switch_window_mode`.
     DisplayUpdate,
+    /// `processItemAction`: `world::packet_handlers::actions::item_action`
+    /// (with `InteractPlugin.handleItemOption` in `packet_handlers::item_option`).
+    ItemAction,
+    /// `processNpcAction`: `world::packet_handlers::actions::npc_action`.
+    NpcAction,
+    /// `processPlayerAction`: `world::packet_handlers::actions::player_action`.
+    PlayerAction,
+    /// `processUseWith`: `world::packet_handlers::use_with::process`.
+    UseWith,
+    /// `processComponentUseWith`: `world::packet_handlers::component::process`.
+    ComponentUseWith,
+    /// `processSlotSwitch`: `world::packet_handlers::slot_switch::process`.
+    SlotSwitch,
+    /// The three examine branches: `world::packet_handlers::examine`'s
+    /// `item_examine`, `scenery_examine` and `npc_examine`.
+    Examine,
+    /// The `TrackFinished` branch: `world::packet_handlers::examine::track_finished`.
+    TrackFinished,
 }
 
 /// A branch of `PacketProcessor.process` ported in [`super`].
@@ -353,15 +371,13 @@ fn undecoded_class(name: &str) -> &'static str {
 pub fn route(class: &str) -> Route {
     use Route::*;
     match class {
-        "ItemAction" => NotPorted("PacketProcessor.processItemAction (item option handlers)"),
-        "NpcAction" => NotPorted("PacketProcessor.processNpcAction (NPC interaction dispatch)"),
+        "ItemAction" => Native(Handler::ItemAction),
+        "NpcAction" => Native(Handler::NpcAction),
         "SceneryAction" => Native(Handler::SceneryAction),
-        "PlayerAction" => {
-            NotPorted("PacketProcessor.processPlayerAction (player options, trade requests)")
-        }
+        "PlayerAction" => Native(Handler::PlayerAction),
         "GroundItemAction" => Native(Handler::GroundItemAction),
         "UseWithNpc" | "UseWithItem" | "UseWithScenery" | "UseWithGroundItem" | "UseWithPlayer" => {
-            NotPorted("PacketProcessor.processUseWith")
+            Native(Handler::UseWith)
         }
         "IfAction" => Native(Handler::IfAction),
         "CloseIface" => Native(Handler::CloseIface),
@@ -374,12 +390,8 @@ pub fn route(class: &str) -> Route {
         | "ComponentPlayerAction"
         | "ComponentNpcAction"
         | "ComponentSceneryAction"
-        | "ComponentGroundItemAction" => {
-            NotPorted("PacketProcessor.processComponentUseWith (spells, familiar specials)")
-        }
-        "SlotSwitchSingleComponent" | "SlotSwitchMultiComponent" => {
-            NotPorted("PacketProcessor.processSlotSwitch")
-        }
+        | "ComponentGroundItemAction" => Native(Handler::ComponentUseWith),
+        "SlotSwitchSingleComponent" | "SlotSwitchMultiComponent" => Native(Handler::SlotSwitch),
         "TrackingMouseClick" | "TrackingFocus" | "TrackingCameraPos" | "PlayerPrefsUpdate" => {
             Driver(Body::Nothing)
         }
@@ -389,14 +401,12 @@ pub fn route(class: &str) -> Route {
         "QuickChat" => NotPorted("QCRepository.sendQC (quick chat)"),
         "InputPromptResponse" => Native(Handler::InputPrompt),
         "ReportAbuse" => NotPorted("AbuseReport (report abuse)"),
-        "TrackFinished" => NotPorted("MusicPlayer.replay (music track finished)"),
+        "TrackFinished" => Native(Handler::TrackFinished),
         "GESetOfferItem" => NotPorted("StockMarket (Grand Exchange offer item)"),
         "Command" => NotPorted("CommandSystem.parse (commands)"),
         "PacketCountUpdate" => Driver(Body::PacketCount),
         "ContinueOption" => Native(Handler::ContinueOption),
-        "ItemExamine" => NotPorted("ItemDefinition examine text"),
-        "SceneryExamine" => NotPorted("SceneryDefinition examine text"),
-        "NpcExamine" => NotPorted("NPCDefinition examine text"),
+        "ItemExamine" | "SceneryExamine" | "NpcExamine" => Native(Handler::Examine),
         // `else -> log(WARN, "Unprocessed Packet: ...")`.
         _ => NotPorted("PacketProcessor.process else branch (Unprocessed Packet)"),
     }

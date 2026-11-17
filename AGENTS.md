@@ -169,6 +169,32 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   listeners and every other outside call are required Host services with no
   default; skills and special energy are native. The command, random event
   content and every session binding are not ported. See docs/content-timers.md.
+- For the item, NPC, player, use-with, component use-with, slot switch,
+  examine and track-finished packets (world/packet_handlers:
+  processItemAction with InteractPlugin.handleItemOption, processNpcAction,
+  processPlayerAction, processUseWith with NodeUsageEvent and
+  UseWithHandler, processComponentUseWith, processSlotSwitch/switchItem, the
+  examine getters, EquipHandler, DropListener) or their driver routes, run
+  `cargo test -p rs09-server --test packet_handlers --test tick_driver` and
+  `cargo xtask packet-handlers-oracle --check` with Python/JDK 11, plus the
+  interaction_listeners, legacy_interaction, inventory, equipment, trade,
+  spells, player_tabs and world_login suites. Preserve the 3,314 cases. Keep
+  the second item.interaction read, the pulse's own-node target and its
+  logging catch, the NPC listeners' NPC with the shown id, the ROOT player
+  option name, the use-with flip and which misses clear the minimap, run's
+  swallowed exceptions against the pulses' propagated ones, the live handler
+  list and the PLAYER_TYPE array growth, "Too late!" after the clear, the
+  strict magic delay, the tab drag's remove-and-add and `secondSlot - 1`,
+  the examine cache with the note overwrite and "It's an Hans.", the casts
+  of the equip slot/sound and unequip's plugin answer, and the drop's lock
+  presence test and identity checks. Oracle adapter fields must not share a
+  name with a getter's Kotlin property (the original reads getters). Every
+  outside call is a required service with no default; EquipmentContainer.add
+  is a service here (its body is inventory/equipment, not run with
+  EquipHandler by any corpus); content listeners, plugins and
+  UseWithHandler subclasses stay content. Nothing binds the libraries in a
+  live world; the --world server binds the routed handlers. See
+  docs/packet-handlers.md.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790
