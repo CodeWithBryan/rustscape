@@ -35,8 +35,8 @@ interface listeners and component plugins, quest requirements, RulesAndInfo,
 the update sequence's renderable list and update masks.
 
 The world pulse that finishes a login is submitted through
-`Host::submit_login_pulse`; the tick driver (not ported) is expected to run
-`pulse::run` when the world pulse queue reaches it, one tick later.
+`Host::submit_login_pulse`; the tick driver ([tick-driver.md](tick-driver.md))
+runs `pulse::run` when its world pulse runner reaches it, one tick later.
 
 ## Packet origins: `oracle/world-login`
 
@@ -185,7 +185,8 @@ bans, updates, wrong passwords, duplicate logins, parse failures and the
 `Throwable` recovery are ported but no world-trace scenario reaches them; the
 handshake reply (its server key comes from the original's `Math.random`
 position) and decoding are the transport's (login corpus). Nothing after the
-login tick is compared: that is the tick driver's.
+login tick is compared here: the tick driver's test compares the later ticks
+([tick-driver.md](tick-driver.md)).
 
 ## What the tick driver and the `--world` step need
 

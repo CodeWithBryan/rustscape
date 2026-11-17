@@ -88,6 +88,10 @@ use std::{
     },
 };
 
+/// The tick driver against the same scenarios, on this binding.
+#[path = "world_login/tick_driver.rs"]
+mod tick_driver;
+
 const TRACE: &str = include_str!("../../../fixtures/world-trace/trace.jsonl");
 const TRACE_PROVENANCE: &str = include_str!("../../../fixtures/world-trace/provenance.json");
 const ORIGINS: &str = include_str!("../../../fixtures/world-login/origins.jsonl");
@@ -106,9 +110,13 @@ const COUNTER_OPCODES: [u8; 16] = [
 /// when the cache is present.
 const SPELL_BOOK_VARBIT: (i32, i32, i32, i32) = (439, 357, 0, 1);
 
-static NOW: AtomicI64 = AtomicI64::new(0);
+thread_local! {
+    /// The clock of the scenario the test thread drives: tests run in
+    /// parallel and each drives its own scenarios.
+    static NOW: AtomicI64 = const { AtomicI64::new(0) };
+}
 fn now() -> i64 {
-    NOW.load(Ordering::SeqCst)
+    NOW.with(|n| n.load(Ordering::SeqCst))
 }
 static RUN: AtomicUsize = AtomicUsize::new(0);
 
@@ -2613,7 +2621,7 @@ fn configuration() -> (Configuration, Constants, Location) {
 fn run(scenario: &Scenario, seed: &[(String, Vec<u8>)]) -> Run {
     let (config, constants, start) = configuration();
     let header_clock = 1_689_163_200_000i64;
-    NOW.store(header_clock, Ordering::SeqCst);
+    NOW.with(|n| n.store(header_clock, Ordering::SeqCst));
     let directory = std::env::temp_dir().join(format!(
         "rs09-world-login-{}-{}-{}",
         std::process::id(),
@@ -2772,7 +2780,7 @@ fn run(scenario: &Scenario, seed: &[(String, Vec<u8>)]) -> Run {
                 compare_players(&binding, v, &mut out);
             }
             "tick" => {
-                NOW.fetch_add(600, Ordering::SeqCst);
+                NOW.with(|n| n.fetch_add(600, Ordering::SeqCst));
                 binding.inner.ticks = v["tick"].as_i64().unwrap() as i32 - 1;
                 let due = std::mem::take(&mut binding.inner.pending);
                 if due.is_empty() {

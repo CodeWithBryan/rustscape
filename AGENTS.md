@@ -1021,7 +1021,26 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   counter and varps they carry) are inputs, not ports: it pins 206 natively
   written entries per login and every replayed segment, and a closed gap or
   a new difference must fail it. Nothing installs the library; the tick
-  driver is not ported. See docs/world-login.md.
+  driver is world/driver (next bullet). See docs/world-login.md.
+- For the tick driver (world/driver: handleTickActions' phases with the
+  verified libraries installed, GameReadEvent.read, Decoders530's table,
+  PacketProcessor's routes, PacketWriteQueue, GameWorld.pulse, Player.update
+  and Player.reset, the logout path), run `cargo test -p rs09-server --test
+  world_login --test tick_driver` plus the tick, world_update, repository,
+  pulses, social, world_trace and canonical_player suites, and reproduce
+  world-login-oracle. The world-trace comparison is world_login's
+  tick_driver module on that binding: every entry of the three scenarios
+  (bytes and dropped flag), the characters, lobby and counter after every
+  step, the events and the saves. Keep the phase order and tick::handle's
+  catch/finally, the read event's size -1 path and its byte[255] limit that
+  wraps and returns, refusals that are logged and recorded (never a
+  success), the five immediate write classes, the flush's one writer, the
+  wrapping counter and the 50-tick hand-off. Every replayed segment, every
+  differing entry (eleven player updates) and every stand-in kind is pinned;
+  a closed gap or a new difference must fail it. The test clock is per
+  thread. Nothing installs the driver (the --world flag is the next step);
+  client input, NPCs and the lobby are not reached by any scenario. See
+  docs/tick-driver.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,
