@@ -430,6 +430,39 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   locations and the dig callbacks are named content services. The global
   books (they need BookInterface) are not ported; nothing installs the
   library in `--world` (the binding is described in docs/global-items2.md).
+- For core.api (world/content_api: every ContentAPI.kt function, its
+  ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
+  SkillDialogueBuilder, and the other core/api files: ApiExtensions,
+  Commands, Container, ContentInterface and the listener interfaces,
+  DialUtils' splitLines, EquipmentSlot, Event, God, IfaceSettingsBuilder,
+  InputType, MapArea, regionspec, utils/Vector), run `cargo test -p
+  rs09-server --test content_api` and `cargo xtask content-api-oracle
+  --check` with Python/JDK 11, plus the suites of every library it wraps or
+  re-exports (variables, plain_dialogue, commands, content_timers,
+  consumables, global_items, global_items2, dialogue_dsl, dragonfire,
+  special_attacks, grand_exchange, drop_tables, global_handlers, gathering).
+  Preserve the 1,635 cases (974 designed, 661 injected failures) and the
+  ThreadLocalRandom state after each. The oracle compiles ContentAPI.kt and
+  the other core/api files unchanged over recording adapters (oracle
+  adapter fields never share a getter's property name: Kotlin reads the
+  field). Every call on another class is `Host::call(Member, args)` named
+  as the corpus records it; field reads are plain Host methods; every
+  service is required with no default and content callees (slayer, GE,
+  shops, POH storage, consumables, requirements, quests) stay services.
+  Keep the bodies' read and call order: `player.bank`'s secondary choice,
+  the familiar read twice for a BoB cast, `Item(...)` recorded before its
+  definition lookup, the DUPE_ALERT message's `Item.toString()`, the ten
+  storable families, decantContainer's HashMap order by identity hash (a
+  host input), `setTitle`'s throw after both packets, `runcs2`'s reversed
+  arguments and printed failure, `forceMove`'s ticks, single mask and
+  swallowed callback, the second active-script read of
+  restartScript/stopExecuting, the reified timer casts, `Math.pow(x, 2.0)`
+  as `x * x` in Vector. Varps stay thin wrappers over player/variables;
+  the earlier slices' ContentAPI ports are re-exported in
+  `content_api::ported` (docs/content-api.md lists the pairs). Nothing
+  binds Host to the live world yet; WeightedTable, PlayerCamera,
+  PlayerStatsCounter and Permadeath are not ported. See
+  docs/content-api.md.
 - For eating and drinking (world/consumables: Consumable, Food, Drink, Potion,
   Cake, HalfableFood, BarbarianMix, FakeConsumable, ConsumableEffect, the
   Consumables table, the 34 effect classes and ConsumableListener), run

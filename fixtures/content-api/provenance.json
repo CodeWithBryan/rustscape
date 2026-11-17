@@ -1,0 +1,1857 @@
+{
+  "caseCount": 1635,
+  "coverage": {
+    "cases": 1635,
+    "errors": {
+      "Argument": 10,
+      "Binding": 622,
+      "Cast": 8,
+      "Index": 1,
+      "Lateinit": 1,
+      "Null": 26,
+      "State": 10
+    },
+    "events": {
+      "@lambda": 8487,
+      "@printStackTrace": 5,
+      "@pulse": 24,
+      "@script": 82,
+      "AchievementDiaryManager.finishTask": 2,
+      "ActionLocks.lockInteractions": 1,
+      "ActionLocks.lockMovement": 8,
+      "AnimationDefinition.getCycles": 1,
+      "AnimationDefinition.getDurationTicks": 1,
+      "Animator.animate": 7,
+      "Animator.forceAnimation": 1,
+      "Appearance.setAnimations": 6,
+      "Appearance.setDefaultAnimations": 4,
+      "Appearance.sync": 4,
+      "BankContainer.open": 2,
+      "BankContainer.openDepositBox": 2,
+      "BankPinManager.openSettings": 2,
+      "BookcaseBitfields.get": 22,
+      "BookcaseBitfields.isBitSet": 19,
+      "BookcaseBitfields.set": 8,
+      "BookcaseBitfields.setBit": 15,
+      "CombatPulse.delayNextAttack": 2,
+      "CombatSwingHandler.isProjectileClipped": 1,
+      "CommandMapping.register": 2,
+      "Consumables.getConsumableById": 57,
+      "Container.add": 116,
+      "Container.canAdd": 99,
+      "Container.containItems": 54,
+      "Container.contains": 10,
+      "Container.freeSlots": 1,
+      "Container.get": 172,
+      "Container.getAll": 65,
+      "Container.getAmount": 46,
+      "Container.hasSpaceFor": 109,
+      "Container.isEmpty": 21,
+      "Container.itemCount": 19,
+      "Container.remove": 151,
+      "Container.replace": 48,
+      "Container.toArray": 144,
+      "Container.update": 27,
+      "DialogueInterpreter.addAction": 1,
+      "DialogueInterpreter.close": 13,
+      "DialogueInterpreter.open": 4,
+      "DialogueInterpreter.sendDialogue": 5,
+      "DialogueInterpreter.sendDialogues": 8,
+      "DialogueInterpreter.sendDoubleItemMessage": 2,
+      "DialogueInterpreter.sendInput": 11,
+      "DialogueInterpreter.sendItemMessage": 3,
+      "DialogueInterpreter.sendLongInput": 1,
+      "DialogueInterpreter.sendMessageInput": 1,
+      "DialogueInterpreter.sendOptions": 1,
+      "DoorActionHandler.getEndLocation": 4,
+      "DoorActionHandler.handleAutowalkDoorWithLocation": 3,
+      "DoorActionHandler.handleDoor": 1,
+      "DynamicRegion": 1,
+      "DynamicRegion.create": 2,
+      "DynamicRegion.replaceChunk": 130,
+      "DynamicRegion.reserveArea": 1,
+      "Entity.animate": 5,
+      "Entity.face": 5,
+      "Entity.faceLocation": 2,
+      "Entity.faceTemporary": 6,
+      "Entity.getAttribute": 50,
+      "Entity.getDragonfireProtection": 18,
+      "Entity.graphics": 7,
+      "Entity.isPoisonImmune": 15,
+      "Entity.lock": 35,
+      "Entity.removeAttribute": 11,
+      "Entity.sendChat": 11,
+      "Entity.setAttribute": 45,
+      "Entity.unlock": 1,
+      "Entity.visualize": 2,
+      "FamiliarManager.getBoost": 1,
+      "FamiliarManager.getFamiliar": 107,
+      "FamiliarManager.hasFamiliar": 79,
+      "ForceMovement.run": 2,
+      "GrandExchangeRecords.getInstance": 9,
+      "GrandExchangeRecords.getOffer": 4,
+      "GrandExchangeRecords.openCollectionBox": 2,
+      "Graphics.send": 5,
+      "GroundItemManager.create": 14,
+      "GroundItemManager.destroy": 1,
+      "GroundItemManager.getItems": 2,
+      "HintIconManager.freeSlot": 4,
+      "HintIconManager.registerHintIcon": 6,
+      "HintIconManager.removeHintIcon": 3,
+      "HouseManager.hasHouse": 1,
+      "ImpactHandler.manualHit": 5,
+      "InteractionListeners.run": 41,
+      "InterfaceManager.close": 5,
+      "InterfaceManager.closeChatbox": 5,
+      "InterfaceManager.closeOverlay": 1,
+      "InterfaceManager.closeSingleTab": 1,
+      "InterfaceManager.open": 1,
+      "InterfaceManager.openOverlay": 1,
+      "InterfaceManager.openSingleTab": 8,
+      "InterfaceManager.removeTabs": 2,
+      "InterfaceManager.restoreTabs": 1,
+      "IronmanManager.checkRestriction": 31,
+      "IronmanManager.getMode": 57,
+      "IronmanManager.isIronman": 91,
+      "Item": 261,
+      "Item.setCharge": 4,
+      "ItemDefinition.hasAction": 1,
+      "MapZone.register": 2,
+      "NPC.clear": 3,
+      "NPC.reTransform": 6,
+      "NPC.setInvisible": 6,
+      "NPC.transform": 4,
+      "NPC.transformWithHpCarryover": 7,
+      "NPCDefinition.hasAction": 1,
+      "PacketDispatch.sendAnimationInterface": 2,
+      "PacketDispatch.sendIfaceSettings": 6,
+      "PacketDispatch.sendInterfaceConfig": 18,
+      "PacketDispatch.sendItemOnInterface": 2,
+      "PacketDispatch.sendItemZoomOnInterface": 2,
+      "PacketDispatch.sendPlayerOnInterface": 1,
+      "PacketDispatch.sendRunScript": 9,
+      "PacketDispatch.sendSceneryAnimation": 2,
+      "PacketDispatch.sendString": 2,
+      "PacketDispatch.sendVarcUpdate": 2,
+      "PacketDispatch.sendVarp": 23,
+      "PacketRepository.send": 27,
+      "Path.walk": 5,
+      "Pathfinder.find": 28,
+      "Player.sendMessage": 8,
+      "Player.sendMessages": 95,
+      "PlayerMonitor.log": 8,
+      "PlayerStatsCounter.incrementRareDrop": 2,
+      "Poison.setSeverity": 3,
+      "Prayer.get": 28,
+      "Projectile.create": 7,
+      "Projectile.send": 4,
+      "Properties.setTeleportLocation": 29,
+      "PulseManager.clear": 9,
+      "PulseManager.run": 6,
+      "PulseRunner.submit": 15,
+      "Quest.finish": 1,
+      "Quest.hasRequirements": 4,
+      "Quest.start": 2,
+      "QuestRepository.getAvailablePoints": 153,
+      "QuestRepository.getPoints": 143,
+      "QuestRepository.getQuest": 8,
+      "QuestRepository.getQuests": 5,
+      "QuestRepository.getStage": 16,
+      "QuestRepository.setStage": 3,
+      "QuestRepository.syncronizeTab": 2,
+      "Region.isActive": 5,
+      "Region.load": 138,
+      "RegionChunk.copy": 256,
+      "RegionChunk.flag": 2,
+      "RegionManager.getLocalNPCs": 5,
+      "RegionManager.getLocalPlayers": 5,
+      "RegionManager.getObject": 2,
+      "RegionManager.getRegionChunk": 3,
+      "Repository.findNPC": 11,
+      "Repository.getNpcs": 3,
+      "Repository.sendNews": 4,
+      "Requirement.evaluate": 156,
+      "Scenery": 4,
+      "Scenery.setActive": 16,
+      "Scenery.setCharge": 2,
+      "Scenery.transform": 22,
+      "SceneryBuilder.add": 4,
+      "SceneryBuilder.remove": 1,
+      "SceneryBuilder.replace": 19,
+      "SceneryDefinition.forId": 6,
+      "SceneryDefinition.getChildrenIds": 2,
+      "SceneryDefinition.hasAction": 1,
+      "ScriptProcessor.addToQueue": 46,
+      "ScriptProcessor.getActiveScript": 137,
+      "ScriptProcessor.reset": 7,
+      "ScriptProcessor.setApRange": 3,
+      "ScriptProcessor.setApRangeCalled": 2,
+      "ScriptProcessor.setDelay": 32,
+      "Shop.openFor": 2,
+      "SkillDialogueHandler.open": 7,
+      "SkillingTool.getHatchet": 1,
+      "SkillingTool.getPickaxe": 1,
+      "Skills.addExperience": 2,
+      "Skills.decrementPrayerPoints": 1,
+      "Skills.getLevel": 4,
+      "Skills.getMasteredSkills": 27,
+      "Skills.getStaticLevel": 331,
+      "Skills.heal": 1,
+      "Skills.incrementPrayerPoints": 1,
+      "Skills.setLevel": 4,
+      "SlayerEquipmentFlags.isSlayerEq": 20,
+      "SlayerEquipmentFlags.updateFlags": 13,
+      "SlayerFlags.getTaskFlags": 2,
+      "SlayerManager.getActiveTask": 7,
+      "SlayerManager.getAmount": 1,
+      "SlayerManager.getInstance": 37,
+      "SlayerManager.getMaster": 11,
+      "SlayerManager.getTaskName": 2,
+      "SlayerManager.hasTask": 9,
+      "SpecialLadders.add": 1,
+      "StockMarket.openFor": 2,
+      "StorageContainer.addItem": 7,
+      "StorageContainer.contains": 27,
+      "StorageInterface.findStorableByDisplayId": 27,
+      "StorageInterface.getStorageContainer": 11,
+      "SystemLogger.processLogEntry": 27,
+      "Tasks.getTip": 3,
+      "TeleportManager.send": 2,
+      "TimerManager.getTimer": 71,
+      "TimerManager.registerTimer": 7,
+      "TimerManager.removeTimer": 7,
+      "TimerRegistry.getTimerInstance": 15,
+      "Toml": 1,
+      "UpdateMasks.register": 19,
+      "UserAccountInfo.getCredits": 6,
+      "UserAccountInfo.setCredits": 3,
+      "WalkingQueue.reset": 12,
+      "ZoneBorders.forRegion": 1,
+      "ZoneBorders.getRandomLoc": 8,
+      "ZoneBorders.insideBorder": 2,
+      "ZoneBuilder.configure": 3
+    },
+    "failureCases": 661,
+    "functions": {
+      "Collection.getNext": 5,
+      "Collection.isLast": 5,
+      "Collection.isNextLast": 5,
+      "Collection<IntArray>.toIntArray": 1,
+      "Commands.define": 1,
+      "Commands.define(all)": 1,
+      "Commands.notify": 1,
+      "Commands.notify(log)": 2,
+      "Commands.reject": 4,
+      "ContainerisedItem.remove": 4,
+      "EquipmentSlot.slotByName": 10,
+      "Event": 1,
+      "God.validItems": 5,
+      "IfaceSettingsBuilder": 12,
+      "IntArray.getNext": 5,
+      "IntArray.isLast": 5,
+      "IntArray.isNextLast": 5,
+      "IntProgression.toIntArray": 4,
+      "MapArea.zone": 1,
+      "Vector": 6,
+      "activateSecondaryBankAccount": 26,
+      "addClimbDest": 1,
+      "addDialogueAction": 1,
+      "addItem": 4,
+      "addItem(amount)": 1,
+      "addItem(container)": 12,
+      "addItemOrBank": 8,
+      "addItemOrBank(amount)": 17,
+      "addItemOrDrop": 4,
+      "addItemOrDrop(amount)": 10,
+      "addScenery(id)": 3,
+      "addScenery(id,rotation,type)": 1,
+      "addScenery(scenery)": 1,
+      "adjustCharge": 5,
+      "adjustLevel": 4,
+      "allInEquipment": 2,
+      "amountInBank": 4,
+      "amountInBank(includeSecondary)": 2,
+      "amountInEquipment": 6,
+      "amountInInventory": 1,
+      "animate": 3,
+      "animate(forced)": 2,
+      "animateInterface": 1,
+      "animateScenery": 3,
+      "animateScenery(player)": 1,
+      "animateScenery(player,global)": 1,
+      "animationCycles": 1,
+      "animationDuration": 1,
+      "animationFinished": 6,
+      "announceIfRare": 4,
+      "anyInEquipment": 3,
+      "anyInInventory": 4,
+      "apRange": 3,
+      "applyPoison": 19,
+      "asItem": 1,
+      "calculateDragonfireMaxHit": 2,
+      "calculateDragonfireMaxHit(all)": 46,
+      "clearHintIcon": 6,
+      "clearLogoutListener": 2,
+      "clearScripts": 1,
+      "clockReady": 3,
+      "closeAllInterfaces": 4,
+      "closeDialogue": 3,
+      "closeInterface": 1,
+      "closeOverlay": 1,
+      "closeTabInterface": 1,
+      "curePoison": 6,
+      "decantContainer": 15,
+      "delayAttack": 2,
+      "delayClock": 2,
+      "delayClock(script)": 2,
+      "delayEntity": 3,
+      "delayScript": 2,
+      "dumpBeastOfBurden": 26,
+      "dumpContainer": 42,
+      "emote": 1,
+      "equipSlot": 4,
+      "exceptionToString": 1,
+      "face": 2,
+      "face(duration)": 4,
+      "findLocalNPC": 2,
+      "findLocalNPCs(ids)": 1,
+      "findLocalNPCs(ids,distance)": 1,
+      "findLocalNPCs(location)": 1,
+      "findNPC(id)": 2,
+      "findNPC(location)": 3,
+      "finishQuest": 1,
+      "finishTask": 3,
+      "finishedMoving": 6,
+      "flee": 5,
+      "forceMove": 14,
+      "forceMove(all)": 15,
+      "forceWalk": 7,
+      "freeSlots": 1,
+      "getAnimation": 1,
+      "getAnimationWithPriority": 1,
+      "getAttribute": 3,
+      "getBankAccountName": 2,
+      "getBankAccountName(invert)": 2,
+      "getCharge": 3,
+      "getChildren": 3,
+      "getCredits": 1,
+      "getCutscene": 3,
+      "getCutsceneStage": 2,
+      "getDiaryLevelIndex": 12,
+      "getDynLevel": 1,
+      "getFamiliarBoost": 1,
+      "getItemFromEquipment": 3,
+      "getItemName": 3,
+      "getMasteredSkillNames": 27,
+      "getOrStartTimer": 6,
+      "getOrStartTimer<Poison>": 6,
+      "getPathableCardinal": 5,
+      "getPathableRandomLocalCoordinate": 5,
+      "getPathableRandomLocalCoordinate(attempts)": 2,
+      "getQuest": 2,
+      "getQuestPoints": 1,
+      "getQuestStage": 1,
+      "getRegionBorders": 1,
+      "getScenery(location)": 1,
+      "getScenery(xyz)": 1,
+      "getServerConfig": 2,
+      "getSlayerFlags": 1,
+      "getSlayerMaster": 6,
+      "getSlayerMasterLocation": 6,
+      "getSlayerTask": 2,
+      "getSlayerTaskFlags": 3,
+      "getSlayerTaskKillsRemaining": 1,
+      "getSlayerTaskName": 2,
+      "getSlayerTip": 9,
+      "getStatLevel": 1,
+      "getTimer": 1,
+      "getTimer<Poison>": 2,
+      "getTool": 2,
+      "getUsedOption": 3,
+      "getVarbit": 3,
+      "getVarbit(definition)": 1,
+      "getVarp": 2,
+      "getWorldTicks": 1,
+      "handleAutowalkDoor": 4,
+      "handleDoor": 2,
+      "hasActivatedSecondaryBankAccount": 1,
+      "hasAnItem(id)": 3,
+      "hasAnItem(id,flags)": 9,
+      "hasAnItem(ids,flags)": 6,
+      "hasAwaitingGrandExchangeCollections": 6,
+      "hasDragonfireShieldProtection": 7,
+      "hasDragonfireShieldProtection(wyvern)": 7,
+      "hasGodItem": 9,
+      "hasHouse": 1,
+      "hasIronmanRestriction": 5,
+      "hasLevelDyn": 3,
+      "hasLevelStat": 2,
+      "hasLineOfSight": 1,
+      "hasOption": 4,
+      "hasRequirement(quest)": 6,
+      "hasRequirement(quest,message)": 151,
+      "hasRequirement(req)": 12,
+      "hasRequirement(req,message)": 1,
+      "hasSealOfPassage": 2,
+      "hasSlayerTask": 1,
+      "hasSpaceFor": 1,
+      "hasTimerActive": 1,
+      "hasTimerActive<Poison>": 1,
+      "heal": 1,
+      "impact": 4,
+      "impact(type)": 1,
+      "inBank": 1,
+      "inBank(amount)": 2,
+      "inBorders(borders)": 1,
+      "inBorders(corners)": 1,
+      "inEquipment": 1,
+      "inEquipment(amount)": 1,
+      "inEquipmentOrInventory": 1,
+      "inEquipmentOrInventory(amount)": 3,
+      "inInventory": 1,
+      "inInventory(amount)": 1,
+      "isPlayer": 2,
+      "isPoisoned": 1,
+      "isQuestComplete": 3,
+      "isQuestInProgress": 5,
+      "isQuestStarted": 3,
+      "isStunned": 6,
+      "isUsingSecondaryBankAccount": 2,
+      "isValidGroundItem": 2,
+      "itemDefinition": 2,
+      "keepRunning": 2,
+      "location": 5,
+      "lock": 1,
+      "lockInteractions": 1,
+      "log": 5,
+      "logWithStack": 1,
+      "modPrayerPoints": 3,
+      "note": 4,
+      "openBankAccount": 4,
+      "openBankPinSettings": 4,
+      "openDepositBox": 4,
+      "openDialogue": 8,
+      "openGrandExchange": 4,
+      "openGrandExchangeCollectionBox": 5,
+      "openInterface": 1,
+      "openNpcShop": 3,
+      "openOverlay": 1,
+      "openSingleTab": 1,
+      "parseEnumEntry<God>": 3,
+      "playAudio": 1,
+      "playAudio(all)": 2,
+      "playAudio(delay,loops)": 1,
+      "playGlobalAudio": 4,
+      "playGlobalAudio(all)": 1,
+      "playHurtAudio": 4,
+      "playHurtAudio(delay)": 4,
+      "playJingle": 2,
+      "poofClear": 7,
+      "produceGroundItem(owner)": 4,
+      "produceGroundItem(player)": 3,
+      "queueScript": 3,
+      "queueScript(all)": 1,
+      "regionspec": 138,
+      "registerHintIcon(location)": 4,
+      "registerHintIcon(node)": 5,
+      "registerLogoutListener": 1,
+      "registerMapZone": 3,
+      "registerTimer": 2,
+      "reinitVarps": 6,
+      "removeAll": 7,
+      "removeAll(container)": 23,
+      "removeAttribute": 2,
+      "removeAttributes": 3,
+      "removeGroundItem": 1,
+      "removeItem": 6,
+      "removeItem(container)": 13,
+      "removeItemsIfPlayerHasEnough": 8,
+      "removeScenery": 1,
+      "removeTabs": 2,
+      "removeTimer(identifier)": 1,
+      "removeTimer(timer)": 1,
+      "removeTimer<Poison>": 1,
+      "renderAnimation": 3,
+      "replaceAllItems": 31,
+      "replaceScenery": 5,
+      "replaceScenery(direction)": 8,
+      "replaceScenery(direction,location)": 4,
+      "replaceScenery(location)": 5,
+      "replaceSlot": 4,
+      "replaceSlot(container)": 6,
+      "replaceSlot(current)": 11,
+      "requireQuest": 4,
+      "resetAnimator": 2,
+      "resetFace": 3,
+      "resetRenderAnimation": 4,
+      "restartScript": 7,
+      "restoreTabs": 1,
+      "restrictForIronman": 4,
+      "rewardXP": 2,
+      "runTask": 3,
+      "runTask(delay,repeat)": 2,
+      "runWorldTask": 3,
+      "runcs2": 4,
+      "saveVarp": 1,
+      "sceneryDefinition": 2,
+      "sendAnimationOnInterface": 1,
+      "sendChat": 1,
+      "sendChat(delay)": 12,
+      "sendDialogue": 4,
+      "sendDialogueLines": 1,
+      "sendDialogueOptions": 1,
+      "sendDoubleItemDialogue": 5,
+      "sendGraphics": 3,
+      "sendInputDialogue(numeric)": 5,
+      "sendInputDialogue(type)": 9,
+      "sendItemDialogue": 5,
+      "sendItemOnInterface": 1,
+      "sendItemOnInterface(amount)": 1,
+      "sendItemSelect": 6,
+      "sendItemSelect(keepAlive)": 1,
+      "sendItemZoomOnInterface": 1,
+      "sendItemZoomOnInterface(zoom)": 1,
+      "sendMessage": 6,
+      "sendNPCDialogue": 1,
+      "sendNPCDialogue(all)": 1,
+      "sendNPCDialogueLines": 4,
+      "sendNews": 1,
+      "sendPlayerDialogue": 1,
+      "sendPlayerDialogue(all)": 1,
+      "sendPlayerOnInterface": 1,
+      "sendSkillDialogue": 12,
+      "sendString": 1,
+      "setAttribute": 3,
+      "setCharge": 3,
+      "setComponentVisibility": 1,
+      "setCurrentScriptState": 6,
+      "setInterfaceText": 1,
+      "setQuestStage": 5,
+      "setTempLevel": 1,
+      "setTitle": 8,
+      "setVarbit": 3,
+      "setVarbit(definition)": 1,
+      "setVarbit(save)": 1,
+      "setVarc": 2,
+      "setVarp": 2,
+      "setVarp(save)": 3,
+      "shouldRemoveNothings": 3,
+      "spawnProjectile(entity)": 4,
+      "spawnProjectile(location)": 3,
+      "spawnTimer": 1,
+      "spawnTimer<Poison>": 2,
+      "splitLines": 9,
+      "splitLines(limit)": 9,
+      "startQuest": 5,
+      "stopExecuting": 7,
+      "stopWalk": 2,
+      "storeBookInHouse(id)": 26,
+      "storeBookInHouse(node)": 2,
+      "stun": 9,
+      "stun(message)": 1,
+      "submitIndividualPulse": 1,
+      "submitWorldPulse": 2,
+      "teleport": 2,
+      "teleport(type)": 3,
+      "toggleBankAccount": 6,
+      "transformNpc": 4,
+      "transformNpcWithHpCarryover": 7,
+      "truncateLoc": 7,
+      "tryPop": 3,
+      "unlock": 1,
+      "unnote": 4,
+      "unsaveVarp": 1,
+      "updateCredits": 5,
+      "visualize": 4
+    },
+    "recordedCalls": 13357
+  },
+  "fixtureSha256": "0d60dcef7bf049d329c1c8b696944c05a429223bafc6f4c3b0eecbb700ef2b8e",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "locale": "en-US",
+  "questRequirements": [
+    [
+      "COOK_ASSIST",
+      "COOKS_ASSISTANT"
+    ],
+    [
+      "DEMON_SLAYER",
+      "DEMON_SLAYER"
+    ],
+    [
+      "DORIC_QUEST",
+      "DORICS_QUEST"
+    ],
+    [
+      "DRAGON_SLAYER",
+      "DRAGON_SLAYER"
+    ],
+    [
+      "ERNEST",
+      "ERNEST_THE_CHICKEN"
+    ],
+    [
+      "GOBLIN_DIP",
+      "GOBLIN_DIPLOMACY"
+    ],
+    [
+      "IMP_CATCHER",
+      "IMP_CATCHER"
+    ],
+    [
+      "KNIGHT_SWORD",
+      "THE_KNIGHTS_SWORD"
+    ],
+    [
+      "PIRATE_T",
+      "PIRATES_TREASURE"
+    ],
+    [
+      "ALI_RESCUE",
+      "PRINCE_ALI_RESCUE"
+    ],
+    [
+      "RESTLESS_GHOST",
+      "THE_RESTLESS_GHOST"
+    ],
+    [
+      "ROMEO",
+      "ROMEO_JULIET"
+    ],
+    [
+      "RUNE_MYST",
+      "RUNE_MYSTERIES"
+    ],
+    [
+      "SHEEP",
+      "SHEEP_SHEARER"
+    ],
+    [
+      "ARRAV",
+      "SHIELD_OF_ARRAV"
+    ],
+    [
+      "VAMPIRE",
+      "VAMPIRE_SLAYER"
+    ],
+    [
+      "DORIC",
+      "DORICS_QUEST"
+    ],
+    [
+      "RUNE_MYSTERIES",
+      "RUNE_MYSTERIES"
+    ],
+    [
+      "BLACK_KNIGHT",
+      "BLACK_KNIGHTS_FORTRESS"
+    ],
+    [
+      "WITCH_POTION",
+      "WITCHS_POTION"
+    ],
+    [
+      "DRUIDIC_RITUAL",
+      "DRUIDIC_RITUAL"
+    ],
+    [
+      "LOST_CITY",
+      "LOST_CITY"
+    ],
+    [
+      "WITCH_HOUSE",
+      "WITCHS_HOUSE"
+    ],
+    [
+      "MERLIN",
+      "MERLINS_CRYSTAL"
+    ],
+    [
+      "HERO",
+      "HEROES_QUEST"
+    ],
+    [
+      "SCORP_CATCHER",
+      "SCORPION_CATCHER"
+    ],
+    [
+      "FAMILY_CREST",
+      "FAMILY_CREST"
+    ],
+    [
+      "FISHING_CONTEST",
+      "FISHING_CONTEST"
+    ],
+    [
+      "TOTEM",
+      "TRIBAL_TOTEM"
+    ],
+    [
+      "MONK",
+      "MONKS_FRIEND"
+    ],
+    [
+      "IKOV",
+      "TEMPLE_OF_IKOV"
+    ],
+    [
+      "CLOCK_TOWER",
+      "CLOCK_TOWER"
+    ],
+    [
+      "GRAIL",
+      "HOLY_GRAIL"
+    ],
+    [
+      "GNOME_VILLAGE",
+      "TREE_GNOME_VILLAGE"
+    ],
+    [
+      "FIGHT_ARENA",
+      "FIGHT_ARENA"
+    ],
+    [
+      "HAZEEL",
+      "HAZEEL_CULT"
+    ],
+    [
+      "SHEEP_HERDER",
+      "SHEEP_HERDER"
+    ],
+    [
+      "PLAGUE_CITY",
+      "PLAGUE_CITY"
+    ],
+    [
+      "SEA_SLUG",
+      "SEA_SLUG"
+    ],
+    [
+      "WATERFALL",
+      "WATERFALL_QUEST"
+    ],
+    [
+      "POTION",
+      "JUNGLE_POTION"
+    ],
+    [
+      "GRAND_TREE",
+      "THE_GRAND_TREE"
+    ],
+    [
+      "BIOHAZARD",
+      "BIOHAZARD"
+    ],
+    [
+      "UNDERGROUND_PASS",
+      "UNDERGROUND_PASS"
+    ],
+    [
+      "OBSERVATORY",
+      "OBSERVATORY_QUEST"
+    ],
+    [
+      "TOURIST",
+      "THE_TOURIST_TRAP"
+    ],
+    [
+      "WATCHTOWER",
+      "WATCHTOWER"
+    ],
+    [
+      "DWARF_CANNON",
+      "DWARF_CANNON"
+    ],
+    [
+      "MURDER_MYS",
+      "MURDER_MYSTERY"
+    ],
+    [
+      "DIG_SITE",
+      "THE_DIG_SITE"
+    ],
+    [
+      "GERTRUDE",
+      "GERTRUDES_CAT"
+    ],
+    [
+      "SHILO",
+      "SHILO_VILLAGE"
+    ],
+    [
+      "LEGEND",
+      "LEGENDS_QUEST"
+    ],
+    [
+      "DEATH_PLATEAU",
+      "DEATH_PLATEAU"
+    ],
+    [
+      "TROLL_STRONGHOLD",
+      "TROLL_STRONGHOLD"
+    ],
+    [
+      "EADGAR",
+      "EADGARS_RUSE"
+    ],
+    [
+      "CHOMPY",
+      "BIG_CHOMPY_BIRD_HUNTING"
+    ],
+    [
+      "ELEMENTAL_W1",
+      "ELEMENTAL_WORKSHOP_I"
+    ],
+    [
+      "PRIEST",
+      "PRIEST_IN_PERIL"
+    ],
+    [
+      "NATURE_SPIRIT",
+      "NATURE_SPIRIT"
+    ],
+    [
+      "REGICIDE",
+      "REGICIDE"
+    ],
+    [
+      "TAI_BWO",
+      "TAI_BWO_WANNAI_TRIO"
+    ],
+    [
+      "SHADES",
+      "SHADES_OF_MORTTON"
+    ],
+    [
+      "FREM_TRIALS",
+      "THE_FREMENNIK_TRIALS"
+    ],
+    [
+      "HORROR_DEEP",
+      "HORROR_FROM_THE_DEEP"
+    ],
+    [
+      "THRONE",
+      "THRONE_OF_MISCELLANIA"
+    ],
+    [
+      "MONKEY",
+      "MONKEY_MADNESS"
+    ],
+    [
+      "MINE",
+      "HAUNTED_MINE"
+    ],
+    [
+      "TROLL_ROMANCE",
+      "TROLL_ROMANCE"
+    ],
+    [
+      "SEARCH_MYREQUE",
+      "IN_SEARCH_OF_THE_MYREQUE"
+    ],
+    [
+      "FENKENSTRAIN",
+      "CREATURE_OF_FENKENSTRAIN"
+    ],
+    [
+      "ROVING_ELVES",
+      "ROVING_ELVES"
+    ],
+    [
+      "GHOSTS_AHOY",
+      "GHOSTS_AHOY"
+    ],
+    [
+      "FAVOR",
+      "ONE_SMALL_FAVOUR"
+    ],
+    [
+      "MOUNTAIN_DAUGHTER",
+      "MOUNTAIN_DAUGHTER"
+    ],
+    [
+      "BETWEEN_ROCK",
+      "BETWEEN_A_ROCK"
+    ],
+    [
+      "FEUD",
+      "THE_FEUD"
+    ],
+    [
+      "GOLEM",
+      "THE_GOLEM"
+    ],
+    [
+      "DESERT",
+      "DESERT_TREASURE"
+    ],
+    [
+      "ICTHLARIN",
+      "ICTHLARINS_LITTLE_HELPER"
+    ],
+    [
+      "TEARS_OF_GUTHIX",
+      "TEARS_OF_GUTHIX"
+    ],
+    [
+      "LOST_TRIBE",
+      "THE_LOST_TRIBE"
+    ],
+    [
+      "GIANT_DWARF",
+      "THE_GIANT_DWARF"
+    ],
+    [
+      "RECRUITMENT_DRIVE",
+      "RECRUITMENT_DRIVE"
+    ],
+    [
+      "MEP_1",
+      "MOURNINGS_END_PART_I"
+    ],
+    [
+      "FORGETTABLE",
+      "FORGETTABLE_TALE"
+    ],
+    [
+      "GARDEN",
+      "GARDEN_OF_TRANQUILITY"
+    ],
+    [
+      "TWO_CATS",
+      "A_TAIL_OF_TWO_CATS"
+    ],
+    [
+      "WANTED",
+      "WANTED"
+    ],
+    [
+      "MEP_2",
+      "MOURNINGS_END_PART_II"
+    ],
+    [
+      "ZOGRE",
+      "ZOGRE_FLESH_EATERS"
+    ],
+    [
+      "RUM_DEAL",
+      "RUM_DEAL"
+    ],
+    [
+      "SHADOW",
+      "SHADOW_OF_THE_STORM"
+    ],
+    [
+      "HISTORY",
+      "MAKING_HISTORY"
+    ],
+    [
+      "RATCATCHERS",
+      "RATCATCHERS"
+    ],
+    [
+      "SPIRITS_ELID",
+      "SPIRITS_OF_THE_ELID"
+    ],
+    [
+      "DEVIOUS",
+      "DEVIOUS_MINDS"
+    ],
+    [
+      "SAND",
+      "THE_HAND_IN_THE_SAND"
+    ],
+    [
+      "ENAKHRA",
+      "ENAKHRAS_LAMENT"
+    ],
+    [
+      "CABIN_FEVER",
+      "CABIN_FEVER"
+    ],
+    [
+      "FAIRYTALE_1",
+      "FAIRYTALE_I_GROWING_PAINS"
+    ],
+    [
+      "RFD",
+      "RECIPE_FOR_DISASTER"
+    ],
+    [
+      "AID_MYREQUE",
+      "IN_AID_OF_THE_MYREQUE"
+    ],
+    [
+      "SOUL_BANE",
+      "A_SOULS_BANE"
+    ],
+    [
+      "BONE_MAN_1",
+      "RAG_AND_BONE_MAN"
+    ],
+    [
+      "SWAN",
+      "SWAN_SONG"
+    ],
+    [
+      "ROYAL_TROUBLE",
+      "ROYAL_TROUBLE"
+    ],
+    [
+      "DEATH_DORGESHUUN",
+      "DEATH_TO_THE_DORGESHUUN"
+    ],
+    [
+      "FAIRYTALE_2",
+      "FAIRYTALE_II_CURE_A_QUEEN"
+    ],
+    [
+      "LUNAR_DIPLOMACY",
+      "LUNAR_DIPLOMACY"
+    ],
+    [
+      "GLOUPHRIE",
+      "THE_EYES_OF_GLOUPHRIE"
+    ],
+    [
+      "HALLOWVALE",
+      "DARKNESS_OF_HALLOWVALE"
+    ],
+    [
+      "SLUG_MENACE",
+      "THE_SLUG_MENACE"
+    ],
+    [
+      "ELEMENTAL_W2",
+      "ELEMENTAL_WORKSHOP_II"
+    ],
+    [
+      "ARM_ADVENTURE",
+      "MY_ARMS_BIG_ADVENTURE"
+    ],
+    [
+      "ENL_JOURNEY",
+      "ENLIGHTENED_JOURNEY"
+    ],
+    [
+      "EAGLE",
+      "EAGLES_PEAK"
+    ],
+    [
+      "ANMA",
+      "ANIMAL_MAGNETISM"
+    ],
+    [
+      "CONTACT",
+      "CONTACT"
+    ],
+    [
+      "COLD_WAR",
+      "COLD_WAR"
+    ],
+    [
+      "FREM_ISLES",
+      "THE_FREMENNIK_ISLES"
+    ],
+    [
+      "BRAIN_ROBBERY",
+      "THE_GREAT_BRAIN_ROBBERY"
+    ],
+    [
+      "WHAT_LIES_BELOW",
+      "WHAT_LIES_BELOW"
+    ],
+    [
+      "OLAF",
+      "OLAFS_QUEST"
+    ],
+    [
+      "ANOTHER_SLICE",
+      "ANOTHER_SLICE_OF_HAM"
+    ],
+    [
+      "DREAM_MENTOR",
+      "DREAM_MENTOR"
+    ],
+    [
+      "GRIM_TALES",
+      "GRIM_TALES"
+    ],
+    [
+      "KINGS_RANSOM",
+      "KINGS_RANSOM"
+    ],
+    [
+      "TOWER_OF_LIFE",
+      "TOWER_OF_LIFE"
+    ],
+    [
+      "BONE_MAN_2",
+      "RAG_AND_BONE_MAN"
+    ],
+    [
+      "LAND_GOBLINS",
+      "LAND_OF_THE_GOBLINS"
+    ],
+    [
+      "PATH_GLOUPHRIE",
+      "THE_PATH_OF_GLOUPHRIE"
+    ],
+    [
+      "DEFENDER_VARROCK",
+      "DEFENDER_OF_VARROCK"
+    ],
+    [
+      "SPIRIT_OF_SUMMER",
+      "SPIRIT_OF_SUMMER"
+    ],
+    [
+      "SUMMERS_END",
+      "SUMMERS_END"
+    ],
+    [
+      "SEERGAZE",
+      "LEGACY_OF_SEERGAZE"
+    ],
+    [
+      "SMOKING_KILLS",
+      "SMOKING_KILLS"
+    ],
+    [
+      "WHILE_GUTHIX_SLEEPS",
+      "WHILE_GUTHIX_SLEEPS"
+    ],
+    [
+      "ALL_FIRED_UP",
+      "ALL_FIRED_UP"
+    ],
+    [
+      "KENNITHS_CONCERNS",
+      "KENNITHS_CONCERNS"
+    ]
+  ],
+  "quests": [
+    [
+      "MYTHS_OF_THE_WHITE_LANDS",
+      "Myths of the White Lands"
+    ],
+    [
+      "BLACK_KNIGHTS_FORTRESS",
+      "Black Knights' Fortress"
+    ],
+    [
+      "COOKS_ASSISTANT",
+      "Cook's Assistant"
+    ],
+    [
+      "DEMON_SLAYER",
+      "Demon Slayer"
+    ],
+    [
+      "DORICS_QUEST",
+      "Doric's Quest"
+    ],
+    [
+      "DRAGON_SLAYER",
+      "Dragon Slayer"
+    ],
+    [
+      "ERNEST_THE_CHICKEN",
+      "Ernest the Chicken"
+    ],
+    [
+      "GOBLIN_DIPLOMACY",
+      "Goblin Diplomacy"
+    ],
+    [
+      "IMP_CATCHER",
+      "Imp Catcher"
+    ],
+    [
+      "THE_KNIGHTS_SWORD",
+      "The Knight's Sword"
+    ],
+    [
+      "PIRATES_TREASURE",
+      "Pirate's Treasure"
+    ],
+    [
+      "PRINCE_ALI_RESCUE",
+      "Prince Ali Rescue"
+    ],
+    [
+      "THE_RESTLESS_GHOST",
+      "The Restless Ghost"
+    ],
+    [
+      "ROMEO_JULIET",
+      "Romeo & Juliet"
+    ],
+    [
+      "RUNE_MYSTERIES",
+      "Rune Mysteries"
+    ],
+    [
+      "SHEEP_SHEARER",
+      "Sheep Shearer"
+    ],
+    [
+      "SHIELD_OF_ARRAV",
+      "Shield of Arrav"
+    ],
+    [
+      "VAMPIRE_SLAYER",
+      "Vampire Slayer"
+    ],
+    [
+      "WITCHS_POTION",
+      "Witch's Potion"
+    ],
+    [
+      "ANIMAL_MAGNETISM",
+      "Animal Magnetism"
+    ],
+    [
+      "BETWEEN_A_ROCK",
+      "Between a Rock..."
+    ],
+    [
+      "BIG_CHOMPY_BIRD_HUNTING",
+      "Big Chompy Bird Hunting"
+    ],
+    [
+      "BIOHAZARD",
+      "Biohazard"
+    ],
+    [
+      "CABIN_FEVER",
+      "Cabin Fever"
+    ],
+    [
+      "CLOCK_TOWER",
+      "Clock Tower"
+    ],
+    [
+      "CONTACT",
+      "Contact!"
+    ],
+    [
+      "ZOGRE_FLESH_EATERS",
+      "Zogre Flesh Eaters"
+    ],
+    [
+      "CREATURE_OF_FENKENSTRAIN",
+      "Creature of Fenkenstrain"
+    ],
+    [
+      "DARKNESS_OF_HALLOWVALE",
+      "Darkness of Hallowvale"
+    ],
+    [
+      "DEATH_TO_THE_DORGESHUUN",
+      "Death to the Dorgeshuun"
+    ],
+    [
+      "DEATH_PLATEAU",
+      "Death Plateau"
+    ],
+    [
+      "DESERT_TREASURE",
+      "Desert Treasure"
+    ],
+    [
+      "DEVIOUS_MINDS",
+      "Devious Minds"
+    ],
+    [
+      "THE_DIG_SITE",
+      "The Dig Site"
+    ],
+    [
+      "DRUIDIC_RITUAL",
+      "Druidic Ritual"
+    ],
+    [
+      "DWARF_CANNON",
+      "Dwarf Cannon"
+    ],
+    [
+      "EADGARS_RUSE",
+      "Eadgar's Ruse"
+    ],
+    [
+      "EAGLES_PEAK",
+      "Eagles' Peak"
+    ],
+    [
+      "ELEMENTAL_WORKSHOP_I",
+      "Elemental Workshop I"
+    ],
+    [
+      "ELEMENTAL_WORKSHOP_II",
+      "Elemental Workshop II"
+    ],
+    [
+      "ENAKHRAS_LAMENT",
+      "Enakhra's Lament"
+    ],
+    [
+      "ENLIGHTENED_JOURNEY",
+      "Enlightened Journey"
+    ],
+    [
+      "THE_EYES_OF_GLOUPHRIE",
+      "The Eyes of Glouphrie"
+    ],
+    [
+      "FAIRYTALE_I_GROWING_PAINS",
+      "Fairytale I - Growing Pains"
+    ],
+    [
+      "FAIRYTALE_II_CURE_A_QUEEN",
+      "Fairytale II - Cure a Queen"
+    ],
+    [
+      "FAMILY_CREST",
+      "Family Crest"
+    ],
+    [
+      "THE_FEUD",
+      "The Feud"
+    ],
+    [
+      "FIGHT_ARENA",
+      "Fight Arena"
+    ],
+    [
+      "FISHING_CONTEST",
+      "Fishing Contest"
+    ],
+    [
+      "FORGETTABLE_TALE",
+      "Forgettable Tale..."
+    ],
+    [
+      "THE_FREMENNIK_TRIALS",
+      "The Fremennik Trials"
+    ],
+    [
+      "WATERFALL_QUEST",
+      "Waterfall Quest"
+    ],
+    [
+      "GARDEN_OF_TRANQUILITY",
+      "Garden of Tranquility"
+    ],
+    [
+      "GERTRUDES_CAT",
+      "Gertrude's Cat"
+    ],
+    [
+      "GHOSTS_AHOY",
+      "Ghosts Ahoy"
+    ],
+    [
+      "THE_GIANT_DWARF",
+      "The Giant Dwarf"
+    ],
+    [
+      "THE_GOLEM",
+      "The Golem"
+    ],
+    [
+      "THE_GRAND_TREE",
+      "The Grand Tree"
+    ],
+    [
+      "THE_HAND_IN_THE_SAND",
+      "The Hand in the Sand"
+    ],
+    [
+      "HAUNTED_MINE",
+      "Haunted Mine"
+    ],
+    [
+      "HAZEEL_CULT",
+      "Hazeel Cult"
+    ],
+    [
+      "HEROES_QUEST",
+      "Heroes' Quest"
+    ],
+    [
+      "HOLY_GRAIL",
+      "Holy Grail"
+    ],
+    [
+      "HORROR_FROM_THE_DEEP",
+      "Horror from the Deep"
+    ],
+    [
+      "ICTHLARINS_LITTLE_HELPER",
+      "Icthlarin's Little Helper"
+    ],
+    [
+      "IN_AID_OF_THE_MYREQUE",
+      "In Aid of the Myreque"
+    ],
+    [
+      "IN_SEARCH_OF_THE_MYREQUE",
+      "In Search of the Myreque"
+    ],
+    [
+      "JUNGLE_POTION",
+      "Jungle Potion"
+    ],
+    [
+      "LEGENDS_QUEST",
+      "Legend's Quest"
+    ],
+    [
+      "LOST_CITY",
+      "Lost City"
+    ],
+    [
+      "THE_LOST_TRIBE",
+      "The Lost Tribe"
+    ],
+    [
+      "LUNAR_DIPLOMACY",
+      "Lunar Diplomacy"
+    ],
+    [
+      "MAKING_HISTORY",
+      "Making History"
+    ],
+    [
+      "MERLINS_CRYSTAL",
+      "Merlin's Crystal"
+    ],
+    [
+      "MONKEY_MADNESS",
+      "Monkey Madness"
+    ],
+    [
+      "MONKS_FRIEND",
+      "Monk's Friend"
+    ],
+    [
+      "MOUNTAIN_DAUGHTER",
+      "Mountain Daughter"
+    ],
+    [
+      "MOURNINGS_END_PART_I",
+      "Mourning's End Part I"
+    ],
+    [
+      "MOURNINGS_END_PART_II",
+      "Mourning's End Part II"
+    ],
+    [
+      "MURDER_MYSTERY",
+      "Murder Mystery"
+    ],
+    [
+      "MY_ARMS_BIG_ADVENTURE",
+      "My Arm's Big Adventure"
+    ],
+    [
+      "NATURE_SPIRIT",
+      "Nature Spirit"
+    ],
+    [
+      "OBSERVATORY_QUEST",
+      "Observatory Quest"
+    ],
+    [
+      "ONE_SMALL_FAVOUR",
+      "One Small Favour"
+    ],
+    [
+      "PLAGUE_CITY",
+      "Plague City"
+    ],
+    [
+      "PRIEST_IN_PERIL",
+      "Priest in Peril"
+    ],
+    [
+      "RAG_AND_BONE_MAN",
+      "Rag and Bone Man"
+    ],
+    [
+      "RATCATCHERS",
+      "Ratcatchers"
+    ],
+    [
+      "RECIPE_FOR_DISASTER",
+      "Recipe for Disaster"
+    ],
+    [
+      "RECRUITMENT_DRIVE",
+      "Recruitment Drive"
+    ],
+    [
+      "REGICIDE",
+      "Regicide"
+    ],
+    [
+      "ROVING_ELVES",
+      "Roving Elves"
+    ],
+    [
+      "ROYAL_TROUBLE",
+      "Royal Trouble"
+    ],
+    [
+      "RUM_DEAL",
+      "Rum Deal"
+    ],
+    [
+      "SCORPION_CATCHER",
+      "Scorpion Catcher"
+    ],
+    [
+      "SEA_SLUG",
+      "Sea Slug"
+    ],
+    [
+      "THE_SLUG_MENACE",
+      "The Slug Menace"
+    ],
+    [
+      "SHADES_OF_MORTTON",
+      "Shades of Mort'ton"
+    ],
+    [
+      "SHADOW_OF_THE_STORM",
+      "Shadow of the Storm"
+    ],
+    [
+      "SHEEP_HERDER",
+      "Sheep Herder"
+    ],
+    [
+      "SHILO_VILLAGE",
+      "Shilo Village"
+    ],
+    [
+      "A_SOULS_BANE",
+      "A Soul's Bane"
+    ],
+    [
+      "SPIRITS_OF_THE_ELID",
+      "Spirits of the Elid"
+    ],
+    [
+      "SWAN_SONG",
+      "Swan Song"
+    ],
+    [
+      "TAI_BWO_WANNAI_TRIO",
+      "Tai Bwo Wannai Trio"
+    ],
+    [
+      "A_TAIL_OF_TWO_CATS",
+      "A Tail of Two Cats"
+    ],
+    [
+      "TEARS_OF_GUTHIX",
+      "Tears of Guthix"
+    ],
+    [
+      "TEMPLE_OF_IKOV",
+      "Temple of Ikov"
+    ],
+    [
+      "THRONE_OF_MISCELLANIA",
+      "Throne of Miscellania"
+    ],
+    [
+      "THE_TOURIST_TRAP",
+      "The Tourist Trap"
+    ],
+    [
+      "WITCHS_HOUSE",
+      "Witch's House"
+    ],
+    [
+      "TREE_GNOME_VILLAGE",
+      "Tree Gnome Village"
+    ],
+    [
+      "TRIBAL_TOTEM",
+      "Tribal Totem"
+    ],
+    [
+      "TROLL_ROMANCE",
+      "Troll Romance"
+    ],
+    [
+      "TROLL_STRONGHOLD",
+      "Troll Stronghold"
+    ],
+    [
+      "UNDERGROUND_PASS",
+      "Underground Pass"
+    ],
+    [
+      "WANTED",
+      "Wanted!"
+    ],
+    [
+      "WATCHTOWER",
+      "Watchtower"
+    ],
+    [
+      "COLD_WAR",
+      "Cold War"
+    ],
+    [
+      "THE_FREMENNIK_ISLES",
+      "The Fremennik Isles"
+    ],
+    [
+      "TOWER_OF_LIFE",
+      "Tower of Life"
+    ],
+    [
+      "THE_GREAT_BRAIN_ROBBERY",
+      "The Great Brain Robbery"
+    ],
+    [
+      "WHAT_LIES_BELOW",
+      "What Lies Below"
+    ],
+    [
+      "OLAFS_QUEST",
+      "Olaf's Quest"
+    ],
+    [
+      "ANOTHER_SLICE_OF_HAM",
+      "Another Slice of H.A.M"
+    ],
+    [
+      "DREAM_MENTOR",
+      "Dream Mentor"
+    ],
+    [
+      "GRIM_TALES",
+      "Grim Tales"
+    ],
+    [
+      "KINGS_RANSOM",
+      "King's Ransom"
+    ],
+    [
+      "THE_PATH_OF_GLOUPHRIE",
+      "The Path of Glouphrie"
+    ],
+    [
+      "BACK_TO_MY_ROOTS",
+      "Back to my Roots"
+    ],
+    [
+      "LAND_OF_THE_GOBLINS",
+      "Land of the Goblins"
+    ],
+    [
+      "DEALING_WITH_SCABARAS",
+      "Dealing with Scabaras"
+    ],
+    [
+      "WOLF_WHISTLE",
+      "Wolf Whistle"
+    ],
+    [
+      "AS_A_FIRST_RESORT",
+      "As a First Resort..."
+    ],
+    [
+      "CATAPULT_CONSTRUCTION",
+      "Catapult Construction"
+    ],
+    [
+      "KENNITHS_CONCERNS",
+      "Kennith's Concerns"
+    ],
+    [
+      "LEGACY_OF_SEERGAZE",
+      "Legacy of Seergaze"
+    ],
+    [
+      "PERILS_OF_ICE_MOUNTAIN",
+      "Perils of Ice Mountain"
+    ],
+    [
+      "TOKTZ_KET_DILL",
+      "TokTz-Ket-Dill"
+    ],
+    [
+      "SMOKING_KILLS",
+      "Smoking Kills"
+    ],
+    [
+      "ROCKING_OUT",
+      "Rocking Out"
+    ],
+    [
+      "SPIRIT_OF_SUMMER",
+      "Spirit of Summer"
+    ],
+    [
+      "MEETING_HISTORY",
+      "Meeting History"
+    ],
+    [
+      "ALL_FIRED_UP",
+      "All Fired Up"
+    ],
+    [
+      "SUMMERS_END",
+      "Summer's End"
+    ],
+    [
+      "DEFENDER_OF_VARROCK",
+      "Defender of Varrock"
+    ],
+    [
+      "SWEPT_AWAY",
+      "Swept Away"
+    ],
+    [
+      "WHILE_GUTHIX_SLEEPS",
+      "While Guthix Sleeps"
+    ],
+    [
+      "IN_PYRE_NEED",
+      "In Pyre Need"
+    ],
+    [
+      "TEST_QUEST",
+      "Test Quest"
+    ]
+  ],
+  "scope": "core/api/ContentAPI.kt and the other core/api files listed in `unchanged` compiled unchanged on JDK 11 with Kotlin 1.8.20 and the published ConstLib 1.4.28, together with the original Location, Script, Clocks, Globals, TickUtils, DiaryLevel, ForceMoveCtx, Quests and StorableFamily. Original text inserted into adapters at generation time: Skills.SKILL_NAME and the skill ids, Direction.getDirection(int, int) and the QuestRequirements table. Everything else is a recording adapter answering from the case: every member of Player, Entity, NPC, Item, Scenery and the containers, managers, dispatchers, definitions, registries, timers, scripts, pulses and content objects ContentAPI reaches. Item, Scenery and Animation construction is recorded; varp maps, clocks, script fields, charges and the poison timer are case state, snapshotted after the call. Each case runs in a class loader of its own; follow-up steps run the recorded pulses, queued scripts and skill dialogue callbacks. Calls made while a class initialises are not recorded.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
+    "oracle/content-api/Calls.kt": "7ffacc1985afcdcb55a115f30be5820afa3780336341a58e5fb38c8290dddca8",
+    "oracle/content-api/R.java": "2aacd514ac43f36d56b153ec275a39c471d1e539fcf7dd806fa4aaefa69b8a40",
+    "oracle/content-api/Support.java": "95b99dbf0f77c628a88102ea38fa2595d79a662b13eacae50c7fb593a141b4e1",
+    "oracle/content-api/adapters_kotlin.py": "27fece94ddc3a09f6db1461f146b05df98deffbd13f29d6428bb55c927f6b6c0",
+    "oracle/content-api/adapters_link.py": "ad9effb137982c012b00daf124d8efc479299cb7146f0290e734e36417f42db2",
+    "oracle/content-api/adapters_nodes.py": "690ab5cd3f07bd7be322121618d3b31c91e30878701fb832f71ae8bcee0a77ab",
+    "oracle/content-api/cases.py": "508e9a0686bcff0896a29d7cb5878bc89d37db0dc104b8393e134207285bd057",
+    "oracle/content-api/generate.py": "2117592cea5b55512b01061fc34757fe1947015858d4b0b2c8fbb2b436934c03",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/content/data/Quests.kt": "20cc6078a5456cb36433518a2b9f0e7a0a37588040b5e1e151bc6fe6bfe12554",
+    "reference/server/Server/src/main/content/global/skill/construction/decoration/pohstorage/StorableFamily.kt": "542f0d78c496029f7748e949c3a1dc9f48f565cbbf9fdf74e976bc00efe1c504",
+    "reference/server/Server/src/main/core/api/ApiExtensions.kt": "a87e16814d76814daad15de4fb7a9a8b413e02e3cc68482635e57b8b9dabf675",
+    "reference/server/Server/src/main/core/api/Commands.kt": "cd3a8d059ec58cfd7f35372971e936a080d8d901076ffdbfc27427011451d047",
+    "reference/server/Server/src/main/core/api/Container.kt": "3db32542b541e42a586931f11807001b1825250e02987c5658ddbf109c01a71c",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/api/ContentInterface.kt": "58d54d31074cef1a26853787f4bef52f1d0e364613954350d55ccfbc5427184c",
+    "reference/server/Server/src/main/core/api/DialUtils.kt": "b13320cd1dd18e265de5f68dd96051820ebf8c2d01c6eff518cbfddfaae67f23",
+    "reference/server/Server/src/main/core/api/EquipmentSlot.kt": "942901bdf21c4822d6afeeb61173f350cc16499d3a866f379bf76a8bd9c0ac0f",
+    "reference/server/Server/src/main/core/api/Event.kt": "89a82455f8c960bc342748db49388f2cfe27c45198fdf197bf2817872fb8951e",
+    "reference/server/Server/src/main/core/api/God.kt": "00633882a1d9e6914999ba966d80fd71f1f794169fc6437da936619c0078ae65",
+    "reference/server/Server/src/main/core/api/IfaceSettingsBuilder.kt": "bc062a7307c5d02d6518bbede3dd74fd6518c4f3972a2b81c4f2a1cd769ad6e9",
+    "reference/server/Server/src/main/core/api/InputType.kt": "ca9fc545864360cebc7603e566a424ce8464fb10e24c08aa036a1bc51435caa3",
+    "reference/server/Server/src/main/core/api/LoginListener.kt": "54e5698779f6ede2bb1063894c18160110a1e954bc4571fbbc944b5c55c29786",
+    "reference/server/Server/src/main/core/api/LogoutListener.kt": "d4707ded8934c10185c6b9a19e09155cd88cb2c68c18a1953d38d389fd9aae35",
+    "reference/server/Server/src/main/core/api/MapArea.kt": "3ff3d9fe8eba32cdaab316b0381a345b5cc012dcdb0bb8e5260bc288def572fe",
+    "reference/server/Server/src/main/core/api/PersistPlayer.kt": "4c9f510e04088c0496d883c0ca832e4231e9d40938ec76833f1cc3475477c668",
+    "reference/server/Server/src/main/core/api/PersistWorld.kt": "580285de0a2e81fd742d4d45686727bf01c70f15283b319c474d3f03023d78f0",
+    "reference/server/Server/src/main/core/api/ShutdownListener.kt": "7d7f09ffa6e677f79d48801299622b88b110b8329250c524c9bfa3d0dcaf8051",
+    "reference/server/Server/src/main/core/api/StartupListener.kt": "feec6d35a6e011b080b54fe7070656656b4e20843daff26ffc186ba4d3793213",
+    "reference/server/Server/src/main/core/api/TickListener.kt": "345f3ab80daa94b0bf70972c82e116411f3398fdedf66a0395ef59c4abe66665",
+    "reference/server/Server/src/main/core/api/regionspec/RegionSpecification.kt": "87cb068c78385db4d99ef2f607e770c4a0dd9ef58c39107178413d895bd0e2d3",
+    "reference/server/Server/src/main/core/api/regionspec/contracts/ChunkSpecContract.kt": "de8ed63f3518766733b6af8d6fa700ae911f815c369f5c159aab47fef2487dab",
+    "reference/server/Server/src/main/core/api/regionspec/contracts/CloneRegionContract.kt": "db1dd42d38b772ef0bd08a3f0e0c4d9704e1e3a9d051da236731226ecddffded",
+    "reference/server/Server/src/main/core/api/regionspec/contracts/EmptyChunkContract.kt": "e64e885828ff13dd46363c3065b107bd9834723afcb20d84c160624666a4b7b0",
+    "reference/server/Server/src/main/core/api/regionspec/contracts/EmptyRegionContract.kt": "43e8a3a8736c441b82067dbd0e3e6a6d5e01456976c7dbf79f69a88d3a86cb36",
+    "reference/server/Server/src/main/core/api/regionspec/contracts/FillChunkContract.kt": "9ae84ba716deaff288390783b397aa32e5a5d91623b2de832693e48cb5137344",
+    "reference/server/Server/src/main/core/api/regionspec/contracts/RegionSpecContract.kt": "a02068b21b9b9deaac134efd5dd719b80cf83bdb7de2c77c3a1c4ef86b3d3418",
+    "reference/server/Server/src/main/core/api/regionspec/contracts/UseExistingRegionContract.kt": "05c6a096824d0f17859091c2c7efe22b62f0dbc989b58456603c40595c10b67c",
+    "reference/server/Server/src/main/core/api/utils/CameraUtils.kt": "bf35d1b3c09909058e06d5f05f2d10719856e9acb85040460ffa469630936522",
+    "reference/server/Server/src/main/core/api/utils/Exceptions.kt": "c793af783144c69a951563d9a1d44482b57f6a042fb7df49732972024cbc34e9",
+    "reference/server/Server/src/main/core/api/utils/PlayerCamera.kt": "8eb95d7cec2176190c1bc3936b5f571aa1c27b18ccc903a3b9e6f148954fdae6",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/api/utils/WeightedTable.kt": "200c3665b4d5e893fbfe498d0c90bb72203ebe49143b1978787f52d81089347a",
+    "reference/server/Server/src/main/core/game/diary/DiaryLevel.kt": "4022b9b5aff9f97605c28ee1aee13dbfa852d9d4c324cc832a71d5ed336853b1",
+    "reference/server/Server/src/main/core/game/interaction/Clocks.kt": "d480257a27f5f627a69af4df2e540ee1930e0ed3bb9d6ef211c035fda592c10e",
+    "reference/server/Server/src/main/core/game/interaction/Script.kt": "386492193dc0b711d6bd6dcc3661a8d52376fe48f4e6bef404b95c3f7f5bff65",
+    "reference/server/Server/src/main/core/game/node/entity/skill/Skills.java": "b442b260cc591406dc903d46cd729db27976b9470413bc039d6766bd4fe1f0db",
+    "reference/server/Server/src/main/core/game/node/item/Item.java": "d43b95f9b6207e56f776c0a8b7817e04030e81cbe39bba7900cedbf67a6d8df8",
+    "reference/server/Server/src/main/core/game/requirement/Requirement.kt": "0478da33e3e111125dd9d105a58e61ca8d3b865397cb9b8b859ab5d59d40d450",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/ForceMoveCtx.kt": "d8b29138c208ce636f72338767f43631e31b9a32fa3ef1c1b7df48e7d337e3e3",
+    "reference/server/Server/src/main/core/tools/Globals.kt": "d96171014cf3f1786c65cf36590aa3b882370121e3bf966af5d1c48202ab567b",
+    "reference/server/Server/src/main/core/tools/TickUtils.kt": "1438dfd87ea5ab7d26e927677cb60387a3bb710486160fc1d2f6bce9eb1940c9",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unchanged": [
+    "core/api/ContentAPI.kt",
+    "core/api/ApiExtensions.kt",
+    "core/api/Commands.kt",
+    "core/api/Container.kt",
+    "core/api/ContentInterface.kt",
+    "core/api/DialUtils.kt",
+    "core/api/EquipmentSlot.kt",
+    "core/api/Event.kt",
+    "core/api/God.kt",
+    "core/api/IfaceSettingsBuilder.kt",
+    "core/api/InputType.kt",
+    "core/api/LoginListener.kt",
+    "core/api/LogoutListener.kt",
+    "core/api/MapArea.kt",
+    "core/api/PersistPlayer.kt",
+    "core/api/PersistWorld.kt",
+    "core/api/ShutdownListener.kt",
+    "core/api/StartupListener.kt",
+    "core/api/TickListener.kt",
+    "core/api/regionspec/RegionSpecification.kt",
+    "core/api/regionspec/contracts/ChunkSpecContract.kt",
+    "core/api/regionspec/contracts/CloneRegionContract.kt",
+    "core/api/regionspec/contracts/EmptyChunkContract.kt",
+    "core/api/regionspec/contracts/EmptyRegionContract.kt",
+    "core/api/regionspec/contracts/FillChunkContract.kt",
+    "core/api/regionspec/contracts/RegionSpecContract.kt",
+    "core/api/regionspec/contracts/UseExistingRegionContract.kt",
+    "core/api/utils/Vector.kt",
+    "core/api/utils/WeightedTable.kt",
+    "core/api/utils/CameraUtils.kt",
+    "core/api/utils/Exceptions.kt",
+    "core/api/utils/PlayerCamera.kt",
+    "core/game/world/map/Location.kt",
+    "core/game/interaction/Script.kt",
+    "core/game/interaction/Clocks.kt",
+    "core/tools/Globals.kt",
+    "core/tools/TickUtils.kt",
+    "core/game/diary/DiaryLevel.kt",
+    "core/game/world/update/flag/context/ForceMoveCtx.kt",
+    "content/data/Quests.kt",
+    "content/global/skill/construction/decoration/pohstorage/StorableFamily.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

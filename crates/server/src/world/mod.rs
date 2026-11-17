@@ -14,6 +14,7 @@ pub mod command_packets;
 pub mod component_objects;
 pub mod consumables;
 pub mod creatures;
+pub mod content_api;
 pub mod dark_zone;
 pub mod dialogue;
 pub mod dialogue_dsl;
