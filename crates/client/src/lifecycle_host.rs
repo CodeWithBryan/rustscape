@@ -337,7 +337,11 @@ impl Host {
         capture: bool,
         crc_sums: [i32; 29],
     ) -> Self {
-        let (endpoints, dialer) = endpoints(&launch.endpoint, world.unwrap_or(DEFAULT_WORLD));
+        let (mut endpoints, dialer) = endpoints(&launch.endpoint, world.unwrap_or(DEFAULT_WORLD));
+        // The original has opened its JS5 connection before the title shows
+        // (client.java:1320-1323), which points account creation at the
+        // world's port; this client reads its cache from disk instead.
+        endpoints.js5_connect();
         // Math.random(), which seeds the opcode cipher among other things.
         let mut random = rs09_game_core::random::JavaRandom::new(
             (miniquad::date::now() * 1000.0) as i64 ^ 0x2545_F491_4F6C_DD1D,

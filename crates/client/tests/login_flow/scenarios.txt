@@ -14,6 +14,7 @@
 #   fetch NOW, hop ID, sort A B C D, list, get ID         WorldList
 #   connect ok|fail, recv TOKENS, recvlen TOKENS, eof, ioerr     the server side
 #   lost TIMER                        Protocol.handleConnectionLost
+#   js5                               client.java 1320-1323 (a JS5 connection attempt)
 #   tick N                            N client cycles
 
 scenario login-success
@@ -828,3 +829,39 @@ fetch 10000
 connect fail
 fetch 10000
 fetch 10000
+
+# Account creation with a config.json: before any JS5 connection the request
+# goes to server_port (the default port) on ip_address; once JS5 has
+# connected (as it always has when the original's title opens) it goes to
+# server_port + world on ip_management, and a refusal there toggles to the
+# default port.
+scenario create-after-js5
+config 2 1 1 0 mgmt.example game.example 1 53719 53720
+state 10
+checkname 'bob
+tick 1
+connect ok
+recv 02
+tick 1
+js5
+checkinfo 3 2 2007 61
+tick 1
+connect ok
+recv 02
+tick 1
+checkname 'bob
+tick 1
+connect fail
+tick 1
+tick 1
+connect ok
+recv 14
+tick 1
+# createAccount's block (129 bytes) cannot take the length byte and a
+# 129-byte BigInteger: with this padding the original throws (err) and
+# sends nothing; with the next it fits.
+random 0.037 0.037 0.037 0.037 0.037
+create 1 0 2009 5 'tester 'secret1 0
+random 0.036 0.036 0.036 0.036 0.036
+create 1 0 2009 5 'tester 'secret1 0
+outbound

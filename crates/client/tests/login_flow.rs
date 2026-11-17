@@ -14,9 +14,11 @@
 //! `Buffer`, `Packet` and `IsaacRandom` whole. Its harness transcribes, rather
 //! than runs, the script-command guards, the login-relevant lines of
 //! `client.setGameState`, the game-state 40 branch of `client.mainLoop`,
-//! `Protocol.handleConnectionLost` and `client.mainInit`'s port arithmetic;
-//! a blocking socket read there lasts 1500 scripted cycles before it times
-//! out. The harness and its stand-in classes are not checked in yet;
+//! `Protocol.handleConnectionLost`, `client.mainInit`'s port arithmetic and
+//! the host and port a JS5 connection attempt sets (client.java:1320-1323,
+//! command `js5`); a blocking socket read there lasts 1500 scripted cycles
+//! before it times out. The harness and its stand-in classes are in
+//! `oracle/login-flow/` (`build.ps1` regenerates the trace);
 //! `login_flow/sources.txt` records the hashes of the reference files and
 //! of the scenario file the trace was generated from.
 //!
@@ -329,6 +331,7 @@ impl Harness {
                     .extend(c[1..].iter().map(|d| d.parse::<f64>().expect("double")));
                 return;
             }
+            "js5" => self.flow.endpoints.js5_connect(),
             "env" => {
                 self.window_mode = int(1);
                 self.size = [int(2), int(3)];
@@ -513,7 +516,7 @@ fn matches_the_original() {
             .iter()
             .filter(|l| l.starts_with("> scenario "))
             .count(),
-        31
+        32
     );
     assert!(expected.len() > 1500, "{} trace lines", expected.len());
 }

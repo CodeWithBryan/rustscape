@@ -1,6 +1,6 @@
 # SHA-256 of the inputs that produced java_trace.txt (JDK 25, javac --release 8).
 # LoginManager.java is used as lines 12-17, 38-77 and 159-600; the other reference files whole.
-# The harness (rt4.LoginOracle) and its stand-in classes are not in this repository yet; see tests/login_flow.rs.
+# The harness (rt4.LoginOracle) and its stand-in classes are in oracle/login-flow/ (build.ps1 regenerates the trace).
 266edfa18c444d9a8284df31e891f5403f7b11c0e444c146d6868ea92ab4bd10  reference/client/client/src/main/java/rt4/LoginManager.java
 5ebe37b6d0d65acbbd3c47c9503f853afb689d07c2d3f42616653ef1e69d6180  reference/client/client/src/main/java/rt4/CreateManager.java
 0b55f28e7a66014a04556ac77d53ce96f20ca335a4060fc967d83ca526a39509  reference/client/client/src/main/java/rt4/WorldList.java
@@ -19,4 +19,4 @@ fea42fabe6d088f5feb0c85f33ba35aa201d602f4233c1f4aa045d8cef84638a  reference/clie
 fa6dad058d1c70e9416f04c080d277d31717a84059c11d973a219936e21efef3  reference/client/client/src/main/java/rt4/HashTable.java
 d1a9cfeda03eca91644dca977301644db74722f5800a40fc39c406e1f5d9a4d7  reference/client/client/src/main/java/rt4/StringNode.java
 742d84a49c61ac538d4552290e25d1911e1116cf24580dbd1032c3ad0ed12bb1  reference/client/signlink/src/main/java/rt4/PrivilegedRequest.java
-1d14fd0823cdcff2c274aa77b5c7579fbe53c2ee5b9f6f0b303a06f88405ec5f  crates/client/tests/login_flow/scenarios.txt
+9d35b6fd17d57db921b93af5a51d3808e7ea97b00daf259084147a4bd175fa63  crates/client/tests/login_flow/scenarios.txt

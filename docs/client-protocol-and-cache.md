@@ -327,6 +327,24 @@ oversize cache file is an error instead of being deleted.
   browser, an applet's page, records the settings-page request instead.
   Input that arrives while the title scene is being rebuilt waits for the
   first cycle after the build (`game_cycle::reads_devices`).
+- Account creation is the interface's own five panels (403 introduction,
+  404 date of birth and country, 405 name, 406 terms, 409 password, 410
+  created) and three handshake requests, each on a new connection that the
+  client closes after the reply: 147 `p1 day, p1 month (0-11), p2 year, p2
+  country` (CS2 5603, script 1233; reply read by 1234), 186 and the name
+  string (5604, script 1235; reply 1236; 21 is followed by a count and that
+  many base-37 names, which 5610 hands to the script), and 36 `p1 size` with
+  the RSA block `10, p2 random, p2 530, name, p4 random, password, p4
+  random, p2 affiliate, p1 day, p1 month, p4 random, p2 year, p2 country, p4
+  random` (5605, script 1237; reply 1238). Reply 2 opens the next panel;
+  -3 is "waiting", -4 no connection, -5 no answer in 2000 cycles, -1 a
+  closed connection, and every other code shows that script's message (see
+  `tests/account_creation.rs` for each). There is no automatic login: the
+  created panel's button (script 1123) opens the login form with the new
+  name, where the player types the password. Requests go to the host and
+  port the original's JS5 connection leaves (`Endpoints::js5_connect`,
+  client.java:1320-1323), which this client sets when it starts because it
+  has no JS5 connection of its own.
 
 Verified by: the login-flow trace and the loading-bar cases (above);
 `tests/login_seam.rs` against a scripted peer; and one live run in which a
@@ -338,7 +356,20 @@ the main menu, the login form, account creation (to its second page), world
 select, Graphics Options and Audio Options was clicked in this client and in
 the original against the same example server, with frames compared by eye
 (2026-11-17); the walk-started drag, Quit and the held input are
-transcription tests.
+transcription tests. Account creation (2026-11-17): `tests/account_creation.rs`
+runs interface 744's own scripts with the login flow over loopback sockets
+against a scripted peer (`tests/support/account_peer.rs`, which reads the
+requests in `AccountRegister.read` order and answers any code, the
+reference server's rules, a closed connection or silence): every reply code
+the three answer scripts tell apart, 21 with zero to five names, the request
+bytes, success through to the login that follows. The same flow was clicked
+through in the release client and in the original client against
+`examples/account_peer.rs` relaying JS5, world list and login to
+`player_session`: every panel and every message is pixel-identical on the
+parchment (only the text cursor's blink differs), both sent identical
+requests, and both entered the game after creating `visual`. The new
+`create-after-js5` scenario of the login-flow trace covers the JS5 port and
+the overflow below on the JVM.
 
 Differences: the title scene builds on the streaming thread (state 28
 lasts a fraction of a second instead of one blocking call; two clicks during
@@ -1374,9 +1405,26 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
   Interface models, animation frames and item icons met before their group
   arrives are drawn missing for those frames (each retries every cycle); the
   original draws nothing for them either until `isFileReady`.
-- (a) Account creation was never clicked through, and the Rust server has no
-  create opcodes (147, 186 and 36 disconnect; the client then reports reply
-  -1, as the original does at end of stream).
+- (a) Account creation works on the client side against a scripted peer
+  (see "Title screen and login"), but the Rust server still has no create
+  opcodes: 147, 186 and 36 disconnect, so against it every page says
+  "Unexpected server response." (reply -1, as the original shows at end of
+  stream). Reply -5 (a connection that never completes in 2000 cycles) was
+  not produced in a test or a capture.
+- (a)(d) Two quirks of the original are reproduced, both confirmed in the
+  original client: (i) for about 7% of the random padding values the create
+  block plus its length byte (130 bytes) does not fit `createAccount`'s
+  129-byte buffer, `rsaenc` throws (ArrayIndexOutOfBoundsException at
+  CreateManager.java:181), nothing is sent and the password page keeps
+  "Please wait..."; (ii) Next on an empty name throws in `checkName`
+  (decode37 of 0 is null). In both cases the button never gets its hook back,
+  because only the reply script restores it, so that page stays waiting until
+  the client is restarted; Escape still returns to the main menu.
+- (d) The original reads each first reply byte with a blocking read, frozen
+  for up to 30 s; this client keeps drawing and counts 1500 cycles (30 s)
+  instead. When nothing answers, both show the -4 message after that timeout
+  and the failed retry on the other port (both had it 58 s after the click
+  in the captures).
 - (a)(d) A world-list failure at start is fatal, as in the original. A failed
   launch-file login (`--username`) is reported on standard error only; the
   message appears once the form is opened.
@@ -1823,9 +1871,10 @@ What was run, and how, is under "The browser build as run".
 
 ### Verification gaps
 
-- No regenerating command for the title loading-bar cases, the login-flow
-  trace, the world-map core hashes, the store-write cases or the outgoing
-  encoder bytes; three of those harnesses are not in the repository.
+- No regenerating command for the title loading-bar cases, the world-map
+  core hashes, the store-write cases or the outgoing encoder bytes; two of
+  those harnesses are not in the repository. The login-flow trace is
+  regenerated by `oracle/login-flow/build.ps1` (no xtask command).
 - No automated test: `world_pick.rs` and the picking insertion order, the
   dispatch edits, the GPU presenters (world map, item-icon cache, cursor),
   the atmosphere and preference wiring, the unlit material, the shadow
@@ -1877,7 +1926,10 @@ Collected from every stream. None blocks the others.
     crowd pass; both follow the Java's place and are a few lines to reverse.
 12. **Title screen.** World-list failure: fatal as in the original, or
     retry. Failed launch-file login: standard error only, or open the form
-    (which ties the host to script ids).
+    (which ties the host to script ids). Account creation: keep the
+    original's 129-byte create buffer, whose overflow leaves about one
+    attempt in fourteen stuck until restart, or give it room for the length
+    byte (a one-number change that departs from the pinned client).
 13. **Fixture sizes.** Keep the large fixtures (folders in this tree: actors
     5.9 MB, roofs 4.4 MB, picking 3.9 MB, ui-fidelity 2.9 MB, input 1.8 MB,
     camera 1.2 MB, display 1.1 MB) or reduce the case counts.

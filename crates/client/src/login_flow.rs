@@ -253,6 +253,18 @@ impl Endpoints {
         let world = json.as_ref().map_or(1, |json| json.world);
         Self::new(default_hostname, 2, world, json, true)
     }
+    /// What every JS5 connection attempt does first with a `config.json`
+    /// (client.java:1320-1323): the game host becomes `ip_management` and the
+    /// port `server_port + worldListId`. The original always connects JS5
+    /// before its title screen opens, so account-creation requests (which,
+    /// unlike a login, do not pick their own port) start there. Without a
+    /// configuration nothing changes.
+    pub fn js5_connect(&mut self) {
+        if let Some(json) = &self.json {
+            self.hostname = json.ip_management.clone();
+            self.port = json.server_port + self.world_list_id;
+        }
+    }
     fn toggle_port(&mut self) {
         self.port = if self.port == self.default_port {
             self.alternate_port
