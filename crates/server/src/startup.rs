@@ -1,4 +1,9 @@
 //! Connect parsed startup settings to the native endpoint; gameplay loading is pending.
+//! The original start-up order (`GameWorld.prompt`) is [`sequence`]; see docs/startup.md.
+pub mod generators;
+pub mod loaders;
+pub mod regions;
+pub mod sequence;
 use crate::{
     auth::{factory::Registry, password::Passwords},
     config::Configuration,

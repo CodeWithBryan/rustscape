@@ -886,6 +886,22 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   or a process fails the run. It must never open a database other than the
   SQLite files the original creates inside that directory. See
   docs/world-trace.md.
+- For the native start-up (crates/server/src/startup/: loaders, generators,
+  regions, sequence), run `cargo test -p rs09-server --test startup` and
+  `cargo xtask startup-loaders-oracle --check` with Python/JDK 11 and the
+  pinned cache; also the suites of the loaders the sequence joins (item/npc/
+  scenery definitions and configs, interfaces, drop_tables, doors, variables).
+  The oracle calls GameWorld.prompt's statements one at a time on the
+  world-trace build and is accepted only if its boot record is byte-identical
+  to the world-trace fixture's; never edit the world-trace harness for it.
+  Preserve the 52 phases (per-phase draws and log lines), 6 tables and 47
+  authored cases. Keep each loader's evaluation order, exception points,
+  Kotlin split/trim/toBoolean rules, the ordinal rotation of overrides, the
+  signed-byte DataMap strings and HashMap song order. Generators are one
+  WorldGenerators per world with explicit Seeds, no defaults. A refused step
+  is logged and makes the start-up incomplete, never skipped or reported as
+  done; the whole-start-up test asserts its mismatches equal KNOWN_GAPS. The
+  World it builds is not playable and nothing installs it. See docs/startup.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

@@ -1,0 +1,355 @@
+[
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [{\"regionId\": \"12850\", \"keys\": \"1,-2,3,-2147483648\"}, {\"regionId\": 12851, \"keys\": \"0,0,0,0\"}, {\"regionId\": \"12850\", \"keys\": \"5,6,7,8\"}, {\"regionId\": \"+7\", \"keys\": \"9,10,11,12,13\"}]}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-valid"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [{\"regionId\": \"1\", \"keys\": \"1,2,3,4\"}, {\"regionId\": \"2\", \"keys\": \"1,2,3\"}, {\"regionId\": \"3\", \"keys\": \"1,2,3,4\"}]}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-short-keys"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [{\"regionId\": \"4\", \"keys\": \"1,2,3,4\"}, {\"regionId\": \"x\", \"keys\": \"1,2,3,4\"}]}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-bad-region"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [{\"regionId\": \"5\", \"keys\": \"1, 2,3,4\"}]}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-spaced-key"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [{\"regionId\": \"6\", \"keys\": 5}]}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-number-keys"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [{\"keys\": \"1,2,3,4\"}]}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-missing-region"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"other\": []}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-missing-array"
+ },
+ {
+  "files": {
+   "xteas.json": "[]"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-array-root"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [{\"regionId\": \"8\", \"keys\": \"1,2,3,4\"}, 3]}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-row-not-object"
+ },
+ {
+  "files": {
+   "xteas.json": "{\"xteas\": [}"
+  },
+  "loader": "XteaParser",
+  "name": "xtea-bad-json"
+ },
+ {
+  "files": {},
+  "loader": "XteaParser",
+  "name": "xtea-no-file"
+ },
+ {
+  "dump": [
+   60001,
+   60002,
+   60003,
+   60004,
+   60005
+  ],
+  "files": {
+   "object_configs.json": "[{\"ids\": \"60001,60002\", \"examine\": \"A thing.\", \"render_anim\": \"123\", \"other\": \"x\"}, {\"ids\": \"60003\", \"examine\": \"\", \"render_anim\": \"null\"}, {\"ids\": \"60004\", \"examine\": \"null\", \"render_anim\": null}, {\"ids\": \"60005\", \"examine\": 12, \"render_anim\": 5}, {\"ids\": \"60001\", \"render_anim\": \"65535\"}]"
+  },
+  "loader": "ObjectConfigParser",
+  "name": "object-valid"
+ },
+ {
+  "dump": [
+   60006,
+   60007,
+   60008
+  ],
+  "files": {
+   "object_configs.json": "[{\"ids\": \"60006\", \"examine\": \"kept\"}, {\"ids\": \"60007, 60008\", \"examine\": \"never\"}]"
+  },
+  "loader": "ObjectConfigParser",
+  "name": "object-spaced-ids"
+ },
+ {
+  "dump": [
+   60009,
+   60010
+  ],
+  "files": {
+   "object_configs.json": "[{\"ids\": \"60009,60010\", \"examine\": \"first\", \"render_anim\": \"x\"}]"
+  },
+  "loader": "ObjectConfigParser",
+  "name": "object-bad-anim"
+ },
+ {
+  "dump": [],
+  "files": {
+   "object_configs.json": "[{\"examine\": \"none\"}]"
+  },
+  "loader": "ObjectConfigParser",
+  "name": "object-missing-ids"
+ },
+ {
+  "dump": [
+   60011
+  ],
+  "files": {
+   "object_configs.json": "[{\"ids\": \"60011,\", \"examine\": \"t\"}]"
+  },
+  "loader": "ObjectConfigParser",
+  "name": "object-trailing-comma"
+ },
+ {
+  "dump": [
+   60012
+  ],
+  "files": {
+   "object_configs.json": "{\"ids\": \"60012\"}"
+  },
+  "loader": "ObjectConfigParser",
+  "name": "object-object-root"
+ },
+ {
+  "dump": [],
+  "files": {},
+  "loader": "ObjectConfigParser",
+  "name": "object-no-file"
+ },
+ {
+  "files": {
+   "object_overrides.json": "[{\"mode\": \"add\", \"id\": \"1276\", \"location\": \"[3200,3200,0]\"}, {\"mode\": \"add\", \"id\": \"1276\", \"location\": \"[3200,3200,0]\"}, {\"mode\": \"add\", \"id\": \"1276\", \"location\": \"3200, 3201, 1\", \"type\": \"4\", \"direction\": \"ne\"}, {\"mode\": \"remove\", \"id\": 1277, \"location\": \"[ 3300 ,3300,0 ]\", \"direction\": \"nw\"}, {\"mode\": \"remove\", \"id\": \"1277\", \"location\": \"[3300,3300,0]\", \"direction\": \"nw\"}, {\"mode\": \"remove\", \"id\": \"1277\", \"location\": \"[3300,3300,0]\", \"direction\": \"w\"}, {\"mode\": \"add\", \"id\": \"0\", \"location\": \"[3100,3100,0]\", \"direction\": \"e\"}, {\"mode\": \"add\", \"id\": \"-5\", \"location\": \"[3100,3101,0]\", \"direction\": \"sw\", \"type\": \"10\"}, {\"mode\": \"add\", \"id\": \"1278\", \"location\": \"[3100,3102,0]\", \"direction\": \"se\"}, {\"mode\": \"add\", \"id\": \"1278\", \"location\": \"[3100,3103,0]\", \"direction\": \"s\"}, {\"mode\": \"add\", \"id\": \"1278\", \"location\": \"[3100,3104,0]\", \"direction\": \"q\"}, {\"mode\": \"move\", \"id\": \"1278\", \"location\": \"[3100,3105,0]\"}, {\"mode\": \"Add\", \"id\": \"1278\", \"location\": \"[3100,3106,0]\"}]"
+  },
+  "loader": "ObjectOverrideParser",
+  "name": "override-valid"
+ },
+ {
+  "files": {
+   "object_overrides.json": "[{\"id\": \"1\", \"location\": \"[3000,3000,0]\"}]"
+  },
+  "loader": "ObjectOverrideParser",
+  "name": "override-missing-mode"
+ },
+ {
+  "files": {
+   "object_overrides.json": "[{\"mode\": \"add\", \"location\": \"[3000,3000,0]\"}, {\"mode\": \"add\", \"id\": \"2\", \"location\": \"[3000,3001,0]\"}]"
+  },
+  "loader": "ObjectOverrideParser",
+  "name": "override-missing-id"
+ },
+ {
+  "files": {
+   "object_overrides.json": "[{\"mode\": \"add\", \"id\": \"3\", \"location\": \"[3000,3002,0]\"}, {\"mode\": \"add\", \"id\": \"3\", \"location\": \"[3000,3003]\"}]"
+  },
+  "loader": "ObjectOverrideParser",
+  "name": "override-short-location"
+ },
+ {
+  "files": {
+   "object_overrides.json": "[{\"mode\": \"add\", \"id\": \"4\", \"location\": \"[3000,3004,0]\", \"type\": \"x\"}]"
+  },
+  "loader": "ObjectOverrideParser",
+  "name": "override-bad-type"
+ },
+ {
+  "files": {
+   "object_overrides.json": "[{\"mode\": \"add\", \"id\": \"5\", \"location\": \"[3000,3005,0\"}]"
+  },
+  "loader": "ObjectOverrideParser",
+  "name": "override-half-bracket"
+ },
+ {
+  "files": {},
+  "loader": "ObjectOverrideParser",
+  "name": "override-no-file"
+ },
+ {
+  "files": {
+   "shops.json": "[{}, {\"a\": 1}, 3]"
+  },
+  "loader": "ShopParser",
+  "name": "shops-three"
+ },
+ {
+  "files": {
+   "shops.json": "[]"
+  },
+  "loader": "ShopParser",
+  "name": "shops-empty"
+ },
+ {
+  "files": {
+   "shops.json": "{\"a\": []}"
+  },
+  "loader": "ShopParser",
+  "name": "shops-object-root"
+ },
+ {
+  "files": {
+   "shops.json": "[1,"
+  },
+  "loader": "ShopParser",
+  "name": "shops-bad-json"
+ },
+ {
+  "files": {},
+  "loader": "ShopParser",
+  "name": "shops-no-file"
+ },
+ {
+  "files": {
+   "music_regions.json": "[{\"region\": \"12850\", \"id\": \"76\"}, {\"region\": 12851, \"id\": 5}, {\"region\": \"12850\", \"id\": \"+77\"}]",
+   "music_tiles.json": "[{\"id\": \"1\", \"borders\": \"{3200,3200,3210,3210}\"}, {\"id\": \"2\", \"borders\": \"{3270,3270,3200,3200}-{3100,3100,3101,3101}\"}, {\"id\": \"3\", \"borders\": \"{3000,3000,3100,3100,[3001,3001,3002,3002]~[3003,3003,3004,3004]}\"}, {\"id\": \"4\", \"borders\": \"{2990,2990,2995,2995,[2991,2991,2992,2992]}\"}]"
+  },
+  "loader": "MusicConfigLoader",
+  "name": "music-valid"
+ },
+ {
+  "files": {
+   "music_regions.json": "[{\"region\": \"1\", \"id\": \"2\"}, {\"region\": \"r\", \"id\": \"3\"}]",
+   "music_tiles.json": "[]"
+  },
+  "loader": "MusicConfigLoader",
+  "name": "music-bad-region"
+ },
+ {
+  "files": {
+   "music_regions.json": "[]",
+   "music_tiles.json": "[{\"id\": \"5\", \"borders\": \"{3200,3200,3210,3210}\"}, {\"id\": \"6\", \"borders\": \"{3200,3200,3210}\"}]"
+  },
+  "loader": "MusicConfigLoader",
+  "name": "music-short-border"
+ },
+ {
+  "files": {
+   "music_regions.json": "[]",
+   "music_tiles.json": "[{\"id\": \"7\", \"borders\": \"{3200,3200,3210,3210}-\"}]"
+  },
+  "loader": "MusicConfigLoader",
+  "name": "music-empty-part"
+ },
+ {
+  "files": {
+   "music_regions.json": "[{\"region\": \" 9\", \"id\": \"1\"}]",
+   "music_tiles.json": "[]"
+  },
+  "loader": "MusicConfigLoader",
+  "name": "music-spaced"
+ },
+ {
+  "files": {
+   "music_regions.json": "[{\"region\": \"10\", \"id\": \"1\"}]"
+  },
+  "loader": "MusicConfigLoader",
+  "name": "music-no-tiles"
+ },
+ {
+  "files": {
+   "ammo_configs.json": "[{\"itemId\": \"20000\", \"start_graphic\": \"19,96\", \"darkbow_graphic\": \"\", \"projectile\": \"10,40,36,41,5,15,11\", \"poison_damage\": \"0\"}, {\"itemId\": \"9236\", \"start_graphic\": \"28,96\", \"darkbow_graphic\": \"1104,96\", \"projectile\": \"27,38,36,41,32,5,11\", \"poison_damage\": 3}, {\"itemId\": \"20000\", \"start_graphic\": \"1,2\", \"darkbow_graphic\": \" \", \"projectile\": \"1,2,3,4,5,6,7,8\", \"poison_damage\": \"-1\"}]",
+   "ranged_weapon_configs.json": "[{\"itemId\": \"20001\", \"animation\": \"426\", \"ammo_slot\": \"13\", \"weapon_type\": \"0\", \"drop_ammo\": \"true\", \"ammunition\": \"882,884\"}, {\"itemId\": 20001, \"animation\": \"1\", \"ammo_slot\": \"3\", \"weapon_type\": \"1\", \"drop_ammo\": \"TRUE\", \"ammunition\": \"1\"}, {\"itemId\": \"20002\", \"animation\": \"427\", \"ammo_slot\": \"3\", \"weapon_type\": \"2\", \"drop_ammo\": \"yes\", \"ammunition\": \"9236\"}]"
+  },
+  "loader": "RangedConfigLoader",
+  "name": "ranged-valid"
+ },
+ {
+  "files": {
+   "ammo_configs.json": "[{\"itemId\": 20003, \"start_graphic\": \"19,96\", \"darkbow_graphic\": \"\", \"projectile\": \"10,40,36,41,5,15,11\", \"poison_damage\": \"0\"}]",
+   "ranged_weapon_configs.json": "[]"
+  },
+  "loader": "RangedConfigLoader",
+  "name": "ranged-number-item"
+ },
+ {
+  "files": {
+   "ammo_configs.json": "[{\"itemId\": \"20000\", \"start_graphic\": \"19,96\", \"projectile\": \"10,40,36,41,5,15,11\", \"poison_damage\": \"0\"}]",
+   "ranged_weapon_configs.json": "[]"
+  },
+  "loader": "RangedConfigLoader",
+  "name": "ranged-missing-darkbow"
+ },
+ {
+  "files": {
+   "ammo_configs.json": "[{\"itemId\": \"20000\", \"start_graphic\": \"19,96\", \"darkbow_graphic\": \"\", \"projectile\": \"10,40,36,41,5,15,11\", \"poison_damage\": \"0\"}, {\"itemId\": \"20004\", \"start_graphic\": \"19,96\", \"darkbow_graphic\": \"\", \"projectile\": \"1,2,3,4,5,6\", \"poison_damage\": \"0\"}]",
+   "ranged_weapon_configs.json": "[]"
+  },
+  "loader": "RangedConfigLoader",
+  "name": "ranged-short-projectile"
+ },
+ {
+  "files": {
+   "ammo_configs.json": "[]",
+   "ranged_weapon_configs.json": "[{\"itemId\": \"20005\", \"animation\": \"1\", \"ammo_slot\": \"3\", \"weapon_type\": \"0\", \"drop_ammo\": \"false\", \"ammunition\": \"882,\"}]"
+  },
+  "loader": "RangedConfigLoader",
+  "name": "ranged-bad-ammunition"
+ },
+ {
+  "files": {
+   "ammo_configs.json": "[{\"itemId\": \"20000\", \"start_graphic\": \"19,96\", \"darkbow_graphic\": \"\", \"projectile\": \"10,40,36,41,5,15,11\", \"poison_damage\": \"0\"}]"
+  },
+  "loader": "RangedConfigLoader",
+  "name": "ranged-no-weapons"
+ },
+ {
+  "files": {
+   "clue_rewards.json": "{\"easy\": [{\"id\": 1, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1.0}, {\"id\": 2, \"minAmount\": 5, \"maxAmount\": 1, \"weight\": \"2.5\"}, {\"id\": \"3\", \"minAmount\": \"1\", \"maxAmount\": \"3\", \"weight\": 0}, {\"id\": 4, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": -1.5}], \"medium\": [{\"id\": 5, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1}], \"hard\": [], \"rare\": [{\"id\": 6, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1}, {\"id\": 7, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": \"1e2\"}, {\"id\": 8, \"minAmount\": 2, \"maxAmount\": 2, \"weight\": \"0.1\"}]}"
+  },
+  "loader": "ClueRewardParser",
+  "name": "clue-valid"
+ },
+ {
+  "files": {
+   "clue_rewards.json": "{\"easy\": [{\"id\": 9, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1}, {\"id\": 10, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1}], \"medium\": [{\"id\": 11, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1}], \"hard\": [{\"id\": 12, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1}]}"
+  },
+  "loader": "ClueRewardParser",
+  "name": "clue-missing-rare"
+ },
+ {
+  "files": {
+   "clue_rewards.json": "{\"easy\": [{\"id\": 13, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": 1}, {\"id\": 14, \"minAmount\": 1, \"maxAmount\": 1, \"weight\": \"x\"}], \"medium\": [], \"hard\": [], \"rare\": []}"
+  },
+  "loader": "ClueRewardParser",
+  "name": "clue-bad-weight"
+ },
+ {
+  "files": {
+   "clue_rewards.json": "{\"easy\": [{\"id\": 15, \"minAmount\": \"1.0\", \"maxAmount\": 1, \"weight\": 1}], \"medium\": [], \"hard\": [], \"rare\": []}"
+  },
+  "loader": "ClueRewardParser",
+  "name": "clue-bad-amount"
+ },
+ {
+  "files": {},
+  "loader": "ClueRewardParser",
+  "name": "clue-no-file"
+ }
+]
