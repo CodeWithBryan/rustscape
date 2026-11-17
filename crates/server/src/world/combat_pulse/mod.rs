@@ -14,6 +14,7 @@
 //! docs/combat-pulse.md.
 pub mod handler;
 pub mod impact;
+pub mod overrides;
 pub mod pulse;
 
 use crate::world::combat_swing::{
@@ -21,6 +22,7 @@ use crate::world::combat_swing::{
     WeaponInterfaces,
 };
 pub use impact::{HitsplatType, Impact, ImpactState};
+pub use overrides::Overrides;
 pub use pulse::{PulseState, Task, WorldPulse};
 
 /// `EquipmentContainer` slot numbers read here.
@@ -134,6 +136,10 @@ pub trait Host: cs::Host {
     fn is_salamander(&self, handler: &Self::HandlerRef) -> bool;
     /// The instance's runtime class simple name.
     fn handler_class_name(&self, handler: &Self::HandlerRef) -> String;
+    /// The members the instance's class overrides when it is not one of the
+    /// three base classes (a weapon special attack: `world::special_attacks`);
+    /// `None` for an instance of a base class.
+    fn overrides(&self, handler: &Self::HandlerRef) -> Option<Overrides<Self>>;
     fn specials(&mut self, handler: &Self::HandlerRef) -> &mut Specials<Self>;
     /// Reference identity of two entities.
     fn same_entity(&self, a: &Self::Entity, b: &Self::Entity) -> bool;

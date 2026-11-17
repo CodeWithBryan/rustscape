@@ -624,6 +624,10 @@ impl cp::Host for World {
         }
         .into()
     }
+    fn overrides(&self, _: &usize) -> Option<cp::Overrides<Self>> {
+        // The corpus drives the three base classes only.
+        None
+    }
     fn specials(&mut self, handler: &usize) -> &mut Specials<Self> {
         &mut self.specials[*handler]
     }

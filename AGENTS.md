@@ -89,11 +89,39 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   spans a service call; every service is required and has no default. The
   stand-ins' world model, tick runner and retaliating onImpact are oracle
   inputs, not ports. Not ported: removeFor, bolt-effect overrides (their two
-  services are never driven by the corpus), special-attack and other handler
-  subclasses, MultiSwingHandler, spell effects, DeathTask, graves, prayer
+  services are never driven by the corpus), handler subclasses other than
+  the special attacks (next bullet, joined through Host::overrides),
+  MultiSwingHandler, spell effects, DeathTask, graves, prayer
   drain, poison, degradation, Entity.onImpact/isAttackable and
   auto-retaliation. Nothing is bound to canonical actors, server::pulses,
   skills, equipment or a session. See docs/combat-pulse.md.
+
+- For weapon special attacks (world/special_attacks: the 34 special handler
+  classes with their registration, Player.getSwingHandler's lookup, fireEvent
+  and the instant special, Chainhit's and Snapshot's pulses, Hamstring's and
+  Phantom strike's timers, ContentAPI stun, MultihitTargets.kt) or the
+  combat_pulse Overrides hooks, run `cargo test -p rs09-server --test
+  special_attacks` and `cargo xtask special-attacks-oracle --check` with
+  Python/JDK 11, plus the combat_swing, combat_pulse, spells, prayer,
+  content_timers, npc_classes, player_tabs, equipment and settings suites
+  and combat-swing-oracle/combat-pulse-oracle. Preserve the 3,705 cases.
+  Keep the lookup the original's (register's specialHandlers map per base
+  handler, getSpecial on the pulse style's handler while the bar is on),
+  the overriding bodies reached where the original's virtual calls are (the
+  base adjustBattleState recursion included) and super bodies as `*_super`,
+  drainSpecial switching the bar off before the energy test, Liquefy's
+  flipping setter, the `&&` registration chains, Weaken's hit as the delay,
+  the -1 of Excalibur, Rampage and Clobber's OSRS body, Clobber's safe casts,
+  QuickSmash's reach-before-energy order and its own impact, Chainhit's
+  stored list popped per bounce with 10 energy each, Sweep's state as its own
+  target outside multi, Slice and dice's unset main style, Warstrike's drain
+  chain, Descent's shared weapon object, Shove's four location reads and the
+  finders' filter-before-take. Special energy is the native Settings; every
+  other call is a required Host service with no default. The equipment
+  registers, FireType, SwitchAttack, MixedSwingHandlers, the chinchompa,
+  salamander and dragonfire handlers and the dragon NPC classes are not
+  ported; nothing installs the library in `--world`. See
+  docs/special-attacks.md.
 
 - For Prayer/PrayerType/PrayerCategory, the prayer tab handler, Player
   commenceDeath/fullRestore or the combat prayer reads (world/prayer), run

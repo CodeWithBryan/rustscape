@@ -187,9 +187,13 @@ log under the stand-in's name.
   `Error::Index` with the same preceding effects; other exception classes are
   not modelled. `update` catches every failure of the body; the original
   catches `Exception`, not `Error`.
-- A handler's class is a field, as in the swing slice. A temporary or special
-  handler that overrides `canSwing`, `swing`, `impact` or the other ported
-  members cannot be represented; special attacks therefore stay out.
+- A handler's class is a field, as in the swing slice. A subclass's
+  overriding `swing`, `visualize`, `visualizeImpact`, `impact`,
+  `adjustBattleState` and `getFormattedHit` are answered per instance by
+  `Host::overrides` (`overrides.rs`); the weapon special attacks
+  (`world::special_attacks`, docs/special-attacks.md) are the only subclasses
+  joined that way. A subclass overriding `canSwing` or the other members
+  cannot be represented yet.
 - `BattleState` is an owned value. Target handling reads a target array by
   index and takes one child out while it is being adjusted; a service that
   replaced the array of the state it was handed would be seen sooner than in
@@ -203,8 +207,9 @@ log under the stand-in's name.
 ## Not ported
 
 `removeFor`; `lastSentAttack`/`lastReceivedAttack` users; `BoltEffect`
-overrides other than the `DIAMOND` path; special attack handlers and every
-other handler subclass, `MultiSwingHandler` and `SalamanderSwingHandler`;
+overrides other than the `DIAMOND` path; every handler subclass other than
+the special attacks (docs/special-attacks.md), `MultiSwingHandler` and
+`SalamanderSwingHandler`;
 spell effects and spell visuals; `DeathTask` and graves; prayer drain (now
 `world::prayer`, docs/prayer.md), poison and degradation themselves; `Entity.onImpact`, `sendImpact`, `checkImpact`,
 `isAttackable` and auto-retaliation; `RangedConfigLoader`.

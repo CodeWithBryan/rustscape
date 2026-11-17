@@ -592,8 +592,23 @@ pub fn can_swing<H: Host>(
     }
 }
 
-/// `getFormattedHit(attacker, victim, state, rawHit)`.
+/// `getFormattedHit(attacker, victim, state, rawHit)` of the instance's class.
 pub fn formatted_hit<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    attacker: &H::Entity,
+    victim: &H::Entity,
+    state: &BattleState<H>,
+    raw_hit: i32,
+) -> Result<i32> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.formatted_hit) {
+        return member(h, r, attacker, victim, state, raw_hit);
+    }
+    formatted_hit_super(h, r, attacker, victim, state, raw_hit)
+}
+
+/// `CombatSwingHandler.getFormattedHit`, the body a subclass reaches with `super`.
+pub fn formatted_hit_super<H: Host>(
     h: &mut H,
     r: &H::HandlerRef,
     attacker: &H::Entity,
@@ -791,6 +806,21 @@ fn magic_adjust<H: Host>(
 
 /// `adjustBattleState(entity, victim, state)` of the instance's class.
 pub fn adjust_battle_state<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    entity: &H::Entity,
+    victim: &H::Entity,
+    state: &mut BattleState<H>,
+) -> Result<()> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.adjust_battle_state) {
+        return member(h, r, entity, victim, state);
+    }
+    adjust_battle_state_super(h, r, entity, victim, state)
+}
+
+/// `adjustBattleState` of the instance's base class, the body a subclass
+/// reaches with `super`.
+pub fn adjust_battle_state_super<H: Host>(
     h: &mut H,
     r: &H::HandlerRef,
     entity: &H::Entity,
@@ -1084,6 +1114,20 @@ pub fn visualize<H: Host>(
     victim: Option<&H::Entity>,
     state: &BattleState<H>,
 ) -> Result<()> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.visualize) {
+        return member(h, r, entity, victim, state);
+    }
+    visualize_super(h, r, entity, victim, state)
+}
+
+/// `visualize` of the instance's base class.
+pub fn visualize_super<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    entity: &H::Entity,
+    victim: Option<&H::Entity>,
+    state: &BattleState<H>,
+) -> Result<()> {
     match kind_of(h, r) {
         HandlerKind::Melee => {
             let animation = h.attack_animation(entity)?;
@@ -1167,6 +1211,20 @@ pub fn visualize<H: Host>(
 
 /// `visualizeImpact(entity, victim, state)` of the instance's class.
 pub fn visualize_impact<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    entity: Option<&H::Entity>,
+    victim: Option<&H::Entity>,
+    state: &mut BattleState<H>,
+) -> Result<()> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.visualize_impact) {
+        return member(h, r, entity, victim, state);
+    }
+    visualize_impact_super(h, r, entity, victim, state)
+}
+
+/// `visualizeImpact` of the instance's base class.
+pub fn visualize_impact_super<H: Host>(
     h: &mut H,
     r: &H::HandlerRef,
     entity: Option<&H::Entity>,
@@ -1278,6 +1336,20 @@ fn melee_hits<H: Host>(
 
 /// `impact(entity, victim, state)` of the instance's class.
 pub fn impact<H: Host>(
+    h: &mut H,
+    r: &H::HandlerRef,
+    entity: Option<&H::Entity>,
+    victim: Option<&H::Entity>,
+    state: &mut BattleState<H>,
+) -> Result<()> {
+    if let Some(member) = h.overrides(r).and_then(|o| o.impact) {
+        return member(h, r, entity, victim, state);
+    }
+    impact_super(h, r, entity, victim, state)
+}
+
+/// `impact` of the instance's base class.
+pub fn impact_super<H: Host>(
     h: &mut H,
     r: &H::HandlerRef,
     entity: Option<&H::Entity>,

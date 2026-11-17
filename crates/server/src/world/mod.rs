@@ -89,6 +89,7 @@ pub mod script_runtime;
 pub mod session;
 pub mod shops;
 pub mod social;
+pub mod special_attacks;
 pub mod spells;
 pub mod system_manager;
 pub mod teleport;

@@ -566,9 +566,15 @@ pub fn swing<H: Host>(
     let instance = h.handler(r).clone();
     let set = instance.armour_set(h, Some(entity))?;
     h.set_armour_set(entity, set)?;
-    let mut instance = h.handler(r).clone();
-    let delay = instance.swing(h, Some(entity), victim, &mut state);
-    *h.handler(r) = instance;
+    let delay = match h.overrides(r).and_then(|o| o.swing) {
+        Some(swing) => swing(h, r, Some(entity), victim, &mut state),
+        None => {
+            let mut instance = h.handler(r).clone();
+            let delay = instance.swing(h, Some(entity), victim, &mut state);
+            *h.handler(r) = instance;
+            delay
+        }
+    };
     let delay = delay?;
     if delay < 0 {
         return Ok(false);

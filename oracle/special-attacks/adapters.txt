@@ -1,0 +1,392 @@
+// Recording stand-ins for everything the unmodified special attack handlers
+// and MultihitTargets.kt reach outside their own slice. generate.py takes
+// oracle/combat-swing/adapters.txt, then oracle/combat-pulse/adapters.txt (as
+// the combat-pulse oracle does), then replaces or adds the files below, split
+// at each "//// path" line. A stand-in records a required service call through
+// oracle.Support.emit (name, arguments) and answers from the case input or from
+// the small world model kept beside it. That model is an oracle input, not a
+// port of the classes it stands in for. Paths this corpus does not drive throw
+// UnsupportedOperationException. /*NAME*/ markers are original text inserted
+// at generation time.
+//// core/game/node/entity/Entity.java
+package core.game.node.entity;
+import java.util.*;import oracle.Support;import core.game.world.map.Location;import core.game.node.Node;
+import core.game.node.entity.combat.*;import core.game.node.entity.combat.equipment.*;
+import core.game.node.entity.combat.spell.CombatSpell;import core.game.node.entity.skill.Skills;
+import core.game.node.entity.player.Player;import core.game.node.entity.npc.NPC;
+import core.game.world.update.flag.context.Animation;import core.game.world.update.flag.context.Graphics;
+import core.game.node.entity.impl.Animator.Priority;
+public class Entity extends Node{
+ public final int tag;public final Map spec;public CombatSpell spell,autocast;
+ public int lifepoints,recoil;public double prayerPoints;public boolean dead,registered;public Object armourSet;public int levelAnswer;
+ public final Map<String,Object> attrs=new HashMap<>();
+ final Props props=new Props();final Skills skills=new Skills(this);final Walking walking=new Walking();final Locks locks=new Locks();
+ final Pulses pulses=new Pulses();public final Scripts scripts=new Scripts();final Attrs attributes=new Attrs();
+ final Timers timers=new Timers();final ClockArray clocks=new ClockArray();
+ CombatPulse combat;ImpactHandler impacts;
+ public Entity(int tag,Map spec){
+  this.tag=tag;this.spec=spec;this.size=Support.i(spec,"size",1);this.location=Support.place(spec);
+  this.lifepoints=Support.i(spec,"lifepoints",10);this.recoil=Support.i(spec,"recoilDamage",40);this.prayerPoints=Support.d(spec,"prayerPoints",0.0);
+  this.dead=Boolean.TRUE.equals(spec.get("dead"));this.armourSet=spec.get("armourSet");
+  Map a=(Map)spec.get("attrs");if(a!=null)for(Object k:a.keySet())attrs.put((String)k,a.get(k));
+ }
+ public void bind(){combat=new CombatPulse(this);impacts=new ImpactHandler(this);}
+ public void relocate(Location l){location=l;}
+ @Override public int hashCode(){return Support.i(spec,"hash",31*tag+7);}
+ public class Props{
+  public int[] getBonuses(){Support.emit("bonuses",tag);return Support.ints(spec.containsKey("bonuses")?spec.get("bonuses"):Support.ZERO15);}
+  public WeaponInterface.AttackStyle getAttackStyle(){Support.emit("attackStyle",tag);if(!spec.containsKey("attackStyle"))return new WeaponInterface.AttackStyle(0,2);List a=(List)spec.get("attackStyle");return a==null?null:new WeaponInterface.AttackStyle(Support.n(a.get(0)),Support.n(a.get(1)));}
+  public ArmourSet getArmourSet(){Support.emit("armourSet",tag);return armourSet==null?null:ArmourSet.valueOf((String)armourSet);}
+  public void setArmourSet(ArmourSet s){Support.emit("setArmourSet",tag,s==null?null:s.name());armourSet=s==null?null:s.name();}
+  public CombatPulse getCombatPulse(){return combat;}
+  public CombatSpell getSpell(){Support.emit("spell",tag);return spell;}
+  public void setSpell(CombatSpell s){Support.emit("setSpell",tag,s==null?null:(Object)s.idx);spell=s;}
+  public CombatSpell getAutocastSpell(){Support.emit("autocast",tag);return autocast;}
+  Animation anim(String key,Object fallback){Object v=spec.containsKey(key)?spec.get(key):fallback;return v==null?null:new Animation(Support.n(v),Priority.HIGH);}
+  public Animation getAttackAnimation(){Support.emit("attackAnim",tag);return anim("attackAnim",422L);}
+  public Animation getDefenceAnimation(){Support.emit("defenceAnim",tag);return anim("defenceAnim",404L);}
+  public Animation getCombatAnimation(int i){Support.emit("combatAnim",tag,i);List l=(List)spec.get("combatAnims");Object v=l==null?null:l.get(i);return v==null?null:new Animation(Support.n(v),Priority.HIGH);}
+  public CombatStyle getProtectStyle(){Support.emit("protectStyle",tag);Object v=spec.get("protectStyle");return v==null?null:CombatStyle.valueOf((String)v);}
+  public int getCombatTimeOut(){Support.emit("combatTimeOut",tag);return Support.i(spec,"combatTimeOut",10);}
+  public int getAttackSpeed(){Support.emit("attackSpeed",tag);return Support.i(spec,"attackSpeed",4);}
+  public int getCombatLevel(){Support.emit("combatLevel",tag);return Support.i(spec,"combatLevel",3);}
+  public boolean isMultiZone(){Support.emit("multiZone",tag);return Boolean.TRUE.equals(spec.get("multiZone"));}
+ }
+ public class Walking{
+  public boolean isMoving(){Support.emit("moving",tag);return Boolean.TRUE.equals(spec.get("moving"));}
+  public boolean isRunningBoth(){Support.emit("runningBoth",tag);return Boolean.TRUE.equals(spec.get("runningBoth"));}
+  public int getRunDir(){Support.emit("runDir",tag);return Support.i(spec,"runDir",-1);}
+  public void reset(){Support.emit("walkReset",tag);}
+  public void addPath(int x,int y){Support.emit("addPath",tag,x,y);}
+ }
+ public class Locks{
+  public boolean isMovementLocked(){Support.emit("movementLocked",tag);return Boolean.TRUE.equals(spec.get("movementLocked"));}
+  public boolean isInteractionLocked(){Support.emit("interactionLocked",tag);return Boolean.TRUE.equals(spec.get("interactionLocked"));}
+  public void lockMovement(int ticks){Support.emit("lockMovement",tag,ticks);}
+ }
+ public class Pulses{
+  public void run(core.game.system.task.Pulse p){Support.emit("pulseRun",tag);registered=true;p.start();if(p.isRunning())Support.queue.add(p);}
+  public boolean isMovingPulse(){Support.emit("isMovingPulse",tag);if(spec.containsKey("movingPulse"))return Boolean.TRUE.equals(spec.get("movingPulse"));return registered&&combat.isRunning();}
+  public void clear(){Support.emit("pulseClear",tag);if(registered)combat.stop();}
+ }
+ public class Scripts{public void removeWeakScripts(){Support.emit("removeWeakScripts",tag);}}
+ public class Attrs{public boolean containsKey(String k){Support.emit("attrHas",tag,k);return attrs.containsKey(k);}}
+ // TimerManager.registerTimer: recorded; the scheduling itself is not part of this corpus.
+ public class Timers{public void registerTimer(core.game.system.timer.RSTimer t){Support.registerTimer(Entity.this,t);}}
+ // entity.clocks: Kotlin's index assignment reaches set(index, value).
+ public class ClockArray{public void set(int i,int v){Support.emit("clock",tag,i,v);}public int get(int i){throw Support.unsupported("clocks.get");}}
+ public Props getProperties(){return props;}
+ public Skills getSkills(){return skills;}
+ public Walking getWalkingQueue(){return walking;}
+ public Locks getLocks(){return locks;}
+ public Pulses getPulseManager(){return pulses;}
+ public Attrs getAttributes(){return attributes;}
+ public ImpactHandler getImpactHandler(){return impacts;}
+ public Timers getTimers(){return timers;}
+ public ClockArray getClocks(){return clocks;}
+ @Override public Location getLocation(){Support.emit("location",tag);return location;}
+ @Override public int size(){Support.emit("size",tag);return size;}
+ @Override public int getId(){Support.emit("id",tag);return Support.i(spec,"id",0);}
+ @Override public int getIndex(){Support.emit("index",tag);return Support.i(spec,"index",tag);}
+ @Override public boolean isActive(){Support.emit("active",tag);return!Boolean.FALSE.equals(spec.get("active"));}
+ @Override public Location getCenterLocation(){Support.emit("center",tag);return super.getCenterLocation();}
+ public String getName(){Support.emit("name",tag);return spec.containsKey("name")?(String)spec.get("name"):"null";}
+ public boolean hasProtectionPrayer(CombatStyle style){Support.emit("protection",tag,style==null?null:style.name());return Support.has(spec,"protection",style==null?null:style.name());}
+ public double getLevelMod(Entity e,Entity v){Support.emit("levelMod",tag,Support.tag(e),Support.tag(v));return Support.d(spec,"levelMod",0.0);}
+ public void graphics(Graphics g){Support.emit("graphics",tag,g.getId(),g.getHeight(),g.getDelay());}
+ public <T> T getExtension(Class<?> c){Support.emit("extension",tag,c.getSimpleName());Object w=spec.get("weaponInterface");return w==null?null:(T)new WeaponInterface(this,(String)w);}
+ public Player asPlayer(){return(Player)this;}
+ public NPC asNpc(){return(NPC)this;}
+ Object attr(String k){Object v=attrs.get(k);if(v instanceof Map)return Support.entity(((Map)v).get("entity"));if("autocast_component".equals(k)&&v!=null)return new core.game.component.Component(90);if("duel:ammo".equals(k)&&v!=null)return Support.duelAmmo;return v;}
+ public <T> T getAttribute(String k,T fallback){Support.emit("attr",tag,k);Object v=attr(k);return v==null?fallback:(T)v;}
+ public <T> T getAttribute(String k){Support.emit("attr",tag,k);return(T)attr(k);}
+ public void setAttribute(String k,Object v){
+  Object shown=v instanceof Entity?(Object)((Entity)v).tag:v;
+  if("combat-time".equals(k)){long d=(Long)v-System.currentTimeMillis();shown=d>=5000&&d<=10000?(Object)10000L:(Object)d;}
+  // A stored entity list is shown by its tags at the time it is stored.
+  if(v instanceof List){List<Object> t=new ArrayList<>();for(Object o:(List)v)t.add(Support.tag((Entity)o));shown=t;}
+  Support.emit("setAttr",tag,k,shown);
+  if(v instanceof Entity){Map m=new HashMap();m.put("entity",(long)((Entity)v).tag);attrs.put(k,m);}else attrs.put(k,v);
+ }
+ public void removeAttribute(String k){Support.emit("removeAttr",tag,k);attrs.remove(k);}
+ public boolean animate(Animation a){Support.emit("animate",tag,a==null?null:(Object)a.getId());return true;}
+ public boolean visualize(Animation a,Graphics g){Support.emit("visualize",tag,a==null?null:(Object)a.getId(),Support.graphic(g));return true;}
+ public void onImpact(Entity e,BattleState s){Support.emit("onImpact",tag,Support.tag(e));if(Boolean.TRUE.equals(spec.get("retaliate"))&&e!=null)combat.attack(e);}
+ public void sendImpact(BattleState s){Support.emit("sendImpact",tag);Support.script(s,spec.get("sendImpact"));}
+ public void checkImpact(BattleState s){Support.emit("checkImpact",tag);Support.script(s,spec.get("checkImpact"));}
+ public void fullRestore(){Support.emit("fullRestore",tag);}
+ public double getFormattedHit(BattleState s,int hit){Support.emit("formattedHit",tag,hit);return hit*Support.d(spec,"hitFactor",1.0);}
+ public CombatSwingHandler getSwingHandler(boolean swing){Support.emit("swingHandler",tag,swing);Object v=swing&&spec.containsKey("handlerSwing")?spec.get("handlerSwing"):spec.get("handler");return Support.handlers.get(v==null?0:Support.n(v));}
+ public boolean isAttackable(Entity e,CombatStyle style,boolean message){Support.emit("attackable",tag,Support.tag(e),style==null?null:style.name(),message);return!Boolean.FALSE.equals(spec.get("attackable"));}
+ /*ENTITY_CLOSEST*/
+ public Location getClosestOccupiedTile(Location other){Support.emit("closestTile",tag,Support.coord(other));return closestOccupiedTile(other);}
+ public void attack(final Node node){Support.emit("attack",tag,Support.tag((Entity)node));
+		getProperties().getCombatPulse().attack(node);
+ }
+ public boolean face(Entity e){Support.emit("face",tag,Support.tag(e));return true;}
+ public boolean faceTemporary(Entity e,int ticks){Support.emit("faceTemporary",tag,Support.tag(e),ticks);return true;}
+ public void onAttack(Entity e){Support.emit("onAttack",tag,Support.tag(e));}
+ public void startDeath(Entity killer){Support.emit("startDeath",tag,Support.tag(killer));dead=true;}
+ public boolean hasFireResistance(){throw Support.unsupported("Entity.hasFireResistance");}
+ public boolean sendChat(String s){Support.emit("chat",tag,s);return true;}
+}
+//// core/game/node/entity/skill/Skills.java
+package core.game.node.entity.skill;
+import oracle.Support;import core.game.node.entity.Entity;
+public class Skills{
+ /*SKILL_CONSTANTS*/
+ final Entity e;public Skills(Entity e){this.e=e;}
+ public int getLevel(int s){Support.emit("level",e.tag,s);return Support.keyed(e.spec,"levels",s,1);}
+ public int getLevel(int s,boolean discardAssist){Support.emit("levelAssist",e.tag,s,discardAssist);return Support.keyed(e.spec,"levels",s,1);}
+ public int getStaticLevel(int s){Support.emit("staticLevel",e.tag,s);return Support.keyed(e.spec,"staticLevels",s,1);}
+ public int getLifepoints(){Support.emit("lifepoints",e.tag);return e.lifepoints;}
+ public int getMaximumLifepoints(){Support.emit("maxLifepoints",e.tag);return Support.i(e.spec,"maxLifepoints",10);}
+ public double getPrayerPoints(){Support.emit("prayerPoints",e.tag);return e.prayerPoints;}
+ public void setPrayerPoints(double d){Support.emit("setPrayer",e.tag,Support.hex(d));e.prayerPoints=d;}
+ public void decrementPrayerPoints(double d){Support.emit("decPrayer",e.tag,Support.hex(d));e.prayerPoints-=d;if(e.prayerPoints<0)e.prayerPoints=0;}
+ public void incrementPrayerPoints(double d){Support.emit("incPrayer",e.tag,Support.hex(d));e.prayerPoints+=d;}
+ public void addExperience(int s,double xp,boolean playerMod){Support.emit("addXp",e.tag,s,Support.hex(xp),playerMod);}
+ // The answer is the case's next scripted value ("updateLevelReturns"), 0 when none is left.
+ public int updateLevel(int s,int amount,int max){Support.emit("updateLevel",e.tag,s,amount,max);return Support.levelAnswer(e);}
+ public int heal(int health){Support.emit("heal",e.tag,health);int max=Support.i(e.spec,"maxLifepoints",10);e.lifepoints+=health;int left=0;if(e.lifepoints>max){left=e.lifepoints-max;e.lifepoints=max;}return left;}
+ public int hit(int damage){Support.emit("hit",e.tag,damage);e.lifepoints-=damage;int left=0;if(e.lifepoints<0){left=-e.lifepoints;e.lifepoints=0;}return left;}
+ public int[] getDynamicLevels(){Support.emit("dynamicLevels",e.tag);if(e.spec.containsKey("dynamicLevels")&&e.spec.get("dynamicLevels")==null)return null;int[] a=new int[e.spec.containsKey("dynamicLevels")?Support.n(e.spec.get("dynamicLevels")):24];for(int k=0;k<a.length;k++)a[k]=Support.keyed(e.spec,"levels",k,1);return a;}
+}
+//// core/game/node/entity/player/Player.java
+package core.game.node.entity.player;
+import java.util.*;import oracle.Support;import core.game.node.entity.Entity;import core.game.node.entity.combat.*;
+import core.game.node.entity.player.link.prayer.PrayerType;import core.game.node.item.Item;import core.game.container.impl.EquipmentContainer;
+import core.game.node.entity.player.info.Rights;import core.game.node.entity.player.link.Settings;
+import content.global.handlers.item.equipment.special.ChinchompaSwingHandler;import content.global.handlers.item.equipment.special.SalamanderSwingHandler;
+public class Player extends Entity{
+ final EquipmentContainer equipment=new EquipmentContainer(this);final Prayer prayer=new Prayer();final Familiars familiars=new Familiars();final Packets packetDispatch=new Packets();final Other other=new Other();
+ final Settings settings;
+ public Player(int tag,Map spec){super(tag,spec);settings=new Settings(this);}
+ public class Prayer{
+  public double getSkillBonus(int s){Support.emit("prayerBonus",tag,s);Map m=(Map)spec.get("prayerBonus");Object v=m==null?null:m.get(String.valueOf(s));return v==null?0.0:Support.bits(v);}
+  public boolean get(PrayerType t){Support.emit("prayer",tag,t.name());return Support.has(spec,"prayers",t.name());}
+  public boolean toggle(PrayerType t){Support.emit("prayerToggle",tag,t.name());return true;}
+  public void startRedemption(){Support.emit("startRedemption",tag);}
+ }
+ public class Familiars{
+  public content.global.skill.summoning.familiar.Familiar getFamiliar(){Support.emit("familiar",tag);Object v=spec.get("familiar");if("throw".equals(v))throw new IllegalStateException("familiar");if(Boolean.TRUE.equals(spec.get("familiarPet")))return new content.global.skill.summoning.pet.Pet(0);return v==null?null:new content.global.skill.summoning.familiar.Familiar(Support.n(v));}
+  public boolean hasFamiliar(){Support.emit("hasFamiliar",tag);return Boolean.TRUE.equals(spec.get("hasFamiliar"));}
+  public void adjustBattleState(core.game.node.entity.combat.BattleState s){Support.emit("familiarAdjust",tag);}
+ }
+ public class Packets{public void sendMessage(String s){Support.emit("message",tag,s);}}
+ public class Other{
+  public boolean isIronman(){Support.emit("ironman",tag);return Boolean.TRUE.equals(spec.get("ironman"));}
+  public void checkWeaponDegrades(Player p){Support.emit("weaponDegrades",tag);}
+  public void close(core.game.component.Component c){Support.emit("closeComponent",tag);}
+  public void openTab(core.game.component.Component c){Support.emit("openTab",tag,c!=null);}
+  public boolean close(){Support.emit("ifaceClose",tag);return true;}
+  public void closeChatbox(){Support.emit("ifaceCloseChatbox",tag);}
+  public boolean isWilderness(){Support.emit("wilderness",tag);return Boolean.TRUE.equals(spec.get("wilderness"));}
+  public void checkSkull(Entity v){Support.emit("checkSkull",tag,Support.tag(v));}
+  public int getUid(){Support.emit("uid",tag);return Support.i(spec,"uid",tag);}
+  public Rights getRights(){Support.emit("rights",tag);Object v=spec.get("rights");return v==null?null:Rights.valueOf((String)v);}
+  public int getType(){Support.emit("zoneType",tag);return Support.i(spec,"zoneType",0);}
+  public Other getGlobalData(){return this;}
+  public int getRecoilDamage(){Support.emit("recoilDamage",tag);return recoil;}
+  public void setRecoilDamage(int n){Support.emit("setRecoilDamage",tag,n);recoil=n;}
+ }
+ public EquipmentContainer getEquipment(){return equipment;}
+ public Prayer getPrayer(){return prayer;}
+ public Familiars getFamiliarManager(){if("manager".equals(spec.get("familiar")))return null;return familiars;}
+ public Packets getPacketDispatch(){return packetDispatch;}
+ public boolean isWearingVoid(CombatStyle style){Support.emit("void",tag,style.name());return Support.has(spec,"void",style.name());}
+ public Settings getSettings(){return settings;}
+ public Other getIronmanManager(){return other;}
+ public Other getDegrader(){return other;}
+ public Other getInterfaceManager(){return other;}
+ public Other getSkullManager(){return other;}
+ public Other getDetails(){return other;}
+ public Other getZoneMonitor(){return other;}
+ public Other getSavedData(){return other;}
+ public int getClientIndex(){Support.emit("clientIndex",tag);return Support.i(spec,"clientIndex",tag);}
+ public void debug(String s){Support.emit("debug",tag,s);}
+ public void sendMessage(String s){Support.emit("sendMessage",tag,s);}
+ public void lock(int n){throw Support.unsupported("Player.lock");}
+ public boolean continueAttack(Entity target,CombatStyle style,boolean message){Support.emit("continueAttack",tag,Support.tag(target),style==null?null:style.name(),message);return!Boolean.FALSE.equals(spec.get("continueAttack"));}
+ // The call is recorded, then the original Player.getSwingHandler body runs.
+ @Override public CombatSwingHandler getSwingHandler(boolean swing){Support.emit("swingHandler",tag,swing);return originalSwingHandler(swing);}
+ /*PLAYER_SWING_HANDLER*/
+}
+//// core/game/node/entity/player/link/Settings.java
+package core.game.node.entity.player.link;
+import oracle.Support;import core.game.node.entity.player.Player;
+// The original special energy fields and members; the rest records.
+public class Settings{
+ /*SETTINGS_FIELDS*/
+ private final Player player;
+ public Settings(Player player){this.player=player;Object e=player.spec.get("specialEnergy");if(e!=null)specialEnergy=Support.n(e);specialToggled=Boolean.TRUE.equals(player.spec.get("specialToggled"));}
+ // ContentAPI setVarp: recorded.
+ static void setVarp(Player p,int id,int value){Support.emit("varp",p.tag,id,value);}
+ /*SETTINGS_MEMBERS*/
+ public int getAttackStyleIndex(){Support.emit("attackStyleIndex",player.tag);return Support.i(player.spec,"attackStyleIndex",0);}
+ public void updateRunEnergy(double d){Support.emit("runEnergy",player.tag,Support.hex(d));}
+}
+//// core/game/node/entity/player/info/Rights.java
+package core.game.node.entity.player.info;
+// The constant names only.
+public enum Rights{REGULAR_PLAYER,PLAYER_MODERATOR,ADMINISTRATOR}
+//// core/game/node/entity/npc/NPC.java
+package core.game.node.entity.npc;
+import java.util.*;import oracle.Support;import core.game.node.entity.Entity;import content.global.skill.slayer.Tasks;
+import core.game.world.update.flag.context.Graphics;import core.game.node.entity.player.link.audio.Audio;
+import core.game.node.entity.player.Player;import core.game.node.entity.combat.BattleState;
+public class NPC extends Entity{
+ public NPC(int tag,Map spec){super(tag,spec);}
+ public Tasks getTask(){Support.emit("npcTask",tag);return Tasks.of((Map)spec.get("npcTask"));}
+ public class Def{
+  public int getCombatDistance(){Support.emit("combatDistance",tag);return Support.i(spec,"combatDistance",0);}
+  public Graphics[] getCombatGraphics(){Support.emit("combatGraphics",tag);if(!spec.containsKey("combatGraphics"))return new Graphics[3];List l=(List)spec.get("combatGraphics");if(l==null)return null;Graphics[] a=new Graphics[l.size()];for(int k=0;k<a.length;k++){List g=(List)l.get(k);a[k]=g==null?null:new Graphics(Support.n(g.get(0)),Support.n(g.get(1)),Support.n(g.get(2)));}return a;}
+ }
+ public class Behavior{
+  public double getXpMultiplier(NPC n,Player p){Support.emit("xpMultiplier",Support.tag(n),Support.tag(p));return Support.d(spec,"xpMultiplier",1.0);}
+  public void beforeAttackFinalized(Entity e,Entity v,BattleState s){Support.emit("beforeAttackFinalized",Support.tag(e),Support.tag(v));}
+ }
+ public Def getDefinition(){return new Def();}
+ public Behavior getBehavior(){return new Behavior();}
+ public Audio getAudio(int i){Support.emit("npcAudio",tag,i);List l=(List)spec.get("audio");Object v=l==null||i>=l.size()?null:l.get(i);return v==null?null:new Audio(Support.n(v));}
+ public boolean isPoisonous(){Support.emit("poisonous",tag);return Boolean.TRUE.equals(spec.get("poisonous"));}
+ public int poisonSeverity(){Support.emit("poisonSeverity",tag);return Support.i(spec,"poisonSeverity",-1);}
+ public boolean isHidden(Player p){Support.emit("hidden",tag,Support.tag(p));return Boolean.TRUE.equals(spec.get("hidden"));}
+ public boolean canStartCombat(Entity v){Support.emit("canStartCombat",tag,Support.tag(v));return!Boolean.FALSE.equals(spec.get("canStartCombat"));}
+ public int getOriginalId(){Support.emit("originalId",tag);return Support.i(spec,"originalId",Support.i(spec,"id",0));}
+}
+//// core/game/world/map/RegionManager.java
+package core.game.world.map;
+import java.util.*;import oracle.Support;import core.game.node.entity.Entity;import core.game.node.entity.npc.NPC;import core.game.node.entity.player.Player;
+public class RegionManager{
+ public static class Region{final int id;Region(int id){this.id=id;}public boolean isActive(){Support.emit("regionActive",id);return!Support.inactive.contains((long)id);}}
+ public static Region forId(int id){return new Region(id);}
+ public static int getClippingFlag(Location l){return getClippingFlag(l.getZ(),l.getX(),l.getY());}
+ public static int getClippingFlag(int z,int x,int y){Support.emit("clip",z,x,y);return Support.flag(Support.clip,z,x,y);}
+ public static int getProjectileFlag(int z,int x,int y){Support.emit("pclip",z,x,y);return Support.flag(Support.pclip,z,x,y);}
+ // The local entity queries answer the case's lists, keyed "kind|x,y,z|distance".
+ static List local(String kind,Location l,int d){Support.emit(kind,Support.coord(l),d);List<Entity> out=new ArrayList<>(20);Map m=(Map)Support.input.get("local");Object v=m==null?null:m.get(kind+"|"+l.getX()+","+l.getY()+","+l.getZ()+"|"+d);if(v!=null)for(Object o:(List)v)out.add(Support.entity(o));return out;}
+ public static List<Entity> getLocalEntities(Location l,int d){return local("localEntities",l,d);}
+ public static List<NPC> getLocalNPCs(Location l,int d){return local("localNpcs",l,d);}
+ public static List<Player> getLocalPlayers(Location l,int d){return local("localPlayers",l,d);}
+}
+//// core/game/world/repository/Repository.java
+package core.game.world.repository;
+import java.util.*;import oracle.Support;import core.game.world.map.Location;import core.game.node.entity.npc.NPC;
+public class Repository{
+ public static core.game.node.entity.player.Player getPlayerByUid(int uid){return oracle.Support.byUid(uid);}
+ public static NPC findNPC(Location l){Support.emit("findNpc",Support.coord(l));Map m=(Map)Support.input.get("npcsAt");Object v=m==null?null:m.get(l.getX()+","+l.getY()+","+l.getZ());return(NPC)Support.entity(v);}
+}
+//// core/game/world/map/zone/impl/WildernessZone.java
+package core.game.world.map.zone.impl;
+import oracle.Support;import core.game.node.entity.Entity;import core.game.node.entity.combat.CombatStyle;
+public class WildernessZone{
+ static final WildernessZone INSTANCE=new WildernessZone();
+ public static WildernessZone getInstance(){return INSTANCE;}
+ public boolean continueAttack(Entity e,Entity target,CombatStyle style,boolean message){Support.emit("wildernessAttack",e.tag,target.tag,style==null?null:style.name(),message);return!Boolean.FALSE.equals(target.spec.get("wildernessAttackable"));}
+}
+//// core/game/node/entity/impl/Projectile.java
+package core.game.node.entity.impl;
+import java.util.*;import oracle.Support;import core.game.node.entity.Entity;
+// Records the factory method and arguments of every projectile that is sent.
+// A nine-argument create with two null entities is a static template whose
+// own arguments are shown again when a copy of it is sent.
+public class Projectile{
+ final int id;final List<Object> made;final int[] template;
+ public Projectile(int id){this.id=id;this.made=null;this.template=null;}
+ Projectile(int id,Object... made){this.id=id;this.made=Arrays.asList(made);this.template=null;}
+ Projectile(int[] template){this.id=template[0];this.made=null;this.template=template;}
+ public static Projectile create(Entity s,Entity v,int id,int startHeight,int endHeight,int startDelay,int speed,int angle,int distance){if(s==null&&v==null)return new Projectile(new int[]{id,startHeight,endHeight,startDelay,speed,angle,distance});return new Projectile(id,"create9",Support.tag(s),Support.tag(v),id,startHeight,endHeight,startDelay,speed,angle,distance);}
+ public static Projectile create(Entity s,Entity v,int id,int startHeight,int endHeight,int startDelay,int speed,int angle){return new Projectile(id,"create",Support.tag(s),Support.tag(v),id,startHeight,endHeight,startDelay,speed,angle);}
+ public static Projectile create(Entity s,Entity v,int id,int startHeight,int endHeight,int startDelay,int speed){return new Projectile(id,"create7",Support.tag(s),Support.tag(v),id,startHeight,endHeight,startDelay,speed);}
+ public static Projectile ranged(Entity s,Entity v,int id,int startHeight,int endHeight,int startDelay,int angle){return new Projectile(id,"ranged",Support.tag(s),Support.tag(v),id,startHeight,endHeight,startDelay,angle);}
+ public Projectile copy(Entity s,Entity v,double speed){
+  if(template!=null){List<Object> row=new ArrayList<>();row.add("copyTemplate");for(int t:template)row.add(t);row.add(Support.tag(s));row.add(Support.tag(v));row.add(Support.hex(speed));return new Projectile(id,row.toArray());}
+  return new Projectile(id,"copy",id,Support.tag(s),Support.tag(v),Support.hex(speed));}
+ public void send(){if(made==null)throw Support.unsupported("Projectile.send on a table row");List<Object> row=new ArrayList<>(made);Support.emit("projectile",row.toArray());}
+ public int getProjectileId(){return id;}
+}
+//// core/game/world/update/flag/context/Animation.java
+package core.game.world.update.flag.context;
+import core.game.node.entity.impl.Animator.Priority;
+public class Animation{final int id;public Animation(int id){this.id=id;}public Animation(int id,Priority p){this.id=id;}public Animation(int id,int delay,Priority p){this.id=id;}public static Animation create(int id){return new Animation(id);}public int getId(){return id;}}
+//// core/cache/def/impl/ItemDefinition.java
+package core.cache.def.impl;
+import java.util.*;import oracle.Support;
+// The definition name is the case's ("definitionNames").
+public class ItemDefinition{
+ final int id;ItemDefinition(int id){this.id=id;}
+ public static ItemDefinition forId(int id){return new ItemDefinition(id);}
+ public String getName(){Support.emit("definitionName",id);Map m=(Map)Support.input.get("definitionNames");Object v=m==null?null:m.get(String.valueOf(id));return v==null?"null":(String)v;}
+}
+//// core/ServerConstants.java
+package core;
+// The configuration flag the case sets.
+public class ServerConstants{public static boolean DRAGON_AXE_USE_OSRS_SPEC;}
+//// content/global/handlers/item/equipment/special/ChinchompaSwingHandler.java
+package content.global.handlers.item.equipment.special;
+// Class identity only: Player.getSwingHandler answers its instance.
+public class ChinchompaSwingHandler extends core.game.node.entity.combat.RangeSwingHandler{
+ public static ChinchompaSwingHandler INSTANCE;
+ public static ChinchompaSwingHandler getInstance(){return INSTANCE;}
+}
+//// content/global/handlers/item/equipment/special/SalamanderSwingHandler.kt
+package content.global.handlers.item.equipment.special
+// Class identity only: CombatPulse asks `handler is SalamanderSwingHandler` and
+// Player.getSwingHandler answers its INSTANCE.
+open class SalamanderSwingHandler : core.game.node.entity.combat.RangeSwingHandler() { companion object { @JvmStatic var INSTANCE = SalamanderSwingHandler() } }
+//// core/game/system/timer/RSTimer.kt
+package core.game.system.timer
+import core.game.node.entity.Entity
+// The original constructor and the members the special handlers' anonymous
+// timers override. TimerManager scheduling is not part of this corpus.
+abstract class RSTimer (var runInterval: Int, val identifier: String = "generictimer", val isSoft: Boolean = false, val isAuto: Boolean = false, val flags: Array<TimerFlag> = arrayOf()) {
+    abstract fun run (entity: Entity) : Boolean
+    open fun onRegister (entity: Entity) {}
+}
+//// core/game/system/timer/TimerRegistry.kt
+package core.game.system.timer
+// Recorded: the registry's instance for an identifier, or null as the case says.
+object TimerRegistry {
+    fun getTimerInstance (identifier: String, vararg args: Any) : RSTimer? = oracle.Support.spawnTimer(identifier, args)
+}
+//// core/game/system/timer/impl/Miasmic.java
+package core.game.system.timer.impl;
+// Class identity only.
+public class Miasmic extends core.game.system.timer.RSTimer{public Miasmic(){super(0,"miasmic",false,false,new core.game.system.timer.TimerFlag[0]);}public boolean run(core.game.node.entity.Entity e){return false;}}
+//// core/game/system/timer/impl/AntiMacro.kt
+package core.game.system.timer.impl
+class AntiMacro : core.game.system.timer.RSTimer(0) { override fun run(entity: core.game.node.entity.Entity): Boolean = false
+companion object {
+/*EVENT_NPC*/
+} }
+//// core/api/ContentAPI.kt
+package core.api
+import core.game.node.entity.Entity
+import core.game.node.entity.player.Player
+import core.game.node.item.Item
+import core.game.world.map.Location
+import core.game.system.timer.RSTimer
+import core.game.system.timer.TimerRegistry
+import core.game.interaction.Clocks
+import core.game.world.GameWorld
+import core.game.world.update.flag.context.Graphics
+import core.game.world.update.flag.context.Animation
+import core.game.node.entity.impl.Animator
+import content.global.skill.slayer.Tasks
+import org.rs09.consts.Sounds
+import oracle.Support
+fun getItemFromEquipment(player: Player, slot: EquipmentSlot): Item? = player.equipment.get(slot.ordinal)
+fun getSlayerTask(player: Player): Tasks? { Support.emit("slayerTask", player.tag); return Tasks.of(player.spec["slayerTask"] as Map<*, *>?) }
+fun inEquipment(player: Player, id: Int, amount: Int = 1): Boolean { Support.emit("inEquipment", player.tag, id, amount); return Support.has(player.spec, "inEquipment", id.toString()) }
+fun applyPoison(entity: Entity, source: Entity, severity: Int) { Support.emit("poison", entity.tag, source.tag, severity) }
+@JvmOverloads fun playGlobalAudio(location: Location, id: Int, delay: Int = 0, loops: Int = 1, radius: Int = 8) { Support.emit("audio", Support.coord(location), id, delay, loops, radius) }
+fun playHurtAudio(player: Player, delay: Int = 0) { Support.emit("hurtAudio", player.tag, delay) }
+fun log(origin: Class<*>, type: core.tools.Log, message: String) { Support.emit("log", origin.simpleName, type.name, message) }
+// Audio.defaultAudioRadius is 8.
+@JvmOverloads fun playAudio(player: Player, id: Int, delay: Int = 0, loops: Int = 1, location: Location? = null, radius: Int = 8) { Support.emit("playAudio", player.tag, id, delay, loops, Support.coord(location), radius) }
+// ContentAPI sendMessage (it splits the text into lines for Player.sendMessages): recorded as one call.
+fun sendMessage(player: Player, message: String) { Support.emit("apiMessage", player.tag, message) }
+/*GET_ATTRIBUTE*/
+inline fun <reified T : RSTimer> hasTimerActive(entity: Entity): Boolean = Support.timer(entity, T::class.java.simpleName)
+/*API_ORIGINAL*/
