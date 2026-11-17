@@ -10,6 +10,9 @@ character ownership, profile loading and world streaming exist. See
 [player-metadata.md](player-metadata.md). Cache-only mode skips account checks and
 returns 8 for valid requests; parser failures retain their original response.
 Native account rules are documented separately in [accounts.md](accounts.md).
+What follows a successful decode in the world (Login.proceedWith, LoginParser,
+Player.init, LoginConfiguration) is the library of
+[world-login.md](world-login.md), which nothing installs yet.
 
 ## Runtime behavior
 

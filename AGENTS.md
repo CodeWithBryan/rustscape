@@ -980,6 +980,27 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   `cargo xtask startup-draws-oracle --check`: it attributes every start-up
   draw to its class and is accepted only if its phase lines equal the
   startup-loaders fixture's. Start-up writes go through Inputs::writes.
+- For login into the world (world/login: Login.proceedWith and the rest of
+  Login.kt after decoding, LoginParser, PlayerParser.parse, LoginWriteEvent,
+  Player.init/Entity.init, LoginConfiguration), run `cargo test -p rs09-server
+  --test world_login` and `cargo xtask world-login-oracle --check` with
+  Python/JDK 11 and the pinned cache, plus the repository, social,
+  interfaces, canonical_player and world_trace suites. The oracle reruns the
+  three world-trace login scenarios on the world-trace build with
+  PacketWriteQueue's lists replaced by lists that record who queued each
+  packet; it is accepted only if every record is byte-identical to the
+  world-trace fixture's and two passes agree; never edit the world-trace
+  harness for it. Keep the original order and catch categories: the uid
+  check before anything else, the parse failure that still submits the pulse
+  with an unset parser, the pulse's Throwable recovery, the reply's rights
+  and index read through session.getPlayer(). Login listeners and plugins
+  are an input list by class name; every call without a native library is a
+  required Host service with no default. The test's replay stand-ins (the
+  original's packets for a not-ported call, found by its stack, with the
+  counter and varps they carry) are inputs, not ports: it pins 206 natively
+  written entries per login and every replayed segment, and a closed gap or
+  a new difference must fail it. Nothing installs the library; the tick
+  driver is not ported. See docs/world-login.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

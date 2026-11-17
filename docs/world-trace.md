@@ -7,6 +7,8 @@ it does tick by tick, so that later work can compare a native world with it.
 **No native world replays these traces yet.** The fixture and its Rust reader
 establish what the original did in four scripted runs. They say nothing about
 the Rust server, and acceptance gates 2 and 3 in `parity/README.md` stay open.
+The login ticks alone are compared with the native login library, with
+stand-ins for what is not ported; see [world-login.md](world-login.md).
 
 ## What runs
 
