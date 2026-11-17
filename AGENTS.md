@@ -940,6 +940,27 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   DarkZone, ZoneBuilder.startup and cleanItems are not ported, and nothing
   binds these libraries to a session: the examples' check_inactive,
   zone_update and ZoneMove answers are still fabricated. See docs/zones.md.
+- For aggression, NPCBehavior hooks or the NPC/Entity/Player combat members
+  (world/npc_behaviour: AggressiveHandler/AggressiveBehavior, setDefaultBehavior,
+  configureBossData, isInvisible/isHidden, isAttackable, continueAttack,
+  checkImpact, onImpact retaliation, sendImpact, inCombat, getSwingHandler,
+  onRegionInactivity, fullRestore, the tick join), run `cargo test -p
+  rs09-server --test npc_behaviour` and `cargo xtask npc-behaviour-oracle
+  --check` with Python/JDK 11, plus the npc_tick, npc_init, npc_walk,
+  combat_pulse, combat_swing, npc_death, zones, pulses and entity_regions
+  suites. Preserve all 1,243 cases. Keep selectTarget's order (pause, lock,
+  switching/attacking, death, one RANDOM nextInt(10) against the ratio, local
+  players, canSelectTarget, priority flag plus one Math.random each with
+  `<=`), the can_tolerate read before the allowTolerance field, tolerance
+  strictly after ten minutes through the native entity_regions::is_tolerated,
+  the wrapping level shift, the safespot 10/40 tick rule, the player-only
+  path/moving-pulse retaliation condition, Kotlin's null refusal before a
+  hook body, and attribute writes before their record. The tick kernel's
+  four return/talk attributes stay world::npc fields. Every outside call
+  (the combat pulse included) is a required service with no default. No
+  corpus runs a whole fight through the real CombatPulse/ImpactHandler/
+  DeathTask with these members; AbstractNPC and IdleAbstractNPC are not
+  ported; nothing installs the library. See docs/npc-behaviour.md.
 - For interface metadata, component open/close/plugin lookup, gameframe/tab/chat
   orchestration or window-mode changes, run interfaces and game_packets tests,
   both movement_session/npc_session examples and fresh interfaces-oracle and

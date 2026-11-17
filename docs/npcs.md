@@ -137,6 +137,11 @@ NPC death up to the drop (`DeathTask`, kill credit, `finalizeDeath`,
 library with its own corpus: see [npc-death.md](npc-death.md). It is not bound
 to `npc_session` or the playable alpha.
 
+Aggression, the `NPCBehavior` hooks, region inactivity and the NPC's
+members on the combat path are `world::npc_behaviour`, joined to this tick
+kernel through `npc_behaviour::tick`: see [npc-behaviour.md](npc-behaviour.md).
+It is not bound to `npc_session` or the playable alpha either.
+
 Next: complete NPC/Entity constructors and remaining methods, original skill/
 property/timer/content bindings, full repository/chunk lifecycle and region activity,
 concrete masks/aggression/combat/behavior/content, inactivity/removal and full
