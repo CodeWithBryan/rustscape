@@ -67,8 +67,8 @@ canonical NPC's), the native `npc_init`/`npc_behaviour` members for the
 `onImpact`, `getSwingHandler`), the combat pulse and swing handlers, skills,
 the dialogue interpreter (`world::dialogue`), the bank and collection box,
 the scenery of loaded regions, and the content it does not have yet as named
-services: the banker conversation (`BankerDialogueLabellerFile`, a
-DialogueLabeller file), the random event and holiday NPCs, the barcrawl
+services: the banker conversation (`BankerDialogueLabellerFile`, ported in
+`world::dialogue_dsl::banker`), the random event and holiday NPCs, the barcrawl
 manager, the gnome cooking completion dialogue, quests and diaries.
 `banker::check_lunar_isle_restriction` answers the `lunar_restriction`
 service of `world::global_handlers` (the bank booth listeners).
@@ -169,8 +169,10 @@ HairCutPlugin's `isWalk`): every one fails the replay.
 
 ## Not ported or not joined
 
-- The banker conversation (`BankerDialogueLabellerFile`): DialogueLabeller
-  is not native; `Host::banker_conversation` is a named service.
+- The banker conversation (`BankerDialogueLabellerFile`) is ported in
+  `world::dialogue_dsl::banker` (docs/dialogue-dsl.md);
+  `Host::banker_conversation` stays the join point: a live host answers it
+  with `dialogue_dsl::banker::talk_to`. Nothing binds it yet.
 - `ChromaticDragonNPC`, `MetalDragonNPC` (their dragonfire swing handlers),
   `ChromaticDragonBehavior`, `SheepBehavior`, `ChinchompaDeathListener`,
   `ShooAwayStrayDogListener`, `CowMilkingPlugin`, `DecantListener` and

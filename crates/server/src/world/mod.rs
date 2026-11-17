@@ -15,6 +15,7 @@ pub mod component_objects;
 pub mod consumables;
 pub mod dark_zone;
 pub mod dialogue;
+pub mod dialogue_dsl;
 pub mod disconnection;
 pub mod door_option;
 pub mod door_runtime;

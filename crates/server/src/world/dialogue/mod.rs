@@ -92,6 +92,9 @@ pub enum Arg<H: Host> {
     File(File<H>),
     /// Any other object; only its class simple name is ever read.
     Other(&'static str),
+    /// A content object a plugin's `open` casts back (for example a
+    /// SkillDialogueHandler), with its class simple name.
+    Object(&'static str, Arc<dyn std::any::Any + Send + Sync>),
 }
 impl<H: Host> Clone for Arg<H> {
     fn clone(&self) -> Self {
@@ -103,6 +106,7 @@ impl<H: Host> Clone for Arg<H> {
             Self::Npc(v) => Self::Npc(v.clone()),
             Self::File(v) => Self::File(v.clone()),
             Self::Other(v) => Self::Other(v),
+            Self::Object(name, v) => Self::Object(name, v.clone()),
         }
     }
 }
@@ -116,7 +120,7 @@ impl<H: Host> Arg<H> {
             Self::Text(_) => "String".into(),
             Self::Npc(_) => "NPC".into(),
             Self::File(f) => f.class_name().into(),
-            Self::Other(name) => (*name).into(),
+            Self::Other(name) | Self::Object(name, _) => (*name).into(),
         })
     }
 }

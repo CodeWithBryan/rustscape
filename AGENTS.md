@@ -288,8 +288,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   message that does not refuse, and the second getDiary before updateTask.
   The subclass is data on the NPC (`Class`); overridden members dispatch in
   `classes`. Every outside call is a required Host/Factory service with no
-  default; the banker conversation (DialogueLabeller), random event,
-  holiday, barcrawl and gnome cooking content are named services. The
+  default; the banker conversation (ported as world/dialogue_dsl's
+  `banker::talk_to`), random event, holiday, barcrawl and gnome cooking
+  content are named services. The
   start-up world registers only STARTUP_NPC_CLASSES (not BankerNPC or
   DarkWizardNPC: no region objects or spells there); nothing installs the
   library in `--world`. The dragon classes and behaviours, Sheep, Chinchompa,
@@ -416,8 +417,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   reproduce dialogue-oracle and plain-dialogue-oracle with Python/JDK11; run
   dialogue, plain_dialogue, input_prompt and interfaces. Preserve all1586 initial
   observations. world/dialogue is a library: no example or alpha installs it and
-  no NPC/quest/skill content, DialogueBuilder, DialogueLabeller or
-  SkillDialogueHandler is ported. Compile the complete unchanged classes; scripted
+  no NPC/quest/skill content is ported here (the DSLs are world/dialogue_dsl,
+  next bullet). Compile the complete unchanged classes; scripted
   oracle content may only call inherited original methods. Keep the END check on
   the player's current interpreter, the file captured before a topic runs,
   re-read dialogue fields after events, close's early true with a chatbox close
@@ -432,6 +433,39 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   back-references are strong and not yet traced by the canonical capture graph.
   Packet bytes, real UI/definition/NPC bindings, Continue and modern-context
   joins and all content remain required. See docs/dialogue.md.
+- For the dialogue DSLs (world/dialogue_dsl: DialogueLabeller with
+  DialogueOption and DialogueLabeller.open, DialogueBuilder/DialogueBuilderFile
+  and every node, SkillDialogueHandler/SkillDialogue/SkillDialoguePlugin,
+  ActivateEnchantedGem, ContentAPI openDialogue/sendInputDialogue,
+  Component.setUnclosable) or the banker conversation (BankerNPC's
+  BankerDialogueLabellerFile and canAccessBank), run `cargo test -p
+  rs09-server --test dialogue_dsl` and `cargo xtask dialogue-dsl-oracle
+  --check` with Python/JDK 11, plus the dialogue, plain_dialogue,
+  input_prompt, interfaces, npc_classes, global_handlers,
+  interaction_listeners and bank_interface suites and dialogue-oracle.
+  Preserve the 3,600 cases (154 designed, 3,446 injected failures). Keep the
+  labeller's own stage beside `super.stage`, the label pass at stage -1 and
+  the starting stage 1 only for a leading label, at most eleven passes, the
+  jump-to-self stop, end when no stage is hit, the stage guard `stage ==
+  counter && jumpTo == null` (the option jump skips the jump check), options
+  filtered per pass with player then NPC required, one visible option
+  jumping and the spoken stage reading this pass's button, `open`'s
+  arguments (a new file) evaluated on every pass, `setUnclosable`'s
+  attribute before the close event, `afterClose` hooking only right after a
+  hit stage, the hook's unhook before its callback, `openDialogue`'s close
+  first; the builder's constructor-time clauses, the first matching clause,
+  END checked after the setter (a re-entering node can end twice),
+  per-entry player reads and re-filtering, `buttonID - 1` stored before the
+  index, `betweenStage`'s `stage + 2`, `iteml` split while building; the
+  skill plugin's manager read before the null type, end before create, each
+  type's display order and the printed "null" name; the banker's seal before
+  iron man and Odovacar's Item built before the removal. Everything outside
+  the dialogue package is a required dialogue_dsl::Host or banker::BankHost
+  service with no default; scripted content calls only original DSL members.
+  Nothing installs the library in `--world`; the npc_classes
+  `banker_conversation` service is answered by `banker::talk_to` once a host
+  binds these traits. The activity/cutscene framework is not ported. See
+  docs/dialogue-dsl.md.
 - For plain dialogue or Continue changes, reproduce plain-dialogue-oracle and the
   affected input/interface/bank corpora; run plain_dialogue, input_prompt, interfaces,
   bank_interface and all three controlled examples. Preserve the initial424 cases

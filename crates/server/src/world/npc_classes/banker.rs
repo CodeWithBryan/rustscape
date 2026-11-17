@@ -3,8 +3,10 @@
 //! the companion's `checkLunarIsleRestriction`, `canAccessBank`,
 //! `attemptBank` and `attemptCollect`.
 //!
-//! The conversation (`BankerDialogueLabellerFile`) is DialogueLabeller
-//! content and stays the [`Host::banker_conversation`] service.
+//! The conversation (`BankerDialogueLabellerFile`) is ported in
+//! `world::dialogue_dsl::banker`; here it stays the
+//! [`Host::banker_conversation`] service, which a live host answers with
+//! `dialogue_dsl::banker::talk_to`.
 use super::{
     Class, Direction, Error, Host, Result, Value, as_npc, region_id, transform, transform_direction,
 };

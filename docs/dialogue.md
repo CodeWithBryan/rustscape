@@ -4,9 +4,10 @@
 base classes, EmptyPlugin, Topic/IfTopic, SimpleDialoguePlugin, FacialExpression
 and the DialogueAction interface. It is a library. Nothing installs it in the
 controlled examples or the playable alpha yet, and no NPC, quest or skill
-dialogue content is ported. DialogueBuilder, DialogueLabeller,
-SkillDialogueHandler, SkillDialoguePlugin and ActivateEnchantedGem are not
-ported. Whole-source parity rows remain `not_replaced`.
+dialogue content is ported here. DialogueBuilder, DialogueLabeller,
+SkillDialogueHandler, SkillDialoguePlugin, ActivateEnchantedGem and the banker
+conversation are ported in `world/dialogue_dsl` (see
+[dialogue DSLs](dialogue-dsl.md)). Whole-source parity rows remain `not_replaced`.
 
 Plain `sendDialogue` and the 54-unit line splitter are not reimplemented: the
 interpreter calls the verified `plain_dialogue::send_lines` and
@@ -120,8 +121,8 @@ default. Content supplies `PluginBody` and `FileBody` objects.
 
 ## Remaining parity work
 
-DialogueBuilder, DialogueLabeller, SkillDialogueHandler/SkillDialoguePlugin,
-ActivateEnchantedGem and all concrete dialogue content. Binding `Host` to the
+Concrete dialogue content other than the banker conversation (the DSLs are
+[dialogue DSLs](dialogue-dsl.md)). Binding `Host` to the
 canonical player, InterfaceManager, real packet writers, definitions, NPC
 queue/pulse state, attributes and events. Joining Continue (`interface_packets`)
 and the modern context services to this interpreter. Plugin, file and

@@ -587,8 +587,8 @@ pub trait Host: Factory<Class = Class> {
     fn gnome_completion_dialogue(&mut self, job: &'static str) -> Result<Self::File>;
     /// `dialogueInterpreter.open(file)`.
     fn open_file(&mut self, player: &Self::Npc, file: Self::File) -> Result<()>;
-    /// `DialogueLabeller.open(player, BankerDialogueLabellerFile(), npc)` (the
-    /// conversation is DialogueLabeller content, not ported).
+    /// `DialogueLabeller.open(player, BankerDialogueLabellerFile(), npc)`: a
+    /// live host answers it with `world::dialogue_dsl::banker::talk_to`.
     fn banker_conversation(&mut self, player: &Self::Npc, npc: &Self::Npc) -> Result<()>;
     /// `ContentAPI.openDialogue(player, id, npc)`.
     fn api_open_dialogue(&mut self, player: &Self::Npc, id: i32, npc: &Self::Npc) -> Result<()>;
