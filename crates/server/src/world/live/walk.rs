@@ -1,0 +1,517 @@
+//! Walking and `Player.tick`'s entity part on the canonical actor state.
+//!
+//! The walk packets reach `world::walk_request` through
+//! [`player_walk::World::process`]; the movement pulse it starts runs in the
+//! canonical state's runner; `Entity.tick` is
+//! [`player_walk::World::entity_before_masks`] (scripts, the walking queue,
+//! timers) and the masks are the canonical player's
+//! [`crate::world::prepared_masks::PreparedMasks`]. Collision is the cache
+//! scene ([`crate::world::scene`]), loaded region by region as players
+//! reach them.
+//!
+//! Answers here that are not a native library are named
+//! ([`super::not_ported`]) and listed in docs/live-world.md.
+use super::{inner::Slot, not_ported::NotPorted};
+use crate::{
+    pulses,
+    world::{
+        action_locks,
+        doors::{self, Location},
+        interfaces,
+        player_walk::{self, Event, Node, NodeHandle, Query, State},
+        prepared_masks::FaceTarget,
+        scene::{self, CacheAssets, Scene},
+        script_runtime,
+        walk_request::Interfaces,
+    },
+};
+use rs09_protocol::{
+    buffer::Writer,
+    game::{Frame, updates},
+};
+use std::collections::{BTreeMap, BTreeSet};
+
+pub type Map = Scene<CacheAssets>;
+
+/// The cache scene and the regions loaded in it.
+pub struct Walk {
+    pub scene: Map,
+    /// Animation definitions and the animators' tick.
+    pub animations:
+        crate::world::prepared_animation::World<crate::definitions::animation::CacheSource>,
+    pub maps: Maps,
+    pub active: BTreeSet<i32>,
+}
+
+/// `scene::Services` for collision queries. The scenery services (doors,
+/// audio, scripts of scenery pulses) are not bound in the live world: they
+/// fail by name if reached.
+#[derive(Default)]
+pub struct Maps {
+    pub players: BTreeSet<Node>,
+}
+macro_rules! unbound {
+    ($name:ident($($arg:ident:$ty:ty),* $(,)?) -> $ret:ty) => {
+        fn $name(&mut self, $($arg: $ty),*) -> scene::Result<$ret> {
+            Err(scene::Error(concat!("not ported in the live world: scene service ", stringify!($name)).into()))
+        }
+    };
+}
+impl scene::Services<CacheAssets> for Maps {
+    fn is_player(&self, n: usize) -> bool {
+        self.players.contains(&n)
+    }
+    unbound!(location(_scene: &mut Map, _entity: usize) -> Location);
+    unbound!(lock(_scene: &mut Map, _entity: usize, _ticks: i32) -> ());
+    unbound!(audio(_scene: &mut Map, _entity: usize, _id: i32, _delay: Option<i32>) -> ());
+    unbound!(message(_scene: &mut Map, _entity: usize, _text: &str) -> ());
+    unbound!(logout_listener(_scene: &mut Map, _entity: usize, _location: Option<Location>) -> ());
+    unbound!(reset_path(_scene: &mut Map, _entity: usize) -> ());
+    unbound!(add_path(_scene: &mut Map, _entity: usize, _x: i32, _y: i32) -> ());
+    unbound!(move_near(_scene: &mut Map, _entity: usize, _location: Location) -> bool);
+    unbound!(
+        diary(
+            _scene: &mut Map,
+            _entity: usize,
+            _diary: doors::Diary,
+            _level: i32,
+            _task: i32,
+        ) -> ()
+    );
+    unbound!(ground_create(_scene: &mut Map, _item: Option<usize>) -> ());
+    unbound!(pulse(_scene: &mut Map, _pulse: &pulses::Handle) -> bool);
+    unbound!(stop(_scene: &mut Map, _pulse: &pulses::Handle) -> ());
+    fn now_millis(&mut self) -> i64 {
+        super::now_millis()
+    }
+}
+
+/// The region id of a location (`Location.getRegionId`).
+pub fn region_id(l: &Location) -> i32 {
+    let [x, y, _] = l.coordinates();
+    ((x >> 6) << 8) | (y >> 6)
+}
+
+impl Walk {
+    /// Loads the region of a location, and the regions around it a viewport
+    /// reaches (the original loads regions as the viewport touches them).
+    pub fn activate(&mut self, l: &Location) -> Result<(), String> {
+        let [x, y, _] = l.coordinates();
+        for dx in [-64, 0, 64] {
+            for dy in [-64, 0, 64] {
+                let (rx, ry) = (x + dx, y + dy);
+                if !(0..16384).contains(&rx) || !(0..16384).contains(&ry) {
+                    continue;
+                }
+                let id = ((rx >> 6) << 8) | (ry >> 6);
+                if self.active.contains(&id) {
+                    continue;
+                }
+                self.scene
+                    .context(&mut self.maps)
+                    .load(id, None)
+                    .map_err(|e| e.0)?;
+                self.active.insert(id);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// What the walk services ask of the rest of the world after the call
+/// returns: these need the interface context, which the state's call holds.
+pub enum Deferred {
+    CloseInterfaces(Node),
+    CloseChatbox(Node),
+    RunToggled(Node, bool),
+}
+
+/// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
+/// of the live world.
+pub struct WalkHost<'a> {
+    pub walk: &'a mut Walk,
+    pub frames: &'a mut BTreeMap<Node, Vec<Frame>>,
+    pub players: &'a BTreeMap<Node, Slot>,
+    pub not_ported: &'a mut NotPorted,
+    pub deferred: &'a mut Vec<Deferred>,
+    pub log: &'a mut Vec<String>,
+}
+
+impl WalkHost<'_> {
+    fn send(&mut self, n: Node, frame: Frame) {
+        self.frames.entry(n).or_default().push(frame);
+    }
+    fn masks(&self, n: Node) -> player_walk::Result<crate::world::prepared_masks::PreparedMasks> {
+        self.players
+            .get(&n)
+            .map(|s| s.canonical.player.masks())
+            .ok_or(player_walk::Error::Binding(format!(
+                "masks of node {n}: not a live player (NPC masks are not joined)"
+            )))
+    }
+    fn manager(&self, n: Node) -> player_walk::Result<interfaces::Manager> {
+        self.players
+            .get(&n)
+            .map(|s| s.canonical.player.manager())
+            .ok_or(player_walk::Error::Null)
+    }
+}
+
+fn binding(e: impl std::fmt::Display) -> player_walk::Error {
+    player_walk::Error::Binding(e.to_string())
+}
+
+impl player_walk::Services for WalkHost<'_> {
+    fn query(&mut self, state: &mut State, query: Query<'_>) -> player_walk::Result<bool> {
+        Ok(match query {
+            Query::Locked(n) => {
+                let owner = state.retain_node(n)?;
+                state
+                    .locks(&owner)?
+                    .is_kind_locked(
+                        action_locks::Kind::Movement,
+                        state,
+                        &mut action_locks::Clock,
+                    )
+                    .map_err(binding)?
+            }
+            Query::Timer(_, _) => {
+                // timers.getTimer(name): no player timer type is ported, so
+                // no timer is ever registered.
+                self.not_ported
+                    .default_answer("walking timer query (no player timer types: none)");
+                false
+            }
+            Query::Marathon(_) => {
+                self.not_ported
+                    .default_answer("Marathon perk query (perks not ported: false)");
+                false
+            }
+            Query::CloseDialogue(_) => {
+                // DialogueInterpreter.close with no dialogue open answers true;
+                // dialogue content is not ported, so none is open.
+                self.not_ported
+                    .default_answer("DialogueInterpreter.close (no dialogue content: true)");
+                true
+            }
+            Query::ZoneMove(_, _, _) => {
+                // ZoneMonitor.move: true unless a registered zone refuses;
+                // no zone is registered in this world.
+                self.not_ported
+                    .default_answer("ZoneMonitor.move (no zones registered: true)");
+                true
+            }
+            Query::CloseInterface(n) => {
+                self.deferred.push(Deferred::CloseInterfaces(n));
+                true
+            }
+        })
+    }
+    fn event(&mut self, state: &mut State, event: Event<'_>) -> player_walk::Result<()> {
+        match event {
+            Event::Minimap(n) => self.send(
+                n,
+                Frame {
+                    opcode: 153,
+                    payload: vec![],
+                },
+            ),
+            Event::Energy(n, _) => {
+                let energy = state.actor(n)?.queue.entity().energy;
+                if let Some(slot) = self.players.get(&n) {
+                    slot.canonical.player.settings().fields.write().run_energy = energy;
+                }
+                self.send(n, updates::run_energy(energy));
+            }
+            Event::RunToggled(n, value) => self.deferred.push(Deferred::RunToggled(n, value)),
+            Event::Message(n, text) => {
+                let mut w = Writer::new();
+                w.pjstr(text.as_bytes()).map_err(binding)?;
+                self.send(
+                    n,
+                    Frame {
+                        opcode: 70,
+                        payload: w.into_vec(),
+                    },
+                );
+            }
+            Event::RegionMove(_, _, Some(l)) => {
+                self.walk
+                    .activate(&l)
+                    .map_err(player_walk::Error::Binding)?;
+                self.not_ported
+                    .skip("RegionManager.move entity regions, zones and music zones (not joined)");
+            }
+            Event::RegionMove(_, _, None) => return Err(player_walk::Error::Null),
+            Event::Exception(text) => self.log.push(format!("walk exception: {text}")),
+            Event::Log(level, text) => self.log.push(format!("walk {level:?}: {text}")),
+            Event::Debug(_, text) => self.log.push(format!("walk debug: {text}")),
+            Event::Scripts(n, phase) => {
+                let owner = state.retain_node(n)?;
+                script_runtime::phase(state, self, &owner, phase)
+                    .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?;
+            }
+            Event::TickEvent(_, _) => self
+                .not_ported
+                .skip("Entity tick event hooks (entity events not ported)"),
+            Event::Skills(_) => self
+                .not_ported
+                .skip("Skills.pulse restoration (SkillRestore not ported)"),
+            Event::Timers(_) => self
+                .not_ported
+                .skip("timers.processTimers (no player timer types ported)"),
+            Event::PulseLength(_, _)
+            | Event::CountPulse(_)
+            | Event::BotTotal(_)
+            | Event::OtherTotal(_) => {}
+            Event::Masks(n) => {
+                if self.players.contains_key(&n) {
+                    self.masks(n)?.prepare().map_err(binding)?;
+                }
+            }
+            Event::FaceLocationNone(n) => {
+                if self.players.contains_key(&n) {
+                    self.masks(n)?.face_location(None).map_err(binding)?;
+                }
+            }
+            Event::Face(n, None) => {
+                if self.players.contains_key(&n) {
+                    self.masks(n)?.clear_face_entity().map_err(binding)?;
+                }
+            }
+            Event::Face(n, Some(target)) => {
+                let masks = self.masks(n)?;
+                let render = self
+                    .players
+                    .get(&target)
+                    .map(|s| s.canonical.render.clone())
+                    .ok_or(player_walk::Error::Binding(
+                        "facing an NPC: NPC render views are not joined in the live world".into(),
+                    ))?;
+                let node = state.retain_node(target)?;
+                masks
+                    .face_entity(Some(FaceTarget::Player(node, render)))
+                    .map_err(binding)?;
+            }
+            Event::CloseChatbox(n) => self.deferred.push(Deferred::CloseChatbox(n)),
+        }
+        Ok(())
+    }
+    fn interfaces(&self, _: &State, n: Node) -> player_walk::Result<Interfaces> {
+        let m = self.manager(n)?;
+        let chatbox = interfaces::has_chatbox(&m);
+        Ok(Interfaces {
+            opened: interfaces::is_opened(&m),
+            opened_walkable: Some(interfaces::is_walkable(&m).map_err(binding)?),
+            chatbox,
+            // A chatbox other than 137 is opened only by dialogue content,
+            // which is not ported.
+            chatbox_walkable: None,
+        })
+    }
+    fn region(&mut self, _: &mut State, l: &Location) -> player_walk::Result<Option<bool>> {
+        let id = region_id(l);
+        self.walk.scene.region(id);
+        Ok(Some(self.walk.active.contains(&id)))
+    }
+    fn clipping(&mut self, _: &mut State, z: i32, x: i32, y: i32) -> player_walk::Result<i32> {
+        self.walk
+            .scene
+            .context(&mut self.walk.maps)
+            .clipping(Location::new(x, y, z), false)
+            .map_err(|e| player_walk::Error::Binding(e.0))
+    }
+    fn water_clipping(
+        &mut self,
+        _: &mut State,
+        z: i32,
+        x: i32,
+        y: i32,
+    ) -> player_walk::Result<i32> {
+        self.walk
+            .scene
+            .context(&mut self.walk.maps)
+            .water_clipping(Some(&Location::new(x, y, z)))
+            .map_err(|e| player_walk::Error::Binding(e.0))
+    }
+    fn now_millis(&mut self) -> i64 {
+        super::now_millis()
+    }
+    fn metrics_enabled(&self) -> bool {
+        false
+    }
+    fn teleport_permitted(
+        &mut self,
+        _: &mut State,
+        location: Option<Location>,
+    ) -> player_walk::Result<bool> {
+        self.walk
+            .scene
+            .context(&mut self.walk.maps)
+            .teleport_permitted(location.as_ref())
+            .map_err(|e| player_walk::Error::Binding(e.0))
+    }
+}
+
+fn script_error(what: &str) -> crate::scripts::Error {
+    crate::scripts::Error::Binding(format!("not ported in the live world: {what}"))
+}
+
+impl script_runtime::Bindings for WalkHost<'_> {
+    fn modal_open(&mut self, _: &mut State, owner: &NodeHandle) -> crate::scripts::Result<bool> {
+        let m = self
+            .manager(owner.node)
+            .map_err(|e| crate::scripts::Error::Binding(format!("{e:?}")))?;
+        Ok(interfaces::is_opened(&m))
+    }
+    fn interface_open(
+        &mut self,
+        _: &mut State,
+        owner: &NodeHandle,
+    ) -> crate::scripts::Result<bool> {
+        let m = self
+            .manager(owner.node)
+            .map_err(|e| crate::scripts::Error::Binding(format!("{e:?}")))?;
+        Ok(interfaces::is_opened(&m))
+    }
+    fn chatbox_open(&mut self, _: &mut State, owner: &NodeHandle) -> crate::scripts::Result<bool> {
+        let m = self
+            .manager(owner.node)
+            .map_err(|e| crate::scripts::Error::Binding(format!("{e:?}")))?;
+        Ok(interfaces::has_chatbox(&m))
+    }
+    fn close_interfaces(
+        &mut self,
+        _: &mut State,
+        owner: &NodeHandle,
+    ) -> crate::scripts::Result<()> {
+        self.deferred.push(Deferred::CloseInterfaces(owner.node));
+        Ok(())
+    }
+    fn reset_animator(&mut self, _: &mut State, owner: &NodeHandle) -> crate::scripts::Result<()> {
+        let animator = self
+            .players
+            .get(&owner.node)
+            .map(|s| s.canonical.animator.clone())
+            .ok_or_else(|| script_error("an NPC animator"))?;
+        animator
+            .reset(&mut self.walk.animations)
+            .map_err(|e| crate::scripts::Error::Binding(format!("{e:?}")))
+    }
+    fn node_description(
+        &mut self,
+        _: &mut State,
+        _: Option<NodeHandle>,
+    ) -> crate::scripts::Result<String> {
+        Err(script_error("node descriptions"))
+    }
+    fn face_location(
+        &mut self,
+        _: &mut State,
+        _: NodeHandle,
+        _: Option<Location>,
+    ) -> crate::scripts::Result<Option<Location>> {
+        Err(script_error("face locations"))
+    }
+    fn center_location(
+        &mut self,
+        _: &mut State,
+        _: NodeHandle,
+    ) -> crate::scripts::Result<Option<Location>> {
+        Err(script_error("center locations"))
+    }
+    fn line_of_sight(
+        &mut self,
+        _: &mut State,
+        _: &NodeHandle,
+        _: &Location,
+    ) -> crate::scripts::Result<bool> {
+        Err(script_error("line of sight"))
+    }
+    fn face(&mut self, _: &mut State, _: &NodeHandle, _: Location) -> crate::scripts::Result<()> {
+        Err(script_error("facing"))
+    }
+    fn execution_equals(
+        &mut self,
+        _: &mut State,
+        _: Option<crate::world::interaction_listeners::Function>,
+        _: Option<crate::world::interaction_listeners::Function>,
+    ) -> crate::scripts::Result<bool> {
+        Err(script_error("content scripts"))
+    }
+    fn invoke(
+        &mut self,
+        _: &mut State,
+        _: &NodeHandle,
+        _: Option<crate::world::interaction_listeners::Function>,
+        _: crate::scripts::Arguments<NodeHandle>,
+    ) -> crate::scripts::Result<bool> {
+        Err(script_error("content scripts"))
+    }
+    fn exception_text(
+        &mut self,
+        _: &mut State,
+        error: &crate::scripts::Error,
+    ) -> crate::scripts::Result<String> {
+        Ok(format!("{error:?}\n"))
+    }
+    fn log(
+        &mut self,
+        _: &mut State,
+        owner: &str,
+        level: crate::scripts::Level,
+        text: String,
+    ) -> crate::scripts::Result<()> {
+        self.log.push(format!("scripts {owner} {level:?} {text}"));
+        Ok(())
+    }
+    fn lock_entity(&mut self, _: &mut State, _: &NodeHandle, _: i32) -> crate::scripts::Result<()> {
+        Err(script_error("entity locks from scripts"))
+    }
+}
+
+/// Copies the walking queue's entity into the render view and the slot:
+/// location, scene flag, teleport, direction and this tick's steps.
+pub fn project(state: &State, node: Node, slot: &mut Slot) -> player_walk::Result<()> {
+    let queue = &state.actor(node)?.queue;
+    let entity = queue.entity();
+    let mut render = slot.canonical.render.write();
+    render.location = entity.location.clone();
+    render.update_scene = render.update_scene || entity.update_scene;
+    render.teleporting = entity.teleporting;
+    render.direction = entity.direction.map_or(6, |d| d.code());
+    render.walk_dir = queue.walk_dir();
+    render.run_dir = queue.run_dir();
+    if let Some(location) = entity.location {
+        slot.location = location;
+    }
+    Ok(())
+}
+
+/// Moves a player's walking entity, render view and slot to a location
+/// (login's parsed location; `Entity.location` is the actor's).
+pub fn place(
+    state: &State,
+    node: Node,
+    slot: &mut Slot,
+    location: &Location,
+) -> player_walk::Result<()> {
+    let actor = state.actor(node)?;
+    actor.queue.state.write().entity.location = Some(location.clone());
+    slot.canonical.render.write().location = Some(location.clone());
+    slot.location = location.clone();
+    Ok(())
+}
+
+/// `Player.updateSceneGraph`'s flag on both the render view and the
+/// walking entity.
+pub fn set_scene_flag(
+    state: &State,
+    node: Node,
+    slot: &Slot,
+    value: bool,
+) -> player_walk::Result<()> {
+    state.actor(node)?.queue.state.write().entity.update_scene = value;
+    slot.canonical.render.write().update_scene = value;
+    Ok(())
+}

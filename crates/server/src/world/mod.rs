@@ -37,6 +37,7 @@ pub mod interfaces;
 pub mod landscape;
 pub mod legacy_interaction;
 pub mod legacy_runtime;
+pub mod live;
 pub mod login;
 pub mod map_chunk_render;
 pub mod mapscape;

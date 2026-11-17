@@ -202,7 +202,7 @@ impl Service {
                 changed = stop.changed()=>{let _ = changed; break;},
                 Some(_) = sessions.join_next(), if !sessions.is_empty()=>{},
                 accepted = listener.accept()=>{
-                    let (socket, _) = accepted?;
+                    let (socket, peer) = accepted?;
                     let Ok(slot) = Arc::clone(&self.slots).try_acquire_owned() else {
                         self.metrics.rejected.fetch_add(1, Ordering::Relaxed); continue;
                     };
@@ -213,7 +213,7 @@ impl Service {
                         let active = Active {metrics: Arc::clone(&service.metrics), _slot: slot};
                         if let Ok(Ok((reader, writer))) = timeout(Duration::from_secs(10),
                             rs09_net::accept(socket, websocket, service.config.max_ingress)).await {
-                            if service.connection(reader, writer).await.is_err() {
+                            if service.connection(reader, writer, peer).await.is_err() {
                                 service.metrics.failed.fetch_add(1, Ordering::Relaxed);
                             }
                         }
@@ -226,12 +226,17 @@ impl Service {
         while sessions.join_next().await.is_some() {}
         Ok(())
     }
-    async fn connection(self: &Arc<Self>, reader: Reader, writer: Writer) -> io::Result<()> {
+    async fn connection(
+        self: &Arc<Self>,
+        reader: Reader,
+        writer: Writer,
+        peer: SocketAddr,
+    ) -> io::Result<()> {
         let (requests, queue) = mpsc::channel(self.config.pending_requests);
         let (replies, output) = mpsc::channel(self.config.pending_replies);
         let key = Arc::new(AtomicU8::new(0));
         tokio::select! {
-            result = self.read_loop(reader, requests, replies.clone(), Arc::clone(&key))=>result,
+            result = self.read_loop(reader, requests, replies.clone(), Arc::clone(&key), peer)=>result,
             result = self.compute_loop(queue, replies, key)=>result,
             result = self.write_loop(writer, output)=>result,
         }
@@ -279,6 +284,7 @@ impl Service {
         requests: mpsc::Sender<rs09_protocol::js5::Request>,
         replies: mpsc::Sender<Envelope>,
         key: Arc<AtomicU8>,
+        peer: SocketAddr,
     ) -> io::Result<()> {
         let mut decoder = Decoder::new(self.config.max_ingress, 32767);
         let mut server_key = 0;
@@ -425,7 +431,7 @@ impl Service {
                         let joined = match prepared {
                             Ok(prepared) => {
                                 if let Some(world) = &self.config.world {
-                                    let mut admission = world.enter(prepared);
+                                    let mut admission = world.enter_from(prepared, Some(peer.ip()));
                                     loop {
                                         tokio::select! {
                                             result=&mut admission=>break result,

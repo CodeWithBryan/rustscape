@@ -1059,9 +1059,28 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   wrapping counter and the 50-tick hand-off. Every replayed segment, every
   differing entry (eleven player updates) and every stand-in kind is pinned;
   a closed gap or a new difference must fail it. The test clock is per
-  thread. Nothing installs the driver (the --world flag is the next step);
-  client input, NPCs and the lobby are not reached by any scenario. See
-  docs/tick-driver.md.
+  thread. `rs09-server --world` installs the driver (next bullet); the
+  scenarios reach no client input, NPCs or lobby. See docs/tick-driver.md.
+- For the live world (world/live: `rs09-server --world`, its boot, the
+  production login/driver/repository/social hosts, walking, the player
+  update with prepared masks, the worker loop and the saver), run
+  `cargo test -p rs09-server --test live_world` (needs assets/cache and
+  runs/startup-loaders-oracle/template; it prints SKIPPED without them, and a
+  skip establishes nothing) plus world_login, tick_driver, tick, world_update,
+  repository, pulses, social, world_trace, canonical_player, startup and
+  world_session. Keep the libraries unchanged: a host answers through them.
+  Every call into a system without a port is a named answer in
+  world/live/not_ported.rs (skipped, or the original's empty answer when that
+  is what it does with no content) or a refusal; list each in
+  docs/live-world.md and never answer one with a fabricated success. Keep the
+  login-tick comparison with the world-trace new-character tick (removed
+  segments pinned by marker and count, entries before reinitVarps in order,
+  counter-carrying packets by opcode and length, reinitVarps as a subset); a
+  segment that becomes native must be taken off the list. Saves are built on
+  the worker thread and written by the saver thread; nothing blocks the tick
+  on file I/O. Content, NPCs in the live repository, entity regions, chunk
+  sync, ground items and the not-installed handlers remain open. See
+  docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

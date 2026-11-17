@@ -18,4 +18,10 @@ pub trait World: Send + Sync {
         false
     }
     fn enter(&self, player: Prepared) -> Admission<'_>;
+    /// `enter` with the connection's remote address (`IoSession.getAddress()`),
+    /// which the transport knows and `Prepared` does not carry. Worlds that do
+    /// not read the address keep `enter`.
+    fn enter_from(&self, player: Prepared, _address: Option<std::net::IpAddr>) -> Admission<'_> {
+        self.enter(player)
+    }
 }

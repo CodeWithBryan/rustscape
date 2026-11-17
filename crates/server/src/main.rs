@@ -21,6 +21,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut tcp: SocketAddr = "127.0.0.1:43594".parse()?;
     let mut websocket = None;
     let mut settings_file = None::<PathBuf>;
+    let (mut world, mut data, mut saves, mut verbose) = (
+        false,
+        PathBuf::from("runs/startup-loaders-oracle/template"),
+        None::<PathBuf>,
+        false,
+    );
     let (mut cache_given, mut tcp_given, mut websocket_given) = (false, false, false);
     let args: Vec<_> = std::env::args().skip(1).collect();
     let mut i = 0;
@@ -45,15 +51,41 @@ fn main() -> Result<(), Box<dyn Error>> {
                 i += 1;
                 settings_file = Some(args.get(i).ok_or("missing --config path")?.into());
             }
+            "--world" => world = true,
+            "--data" => {
+                i += 1;
+                data = args.get(i).ok_or("missing --data path")?.into();
+            }
+            "--saves" => {
+                i += 1;
+                saves = Some(args.get(i).ok_or("missing --saves path")?.into());
+            }
+            "--verbose" => verbose = true,
             "--help" => {
                 println!(
-                    "rs09-server [--config FILE] [--cache DIR] [--tcp IP:PORT] [--websocket IP:PORT]\nConfiguration enables native account validation. Playable world entry remains in progress."
+                    "rs09-server [--config FILE] [--cache DIR] [--tcp IP:PORT] [--websocket IP:PORT]\nrs09-server --world --saves DIR [--data WORLD_DIR] [--cache DIR] [--tcp IP:PORT] [--websocket IP:PORT] [--verbose]\nConfiguration enables native account validation. --world boots the native start-up from WORLD_DIR (worldprops/default.conf and data/configs; default runs/startup-loaders-oracle/template) and runs the native world: login, walking, players seeing each other, logout and saves into DIR/players. Content is not ported (docs/live-world.md)."
                 );
                 return Ok(());
             }
             argument => return Err(format!("unknown argument {argument}").into()),
         }
         i += 1;
+    }
+    if world {
+        if settings_file.is_some() {
+            return Err(
+                "--world reads the world directory's configuration; --config is not used with it"
+                    .into(),
+            );
+        }
+        let saves = saves.ok_or("--world requires --saves DIR")?;
+        let options = rs09_server::world::live::boot::Options {
+            data,
+            cache: cache.clone(),
+            saves,
+            verbose,
+        };
+        return rs09_server::world::live::server::run(options, tcp, websocket, &cache);
     }
     let mut config = Config::default();
     if let Some(file) = settings_file {
