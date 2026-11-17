@@ -58,6 +58,7 @@ pub mod pickup_runtime;
 pub mod pickup_types;
 pub mod plain_dialogue;
 pub mod player_death;
+pub mod player_managers;
 pub mod player_render;
 pub mod player_tabs;
 pub mod player_walk;

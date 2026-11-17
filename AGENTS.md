@@ -1207,6 +1207,30 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   handler are required services with no defaults; the insect pulse is a
   native pulse dispatched by identity. Nothing installs the libraries. See
   docs/wilderness.md.
+- For SkullManager, HintIconManager (HintIcon packet), WarningMessages,
+  AssistSession or AchievementDiaryManager/AchievementDiary/DiaryType
+  (world/player_managers), run `cargo test -p rs09-server --test
+  player_managers` and `cargo xtask player-managers-oracle --check` with
+  Python/JDK 11, plus the wilderness, zones, trade, teleport, player_tabs,
+  canonical_player and player_save suites; after a DiaryType change run
+  `oracle/player-managers/port_diary_data.py --check`. Preserve all 865
+  cases and their frame bytes. Keep setLevel's 49/48 deep-wilderness
+  boundaries and the lock above 20, the risk skull only with the enhanced
+  setting (protect item subtracted, the alchemy value read twice above 1,
+  wrapping longs), the listener installed once and the cast failure on a
+  foreign attribute, checkSkull's cause added before the Skulled timer is
+  restarted (its removal resets and clears it), HintIcon frames sent before
+  the slot store, the null target's 0, removal's shared context with type 0,
+  AssistSession's zero window written only to GlobalData, the two clock reads
+  of the pulse, the saved experience array shared with GlobalData, the close
+  event's parameter player against the session's, the cap's float order, and
+  the diaries' 25-slot completedLevels rule, Lumbridge's beginner level and
+  open's child arithmetic. Diary state is persisted::diaries (joined, not
+  copied); completedLevels is a world value. The Skulled timer is a required
+  service whose bodies call back skull::set_skull_icon, answers::set_skulled
+  and skull::reset; skull::answers answers the wilderness, zones, combat,
+  NPC and death skull services. Every other call is a required service with
+  no default; nothing installs the libraries. See docs/player-managers.md.
 - For aggression, NPCBehavior hooks or the NPC/Entity/Player combat members
   (world/npc_behaviour: AggressiveHandler/AggressiveBehavior, setDefaultBehavior,
   configureBossData, isInvisible/isHidden, isAttackable, continueAttack,

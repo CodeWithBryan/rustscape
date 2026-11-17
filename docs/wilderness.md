@@ -149,13 +149,14 @@ them.
   monitor walk reaches `WildernessZone::teleport` natively; the corpus drives
   `ZoneMonitor.teleport` with a null node (as TeleportManager passes) for
   types -1, 0, 1 and 2, tele-blocked and not, and with jewellery items.
-- Skull and tele-block state: SkullManager is not ported. Its getters and
-  setters (`skull_level`, `skull_wilderness`, `set_skull_level`,
+- Skull and tele-block state: SkullManager's getters and setters
+  (`skull_level`, `skull_wilderness`, `set_skull_level`,
   `set_skull_wilderness`, `skull_wilderness_disabled`,
-  `skull_deep_wilderness`) and the "deepwild-value-risk" attribute are
-  required services; the real `setLevel` also re-derives deep wilderness, the
-  skull icon and the teleport lock, which is where the skull icon and the
-  level-20 teleport lock come from. The tele-block timer reaches the zones
+  `skull_deep_wilderness`) and the "deepwild-value-risk" attribute stay
+  required services here; the native SkullManager (`player_managers::skull`,
+  docs/player-managers.md) answers each of them (`set_skull_level` is
+  `skull::set_level`, which also re-derives deep wilderness, the risk skull
+  and the level-20 teleport lock). The tele-block timer reaches the zones
   through `zones::Host::has_timer(entity, "teleblock")` and the teleport lock
   through `teleport_locked`; a timers port answers the first, ActionLocks the
   second.
@@ -218,8 +219,8 @@ inputs.
 
 ## Not ported
 
-SkullManager (deep wilderness, skull icons, skull causes, the teleport lock
-in setLevel), the Familiar transform bodies, AggressiveHandler's use of the
+The SkullManager binding (the manager is ported in player_managers), the
+Familiar transform bodies, AggressiveHandler's use of the
 handler (npc_behaviour has it), the InterfaceManager binding, the event hook
 dispatch, the content that lights light sources (LightSourceLighter,
 SkillcapePerks' activation), MapZone.cleanItems and every other content
