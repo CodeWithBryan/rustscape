@@ -18,7 +18,8 @@
 
 It is a library: nothing in a session or `--world` installs it yet (see
 Joins). The other global creature classes and the equipment registers are
-not ported (see Not ported).
+`world::creatures` and `world::equipment_registers`
+(docs/equipment-registers.md).
 
 ## How the classes reach the native swing
 
@@ -136,7 +137,12 @@ listener registration. Plain accessors: the subclass fields, the
   `getDragonfireProtection` from them, and registers
   `ChromaticDragonBehavior` for `dragons::behaviour::ids()` with its drop
   hook (`dragons::on_drop_table_rolled`). `npc_classes::Class` itself does not
-  list the dragons and the start-up world does not register them.
+  list the dragons; `world::creatures::classes::WorldClass` is that world
+  enum, and the start-up world registers both dragon classes with it
+  (`startup::npcs::STARTUP_NPC_CLASSES`; the start-up test's
+  `npcs.subclasses` check confirms the original's 46 chromatic and 23 metal
+  dragons). Their combat action and static dragonfire are made by a combat
+  world, not the start-up.
 - **Items.** A world registers the shield's four options on items 11283 and
   11284 (`shield::Listener::define_listeners`, `Listener::handle`) and the
   death item of 11283 (`shield::death_item`).
@@ -223,10 +229,7 @@ removal.
 
 ## Not ported
 
-The dragon classes in `npc_classes::Class` and the start-up registration;
-`SheepBehavior`, `ChinchompaDeathListener`, `ShooAwayStrayDogListener`, `CowMilkingPlugin`,
-`DecantListener`; the equipment registers (`BarrowsEquipment`,
-`BarrowsEquipmentRegister`, `CrystalEquipmentRegister`, `EquipmentDegrader`,
-`HastaEquipListener`, `PVPEquipmentRegister`); the dragon classes elsewhere
-(KBD, Elvarg, wyverns, brutal and mithril dragons) that use these handlers;
-every binding to a live session.
+The dragon classes elsewhere (KBD, Elvarg, wyverns, brutal and mithril
+dragons) that use these handlers; the dragons' combat actions in a live
+world; every binding to a live session. (The other creature classes and the
+equipment registers are docs/equipment-registers.md.)

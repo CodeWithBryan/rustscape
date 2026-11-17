@@ -120,10 +120,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   chain, Descent's shared weapon object, Shove's four location reads and the
   finders' filter-before-take. Special energy is the native Settings; every
   other call is a required Host service with no default. The
-  equipment registers and the chinchompa and salamander handlers are not
-  ported (the dragonfire handler, FireType, SwitchAttack, MultiSwingHandler,
-  MixedSwingHandlers and the dragon classes are world/dragonfire, next
-  bullet); `rs09-server --world` installs the library: the 34 handlers are
+  dragonfire handler, FireType, SwitchAttack, MultiSwingHandler,
+  MixedSwingHandlers and the dragon classes are world/dragonfire, and the
+  equipment registers and the chinchompa and salamander handlers are
+  world/equipment_registers (next bullets); `rs09-server --world` installs the library: the 34 handlers are
   registered at boot, the live world answers overrides, swing_handler,
   special_attacks::Host and the combat tab's special services
   (world/live/combat/specials.rs, docs/live-world.md). See
@@ -156,9 +156,41 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   static dragonfire per dragon class shared by its instances, and EGG_RATE
   as mutable state. Every outside call is a required Host service with no
   default. DragonClass implements npc_classes::Abstract but is not in
-  npc_classes::Class; nothing installs the library in `--world`. The other
-  creature listeners (sheep, chinchompa, stray dogs, cow milking, decanting)
-  and the equipment registers are not ported. See docs/dragonfire.md.
+  npc_classes::Class; the start-up registers it through
+  creatures::classes::WorldClass; nothing installs the library in `--world`.
+  The other creature listeners and the equipment registers are the next
+  bullet. See docs/dragonfire.md.
+
+- For the equipment registers, the chinchompa and salamander swing
+  handlers or the remaining global creature classes
+  (world/equipment_registers: BarrowsEquipment, EquipmentDegrader with the
+  Barrows, PvP and crystal registers, HastaEquipListener,
+  ChinchompaSwingHandler, SalamanderSwingHandler; world/creatures:
+  SheepBehavior, ChinchompaDeathListener, ShooAwayStrayDogListener,
+  CowMilkingPlugin, DecantListener, and the WorldClass enum the start-up's
+  STARTUP_NPC_CLASSES uses), run `cargo test -p rs09-server --test
+  equipment_registers` and `cargo xtask equipment-registers-oracle --check`
+  with Python/JDK 11, plus the dragonfire, special_attacks, combat_swing,
+  combat_pulse, npc_classes, npc_behaviour, equipment, startup (its
+  `npcs.subclasses` check counts the dragon classes; it needs
+  runs/startup-loaders-oracle/template) and global_items suites and the
+  dragonfire, special-attacks, combat-pulse, combat-swing and npc-classes
+  oracles. Preserve the 687 cases. Keep the degrader's re-read of the
+  packed idHash after every charge write (the decrement of 0 turns the id
+  into 0xFFFF), the first state's charge dropped unless its name holds
+  "100", getNext answering the last element itself, addItemOrDrop for the
+  next-last state, the equipment slot passed as add's inventory slot, slots
+  0..12 but 3, the register order Barrows, PvP, crystal; the chinchompa's
+  single accuracy roll, its targets set even on -1, the cast failure of a
+  non-player in multi combat and `2 + ceil(distance * 0.3)`; the
+  salamander's style re-read in canSwing/calculateAccuracy/calculateHit only,
+  its inherited CombatSwingHandler members (base adjust, empty postSwing,
+  null armour set) and delegations through the override table;
+  Direction.getOpposite's `value + 2 & 3`; the explosion's eight tiles
+  without the NPC's own; definePlugin's swallowed failure; and the decant
+  slot order. Every outside call is a required Host service with no
+  default; the potion rows are the native consumables table. Nothing
+  installs the libraries in `--world`. See docs/equipment-registers.md.
 
 - For Prayer/PrayerType/PrayerCategory, the prayer tab handler, Player
   commenceDeath/fullRestore or the combat prayer reads (world/prayer), run
@@ -332,9 +364,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   start-up world registers only STARTUP_NPC_CLASSES (not BankerNPC or
   DarkWizardNPC: no region objects or spells there); nothing installs the
   library in `--world`. The dragon classes and ChromaticDragonBehavior are
-  world/dragonfire/dragons.rs (an Abstract outside Class); Sheep,
-  Chinchompa, stray dogs, cow milking, decanting and QuestTabUtils are not
-  ported. See docs/npc-classes.md.
+  world/dragonfire/dragons.rs (an Abstract outside Class, registered at
+  start-up through creatures::classes::WorldClass); Sheep, Chinchompa,
+  stray dogs, cow milking and decanting are world/creatures; QuestTabUtils
+  is not ported. See docs/npc-classes.md.
   QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
   ShopNPC are not ported; nothing installs the libraries in `--world` (the
   binding is described in docs/global-handlers.md).

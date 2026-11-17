@@ -1,0 +1,498 @@
+// Recording stand-ins for everything the unmodified equipment registers, the
+// chinchompa and salamander swing handlers and the creature classes reach
+// outside their own slice. generate.py takes oracle/combat-swing/adapters.txt,
+// then oracle/combat-pulse/adapters.txt, oracle/special-attacks/adapters.txt
+// and oracle/dragonfire/adapters.txt (as the dragonfire oracle does), drops
+// the chinchompa and salamander stand-ins (their original classes are
+// compiled here), then replaces or adds the files below, split at each
+// "//// path" line. A stand-in records a required service call through
+// oracle.Support.emit (name, arguments) and answers from the case input or
+// from the small world model kept beside it (lifepoints, attributes,
+// equipment and inventory items with their packed id and charge). That model
+// is an oracle input, not a port of the classes it stands in for. Paths this
+// corpus does not drive throw UnsupportedOperationException. /*NAME*/ markers
+// are original text inserted at generation time.
+//// core/game/node/Node.java
+package core.game.node;
+import core.game.world.map.Location;import core.game.node.item.Item;
+public class Node{
+ protected Location location;public int size=1;
+ public Location getLocation(){return location;}
+ public int size(){return size;}
+ public int getId(){throw oracle.Support.unsupported("Node.getId");}
+ public int getIndex(){throw oracle.Support.unsupported("Node.getIndex");}
+ public boolean isActive(){throw oracle.Support.unsupported("Node.isActive");}
+ public core.game.node.entity.npc.NPC asNpc(){return(core.game.node.entity.npc.NPC)this;}
+ /*NODE_CENTER*/
+ /*NODE_AS_ITEM*/
+}
+//// core/game/node/entity/Entity.java
+package core.game.node.entity;
+import java.util.*;import oracle.Support;import core.game.world.map.Location;import core.game.node.Node;
+import core.game.node.entity.combat.*;import core.game.node.entity.combat.equipment.*;
+import core.game.node.entity.combat.spell.CombatSpell;import core.game.node.entity.skill.Skills;
+import core.game.node.entity.player.Player;import core.game.node.entity.npc.NPC;
+import core.game.world.update.flag.context.Animation;import core.game.world.update.flag.context.Graphics;
+import core.game.node.entity.impl.Animator.Priority;
+public class Entity extends Node{
+ public final int tag;public final Map spec;public CombatSpell spell,autocast;
+ public int lifepoints,recoil;public double prayerPoints;public boolean dead,registered;public Object armourSet;public int levelAnswer;
+ public final Map<String,Object> attrs=new HashMap<>();
+ final Props props=new Props();final Skills skills=new Skills(this);final Walking walking=new Walking();final Locks locks=new Locks();
+ final Pulses pulses=new Pulses();public final Scripts scripts=new Scripts();final Attrs attributes=new Attrs();
+ final Timers timers=new Timers();
+ CombatPulse combat;ImpactHandler impacts;
+ public Entity(int tag,Map spec){
+  this.tag=tag;this.spec=spec;this.size=Support.i(spec,"size",1);this.location=Support.place(spec);
+  this.lifepoints=Support.i(spec,"lifepoints",10);this.recoil=Support.i(spec,"recoilDamage",40);this.prayerPoints=Support.d(spec,"prayerPoints",0.0);
+  this.dead=Boolean.TRUE.equals(spec.get("dead"));this.armourSet=spec.get("armourSet");
+  Map a=(Map)spec.get("attrs");if(a!=null)for(Object k:a.keySet())attrs.put((String)k,a.get(k));
+ }
+ public void bind(){combat=new CombatPulse(this);impacts=new ImpactHandler(this);}
+ public void relocate(Location l){location=l;}
+ @Override public int hashCode(){return Support.i(spec,"hash",31*tag+7);}
+ public class Props{
+  public int[] getBonuses(){Support.emit("bonuses",tag);return Support.ints(spec.containsKey("bonuses")?spec.get("bonuses"):Support.ZERO15);}
+  public WeaponInterface.AttackStyle getAttackStyle(){Support.emit("attackStyle",tag);if(!spec.containsKey("attackStyle"))return new WeaponInterface.AttackStyle(0,2);List a=(List)spec.get("attackStyle");return a==null?null:new WeaponInterface.AttackStyle(Support.n(a.get(0)),Support.n(a.get(1)));}
+  public ArmourSet getArmourSet(){Support.emit("armourSet",tag);return armourSet==null?null:ArmourSet.valueOf((String)armourSet);}
+  public void setArmourSet(ArmourSet s){Support.emit("setArmourSet",tag,s==null?null:s.name());armourSet=s==null?null:s.name();}
+  public CombatPulse getCombatPulse(){return combat;}
+  public CombatSpell getSpell(){Support.emit("spell",tag);return spell;}
+  public void setSpell(CombatSpell s){Support.emit("setSpell",tag,s==null?null:(Object)s.idx);spell=s;}
+  public CombatSpell getAutocastSpell(){Support.emit("autocast",tag);return autocast;}
+  Animation anim(String key,Object fallback){Object v=spec.containsKey(key)?spec.get(key):fallback;return v==null?null:new Animation(Support.n(v),Priority.HIGH);}
+  public Animation getAttackAnimation(){Support.emit("attackAnim",tag);return anim("attackAnim",422L);}
+  public Animation getDefenceAnimation(){Support.emit("defenceAnim",tag);return anim("defenceAnim",404L);}
+  public Animation getCombatAnimation(int i){Support.emit("combatAnim",tag,i);List l=(List)spec.get("combatAnims");Object v=l==null?null:l.get(i);return v==null?null:new Animation(Support.n(v),Priority.HIGH);}
+  public CombatStyle getProtectStyle(){Support.emit("protectStyle",tag);Object v=spec.get("protectStyle");return v==null?null:CombatStyle.valueOf((String)v);}
+  public int getCombatTimeOut(){Support.emit("combatTimeOut",tag);return Support.i(spec,"combatTimeOut",10);}
+  public int getAttackSpeed(){Support.emit("attackSpeed",tag);return Support.i(spec,"attackSpeed",4);}
+  public int getCombatLevel(){Support.emit("combatLevel",tag);return Support.i(spec,"combatLevel",3);}
+  public boolean isMultiZone(){Support.emit("multiZone",tag);return Boolean.TRUE.equals(spec.get("multiZone"));}
+ }
+ public class Walking{
+  public boolean isMoving(){Support.emit("moving",tag);return Boolean.TRUE.equals(spec.get("moving"));}
+  public boolean isRunningBoth(){Support.emit("runningBoth",tag);return Boolean.TRUE.equals(spec.get("runningBoth"));}
+  public int getRunDir(){Support.emit("runDir",tag);return Support.i(spec,"runDir",-1);}
+  public void reset(){Support.emit("walkReset",tag);}
+  public void addPath(int x,int y){Support.emit("addPath",tag,x,y);}
+ }
+ public class Locks{
+  public boolean isMovementLocked(){Support.emit("movementLocked",tag);return Boolean.TRUE.equals(spec.get("movementLocked"));}
+  public boolean isInteractionLocked(){Support.emit("interactionLocked",tag);return Boolean.TRUE.equals(spec.get("interactionLocked"));}
+  public boolean isLocked(String k){Support.emit("isLocked",tag,k);return Support.has(spec,"locked",k);}
+  public void lock(String k,int ticks){Support.emit("lockKey",tag,k,ticks);}
+  public void lockMovement(int ticks){Support.emit("lockMovement",tag,ticks);}
+ }
+ public class Pulses{
+  public void run(core.game.system.task.Pulse p){Support.emit("pulseRun",tag);registered=true;p.start();if(p.isRunning())Support.queue.add(p);}
+  public boolean isMovingPulse(){Support.emit("isMovingPulse",tag);if(spec.containsKey("movingPulse"))return Boolean.TRUE.equals(spec.get("movingPulse"));return registered&&combat.isRunning();}
+  public void clear(){Support.emit("pulseClear",tag);if(registered)combat.stop();}
+ }
+ public class Scripts{public void removeWeakScripts(){Support.emit("removeWeakScripts",tag);}}
+ public class Attrs{public boolean containsKey(String k){Support.emit("attrHas",tag,k);return attrs.containsKey(k);}}
+ // TimerManager.registerTimer: recorded; the scheduling itself is not part of this corpus.
+ public class Timers{public void registerTimer(core.game.system.timer.RSTimer t){Support.registerTimer(Entity.this,t);}}
+ public Props getProperties(){return props;}
+ public Skills getSkills(){return skills;}
+ public Walking getWalkingQueue(){return walking;}
+ public Locks getLocks(){return locks;}
+ public Pulses getPulseManager(){return pulses;}
+ public Attrs getAttributes(){return attributes;}
+ public ImpactHandler getImpactHandler(){return impacts;}
+ public Timers getTimers(){return timers;}
+ @Override public Location getLocation(){Support.emit("location",tag);return location;}
+ @Override public int size(){Support.emit("size",tag);return size;}
+ @Override public int getId(){Support.emit("id",tag);return Support.i(spec,"id",0);}
+ @Override public int getIndex(){Support.emit("index",tag);return Support.i(spec,"index",tag);}
+ @Override public boolean isActive(){Support.emit("active",tag);return!Boolean.FALSE.equals(spec.get("active"));}
+ @Override public Location getCenterLocation(){Support.emit("center",tag);return super.getCenterLocation();}
+ public String getName(){Support.emit("name",tag);return spec.containsKey("name")?(String)spec.get("name"):"null";}
+ public boolean hasProtectionPrayer(CombatStyle style){Support.emit("protection",tag,style==null?null:style.name());return Support.has(spec,"protection",style==null?null:style.name());}
+ public double getLevelMod(Entity e,Entity v){Support.emit("levelMod",tag,Support.tag(e),Support.tag(v));return Support.d(spec,"levelMod",0.0);}
+ public void graphics(Graphics g){Support.emit("graphics",tag,g.getId(),g.getHeight(),g.getDelay());}
+ public <T> T getExtension(Class<?> c){Support.emit("extension",tag,c.getSimpleName());Object w=spec.get("weaponInterface");return w==null?null:(T)new WeaponInterface(this,(String)w);}
+ /*ENTITY_IS_PLAYER*/
+ public Player asPlayer(){return(Player)this;}
+ Object attr(String k){Object v=attrs.get(k);if(v instanceof Map)return Support.entity(((Map)v).get("entity"));if("autocast_component".equals(k)&&v!=null)return new core.game.component.Component(90);if("duel:ammo".equals(k)&&v!=null)return Support.duelAmmo;if(v instanceof Long)return Support.n(v);return v;}
+ public <T> T getAttribute(String k,T fallback){Support.emit("attr",tag,k);Object v=attr(k);return v==null?fallback:(T)v;}
+ public <T> T getAttribute(String k){Support.emit("attr",tag,k);return(T)attr(k);}
+ public void setAttribute(String k,Object v){
+  Object shown=v instanceof Entity?(Object)((Entity)v).tag:v;
+  if("combat-time".equals(k)){long d=(Long)v-System.currentTimeMillis();shown=d>=5000&&d<=10000?(Object)10000L:(Object)d;}
+  Support.emit("setAttr",tag,k,shown);
+  if(v instanceof Entity){Map m=new HashMap();m.put("entity",(long)((Entity)v).tag);attrs.put(k,m);}else attrs.put(k,v);
+ }
+ public void removeAttribute(String k){Support.emit("removeAttr",tag,k);attrs.remove(k);}
+ public boolean animate(Animation a){Support.emit("animate",tag,a==null?null:(Object)a.getId());return true;}
+ public boolean visualize(Animation a,Graphics g){Support.emit("visualize",tag,a==null?null:(Object)a.getId(),Support.graphic(g));return true;}
+ public void onImpact(Entity e,BattleState s){Support.emit("onImpact",tag,Support.tag(e));if(Boolean.TRUE.equals(spec.get("retaliate"))&&e!=null)combat.attack(e);}
+ public void sendImpact(BattleState s){Support.emit("sendImpact",tag);Support.script(s,spec.get("sendImpact"));}
+ public void checkImpact(BattleState s){Support.emit("checkImpact",tag);Support.script(s,spec.get("checkImpact"));}
+ public void fullRestore(){Support.emit("fullRestore",tag);}
+ public double getFormattedHit(BattleState s,int hit){Support.emit("formattedHit",tag,hit);return hit*Support.d(spec,"hitFactor",1.0);}
+ public CombatSwingHandler getSwingHandler(boolean swing){Support.emit("swingHandler",tag,swing);Object v=swing&&spec.containsKey("handlerSwing")?spec.get("handlerSwing"):spec.get("handler");return Support.handlers.get(v==null?0:Support.n(v));}
+ public boolean isAttackable(Entity e,CombatStyle style,boolean message){Support.emit("attackable",tag,Support.tag(e),style==null?null:style.name(),message);return!Boolean.FALSE.equals(spec.get("attackable"));}
+ /*ENTITY_CLOSEST*/
+ public Location getClosestOccupiedTile(Location other){Support.emit("closestTile",tag,Support.coord(other));return closestOccupiedTile(other);}
+ public void attack(final Node node){Support.emit("attack",tag,Support.tag((Entity)node));
+		getProperties().getCombatPulse().attack(node);
+ }
+ public boolean face(Entity e){Support.emit("face",tag,Support.tag(e));return true;}
+ public boolean faceTemporary(Entity e,int ticks){Support.emit("faceTemporary",tag,Support.tag(e),ticks);return true;}
+ public boolean faceLocation(Location l){Support.emit("faceLocation",tag,Support.coord(l));return true;}
+ public void onAttack(Entity e){Support.emit("onAttack",tag,Support.tag(e));}
+ public void startDeath(Entity killer){Support.emit("startDeath",tag,Support.tag(killer));dead=true;}
+ public boolean hasFireResistance(){Support.emit("fireResistance",tag);return Boolean.TRUE.equals(spec.get("fireResistance"));}
+ public int getDragonfireProtection(boolean fire){Support.emit("dragonfireProtection",tag,fire);return Support.i(spec,"dragonfireProtection",0);}
+ // Entity.lock(ticks) and unlock(): recorded; the locks themselves are not part of this corpus.
+ public void lock(int ticks){Support.emit("lock",tag,ticks);}
+ public void unlock(){Support.emit("unlock",tag);}
+}
+//// core/game/node/entity/npc/NPC.java
+package core.game.node.entity.npc;
+import java.util.*;import oracle.Support;import core.game.node.entity.Entity;import content.global.skill.slayer.Tasks;
+import core.game.world.update.flag.context.Graphics;import core.game.node.entity.player.link.audio.Audio;
+import core.game.node.entity.player.Player;import core.game.node.entity.combat.BattleState;
+public class NPC extends Entity{
+ public NPC(int tag,Map spec){super(tag,spec);}
+ public Tasks getTask(){Support.emit("npcTask",tag);return Tasks.of((Map)spec.get("npcTask"));}
+ public class Def{
+  public int getCombatDistance(){Support.emit("combatDistance",tag);return Support.i(spec,"combatDistance",0);}
+  public Graphics[] getCombatGraphics(){Support.emit("combatGraphics",tag);if(!spec.containsKey("combatGraphics"))return new Graphics[3];List l=(List)spec.get("combatGraphics");if(l==null)return null;Graphics[] a=new Graphics[l.size()];for(int k=0;k<a.length;k++){List g=(List)l.get(k);a[k]=g==null?null:new Graphics(Support.n(g.get(0)),Support.n(g.get(1)),Support.n(g.get(2)));}return a;}
+ }
+ public class Behavior{
+  public double getXpMultiplier(NPC n,Player p){Support.emit("xpMultiplier",Support.tag(n),Support.tag(p));return Support.d(spec,"xpMultiplier",1.0);}
+  public void beforeAttackFinalized(Entity e,Entity v,BattleState s){Support.emit("beforeAttackFinalized",Support.tag(e),Support.tag(v));}
+ }
+ public Def getDefinition(){return new Def();}
+ public Behavior getBehavior(){return new Behavior();}
+ public Audio getAudio(int i){Support.emit("npcAudio",tag,i);List l=(List)spec.get("audio");Object v=l==null||i>=l.size()?null:l.get(i);return v==null?null:new Audio(Support.n(v));}
+ public boolean isPoisonous(){Support.emit("poisonous",tag);return Boolean.TRUE.equals(spec.get("poisonous"));}
+ public int poisonSeverity(){Support.emit("poisonSeverity",tag);return Support.i(spec,"poisonSeverity",-1);}
+ public boolean isHidden(Player p){Support.emit("hidden",tag,Support.tag(p));return Boolean.TRUE.equals(spec.get("hidden"));}
+ public boolean canStartCombat(Entity v){Support.emit("canStartCombat",tag,Support.tag(v));return!Boolean.FALSE.equals(spec.get("canStartCombat"));}
+ public int getOriginalId(){Support.emit("originalId",tag);return Support.i(spec,"originalId",Support.i(spec,"id",0));}
+ // NPC.transform(id) and reTransform(): recorded; the definition swap is not part of this corpus.
+ public void transform(int id){Support.emit("transform",tag,id);}
+ public void reTransform(){Support.emit("reTransform",tag);}
+}
+//// core/game/node/entity/player/Player.java
+package core.game.node.entity.player;
+import java.util.*;import oracle.Support;import core.game.node.entity.Entity;import core.game.node.entity.combat.*;
+import core.game.node.entity.player.link.prayer.PrayerType;import core.game.node.item.Item;import core.game.container.impl.EquipmentContainer;
+import core.game.node.entity.player.info.Rights;import core.game.node.entity.player.link.Settings;
+import content.global.handlers.item.equipment.special.ChinchompaSwingHandler;import content.global.handlers.item.equipment.special.SalamanderSwingHandler;
+import content.global.handlers.item.equipment.EquipmentDegrader;
+public class Player extends Entity{
+ final EquipmentContainer equipment=new EquipmentContainer(this);final Inventory inventory=new Inventory();final Prayer prayer=new Prayer();final Familiars familiars=new Familiars();final Packets packetDispatch=new Packets();final Other other=new Other();
+ final Quests quests=new Quests();final Dialogues dialogues=new Dialogues();
+ final Settings settings;
+ // The original field, verbatim: each player's own EquipmentDegrader.
+ /*PLAYER_DEGRADER*/
+ public Player(int tag,Map spec){super(tag,spec);settings=new Settings(this);}
+ public class Prayer{
+  public double getSkillBonus(int s){Support.emit("prayerBonus",tag,s);Map m=(Map)spec.get("prayerBonus");Object v=m==null?null:m.get(String.valueOf(s));return v==null?0.0:Support.bits(v);}
+  public boolean get(PrayerType t){Support.emit("prayer",tag,t.name());return Support.has(spec,"prayers",t.name());}
+  public void startRedemption(){Support.emit("startRedemption",tag);}
+ }
+ public class Familiars{
+  public content.global.skill.summoning.familiar.Familiar getFamiliar(){Support.emit("familiar",tag);Object v=spec.get("familiar");if("throw".equals(v))throw new IllegalStateException("familiar");if(Boolean.TRUE.equals(spec.get("familiarPet")))return new content.global.skill.summoning.pet.Pet(0);return v==null?null:new content.global.skill.summoning.familiar.Familiar(Support.n(v));}
+  public boolean hasFamiliar(){Support.emit("hasFamiliar",tag);return Boolean.TRUE.equals(spec.get("hasFamiliar"));}
+  public void adjustBattleState(core.game.node.entity.combat.BattleState s){Support.emit("familiarAdjust",tag);}
+ }
+ // The inventory model: the case's items, keyed by slot, as the equipment model. Bulk queries read every slot unrecorded.
+ public class Inventory{
+  final Map<Integer,Item> items=new HashMap<>();final Set<Integer> emptied=new HashSet<>();
+  public Player owner(){return Player.this;}
+  public Item at(int slot){if(emptied.contains(slot))return null;if(items.containsKey(slot))return items.get(slot);Map m=(Map)spec.get("inventory");List v=m==null?null:(List)m.get(String.valueOf(slot));if(v==null)return null;Item made=new Item("inv:"+tag+":"+slot,Support.n(v.get(0)),Support.n(v.get(1)),Support.n(v.get(2)),(String)v.get(3),null,null);made.index=slot;items.put(slot,made);return made;}
+  public Item get(int slot){Support.emit("invGet",tag,slot);if(slot<0||slot>=28)return null;return at(slot);}
+  public void store(int slot,Item i){if(i==null){emptied.add(slot);items.remove(slot);return;}emptied.remove(slot);Item made=new Item("inv:"+tag+":"+slot,i.getId(),i.getAmount(),i.getCharge(),i.getName(),null,null);made.index=slot;items.put(slot,made);}
+  public boolean contains(int id,int amount){Support.emit("invContains",tag,id,amount);int n=0;for(int s=0;s<28;s++){Item i=at(s);if(i!=null&&i.getId()==id)n+=i.getAmount();}return n>=amount;}
+  public boolean remove(Item item){Support.emit("invRemove",tag,Arrays.asList(item.getId(),item.getAmount(),item.getCharge()));for(int s=0;s<28;s++){Item i=at(s);if(i!=null&&i.getId()==item.getId()){if(i.getAmount()<item.getAmount())return false;store(s,i.getAmount()==item.getAmount()?null:new Item("x",i.getId(),i.getAmount()-item.getAmount(),i.getCharge(),i.getName(),null,null));return true;}}return false;}
+  public boolean add(Item item){Support.emit("invAdd",tag,Arrays.asList(item.getId(),item.getAmount(),item.getCharge()));for(int s=0;s<28;s++){if(at(s)==null){store(s,item);return true;}}return false;}
+  public int freeSlots(){Support.emit("freeSlots",tag);int n=0;for(int s=0;s<28;s++)if(at(s)==null)n++;return n;}
+ }
+ public class Packets{public void sendMessage(String s){Support.emit("message",tag,s);}}
+ // QuestRepository.getQuest(quest).isStarted(player): the case lists the started quests by name.
+ public class Quests{public Quest getQuest(content.data.Quests q){return new Quest(q.getQuestName());}}
+ public class Quest{final String name;Quest(String name){this.name=name;}public boolean isStarted(Player p){Support.emit("questStarted",p.tag,name);return Support.has(p.spec,"startedQuests",name);}}
+ // DialogueInterpreter.open: recorded with its arguments.
+ public class Dialogues{
+  public boolean open(int id,Object... args){List<Object> shown=new ArrayList<>();for(Object a:args)shown.add(a instanceof Entity?(Object)((Entity)a).tag:a);Support.emit("dialogue",tag,id,shown);return true;}
+  public boolean open(core.game.dialogue.DialogueFile file,Object... args){List<Object> shown=new ArrayList<>();for(Object a:args)shown.add(a instanceof Entity?(Object)((Entity)a).tag:a);Support.emit("dialogueFile",tag,file.getClass().getSimpleName(),shown);return true;}
+ }
+ public class Other{
+  public boolean isIronman(){Support.emit("ironman",tag);return Boolean.TRUE.equals(spec.get("ironman"));}
+  public void close(core.game.component.Component c){Support.emit("closeComponent",tag);}
+  public void openTab(core.game.component.Component c){Support.emit("openTab",tag,c!=null);}
+  public boolean close(){Support.emit("ifaceClose",tag);return true;}
+  public void closeChatbox(){Support.emit("ifaceCloseChatbox",tag);}
+  public boolean isWilderness(){Support.emit("wilderness",tag);return Boolean.TRUE.equals(spec.get("wilderness"));}
+  public void checkSkull(Entity v){Support.emit("checkSkull",tag,Support.tag(v));}
+  public int getUid(){Support.emit("uid",tag);return Support.i(spec,"uid",tag);}
+  public int getType(){Support.emit("zoneType",tag);return Support.i(spec,"zoneType",0);}
+  public Other getGlobalData(){return this;}
+  public int getRecoilDamage(){Support.emit("recoilDamage",tag);return recoil;}
+  public void setRecoilDamage(int n){Support.emit("setRecoilDamage",tag,n);recoil=n;}
+ }
+ public EquipmentContainer getEquipment(){return equipment;}
+ public Inventory getInventory(){return inventory;}
+ public Prayer getPrayer(){return prayer;}
+ public Familiars getFamiliarManager(){if("manager".equals(spec.get("familiar")))return null;return familiars;}
+ public Packets getPacketDispatch(){return packetDispatch;}
+ public Quests getQuestRepository(){return quests;}
+ public Dialogues getDialogueInterpreter(){return dialogues;}
+ public boolean isWearingVoid(CombatStyle style){Support.emit("void",tag,style.name());return Support.has(spec,"void",style.name());}
+ public Settings getSettings(){return settings;}
+ public Other getIronmanManager(){return other;}
+ public Other getInterfaceManager(){return other;}
+ public Other getSkullManager(){return other;}
+ public Other getDetails(){return other;}
+ public Other getZoneMonitor(){return other;}
+ public Other getSavedData(){return other;}
+ public int getClientIndex(){Support.emit("clientIndex",tag);return Support.i(spec,"clientIndex",tag);}
+ public void debug(String s){Support.emit("debug",tag,s);}
+ public void sendMessage(String s){Support.emit("sendMessage",tag,s);}
+ // The call is recorded, then the original Player.getSwingHandler body runs.
+ @Override public CombatSwingHandler getSwingHandler(boolean swing){Support.emit("swingHandler",tag,swing);return originalSwingHandler(swing);}
+ /*PLAYER_SWING_HANDLER*/
+ /*PLAYER_DRAGONFIRE*/
+}
+//// core/game/container/impl/EquipmentContainer.java
+package core.game.container.impl;
+import java.util.*;import oracle.Support;import core.game.node.item.Item;import core.game.node.entity.player.Player;
+public class EquipmentContainer{
+ /*SLOT_CONSTANTS*/
+ final Player p;final Map<Integer,Item> items=new HashMap<>();final Set<Integer> emptied=new HashSet<>();public EquipmentContainer(Player p){this.p=p;}
+ // Original bounds behaviour of a 14-slot container: get answers null outside it, getNew indexes the array.
+ public Item at(int slot){if(emptied.contains(slot))return null;if(items.containsKey(slot))return items.get(slot);Map m=(Map)p.spec.get("equipment");List v=m==null?null:(List)m.get(String.valueOf(slot));if(v==null)return null;Item made=new Item(p.tag+":"+slot,Support.n(v.get(0)),Support.n(v.get(1)),Support.n(v.get(2)),(String)v.get(3),v.size()>4?v.get(4):null,v.size()>5?(Map)v.get(5):null);made.index=slot;items.put(slot,made);return made;}
+ public Item peek(int slot){return at(slot);}
+ public Item get(int slot){Support.emit("equip",p.tag,slot);if(slot<0||slot>=14)return null;return at(slot);}
+ public Item getNew(int slot){Support.emit("equipNew",p.tag,slot);if(slot<0||slot>=14)throw new ArrayIndexOutOfBoundsException(slot);Item i=at(slot);return i!=null?i:new Item(0);}
+ public boolean containsAtLeastOneItem(int id){Support.emit("containsOne",p.tag,id);return Support.has(p.spec,"contains",String.valueOf(id));}
+ public boolean contains(int id,int amount){Support.emit("contains",p.tag,id,amount);return Support.has(p.spec,"contains",String.valueOf(id));}
+ // Modelled replace: a null item or one without a positive amount empties the slot.
+ public void replace(Item i,int slot){Support.emit("equipReplace",p.tag,i==null?null:Arrays.asList(i.getId(),i.getAmount(),i.getCharge()),slot);store(slot,i);}
+ public void store(int slot,Item i){
+  if(i==null||i.getAmount()<=0){emptied.add(slot);items.remove(slot);}else{emptied.remove(slot);Item old=at(slot);Item made=new Item(p.tag+":"+slot,i.getId(),i.getAmount(),i.getCharge(),old!=null&&old.getId()==i.getId()?old.getName():i.getName(),null,null);made.index=slot;items.put(slot,made);}}
+ public static void updateBonuses(Player p){Support.emit("updateBonuses",p.tag);}
+ // Container.remove(item): the lowest slot holding the id gives up the amount (all of it, or false when it holds less).
+ public boolean remove(Item item){Support.emit("equipRemove",p.tag,Arrays.asList(item.getId(),item.getAmount(),item.getCharge()));for(int s=0;s<14;s++){Item i=at(s);if(i!=null&&i.getId()==item.getId()){if(i.getAmount()<item.getAmount())return false;store(s,i.getAmount()==item.getAmount()?null:new Item("x",i.getId(),i.getAmount()-item.getAmount(),i.getCharge(),i.getName(),null,null));return true;}}return false;}
+ // EquipmentContainer.add(item, inventorySlot, fire, fromInventory): the item's equipment slot is the case's ("equipSlots"); without one it is refused.
+ public boolean add(Item item,int inventorySlot,boolean fire,boolean fromInventory){Support.emit("equipAdd",p.tag,Arrays.asList(item.getId(),item.getAmount(),item.getCharge()),inventorySlot,fire,fromInventory);int slot=Support.keyed(Support.input,"equipSlots",item.getId(),-1);if(slot<0)return false;store(slot,item);return true;}
+ public void refresh(){Support.emit("equipRefresh",p.tag);}
+}
+//// core/cache/def/impl/ItemDefinition.java
+package core.cache.def.impl;
+import java.util.*;import oracle.Support;
+// The definition name forId answers is the case's ("definitionNames"); getDefinitions is the case's list in its order
+// ("itemDefinitions", a LinkedHashMap: the iteration order is an input), whose names are plain fields.
+public class ItemDefinition{
+ final int id;final String plainName;final boolean plain;
+ ItemDefinition(int id){this.id=id;this.plainName=null;this.plain=false;}
+ ItemDefinition(int id,String name){this.id=id;this.plainName=name;this.plain=true;}
+ public static ItemDefinition forId(int id){return new ItemDefinition(id);}
+ public int getId(){return id;}
+ public String getName(){if(plain)return plainName;Support.emit("definitionName",id);Map m=(Map)Support.input.get("definitionNames");Object v=m==null?null:m.get(String.valueOf(id));return v==null?"null":(String)v;}
+ public static Map<Integer,ItemDefinition> getDefinitions(){Map<Integer,ItemDefinition> m=new LinkedHashMap<>();List l=(List)Support.input.get("itemDefinitions");if(l!=null)for(Object o:l){List r=(List)o;m.put(Support.n(r.get(0)),new ItemDefinition(Support.n(r.get(0)),(String)r.get(1)));}return m;}
+}
+//// core/game/interaction/InteractionListener.kt
+package core.game.interaction
+import core.game.node.Node
+import core.game.node.entity.player.Player
+// The registrations these listeners use: recorded, and the handlers kept for the case to invoke.
+interface InteractionListener : core.api.ContentInterface {
+    fun defineListeners()
+    fun on(ids: IntArray, type: IntType, vararg option: String, handler: (player: Player, node: Node) -> Boolean) { oracle.Support.listen(ids, type.ordinal, option, handler) }
+    fun on(type: IntType, vararg option: String, handler: (player: Player, node: Node) -> Boolean) { oracle.Support.listen(null, type.ordinal, option, handler) }
+    fun onUseWith(type: IntType, used: IntArray, vararg with: Int, handler: (player: Player, used: Node, with: Node) -> Boolean) { oracle.Support.useWith(used, type.ordinal, with, handler) }
+    fun onUseWith(type: IntType, used: Int, vararg with: Int, handler: (player: Player, used: Node, with: Node) -> Boolean) { oracle.Support.useWith(intArrayOf(used), type.ordinal, with, handler) }
+    fun onEquip(ids: IntArray, handler: (player: Player, node: Node) -> Boolean) { oracle.Support.equip(ids, handler) }
+}
+//// core/game/node/entity/npc/NPCBehavior.kt
+package core.game.node.entity.npc
+import core.game.node.entity.Entity
+import core.game.node.item.Item
+// The constructor and the members the behaviours of this corpus override, with the original defaults.
+open class NPCBehavior(vararg val ids: Int) {
+    open fun tick(self: NPC): Boolean { return true }
+    open fun onDeathFinished(self: NPC, killer: Entity) {}
+    open fun onRespawn(self: NPC) {}
+    open fun onDropTableRolled(self: NPC, killer: Entity, drops: java.util.ArrayList<Item>) {}
+}
+//// content/data/Quests.kt
+package content.data
+// The constant this corpus names, verbatim.
+enum class Quests(val questName: String) {
+    /*QUEST_CONSTANT*/
+}
+//// content/region/misthalin/lumbridge/quest/sheepshearer/SheepShearer.kt
+package content.region.misthalin.lumbridge.quest.sheepshearer
+// The attribute key this corpus names, verbatim.
+class SheepShearer { companion object {
+    /*SHEEP_ATTRIBUTE*/
+} }
+//// content/region/kandarin/quest/barbariantraining/BarbarianTraining.kt
+package content.region.kandarin.quest.barbariantraining
+// The attribute keys this corpus names, verbatim.
+object BarbarianTraining {
+    /*BARBARIAN_CONSTANTS*/
+}
+//// core/cache/def/impl/SceneryDefinition.java
+package core.cache.def.impl;
+import oracle.Support;
+// The option-handler registrations: recorded with the handler's class.
+public class SceneryDefinition{
+ final int id;SceneryDefinition(int id){this.id=id;}
+ public static SceneryDefinition forId(int id){return new SceneryDefinition(id);}
+ public class Handlers{public Object put(String key,Object handler){Support.emit("sceneryHandler",id,key,handler.getClass().getSimpleName());return null;}}
+ public Handlers getHandlers(){return new Handlers();}
+ public static boolean setOptionHandler(String name,Object handler){Support.emit("sceneryOptionHandler",name,handler.getClass().getSimpleName());return true;}
+}
+//// core/game/node/scenery/Scenery.java
+package core.game.node.scenery;
+// A scenery node: identity only.
+public class Scenery extends core.game.node.Node{public final int sceneryId;public Scenery(int id){this.sceneryId=id;}}
+//// core/game/interaction/NodeUsageEvent.java
+package core.game.interaction;
+import core.game.node.Node;import core.game.node.entity.player.Player;
+public class NodeUsageEvent{
+ final Player player;final Node used,with;
+ public NodeUsageEvent(Player player,int component,Node used,Node with){this.player=player;this.used=used;this.with=with;}
+ public Player getPlayer(){return player;}public Node getUsed(){return used;}public Node getUsedWith(){return with;}
+}
+//// core/game/interaction/OptionHandler.java
+package core.game.interaction;
+import core.game.node.Node;import core.game.node.entity.player.Player;
+public abstract class OptionHandler implements core.plugin.Plugin<Object>{
+ public abstract boolean handle(Player player,Node node,String option);
+ @Override public Object fireEvent(String identifier,Object... args){return null;}
+}
+//// core/game/interaction/UseWithHandler.java
+package core.game.interaction;
+import java.util.*;import oracle.Support;
+// The node types (verbatim) and addHandler: recorded with the handler's allowed nodes and class.
+public abstract class UseWithHandler implements core.plugin.Plugin<Object>{
+ /*USE_WITH_TYPES*/
+ final int[] allowed;
+ public UseWithHandler(int... allowedNodes){this.allowed=allowedNodes;}
+ public static void addHandler(int id,int type,UseWithHandler handler){List<Object> shown=new ArrayList<>();for(int a:handler.allowed)shown.add(a);Support.emit("useWithHandler",id,type,shown,handler.getClass().getSimpleName());}
+ public abstract boolean handle(NodeUsageEvent event);
+ @Override public Object fireEvent(String identifier,Object... args){return null;}
+}
+//// core/plugin/ClassScanner.kt
+package core.plugin
+// definePlugin: recorded, then the plugin's newInstance(null) inside the original try, whose catch prints the failure.
+object ClassScanner {
+    @JvmStatic fun definePlugin(plugin: Plugin<*>) {
+        try {
+            oracle.Support.emit("definePlugin", plugin.javaClass.simpleName)
+            plugin.newInstance(null)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+}
+//// core/game/consumable/Consumable.java
+package core.game.consumable;
+// The ids, as the original keeps them.
+public abstract class Consumable{protected final int[] ids;public Consumable(int[] ids){this.ids=ids;}public int[] getIds(){return ids;}}
+//// core/game/consumable/Potion.java
+package core.game.consumable;
+import core.game.node.item.Item;
+// getDose, verbatim.
+public class Potion extends Consumable{
+ public Potion(int[] ids){super(ids);}
+ /*POTION_DOSE*/
+}
+//// content/data/consumables/Consumables.java
+package content.data.consumables;
+import java.util.*;import core.game.consumable.*;
+// The Potion and BarbarianMix rows of the original enum (their ids, verbatim, in declaration order), with its
+// putIfAbsent map and potions list; the other rows are not part of this corpus.
+public enum Consumables{
+ /*POTION_ROWS*/
+ ;
+ public static ArrayList<Integer> potions=new ArrayList<>();
+ static final Map<Integer,Consumables> consumables=new HashMap<>();
+ private final Consumable consumable;
+ Consumables(int[] ids){this.consumable=new Potion(ids);}
+ public Consumable getConsumable(){return consumable;}
+ public static Consumables getConsumableById(final int itemId){return consumables.get(itemId);}
+ static{for(Consumables c:values()){for(int id:c.consumable.getIds())consumables.putIfAbsent(id,c);for(int pot:c.consumable.getIds())potions.add(pot);}}
+}
+//// content/global/skill/cooking/fermenting/CalquatDecant.kt
+package content.global.skill.cooking.fermenting
+import core.game.node.entity.player.Player
+import core.game.node.item.Item
+import oracle.Support
+// Another slice: a fixed keg list, the calls recorded and answered from the case.
+object CalquatDecant {
+    val allKegIds: IntArray = Support.KEGS
+    fun isKeg(itemId: Int): Boolean { Support.emit("isKeg", itemId); return itemId in allKegIds }
+    fun decantCalquat(container: Player.Inventory): Pair<List<Item>, List<Item>> { Support.emit("decantCalquat", container.owner().tag); return Support.lists(container.owner(), "calquat") }
+    fun combineKegs(player: Player, used: Item, with: Item): Boolean { Support.emit("combineKegs", player.tag, used.ref, with.ref); return Support.answer(player, "combineKegs", true) }
+    fun pourIntoGlass(player: Player, glass: Item, keg: Item): Boolean { Support.emit("pourIntoGlass", player.tag, glass.ref, keg.ref); return Support.answer(player, "pourIntoGlass", true) }
+}
+//// core/game/dialogue/DialogueFile.kt
+package core.game.dialogue
+import core.game.component.Component
+import oracle.Support
+// The stage and the two lines a file sends: recorded for the player the case opened it for.
+abstract class DialogueFile {
+    open var stage = core.tools.START_DIALOGUE
+    abstract fun handle(componentID: Int, buttonID: Int)
+    open fun npc(vararg messages: String?): Component? { Support.emit("dialogueNpc", Support.dialogueTag, messages.toList()); return null }
+    open fun player(vararg messages: String?): Component? { Support.emit("dialoguePlayer", Support.dialogueTag, messages.toList()); return null }
+}
+//// core/api/ContentAPI.kt
+package core.api
+import core.game.node.Node
+import core.game.node.entity.Entity
+import core.game.node.entity.player.Player
+import core.game.node.entity.player.link.prayer.PrayerType
+import core.game.node.entity.combat.ImpactHandler
+import core.game.node.item.Item
+import core.game.world.map.Location
+import core.game.system.timer.RSTimer
+import core.game.system.timer.TimerRegistry
+import core.game.system.timer.impl.DragonFireImmunity
+import core.game.world.GameWorld
+import core.game.world.update.flag.context.Graphics
+import core.game.world.update.flag.context.Animation
+import content.global.skill.slayer.Tasks
+import org.rs09.consts.Items
+import oracle.Support
+fun getItemFromEquipment(player: Player, slot: EquipmentSlot): Item? = player.equipment.get(slot.ordinal)
+fun getSlayerTask(player: Player): Tasks? { Support.emit("slayerTask", player.tag); return Tasks.of(player.spec["slayerTask"] as Map<*, *>?) }
+fun inEquipment(player: Player, id: Int, amount: Int = 1): Boolean { Support.emit("inEquipment", player.tag, id, amount); return Support.has(player.spec, "inEquipment", id.toString()) }
+fun applyPoison(entity: Entity, source: Entity, severity: Int) { Support.emit("poison", entity.tag, source.tag, severity) }
+@JvmOverloads fun playGlobalAudio(location: Location, id: Int, delay: Int = 0, loops: Int = 1, radius: Int = 8) { Support.emit("audio", Support.coord(location), id, delay, loops, radius) }
+fun playHurtAudio(player: Player, delay: Int = 0) { Support.emit("hurtAudio", player.tag, delay) }
+fun log(origin: Class<*>, type: core.tools.Log, message: String) { Support.emit("log", origin.simpleName, type.name, message) }
+// Audio.defaultAudioRadius is 8.
+@JvmOverloads fun playAudio(player: Player, id: Int, delay: Int = 0, loops: Int = 1, location: Location? = null, radius: Int = 8) { Support.emit("playAudio", player.tag, id, delay, loops, Support.coord(location), radius) }
+// ContentAPI sendMessage (it splits the text into lines for Player.sendMessages): recorded as one call.
+fun sendMessage(player: Player, message: String) { Support.emit("apiMessage", player.tag, message) }
+// setVarp writes the varp map and sends the packet: recorded as one call.
+fun setVarp(player: Player, varpIndex: Int, value: Int, save: Boolean = false) { Support.emit("setVarp", player.tag, varpIndex, value, save) }
+// delayEntity sets the script delay from GameWorld.ticks and locks the entity: recorded as one call.
+fun delayEntity(entity: Entity, ticks: Int) { Support.emit("delayEntity", entity.tag, ticks) }
+// replaceSlot: recorded; the model then holds the new item in that slot.
+fun replaceSlot(player: Player, slot: Int, item: Item, currentItem: Item? = null, container: Container = Container.INVENTORY): Item? { Support.emit("replaceSlot", player.tag, slot, listOf(item.id, item.amount, item.charge), if (currentItem == null) null else listOf(currentItem.id, currentItem.amount, currentItem.charge), container.name); Support.replaceSlot(player, slot, item, container.name); return null }
+// The ContentAPI calls of the creatures and registers below are recorded as one call each and answered from the case.
+fun addItemOrDrop(player: Player, id: Int, amount: Int = 1) { Support.emit("addItemOrDrop", player.tag, id, amount) }
+fun sendChat(entity: Entity, message: String, delay: Int = -1) { Support.emit("apiChat", entity.tag, message, delay) }
+fun <T> animate(entity: Entity, anim: T, forced: Boolean = false) { val id = when (anim) { is Int -> anim; is Animation -> anim.id; else -> throw IllegalStateException("Invalid value passed for anim") }; Support.emit("apiAnimate", entity.tag, id, forced) }
+fun hasOption(node: Node, option: String): Boolean { val e = node as Entity; Support.emit("hasOption", e.tag, option); return Support.has(e.spec, "options", option) }
+fun forceWalk(entity: Entity, dest: Location, type: String) { Support.emit("forceWalk", entity.tag, Support.coord(dest), type) }
+fun addItem(player: Player, id: Int, amount: Int = 1, container: Container = Container.INVENTORY): Boolean { Support.emit("apiAddItem", player.tag, id, amount, container.name); return Support.answer(player, "addItem", true) }
+fun <T> removeItem(player: Player, item: T, container: Container = Container.INVENTORY): Boolean { val i = item as Item; Support.emit("apiRemoveItem", player.tag, listOf(i.id, i.amount, i.charge), container.name); return Support.answer(player, "removeItem", true) }
+fun sendGraphics(gfx: Graphics, location: Location) { Support.emit("sendGraphics", Support.graphic(gfx), Support.coord(location)) }
+fun sendDialogue(player: Player, message: String) { Support.emit("sendDialogue", player.tag, message) }
+fun decantContainer(container: core.game.node.entity.player.Player.Inventory): Pair<List<Item>, List<Item>> { Support.emit("decantContainer", container.owner().tag); return Support.lists(container.owner(), "decant") }
+/*GET_ATTRIBUTE*/
+inline fun <reified T : RSTimer> hasTimerActive(entity: Entity): Boolean = Support.timer(entity, T::class.java.simpleName)
+fun hasTimerActive (entity: Entity, identifier: String) : Boolean { Support.emit("timerActive", entity.tag, identifier); return Support.has(entity.spec, "timers", identifier) }
+/*API_ORIGINAL*/

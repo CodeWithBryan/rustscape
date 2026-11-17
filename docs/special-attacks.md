@@ -20,7 +20,7 @@ dragon dagger's Puncture (see Joins).
 `ChinchompaSwingHandler`, `DragonfireSwingHandler` and
 `SalamanderSwingHandler` live in the same folder but are not special attacks;
 the dragonfire handler is `world::dragonfire` (docs/dragonfire.md), the other
-two are not ported.
+two are `world::equipment_registers` (docs/equipment-registers.md).
 
 ## What is ported
 
@@ -210,9 +210,9 @@ dispatch.
 
 ## Not ported
 
-`ChinchompaSwingHandler`, `SalamanderSwingHandler` (`DragonfireSwingHandler`,
-`SwitchAttack`, `FireType`, `MixedSwingHandlers` and the chromatic and metal
-dragons are `world::dragonfire`, docs/dragonfire.md), the equipment registers
-(`BarrowsEquipment`, `BarrowsEquipmentRegister`, `CrystalEquipmentRegister`,
-`EquipmentDegrader`, `HastaEquipListener`, `PVPEquipmentRegister`); the timer manager's scheduling of the anonymous timers;
-every binding to a live session.
+(`DragonfireSwingHandler`, `SwitchAttack`, `FireType`, `MixedSwingHandlers`
+and the chromatic and metal dragons are `world::dragonfire`,
+docs/dragonfire.md; `ChinchompaSwingHandler`, `SalamanderSwingHandler` and
+the equipment registers are `world::equipment_registers`,
+docs/equipment-registers.md); the timer manager's scheduling of the
+anonymous timers; every binding to a live session.

@@ -60,7 +60,7 @@ pub enum Native {
     /// An AbstractNPC class the start-up world registers
     /// (`startup::npcs::STARTUP_NPC_CLASSES`):
     /// `world::npc_classes::registry::define`.
-    NpcClass(crate::world::npc_classes::Class),
+    NpcClass(crate::world::creatures::classes::WorldClass),
 }
 
 /// The native registration of a scanned class, if it has one.
@@ -74,7 +74,7 @@ pub fn native(class: &str) -> Option<Native> {
         "core.game.worldevents.holiday.HolidayRandoms" => Native::Timer(Kind::HolidayRandoms),
         "content.global.handlers.item.PickupPlugin" => Native::PickupPlugin,
         other => {
-            let class = crate::world::npc_classes::Class::named(other)?;
+            let class = crate::world::creatures::classes::WorldClass::named(other)?;
             if !super::npcs::STARTUP_NPC_CLASSES.contains(&class) {
                 return None;
             }

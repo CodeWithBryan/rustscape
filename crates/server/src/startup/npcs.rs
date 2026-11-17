@@ -52,6 +52,8 @@ use crate::definitions::{
     property::{Animation, CombatStyle as PropertyStyle, Property},
 };
 use crate::timers::{self as timer_lib, registry::Registry as TimerRegistry};
+use crate::world::creatures::classes::WorldClass;
+use crate::world::dragonfire::dragons::DragonClass;
 use crate::world::npc_classes::{
     self as nc, Class,
     registry::{self as classes, Registry},
@@ -100,7 +102,7 @@ pub struct Properties {
 pub struct Npc {
     pub id: i32,
     /// The AbstractNPC subclass it was constructed as (`None`: a base NPC).
-    pub class: Option<Class>,
+    pub class: Option<WorldClass>,
     pub definition: defs::Handle,
     pub brain: npc::State,
     pub direction: Option<Direction>,
@@ -133,7 +135,7 @@ pub struct Npcs {
     pub behaviours: behaviour::Registry<Npcs>,
     /// `AbstractNPC.mapping`: each id's class and prototype (an index of
     /// [`Npcs::prototypes`]).
-    pub classes: Registry<Class, usize>,
+    pub classes: Registry<WorldClass, usize>,
     /// The prototype objects the class scan constructed.
     pub prototypes: Vec<Prototype>,
     roots: BTreeMap<Node, NodeHandle>,
@@ -194,23 +196,28 @@ fn class_error(e: nc::Error) -> npc_init::Error {
 /// booth with `getScenery` and `DarkWizardNPC.init` sets an autocast spell;
 /// the start-up world holds neither region objects nor spells, so those two
 /// stay unregistered here (their NPCs are base NPCs, as before) and are
-/// named as gaps by the class scan step.
-pub const STARTUP_NPC_CLASSES: [Class; 8] = [
-    Class::Shop,
-    Class::Cow,
-    Class::Duck,
-    Class::Rat,
-    Class::Guard,
-    Class::Monk,
-    Class::HighwayMan,
-    Class::IceGiant,
+/// named as gaps by the class scan step. The dragon classes of
+/// `world::dragonfire::dragons` (one `WorldClass` with this slice) construct
+/// plain dragons: their combat action and static dragonfire are made by a
+/// combat world (docs/dragonfire.md).
+pub const STARTUP_NPC_CLASSES: [WorldClass; 10] = [
+    WorldClass::Npc(Class::Shop),
+    WorldClass::Npc(Class::Cow),
+    WorldClass::Npc(Class::Duck),
+    WorldClass::Npc(Class::Rat),
+    WorldClass::Npc(Class::Guard),
+    WorldClass::Npc(Class::Monk),
+    WorldClass::Npc(Class::HighwayMan),
+    WorldClass::Npc(Class::IceGiant),
+    WorldClass::Dragon(DragonClass::Chromatic),
+    WorldClass::Dragon(DragonClass::Metal),
 ];
 
 /// A prototype object the class scan constructed (`new ShopNPC()`): never
 /// initialised, never in the repository.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Prototype {
-    pub class: Class,
+    pub class: WorldClass,
     pub id: i32,
     pub walks: bool,
     pub aggressive: bool,
@@ -226,10 +233,10 @@ pub struct Prototypes<'a> {
 }
 impl nc::Factory for Prototypes<'_> {
     type Npc = usize;
-    type Class = Class;
+    type Class = WorldClass;
     fn new_npc(
         &mut self,
-        class: Option<Class>,
+        class: Option<WorldClass>,
         id: i32,
         _: Option<[i32; 3]>,
         _: Option<Direction>,
@@ -272,10 +279,10 @@ impl nc::Factory for Prototypes<'_> {
 /// The subclass constructors over the start-up world's canonical NPCs.
 impl nc::Factory for Init<'_> {
     type Npc = Node;
-    type Class = Class;
+    type Class = WorldClass;
     fn new_npc(
         &mut self,
-        class: Option<Class>,
+        class: Option<WorldClass>,
         id: i32,
         location: Option<[i32; 3]>,
         direction: Option<Direction>,
@@ -285,7 +292,7 @@ impl nc::Factory for Init<'_> {
         let node = npc_init::Context::base(self, id, location, direction).map_err(fail)?;
         let row = self.row_mut(node).map_err(fail)?;
         row.class = class;
-        if let Some(radius) = class.and_then(Class::walk_radius) {
+        if let Some(radius) = class.and_then(WorldClass::walk_radius) {
             row.brain.fields.write().walk_radius_override = Some(radius);
         }
         Ok(node)
@@ -715,7 +722,12 @@ impl npc_spawns::Context for Init<'_> {
         // registered classes has any).
         let binding = |e: npc_init::Error| npc_spawns::Error::Binding(e.to_string());
         npc_init::init(self, *n).map_err(binding)?;
-        match self.row(*n).map_err(binding)?.class {
+        match self
+            .row(*n)
+            .map_err(binding)?
+            .class
+            .and_then(WorldClass::npc)
+        {
             Some(Class::Shop) => nc::Factory::set_walks(self, n, true)
                 .map_err(|e| npc_spawns::Error::Binding(e.to_string())),
             Some(class @ (Class::Banker | Class::DarkWizard)) => Err(npc_spawns::Error::Binding(
