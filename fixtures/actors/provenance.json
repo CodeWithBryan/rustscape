@@ -2,6 +2,7 @@
   "cases": {
     "bas": 1831,
     "crowd": 200,
+    "crowd-live": 13,
     "hsl": 1,
     "lean": 40,
     "motion": 60,
@@ -13,7 +14,7 @@
     "ScriptRunner.java: public static void addPlayersToScene(",
     "ScriptRunner.java: public static void addNpcsToScene("
   ],
-  "fixtureSha256": "a4be94cc425bb678cdd88f9b74423f8f08b202cb63e18ed3b2ca28bb46c78e51",
+  "fixtureSha256": "f52caf080d974f4994dba303c5c5c5f8d99452bd3ec0e72e8ef2003edaac11cd",
   "format": 1,
   "inputs": {
     "main_file_cache.dat2": "b5431211b019b9403b4cfca933f4c9635c1d5278d3730995dced0d8672b1cc91",
@@ -24,7 +25,7 @@
   "seed": "20261116",
   "sourceHashAlgorithm": "sha256, CR removed for consistent LF/CRLF checkouts",
   "sources": {
-    "oracle/actors/ActorsOracle.java": "11ded13804dc361d5863c84f747602012c84fa3449bf6ffb41d24d601dab66cd",
+    "oracle/actors/ActorsOracle.java": "fb2773625132ab1f4b4e8cda4803920422f8f4ab59fb375b27767067fc351677",
     "oracle/actors/adapters/rt4/AnimFrameset.java": "dc1b31857422f3d48095b2c9570c783173f1d0c6e826640516ddfbea794dbde6",
     "oracle/actors/adapters/rt4/BasTypeList.java": "e949aedd9b1eb980a30dda4dd65753fd009f27afde6e57748a6eb49d5c8d4d3b",
     "oracle/actors/adapters/rt4/Camera.java": "e26cb198805f5dc9f50b0e673784a16a3afef4fcee91437883b1894a74629364",

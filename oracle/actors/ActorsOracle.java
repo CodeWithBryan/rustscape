@@ -604,6 +604,140 @@ public final class ActorsOracle {
 			+ "}");
 	}
 
+	// Fixed scenes as a live session has them: PlayerList.self is never in
+	// PlayerList.ids (Protocol.readNewPlayerInfo skips id 2047), so
+	// PlayerList.size counts the other players only. The own player stands
+	// on tile (50, 50). Player rows: {index, visible, size, x, y, idle};
+	// NPC rows: {index, top, size, x, y}. The lines have crowdCase's format
+	// under the case name "crowd-live".
+	private static void liveCrowdCases() {
+		int c = 50 * 128 + 64, e = 51 * 128 + 64;
+		int[][][] players = {
+			{{1, 1, 1, c, c, 1}},
+			{{1, 1, 1, c, c, 1}, {2, 1, 1, c, c, 1}, {3, 1, 1, c, c, 1}},
+			{{1, 1, 1, c, c, 1}, {2, 1, 1, e, c, 1}},
+			{{1, 1, 1, e, c, 1}, {2, 1, 1, e, c, 1}},
+			{},
+			{},
+			{{1, 1, 1, e, c, 1}},
+			{{1, 1, 1, e, c, 1}},
+			{{1, 0, 1, c, c, 1}, {2, 1, 1, c, c, 1}},
+			{{1, 1, 1, c + 32, c, 0}, {2, 1, 1, c, c, 1}},
+			{{1, 1, 3, c, c, 1}},
+			{{1, 1, 1, c, c, 1}},
+			null,
+		};
+		int[][][] npcs = {
+			{},
+			{},
+			{},
+			{},
+			{{7, 0, 1, c, c}},
+			{{7, 1, 1, c, c}},
+			{{7, 0, 1, e, c}},
+			{{7, 1, 1, e, c}},
+			{},
+			{},
+			{{7, 0, 1, e, e}},
+			{{7, 0, 1, c, c}, {8, 0, 1, c, c}, {9, 0, 1, c + 256, c}},
+			{},
+		};
+		// 55 idle others, one per tile: more than 50 listed players.
+		players[12] = new int[55][];
+		for (int i = 0; i < 55; i++) {
+			players[12][i] = new int[] {100 + i, 1, 1, (52 + i % 8) * 128 + 64, (40 + i / 8) * 128 + 64, i % 5 == 0 ? 0 : 1};
+		}
+		for (int n = 0; n < players.length; n++) liveCrowd(n, c, players[n], npcs[n]);
+	}
+
+	private static void liveCrowd(int number, int own, int[][] others, int[][] npcRows) {
+		Arrays.fill(PlayerList.players, null);
+		Arrays.fill(NpcList.npcs, null);
+		BasTypeList.types.clear();
+		SceneGraph.added.clear();
+		int loop = 1000;
+		client.loop = loop;
+		Preferences.manyIdleAnimations = false;
+		StringBuilder players = new StringBuilder("[");
+		PlayerList.size = 0;
+		int[][] rows = new int[others.length + 1][];
+		rows[0] = new int[] {2047, 1, 1, own, own, 1};
+		System.arraycopy(others, 0, rows, 1, others.length);
+		Player self = null;
+		for (int[] row : rows) {
+			int index = row[0];
+			boolean isSelf = index == 2047;
+			Player player = new Player();
+			player.setSize(row[2]);
+			player.xFine = row[3];
+			player.yFine = row[4];
+			player.movementSeqId = row[5] != 0 ? 5 : 6;
+			BasType bas = new BasType();
+			bas.idleAnimationId = 5;
+			BasTypeList.types.put(index, bas);
+			player.basTypeId = index;
+			player.attachment = null;
+			player.currentAngle = 0;
+			player.seqStretches = false;
+			player.visible = row[1] != 0;
+			PlayerList.players[index] = player;
+			if (isSelf) {
+				self = player;
+			} else {
+				PlayerList.ids[PlayerList.size++] = index;
+			}
+			if (players.length() > 1) players.append(',');
+			players.append(ints(index, isSelf ? 0 : 1, 1, row[1], row[2], row[3], row[4], player.movementSeqId, 5, 0, 0, 0, 0, 0));
+		}
+		PlayerList.self = self;
+		StringBuilder npcs = new StringBuilder("[");
+		NpcList.size = 0;
+		for (int[] row : npcRows) {
+			Npc npc = new Npc();
+			npc.type = new NpcType();
+			npc.type.toprenderpriority = row[1] != 0;
+			npc.type.multiNpcValid = true;
+			npc.type.interactive = true;
+			npc.type.size = row[2];
+			npc.setSize(row[2]);
+			npc.xFine = row[3];
+			npc.yFine = row[4];
+			npc.currentAngle = 0;
+			npc.seqStretches = false;
+			NpcList.npcs[row[0]] = npc;
+			NpcList.ids[NpcList.size++] = row[0];
+			if (npcs.length() > 1) npcs.append(',');
+			npcs.append(ints(row[0], 1, row[1], 1, 1, row[2], row[3], row[4], 0, 0));
+		}
+		int[] flag = {0, 0};
+		LoginManager.mapFlagX = flag[0];
+		LoginManager.mapFlagY = flag[1];
+		ScriptRunner.clearTileEntityCounts();
+		ScriptRunner.addPlayersToScene(true);
+		ScriptRunner.addNpcsToScene(true);
+		ScriptRunner.addPlayersToScene(false);
+		ScriptRunner.addNpcsToScene(false);
+		StringBuilder low = new StringBuilder("[");
+		for (int i = 0; i < PlayerList.size; i++) {
+			Player player = PlayerList.players[PlayerList.ids[i]];
+			if (i > 0) low.append(',');
+			low.append(player != null && player.lowDetail ? 1 : 0);
+		}
+		StringBuilder counts = new StringBuilder("[");
+		for (int x = 0; x < 104; x++) {
+			for (int y = 0; y < 104; y++) {
+				if (ScriptRunner.tileEntityCounts[x][y] == 0) continue;
+				if (counts.length() > 1) counts.append(',');
+				counts.append(ints(x, y, ScriptRunner.tileEntityCounts[x][y]));
+			}
+		}
+		line("{\"case\":\"crowd-live\",\"id\":" + number + ",\"loop\":" + loop + ",\"minimap\":false,\"flag\":" + ints(flag)
+			+ ",\"players\":" + players.append(']') + ",\"npcs\":" + npcs.append(']')
+			+ ",\"added\":" + SceneGraph.added.toString().replace(" ", "") + ",\"low\":" + low.append(']')
+			+ ",\"self_low\":" + (self.lowDetail ? 1 : 0) + ",\"flag_x\":" + LoginManager.mapFlagX + ",\"counts\":" + counts.append(']')
+			+ "}");
+	}
+
 	// ---- Projectiles -------------------------------------------------------
 
 	private static void projCase(Random rng, int number) throws Exception {
@@ -710,6 +844,7 @@ public final class ActorsOracle {
 		rng = new Random(seed + 4);
 		for (int i = 0; i < 300; i++) projCase(rng, i);
 		hslCases(new Random(seed + 5));
+		liveCrowdCases();
 		out.flush();
 		for (BufferedFile opened : OPEN) opened.close();
 	}

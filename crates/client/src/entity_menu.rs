@@ -68,6 +68,21 @@ fn contains(parent: &Actor, other: &Actor) -> bool {
 /// Preserve consecutive full-key suppression, NPC-then-player list expansion,
 /// picked-actor-last order, and repeats from distinct picks or local-list slots.
 pub fn expand(keys: &[u64], npcs: &[Actor], players: &[Actor]) -> Vec<Target> {
+    expand_with_own(keys, npcs, players, None)
+}
+
+/// `expand` when the own player's body can be picked. Its scene key names
+/// index 2047, which `MiniMenu.addEntries` reads as `PlayerList.players[2047]`
+/// (`PlayerList.self`), but `PlayerList.ids` never lists it: `own` is only
+/// looked up as the picked actor, never added as an overlapping one. So the
+/// own body brings up the entries of the actors standing on its tile, crowd
+/// thinning's left-out ones included (MiniMenu.java:1301-1323).
+pub fn expand_with_own(
+    keys: &[u64],
+    npcs: &[Actor],
+    players: &[Actor],
+    own: Option<&Actor>,
+) -> Vec<Target> {
     let mut output = Vec::new();
     let mut last = u64::MAX;
     for &picked in keys {
@@ -86,7 +101,11 @@ pub fn expand(keys: &[u64], npcs: &[Actor], players: &[Actor]) -> Vec<Target> {
             Kind::Npc => npcs,
             Kind::Player => players,
         };
-        let Some(actor) = list.iter().find(|a| a.index == index) else {
+        let Some(actor) = list
+            .iter()
+            .find(|a| a.index == index)
+            .or(own.filter(|own| kind == Kind::Player && own.index == index))
+        else {
             continue;
         };
         let aligned = match kind {

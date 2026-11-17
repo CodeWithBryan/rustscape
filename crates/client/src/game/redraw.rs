@@ -524,7 +524,7 @@ impl Game {
                         index: *index,
                         motion: live_actors.get(index)?,
                         bas: live_bas.get(index),
-                        visible: live_decoded.contains_key(index),
+                        visible: rs09_client::crowd::visible(player_state, *index),
                         size: live_forms.get(index).map_or(1, |form| form.size),
                     })
                 })
@@ -539,6 +539,7 @@ impl Game {
                 },
                 &others,
                 &mut destination_flag.tile,
+                ui_vm.preferences.many_idle_animations,
             );
         }
         let (avatar, character_shadow, self_height) = workbench.avatar_mesh(
@@ -882,6 +883,22 @@ impl Game {
                             mesh.vertices[f[2] as usize].position,
                         ]
                     })
+                    .collect(),
+            });
+        }
+        // The own body is in the scene with key 2047 << 32 and can be picked
+        // like any player; its menu lists the actors on its tile.
+        if !workbench.actor_scene.own_thinned && !avatar.vertices.is_empty() {
+            let index = rs09_protocol::game::players::SELF;
+            player_picks.push(PlayerPick {
+                index,
+                fine: motion.fine,
+                angle: motion.angle,
+                size: live_forms.get(&index).map_or(1, |form| form.size),
+                triangles: avatar
+                    .indices
+                    .chunks_exact(3)
+                    .map(|f| [0, 1, 2].map(|i| avatar.vertices[f[i] as usize].position))
                     .collect(),
             });
         }
@@ -1841,6 +1858,9 @@ impl Game {
         self.last_render_metrics = last_render_metrics;
         self.hover_menu = hover_menu;
         self.ui_nodes = ui_nodes;
+        // The decoded appearances outlive the frame: the packets, the menu and
+        // the next frame read them again.
+        self.live_decoded = live_decoded;
         self.input_camera = Some(input_camera);
         self.render_profile_started = render_profile_started;
         true

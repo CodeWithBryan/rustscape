@@ -91,11 +91,13 @@ impl Workbench {
     /// one `applyBodyLean` per actor. `others` are the local players in list
     /// order. `flag` is the minimap destination flag in scene tiles, whose x
     /// the original zeroes when the own player stands on it.
+    /// `many_idle_animations` is `Preferences.manyIdleAnimations`.
     pub(super) fn plan_actors(
         &mut self,
         own: PlayerView<'_>,
         others: &[PlayerView<'_>],
         flag: &mut [i32; 2],
+        many_idle_animations: bool,
     ) {
         let origin = self.navigation.origin;
         let local = |fine: [i32; 2]| [fine[0] - origin[0] * 128, fine[1] - origin[1] * 128];
@@ -112,9 +114,8 @@ impl Workbench {
             // Attached models (the original's `attachment`) are not ported.
             attached: false,
         };
-        // The original lists the own player (index 2047) first.
-        let mut players = vec![Some(player(&own))];
-        players.extend(others.iter().map(|view| Some(player(view))));
+        // `PlayerList.ids` never holds the own player (`crowd::live_frame`).
+        let players: Vec<_> = others.iter().map(|view| Some(player(view))).collect();
         for view in std::iter::once(&own).chain(others) {
             if let Some(bas) = view.bas {
                 scene.advance_lean((false, view.index), view.motion, bas);
@@ -139,22 +140,13 @@ impl Workbench {
             }
         }
         scene.axes.retain(|actor, _| seen.contains(actor));
-        let frame = crowd::frame(&crowd::Scene {
-            own: players[0].unwrap(),
-            own_listed: Some(0),
-            players: &players,
-            npcs: &npcs,
-            player_count: players.len() as i32,
-            many_idle_animations: false,
-            minimap_only: false,
-            flag: *flag,
-        });
+        let frame = crowd::live_frame(player(&own), &players, &npcs, many_idle_animations, *flag);
         flag[0] = frame.flag_x;
         scene.own_thinned = own.visible && !frame.inserted.iter().any(|i| i.who == crowd::Who::Own);
         scene.thinned_players = others
             .iter()
             .enumerate()
-            .filter(|(position, view)| view.visible && !frame.draws_player(position + 1))
+            .filter(|(position, view)| view.visible && !frame.draws_player(*position))
             .map(|(_, view)| view.index)
             .collect();
         scene.thinned_npcs = self
@@ -168,16 +160,17 @@ impl Workbench {
             .inserted
             .iter()
             .map(|inserted| match inserted.who {
-                crowd::Who::Own | crowd::Who::Player(0) => (false, own.index),
-                crowd::Who::Player(position) => (false, others[position - 1].index),
+                crowd::Who::Own => (false, own.index),
+                crowd::Who::Player(position) => (false, others[position].index),
                 crowd::Who::Npc(position) => (true, self.npcs[position].index),
             })
             .collect();
-        scene.low_detail = std::iter::once(&own)
-            .chain(others)
+        scene.low_detail = others
+            .iter()
             .zip(&frame.low_detail)
             .filter(|(_, low)| **low)
             .map(|(view, _)| view.index)
+            .chain(frame.own_low_detail.then_some(own.index))
             .collect();
         scene
             .heights

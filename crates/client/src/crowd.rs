@@ -44,8 +44,9 @@ pub struct Npc {
 pub struct Scene<'a> {
     /// `PlayerList.self`.
     pub own: Player,
-    /// Position in `players` of the own player (index 2047), which the
-    /// original lists first; that entry is the same object as `own`.
+    /// Position in `players` of the own player (index 2047) when it is
+    /// listed; that entry is the same object as `own`. A live session never
+    /// lists it (see `live_frame`); the JVM oracle's scenes sometimes do.
     pub own_listed: Option<usize>,
     pub players: &'a [Option<Player>],
     pub npcs: &'a [Option<Npc>],
@@ -275,6 +276,42 @@ pub fn frame(scene: &Scene<'_>) -> Frame {
         }
     }
     out
+}
+
+/// `Player.isVisible()` (`appearance != null`) of a player in the update
+/// state. The decoded appearance stays with the player from frame to frame
+/// until the player leaves (`Protocol.readNewPlayerInfo` also restores it
+/// from `PlayerList.appearanceCache` for a returning player), so this does
+/// not depend on an appearance block arriving in the current packet.
+pub fn visible(state: &rs09_protocol::game::players::State, index: usize) -> bool {
+    state
+        .players
+        .get(index)
+        .and_then(Option::as_ref)
+        .is_some_and(|player| player.appearance.is_some())
+}
+
+/// `renderGameScene` lines 208–215 for a live session. The own player is
+/// never in `PlayerList.ids` (`Protocol.readNewPlayerInfo` skips id 2047), so
+/// it is inserted by the self pass only, the list pass sees `others` (in list
+/// order) and `PlayerList.size` counts them alone.
+pub fn live_frame(
+    own: Player,
+    others: &[Option<Player>],
+    npcs: &[Option<Npc>],
+    many_idle_animations: bool,
+    flag: [i32; 2],
+) -> Frame {
+    frame(&Scene {
+        own,
+        own_listed: None,
+        players: others,
+        npcs,
+        player_count: others.len() as i32,
+        many_idle_animations,
+        minimap_only: false,
+        flag,
+    })
 }
 
 impl Frame {

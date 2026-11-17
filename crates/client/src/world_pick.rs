@@ -810,7 +810,8 @@ impl Picker {
                     self.min_y.push(top);
                 }
             } else {
-                // The local player has no pick mesh in `players`.
+                // The local player's pick mesh is in `players` as index 2047
+                // when it was drawn.
                 let Some((index, player)) = players
                     .iter()
                     .enumerate()

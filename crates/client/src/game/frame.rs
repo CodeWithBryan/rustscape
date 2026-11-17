@@ -1580,7 +1580,16 @@ impl Game {
                     })
                     .collect::<Vec<_>>();
                 let actor_keys = step.actor_keys();
-                for target in entity_menu::expand(&actor_keys, &menu_npcs, &menu_players) {
+                let own = MenuActor {
+                    index: rs09_protocol::game::players::SELF,
+                    fine: motion.fine,
+                    size: live_forms
+                        .get(&rs09_protocol::game::players::SELF)
+                        .map_or(1, |form| form.size),
+                };
+                for target in
+                    entity_menu::expand_with_own(&actor_keys, &menu_npcs, &menu_players, Some(&own))
+                {
                     if target.kind == MenuKind::Npc {
                         let Some(npc) = workbench.npcs.iter().find(|npc| npc.index == target.index)
                         else {

@@ -35,7 +35,7 @@ this tree on 2026-11-16:
 | `materials-oracle` | `tests/materials.rs`, `tests/underwater.rs` | the two noise volumes and the liquid table; `UnderwaterMaterialRenderer`, `WaterMaterialRenderer`, `MaterialManager` and `GlTile` against a recording GL | 4 tables, 11 traces |
 | `picking-oracle` | `tests/picking.rs` | copied `GlModel.render` hover test and bounds, the walk-tile test, the frustum map, `renderTile` order, location keys | 11,102 |
 | `ui-fidelity-oracle` | `tests/ui_fidelity.rs` | `InterfaceList` hook walk, layout and drag start over staged trees; number parsing; kerned widths; count-text sprites | 865 |
-| `actors-oracle` | `tests/actors_oracle.rs` | `BasType`, `NpcList`, `PathingEntity`, `ProjAnim`, `ColorUtils`; copied crowd-thinning methods | 2,432 |
+| `actors-oracle` | `tests/actors_oracle.rs`, `tests/crowd_live.rs` | `BasType`, `NpcList`, `PathingEntity`, `ProjAnim`, `ColorUtils`; copied crowd-thinning methods, also over fixed live-session scenes | 2,445 |
 | `loc-oracle` | `tests/loc_placement.rs` | `LocType`, `LocTypeList`, `GlModel`, `RawModel`: all definitions, GL models by shape and rotation, hill skew, `getMultiLoc` | 5,205 |
 | `lighting-oracle` | `tests/lighting_oracle.rs` | `LightingManager`, `LightMesh`, `ShadowManager`; copied `buildGlLighting` | 104 |
 | `display-oracle` | `tests/display.rs` | `DisplayMode` over recording adapters | 600 cases, 5,410 steps |
@@ -183,6 +183,25 @@ player in the kitchen (the original 0.77 / 0.85 / 0.92) and 0.73 / 0.82 /
 0.90 for an NPC on the courtyard path (the original 0.74 / 0.83 / 0.91, both
 clients on one server), each against the same client with its shadows off;
 the wall below the player matches the original within 1%.
+
+That run also found that, with both clients on one server and both players
+on one tile, this client drew both players and both shadows where the
+original drew one. The crowd rule was right; its input was not: the drawn
+frame took the decoded appearances (`Game.live_decoded`) and never gave them
+back, so after the first frame following a player update every other player
+counted as having no appearance, and was neither counted on its tile nor
+left out. (By the code, the same loss also left other players' menu
+entries, minimap dots and head icons without an appearance between updates,
+and made every update re-assemble every body; these were not compared one by
+one.)
+A fourth run (2026-11-17, pairs `v5-A*` and `v5-B*`, both clients and up to
+two more of this client on one server) compared after the fix: two, three
+and two-plus-two players on one or two tiles, two NPCs on the own tile, a
+player on an NPC's tile, overhead chat of a left-out player (drawn by both,
+4 pixels higher when never drawn, in both) and the menu of the own body,
+which this client could not pick before (`v5-B5`) and now lists the same
+entries in the same order (`v5-B7`). `v5-B0` is the build before the fix
+next to the original: two overlapping bodies against one.
 
 ## Start-up and cache download
 
@@ -714,6 +733,25 @@ traces; the shader, pass order, depth biases and pack path by captures only.
 Verified by `actors-oracle` for BAS decoding and movement, lean, crowd
 planning, projectile flights and `rgbToHsl`. Hint arrows have transcription
 tests only; the shadow choice and the previous-body fallback have none.
+
+Crowd thinning in a live session (`crowd::live_frame`, fed by
+`Workbench::plan_actors` every drawn frame). The own player is never in
+`PlayerList.ids` (`Protocol.readNewPlayerInfo` skips id 2047), so only the
+self pass inserts it, and `PlayerList.size` counts the other players alone;
+a player counts as visible when the update state holds its decoded
+appearance (`Player.isVisible`, `crowd::visible`), whether or not this
+frame's packet carried one. Players and NPCs left out are not drawn, cast no
+shadow and cannot be picked, but keep their overheads (`drawOverheads` loops
+over every visible actor; one never drawn uses the height 200). The own body
+can be picked (key `2047 << 32`) and, like any picked player standing on a
+tile centre, brings up the entries of the actors on its tile, the left-out
+ones included (`entity_menu::expand_with_own`, `MiniMenu.java` 1301-1323).
+Verified by the `crowd-live` scenes of `actors-oracle` (other players on the
+own tile, more than two, the next tile, NPCs and top-priority NPCs on either
+tile, a player without an appearance, one walking through, a size-3 player,
+55 idle players), by transcription tests in `tests/crowd_live.rs` (update
+state to thinning; the own body's menu expansion) and by frame pairs against
+the original (Verification scope item 5).
 
 NPC and other types the server names. The original reads every type on
 demand (`NpcTypeList.get`, `NpcTypeList.java` 25-38, and its siblings) and
