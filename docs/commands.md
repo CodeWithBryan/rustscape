@@ -26,8 +26,10 @@ not installed (world/live is another slice's).
 | `AbuseReport`, `Rule.forId`, the `REPORT_ABUSE` decoder and branch | `world::abuse_report` |
 
 The registry holds typed bodies. A `NativeBody` (the 24 commands of the four
-ported sets that survive registration) runs in `commands::run`; every other
-command (178 of the 202 the boot registers) is a `Body::Content` naming its
+ported sets that survive registration, and the 57 of MiscCommandSet,
+SpawnCommandSet and StatsCommandSet, `NativeBody::Set`, run through
+`Host::sets`: docs/command-sets.md) runs in `commands::run`; every other
+command (121 of the 202 the boot registers) is a `Body::Content` naming its
 class and handler lambda, run by the required service
 `Host::content_command`. Dispatch goes through the registry as the original's
 does; no name is matched outside it. `Command::origin` (the
@@ -121,8 +123,9 @@ three.
   `register_all` takes that answer as an input (`pinned_boot_active` is the
   world-trace boot's: inactive).
 - The remaining sets are registered with their exact names, privileges,
-  usages and descriptions, but their bodies are content services: Spawn,
-  Stats, Misc, Animation, Music (AudioCommandSet), Botting, Camera,
+  usages and descriptions, but their bodies are content services (Spawn,
+  Stats and Misc are native: docs/command-sets.md): Animation, Music
+  (AudioCommandSet), Botting, Camera,
   CameraViewer, Config, Development, Fun, If, ModelViewer, Quest, Slayer,
   MimeTestCommands and the commands of ShootingStarPlugin, ImplingController,
   LunarListeners, BloatedToadListeners, ElementalWorkshopQuest,

@@ -12,6 +12,7 @@
 //! [`NativeBody`] runs natively; every other one is a [`ContentBody`] the
 //! host runs. fixtures/commands/registry.json is what the original's boot
 //! leaves; the commands test compares the native result with it.
+use super::sets::{SetBody, misc, spawn};
 use super::{Body, Command, ContentBody, LegacySet, NativeBody, Privilege, Registry};
 use crate::startup::scan;
 
@@ -1064,7 +1065,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Toggles debug mode.",
                 lambda: 1,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Debug))),
             },
             Define {
                 name: "calcaccuracy",
@@ -1072,7 +1073,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::calcaccuracy <lt>NPC ID<gt>",
                 description: "Calculates and prints your current chance to hit a given NPC.",
                 lambda: 2,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::CalcAccuracy))),
             },
             Define {
                 name: "anmacs",
@@ -1080,7 +1081,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Starts the AnmaCutscene sequence for testing.",
                 lambda: 3,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::AnmaCs))),
             },
             Define {
                 name: "setsaveversion",
@@ -1088,7 +1089,9 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::setsaveversion <lt>version<gt>",
                 description: "Overrides your save version to <lt>version<gt> so migration logic can run.",
                 lambda: 4,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(
+                    misc::Command::SetSaveVersion,
+                ))),
             },
             Define {
                 name: "loc",
@@ -1096,7 +1099,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Prints quite a lot of information about your current location.",
                 lambda: 5,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Loc))),
             },
             Define {
                 name: "pos",
@@ -1104,7 +1107,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "",
                 lambda: 6,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Pos))),
             },
             Define {
                 name: "coords",
@@ -1112,7 +1115,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "",
                 lambda: 7,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Coords))),
             },
             Define {
                 name: "calcmaxhit",
@@ -1120,7 +1123,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Calculates and prints your current maximum hit.",
                 lambda: 8,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::CalcMaxHit))),
             },
             Define {
                 name: "calcdefence",
@@ -1128,7 +1131,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::calcdefence <lt>NPC ID<gt> <lt>opt: swing handler<gt>",
                 description: "Calculates and prints your current raw defence values for Melee, Ranged and Magic against a given NPC. Supply a swing handler to specify what calculation is done.",
                 lambda: 9,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::CalcDefence))),
             },
             Define {
                 name: "empty",
@@ -1136,7 +1139,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Empties/clears your inventory.",
                 lambda: 10,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Empty))),
             },
             Define {
                 name: "announce",
@@ -1144,7 +1147,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::announce <lt>String<gt>",
                 description: "Sends the given string as a News message.",
                 lambda: 11,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Announce))),
             },
             Define {
                 name: "players",
@@ -1152,7 +1155,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Lists the online players.",
                 lambda: 12,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Players))),
             },
             Define {
                 name: "botinfo",
@@ -1160,7 +1163,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::botinfo <lt>botname<gt>",
                 description: "Prints debug information about a bot",
                 lambda: 13,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::BotInfo))),
             },
             Define {
                 name: "shop",
@@ -1168,7 +1171,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Opens the credit shop.",
                 lambda: 14,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Shop))),
             },
             Define {
                 name: "ge",
@@ -1176,7 +1179,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::ge <lt>MODE<gt> (Modes: buying, selling, search, bots, botsearch, mute)",
                 description: "Various commands for viewing GE offers.",
                 lambda: 15,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Ge))),
             },
             Define {
                 name: "commands",
@@ -1184,7 +1187,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::commands <lt>page<gt>",
                 description: "Lists all the commands (you are here.)",
                 lambda: 16,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Commands))),
             },
             Define {
                 name: "commandsearch",
@@ -1192,7 +1195,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::commandsearch <lt>search term<gt> [--chat]",
                 description: "Searches for commands containing the given term.",
                 lambda: 17,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::CommandSearch))),
             },
             Define {
                 name: "reply",
@@ -1200,7 +1203,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Opens a reply prompt to your last DM. Same as pressing tab.",
                 lambda: 18,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Reply))),
             },
             Define {
                 name: "xface",
@@ -1208,7 +1211,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Closes the currently opened interface/dialogue.",
                 lambda: 19,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::XFace))),
             },
             Define {
                 name: "completediaries",
@@ -1216,7 +1219,9 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Completes all diaries.",
                 lambda: 20,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(
+                    misc::Command::CompleteDiaries,
+                ))),
             },
             Define {
                 name: "permadeath",
@@ -1224,7 +1229,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::permadeath <lt>PLAYER<gt>",
                 description: "Permadeaths PLAYER (self if omitted), completely wiping their save.",
                 lambda: 21,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Permadeath))),
             },
             Define {
                 name: "log",
@@ -1232,7 +1237,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Adds your current coordinates to the location log buffer.",
                 lambda: 22,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Log))),
             },
             Define {
                 name: "logdone",
@@ -1240,7 +1245,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Copies the queued location log to your clipboard and clears it.",
                 lambda: 23,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::LogDone))),
             },
             Define {
                 name: "rolltrawlerloot",
@@ -1248,7 +1253,9 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::rolltrawlerloot <lt>ROLL COUNT<gt>",
                 description: "Rolls some trawler loot.",
                 lambda: 24,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(
+                    misc::Command::RollTrawlerLoot,
+                ))),
             },
             Define {
                 name: "fillbank",
@@ -1256,7 +1263,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Fills your bank with sequential item IDs.",
                 lambda: 25,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::FillBank))),
             },
             Define {
                 name: "emptybank",
@@ -1264,7 +1271,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Clears your bank contents.",
                 lambda: 26,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::EmptyBank))),
             },
             Define {
                 name: "setconfig",
@@ -1272,7 +1279,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::setconfig <lt>config-id<gt> <lt>value<gt>",
                 description: "DEPRECATED: use ::setvarp or ::setvarbit. Sets the raw varp <lt>config-id<gt> to <lt>value<gt>.",
                 lambda: 27,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::SetConfig))),
             },
             Define {
                 name: "getobjectvarp",
@@ -1280,7 +1287,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::getobjectvarp <lt>object-id<gt>",
                 description: "Looks up which varp controls the state of <lt>object-id<gt>.",
                 lambda: 28,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::GetObjectVarp))),
             },
             Define {
                 name: "define_varbit",
@@ -1288,7 +1295,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::define_varbit <varbit-id>",
                 description: "Prints detailed information about <varbit-id>.",
                 lambda: 29,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::DefineVarbit))),
             },
             Define {
                 name: "setvarbit",
@@ -1296,7 +1303,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::setvarbit <lt>varbit-id<gt> <lt>value<gt>",
                 description: "Sets <lt>varbit-id<gt> to <lt>value<gt> for your player.",
                 lambda: 30,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::SetVarbit))),
             },
             Define {
                 name: "setvarbits",
@@ -1304,7 +1311,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::setvarbits <lt>FROM VARBIT ID<gt> <lt>TO VARBIT ID<gt> <lt>VALUE<gt>",
                 description: "",
                 lambda: 31,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::SetVarbits))),
             },
             Define {
                 name: "getvarbit",
@@ -1312,7 +1319,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::getvarbit <lt>VARBIT ID<gt>",
                 description: "Prints the current value of <lt>VARBIT ID<gt>.",
                 lambda: 32,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::GetVarbit))),
             },
             Define {
                 name: "setvarp",
@@ -1320,7 +1327,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::setvarp <lt>VARP ID<gt> <lt>BIT OFFSET<gt> <lt>VALUE<gt>",
                 description: "Sets the value starting at the BIT OFFSET of the varp.",
                 lambda: 33,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::SetVarp))),
             },
             Define {
                 name: "setvarc",
@@ -1328,7 +1335,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::setvarc <lt>VARC ID<gt> <lt>VALUE<gt>",
                 description: "",
                 lambda: 34,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::SetVarc))),
             },
             Define {
                 name: "grow",
@@ -1336,7 +1343,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Grows all planted crops by 1 stage.",
                 lambda: 35,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Grow))),
             },
             Define {
                 name: "finishbins",
@@ -1344,7 +1351,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Finishes any in-progress compost bins.",
                 lambda: 36,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::FinishBins))),
             },
             Define {
                 name: "resetbins",
@@ -1352,7 +1359,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Resets the player's compost bins to their initial states.",
                 lambda: 37,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::ResetBins))),
             },
             Define {
                 name: "diseasecrops",
@@ -1360,7 +1367,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Disease all crops",
                 lambda: 38,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::DiseaseCrops))),
             },
             Define {
                 name: "addcredits",
@@ -1368,7 +1375,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Adds 100 ::shop credits to your account.",
                 lambda: 39,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::AddCredits))),
             },
             Define {
                 name: "getnpcparent",
@@ -1376,7 +1383,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::getnpcparent <lt>npc-id<gt>",
                 description: "Finds the parent NPC whose child list includes <lt>npc-id<gt>.",
                 lambda: 40,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::GetNpcParent))),
             },
             Define {
                 name: "infinitespecial",
@@ -1384,7 +1391,9 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::infinitespecial [true|false]",
                 description: "Toggles infinite special attack energy for your player (special-attack flag).",
                 lambda: 41,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(
+                    misc::Command::InfiniteSpecial,
+                ))),
             },
             Define {
                 name: "infinitespecialmove",
@@ -1392,7 +1401,9 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::infinitespecialmove [true|false]",
                 description: "Toggles infinite Summoning familiar special move points for your player.",
                 lambda: 42,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(
+                    misc::Command::InfiniteSpecialMove,
+                ))),
             },
             Define {
                 name: "allowaggro",
@@ -1400,7 +1411,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::allowaggro [true|false]",
                 description: "Toggles NPCs aggroing on you as an admin.",
                 lambda: 43,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::AllowAggro))),
             },
             Define {
                 name: "rules",
@@ -1408,7 +1419,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "Shows the rules.",
                 lambda: 44,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Rules))),
             },
             Define {
                 name: "confirmrules",
@@ -1416,7 +1427,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "",
                 description: "",
                 lambda: 45,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::ConfirmRules))),
             },
             Define {
                 name: "setplayerstrong",
@@ -1424,7 +1435,9 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "setplayerstrong <lt>0-4<gt>",
                 description: "Set the player progress through the Stronghold of Player Safety test.",
                 lambda: 46,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(
+                    misc::Command::SetPlayerStrong,
+                ))),
             },
             Define {
                 name: "setplaqueread",
@@ -1432,7 +1445,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "setplaqueread <lt>true/false<gt>",
                 description: "Set the plaques in the player safety stronghold to read or not read.",
                 lambda: 47,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::SetPlaqueRead))),
             },
             Define {
                 name: "brewkit",
@@ -1440,7 +1453,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "brewkit <lt>0-10<gt>",
                 description: "Give yourself everything you need to brew ales.",
                 lambda: 48,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::BrewKit))),
             },
             Define {
                 name: "brew",
@@ -1448,7 +1461,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "brew <lt>mode<gt>",
                 description: "0: force natural step, 1: force good step without maturity, 2: force good step with maturity, 3: force bad step",
                 lambda: 49,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Misc(misc::Command::Brew))),
             },
         ],
     },
@@ -1688,7 +1701,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::npc <lt>npc-id<gt> [amount] [iswalks]",
                 description: "Spawns one or more NPCs at your location, optionally letting them walk.",
                 lambda: 1,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Spawn(spawn::Command::Npc))),
             },
             Define {
                 name: "item",
@@ -1696,7 +1709,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::item <lt>item-id<gt> [amount]",
                 description: "Spawns the specified item stack into your inventory.",
                 lambda: 2,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Spawn(spawn::Command::Item))),
             },
             Define {
                 name: "items",
@@ -1704,7 +1717,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::items <lt>start-id<gt> <lt>end-id<gt> [amount]",
                 description: "Loops through item ids from 'start-id' to 'end-id' and spawns 'amount' of them in your inventory.",
                 lambda: 3,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Spawn(spawn::Command::Items))),
             },
             Define {
                 name: "object",
@@ -1712,7 +1725,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::object <lt>object-id<gt> [type] [rotation]",
                 description: "Spawns an object at your tile with optional type and rotation.",
                 lambda: 4,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Spawn(spawn::Command::Object))),
             },
             Define {
                 name: "objectgrid",
@@ -1720,7 +1733,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::objectgrid <lt>start-id<gt> <lt>end-id<gt> <lt>type<gt> <lt>rotation<gt>",
                 description: "Spawns a 10-wide grid cycling through the given object id range.",
                 lambda: 5,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Spawn(spawn::Command::ObjectGrid))),
             },
             Define {
                 name: "removeobject",
@@ -1728,7 +1741,9 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::removeobject",
                 description: "Removes the first scenery at your current coordinates (the meaning of 'the first' is currently arbitrary, do not use this in production)",
                 lambda: 6,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Spawn(
+                    spawn::Command::RemoveObject,
+                ))),
             },
             Define {
                 name: "objects",
@@ -1736,7 +1751,7 @@ pub const DEFINERS: &[Definer] = &[
                 usage: "::objects",
                 description: "Prints a list of all ten sceneries at your current coordinates",
                 lambda: 7,
-                native: None,
+                native: Some(NativeBody::Set(SetBody::Spawn(spawn::Command::Objects))),
             },
         ],
     },
@@ -1749,7 +1764,7 @@ pub const DEFINERS: &[Definer] = &[
             usage: "::stats [player-name]",
             description: "Opens the statistics book for you or the specified player.",
             lambda: 1,
-            native: None,
+            native: Some(NativeBody::Set(SetBody::Stats)),
         }],
     },
     Definer {

@@ -15,6 +15,7 @@
 //! | `SystemCommandSet` | [`system`] |
 //! | `TeleportCommandSet` | [`teleport`] |
 //! | `PlayerAttributeCommandSet` | [`attributes`] |
+//! | `MiscCommandSet`, `SpawnCommandSet`, `StatsCommandSet` | [`sets`] |
 //! | the pulses, tasks, input handlers and coroutine they submit | [`deferred`] |
 //!
 //! The registry holds typed bodies: a [`NativeBody`] is run by this module,
@@ -30,6 +31,7 @@ pub mod deferred;
 pub mod kotlin;
 pub mod moderation;
 pub mod registration;
+pub mod sets;
 pub mod system;
 pub mod teleport;
 
@@ -288,6 +290,8 @@ pub enum NativeBody {
     Home,
     GetAttribute,
     SetAttribute,
+    /// A body of the Misc, Spawn or Stats set ([`sets`]).
+    Set(sets::SetBody),
 }
 
 /// `core.game.system.command.Command`.
@@ -609,6 +613,10 @@ pub trait Host {
     fn charged_for_charge(&mut self, id: i32, charge: i32) -> Result<i32>;
     /// `ChargedItem.getCharge(id)` (`null` is `None`).
     fn charged_charge(&mut self, id: i32) -> Result<Option<i32>>;
+
+    /// The same world as the command sets' host ([`sets::Host`]), for the
+    /// bodies of the Misc, Spawn and Stats sets.
+    fn sets(&mut self) -> Result<&mut dyn sets::Host<Player = Self::Player>>;
 }
 
 /// `colorize(line)` (`core.tools.Globals`).
@@ -810,9 +818,8 @@ pub fn attempt_handling<H: Host + ?Sized>(
             && rights(host, player)?.ordinal() >= command.privilege.ordinal());
     let is_dev = host.dev_mode() == Some(true);
     let is_cheater = host.i_am_a_cheater();
-    let _ = registry;
     if has_rights || is_dev || is_cheater {
-        run(host, command.body, player, args)
+        run(host, registry, command.body, player, args)
     } else if host.player_commands() || arg(args, 0)? == "bank" {
         host.send_chat(player, SILLY)
     } else {
@@ -824,6 +831,7 @@ pub fn attempt_handling<H: Host + ?Sized>(
 /// check (as `csvmodcr` and `AbuseReport` call it through the registry).
 pub fn run<H: Host + ?Sized>(
     host: &mut H,
+    registry: &Registry,
     body: Body,
     player: &H::Player,
     args: &[String],
@@ -859,6 +867,7 @@ pub fn run<H: Host + ?Sized>(
         Home => teleport::home(host, player),
         GetAttribute => attributes::get(host, player, args),
         SetAttribute => attributes::set(host, player, args),
+        Set(body) => sets::run(host.sets()?, registry, body, player, args),
     }
 }
 

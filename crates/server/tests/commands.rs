@@ -673,6 +673,13 @@ impl commands::Host for World {
             .filter(|v| !v.is_null())
             .map(|v| int(&v)))
     }
+    fn sets(&mut self) -> commands::Result<&mut dyn commands::sets::Host<Player = P>> {
+        // This corpus registers only the four sets above; the Misc, Spawn
+        // and Stats bodies are replayed by tests/command_sets.rs.
+        Err(commands::Error::Binding(Some(
+            "the command sets are not part of this corpus".into(),
+        )))
+    }
 }
 
 impl abuse_report::Host for World {
@@ -1164,14 +1171,18 @@ fn ported_bodies_are_the_ported_sets() {
                     "core.game.system.command.sets.SystemCommandSet",
                     "core.game.system.command.sets.TeleportCommandSet",
                     "core.game.system.command.sets.PlayerAttributeCommandSet",
+                    "core.game.system.command.sets.MiscCommandSet",
+                    "core.game.system.command.sets.SpawnCommandSet",
+                    "core.game.system.command.sets.StatsCommandSet",
                 ]
                 .contains(&command.origin.class)
             );
         }
     }
     // Moderation 7 (its getattribute is registered over), System 10,
-    // Teleport 5, PlayerAttribute 2.
-    assert_eq!(native, 24);
+    // Teleport 5, PlayerAttribute 2; Misc 49, Spawn 7 and Stats 1
+    // (tests/command_sets.rs).
+    assert_eq!(native, 81);
     // An active EasterEvent adds its one command.
     let easter = registration::register_all(&|class| class.ends_with("EasterEvent"));
     assert_eq!(easter.len(), registry.len() + 1);

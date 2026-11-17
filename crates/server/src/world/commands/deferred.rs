@@ -219,7 +219,13 @@ pub fn run_job<H: Host + ?Sized>(
                 let amount = kotlin_trim(super::kotlin::split_get(&tokens, 1)?).to_owned();
                 if let Some(command) = registry.get("modcr") {
                     let body: Body = command.body;
-                    run(host, body, player, &[String::new(), username, amount])?;
+                    run(
+                        host,
+                        registry,
+                        body,
+                        player,
+                        &[String::new(), username, amount],
+                    )?;
                 }
             }
             Ok(())

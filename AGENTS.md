@@ -333,6 +333,35 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   commands::accounts. The decoders run at dispatch (dispatch.rs keeps the
   payload undecoded): see docs/commands.md for that and the other pinned
   differences. Nothing installs the libraries in the live world.
+- For the Misc, Spawn and Stats command sets, the system manager or their
+  packet writers (world/commands/sets: MiscCommandSet, SpawnCommandSet,
+  StatsCommandSet with its book display; world/system_manager:
+  SystemManager, SystemUpdate, SystemTermination, SystemShutdownHook,
+  SystemConfig; world/command_packets: SystemUpdatePacket, CameraViewPacket,
+  CSConfigPacket, UpdateAreaPosition, AnimateObjectPacket), run `cargo test
+  -p rs09-server --test command_sets --test commands` and `cargo xtask
+  command-sets-oracle --check` with Python/JDK 11, plus commands-oracle and
+  the tick_driver, teleport, skills, inventory, social and world_login
+  suites. Preserve the 691 cases (156 designed, 535 injected failures) and
+  the five writers' bytes. Keep: GameAttributes' key rules in the host
+  ("/save:" stripped on set and get, removal raw, a stored null answering
+  the default), ContentAPI's removeAttribute strip but not Entity's; every
+  repeated read (::loc's object lookups and varbit chain, the clue array per
+  line, the item-definition size per id); calcdefence's lower-cased check
+  against the raw key; BigDecimal UP rounding of Double.toString and its
+  NumberFormatException for an infinite chance; the page index read before
+  the reject checks; the scroll's 311 strings; the stable name sort over
+  Java HashMap order; the renumbered static objects; the shared loc-log
+  list; the clipboard's HeadlessException; flag setting the state before
+  handling it; ServerStore saving last; notifyPlayers' single catch; the
+  updater's own Pulse.update catch; the clock-bounded save loop. Every
+  outside call is a required Host service with no default; ::update and
+  ::cancelupdate join the native manager through commands::Host, and a
+  world answers ::shutdown's exit_process by running the shutdown hook.
+  getItemName is an unrecorded definition read. Quest, Slayer and the
+  development sets, MapDumpCommand, oldsys, rottenpotato and DisplayModel
+  are not ported; nothing installs these libraries in the live world. See
+  docs/command-sets.md.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790
