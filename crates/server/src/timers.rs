@@ -5,6 +5,7 @@ use crate::definitions::{
     item_config::json::{self, Json},
 };
 use serde::{Deserialize, Serialize};
+pub mod content;
 pub mod registry;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -31,6 +32,9 @@ pub struct Timer {
     pub persistent: bool,
     pub last_execution: i32,
     pub next_execution: i32,
+    /// A concrete timer class's own fields (content::State), created on
+    /// first use; None for a timer whose class keeps no fields here.
+    pub content: Option<Box<dyn std::any::Any + Send + Sync>>,
 }
 impl Timer {
     pub fn new(interval: i32, identifier: String, class_name: String, persistent: bool) -> Self {
@@ -44,6 +48,7 @@ impl Timer {
             persistent,
             last_execution: 0,
             next_execution: 0,
+            content: None,
         }
     }
 }

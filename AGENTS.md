@@ -151,6 +151,24 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   content services. world_login joins these libraries to the canonical
   player (only the quest tab stays replayed); nothing installs them in a
   live session. See docs/player-tabs.md.
+- For the engine timers (timers/content: SkillRestore, Poison, PoisonImmunity,
+  Disease, Frozen, FrozenImmunity, Teleblock, Skulled, HealOverTime, Miasmic,
+  MiasmicImmunity, DragonFireImmunity, SpellbookSwap, AntiMacro's timer and the
+  ContentAPI spawn/getOrStart/hasTimerActive/applyPoison/curePoison glue), run
+  `cargo test -p rs09-server --test content_timers` and `cargo xtask
+  content-timers-oracle --check` with Python/JDK 11, plus the timers,
+  timer_registry, core_data, player_save, player_state, canonical_player and
+  prayer suites. Preserve the 2,311 cases. Keep Miasmic's 100-tick immunity
+  (the entity is getTimer's first argument), Poison's post-decrement damage,
+  lateinit source failures and numeric source-uid, applyPoison's order, the
+  second Disease removing itself, Frozen's boolean-only applyImmunity, the
+  double Skulled reset, SkillRestore's increment-before-compare counters and
+  its fixed 51-tick special energy (varp written at 100), SpellbookSwap's
+  null book failure before the dispatch and AntiMacro's draw order. Timer
+  fields live on the timer (Timer::content); hooks, dispatch, logout
+  listeners and every other outside call are required Host services with no
+  default; skills and special energy are native. The command, random event
+  content and every session binding are not ported. See docs/content-timers.md.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790
