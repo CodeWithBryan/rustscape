@@ -47,6 +47,9 @@ pub struct State {
     pub zone: [i32; 2],
     pub effects: Vec<Effect>,
     pub projectiles: Vec<crate::projectile::Flight>,
+    /// Spot ids received whose definition or sequence was not to be had;
+    /// the caller takes and reports them.
+    pub unavailable: Vec<i32>,
 }
 #[derive(Clone, Copy)]
 pub struct Context {
@@ -145,11 +148,16 @@ impl State {
         let fine = tile.map(|n| n * 128 + 64);
         // Original height is captured once, before the definition/sequence query.
         let z = height(plane, fine).wrapping_sub(offset);
-        let sequence = *spots
-            .get(&id)
-            .ok_or(Error::new(0, "World spot definition unavailable"))?;
+        // SpotAnimTypeList.get always answers. A definition or sequence this
+        // client does not have (prepared packs without a cache) places
+        // nothing; the caller reports it and the session goes on.
+        let Some(&sequence) = spots.get(&id) else {
+            self.unavailable.push(id);
+            return Ok(true);
+        };
         if sequence != -1 && !sequences.contains_key(&(sequence as u32)) {
-            return Err(Error::new(0, "World spot sequence unavailable"));
+            self.unavailable.push(id);
+            return Ok(true);
         }
         self.effects.push(Effect {
             id,

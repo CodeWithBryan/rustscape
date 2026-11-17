@@ -174,10 +174,7 @@ impl Game {
                                     base[1] + rebuild.local_y,
                                 ]);
                                 if let Some(raw) = motion_appearances.get(&SELF) {
-                                    let size = rs09_client::player_form::size(
-                                        raw,
-                                        &workbench.npc_definitions,
-                                    )?;
+                                    let size = workbench.player_size(raw, live_diagnostics);
                                     motion.fine = motion.head.map(|n| {
                                         n.wrapping_mul(128).wrapping_add(size.wrapping_mul(64))
                                     });
@@ -257,15 +254,10 @@ impl Game {
                                     }
                                     WireMove::Teleport { tile, discard, .. } => {
                                         let dest = [base[0] + tile[0], base[1] + tile[1]];
-                                        let size = motion_appearances.get(&index).map_or(
-                                            Ok(1),
-                                            |raw| {
-                                                rs09_client::player_form::size(
-                                                    raw,
-                                                    &workbench.npc_definitions,
-                                                )
-                                            },
-                                        )?;
+                                        let size =
+                                            motion_appearances.get(&index).map_or(1, |raw| {
+                                                workbench.player_size(raw, live_diagnostics)
+                                            });
                                         actor.teleport_actor(
                                             dest,
                                             discard,
@@ -281,12 +273,12 @@ impl Game {
                                             actor.target_angle = angle;
                                             motion_appearances.remove(&index);
                                             if let Some(raw) = appearance_cache.get(&index) {
-                                                rs09_client::player_form::appearance_position(
+                                                workbench.player_appearance_position(
                                                     actor,
                                                     None,
                                                     raw,
-                                                    &workbench.npc_definitions,
-                                                )?;
+                                                    live_diagnostics,
+                                                );
                                                 motion_appearances.insert(index, raw.clone());
                                             }
                                         }
@@ -393,12 +385,12 @@ impl Game {
                                                 live_actors.get_mut(&extended.index)
                                             };
                                             if let Some(actor) = actor {
-                                                rs09_client::player_form::appearance_position(
+                                                workbench.player_appearance_position(
                                                     actor,
                                                     motion_appearances.get(&extended.index),
                                                     &appearance,
-                                                    &workbench.npc_definitions,
-                                                )?;
+                                                    live_diagnostics,
+                                                );
                                             }
                                             motion_appearances
                                                 .insert(extended.index, appearance.clone());
@@ -573,6 +565,7 @@ impl Game {
                                         }
                                     }
                                 }
+                                workbench.ensure_look_types([appearance], live_diagnostics);
                                 let visual: Result<_, String> = (|| {
                                     let name = format!("bas/{}", appearance.bas);
                                     let bas = PlayerBas::decode(
@@ -704,6 +697,13 @@ impl Game {
                                     ui.as_mut(),
                                     ui_time as i32,
                                 )?;
+                            for message in workbench.take_spot_notes() {
+                                if live_diagnostics.len() < 32
+                                    && !live_diagnostics.contains(&message)
+                                {
+                                    live_diagnostics.push(message);
+                                }
+                            }
                             // SOUND_AREA and the half-tile projectiles, on their
                             // own or as children of the zone envelope, which
                             // has set the zone origin they are relative to.
@@ -770,13 +770,11 @@ impl Game {
                                         {
                                             note(error.to_string());
                                         }
-                                        let size =
-                                            motion_appearances.get(&SELF).map_or(Ok(1), |raw| {
-                                                rs09_client::player_form::size(
-                                                    raw,
-                                                    &workbench.npc_definitions,
-                                                )
-                                            })?;
+                                        let mut notes = Vec::new();
+                                        let size = motion_appearances.get(&SELF).map_or(1, |raw| {
+                                            workbench.player_size(raw, &mut notes)
+                                        });
+                                        notes.into_iter().for_each(&mut note);
                                         // PathingEntity.teleport: placed, not walked.
                                         if jump
                                             || (base[0] + x - motion.head[0]).abs() > 8

@@ -112,8 +112,9 @@ run against the same example server (`npc_session --gameframe`, one instance
 each with the same arguments and `--spawn`, so neither sees the other's
 player), with the same preference bytes (window mode, brightness, lighting
 detail). The Rust client runs with `--pack <missing file>` (the cache-built
-scene; the default `assets/visual/demo.pack` drops the session when an NPC
-outside its catalog appears). Each pair is taken at the same camera: the Rust
+scene; at the time the default `assets/visual/demo.pack` dropped the session
+when an NPC outside its catalog appeared, which "NPC and other types the
+server names" under Actors has since fixed). Each pair is taken at the same camera: the Rust
 client writes the pose it draws with when a file `pose` appears in its
 `RS09_FRAME_DUMP` folder (`crates/client/src/game/pose_dump.rs`, native only,
 inert without the variable and the request), and the driver holds the
@@ -167,13 +168,57 @@ connect, provider and stage sequence against a scripted socket; the
 `rs09-server` in which a fresh directory matched the pinned cache group for
 group and the unchanged Java `Cache`/`Js5` read it back identically.
 
-Differences: the client waits for the whole download, because it reads a
-finished store; the original opens its login screen after the start-up
-sequence and fetches the rest in the background. The download draws its own
-bar in macroquad's default font; of `mainLoad`'s stages only the world list
-shows on the original bar. A bad block marker or an over-long reply is an
-immediate I/O error, and an oversize cache file is an error instead of being
-deleted.
+What `client.mainLoad` waits for before its login screen (`client.java`
+1385-1688): every archive index (state 40); the font, title and fifteen
+named sprite groups of archive 8 and the font groups of 13 (50, 60, 80);
+archives 2, 16-22, 24, 25 and 27 whole (70, `fetchAll`); 26 whole (90); the
+`runes` group of 8 (100); the `huffman` group of 10 (120); 3, 12 and 13 whole
+and the `details` group of 23 (130); the world list (135). Everything else
+(frames 0, bases 1, sounds 4, maps 5, models 7, the rest of 8, textures 9,
+jingles 11, instruments 15, the rest of 23) is prefetched in the background
+and read on demand, `Js5.fetchFile`/`isFileReady` answering null until a
+group is in; songs (6) and Vorbis samples (14) are only fetched on demand.
+
+The client now does the same (the start gate): the bar goes once the
+start-up sequence has finished and `cache_update::start_archives()` are
+whole, every prefetched archive except `DEFERRED_AT_START` (0, 1, 4, 5, 7,
+11 and 15), which keep arriving behind the title. So beyond the original it
+also holds 8, 9, 10 and 23 whole before its title, because some reader of
+them cannot answer "not yet" (sprites and textures are read synchronously).
+After the gate the update's own store is read live (`Store::live_recording`;
+on the desktop `rs09_client::cache_live` stands in for the cache directory),
+and a group read before it has arrived is recorded and asked for at urgent
+priority on the next cycle, as `Js5.fetchGroup` does. The readers of the
+deferred archives wait for it: map streaming builds the scene again until it
+read nothing still missing (`world_cache::build_when_present`, the original
+`LoginManager` waits for its files the same way), the starting scene built
+from the cache likewise (`cache_update_screen::when_present`, the browser's
+`cache_host::world_pack`), NPC and spot bodies, changed locations, interface
+models and animation frames are asked for again on later cycles, a queued
+sound effect stays queued (`ui_audio`), and the music player takes the group
+as not there yet. `--update-whole-cache` keeps the old behaviour (wait for
+everything) and `--update-original-pace` reads the update connection once a
+cycle, as the original does, instead of in between too.
+
+Measured on localhost against `npc_session`, launch to the title (game
+state 10) with an empty cache directory: at the original pace 137.2 s
+waiting for the whole cache (`--update-whole-cache`) against 18.1 s with the
+gate (open at 14.7 s, 10,984 of 68,499 groups verified, title scene built
+0.8 s later from groups fetched on demand); with the default fast reading
+8.7 s before (the previous client) against 7.1 s (everything arrives in about
+4 s on localhost anyway). Logged in at the original pace, the session was in
+game in the kitchen with the cook drawn while maps and models were still
+arriving. In Chromium (`?update=`, live world, first visit, the previous
+build against this one on the same server): the cache bar went at 23.1 s
+against 6.6 s (25,980 of 67,337 background groups verified), the title menu
+was up at about 25 s against about 16 s and its 3D scene by about 28 s
+against about 18 s (screenshots every 2 s); a login then drew the kitchen and
+the cook.
+
+Differences: the download draws its own bar in macroquad's default font; of
+`mainLoad`'s stages only the world list shows on the original bar. A bad
+block marker or an over-long reply is an immediate I/O error, and an
+oversize cache file is an error instead of being deleted.
 
 ## Title screen and login
 
@@ -624,6 +669,51 @@ Verified by `actors-oracle` for BAS decoding and movement, lean, crowd
 planning, projectile flights and `rgbToHsl`. Hint arrows have transcription
 tests only; the shadow choice and the previous-body fallback have none.
 
+NPC and other types the server names. The original reads every type on
+demand (`NpcTypeList.get`, `NpcTypeList.java` 25-38, and its siblings) and
+never meets one it does not have: an id without a file keeps the type's
+defaults. The client follows one rule (`rs09_client::on_demand::find`): a
+held definition; else, with a cache open (`--cache`, the browser's
+downloaded cache), the file read from it, the defaults when the archive has
+no such file, or "not yet" while its group is arriving; else, prepared packs
+only, the defaults when the pack's catalog says it is complete; otherwise
+the type is not in hand: the entity stays in its update state, nothing is
+drawn for it, one diagnostic per id is said (also on standard error), and
+the session goes on. Where it is applied:
+
+- NPC types, with the types a morph may become (`npc_types.rs`): the update
+  decoder's size, BAS, turn speed and area sound, the NPC views, the bodies
+  (models from the cache too). Before, an NPC outside the prepared catalog
+  ended the session ("NPC definition absent from prepared catalog").
+- Players shown as an NPC (appearance `npcId`): the type is read the same
+  way; one not to be had leaves the position unadjusted (size 1) instead of
+  ending the session.
+- Spot animations: with a cache open the whole archive 21 is read when the
+  cache is attached (as the original holds it after start-up) and their
+  models come from the cache; a world spot (SPOTANIM_SPECIFIC) whose type or
+  sequence a prepared pack lacks places nothing and is reported once, instead
+  of ending the session.
+- Locations added by the server (LOC_ADD_CHANGE): a type without a file has
+  the defaults; one or a model still arriving is asked for again until the
+  change can be applied. Before, a type missing from the cache ended the
+  session.
+- Sequences: `cancel_on_move` with a sequence not to be had acts as the
+  default type (`movetype` -1, `SeqType.java` 39) instead of failing the NPC
+  or player update.
+- Items already followed the rule (`ObjTypeList` defaults); BAS and kits for
+  players come from the cache-backed interface pack or the world pack and a
+  failure there was already a diagnostic.
+
+Verified live against `npc_session --world-npcs` with the default
+`demo.pack` (evidence in the stream's `npcpack-evidence` folder): with
+`--cache` in the kitchen, the courtyard and Draynor the session stays in game
+for 45-50 s with NPCs drawn and walking (the courtyard's rats, imp, man and
+woman, the Draynor bankers); without a cache in the courtyard it stays in
+game, draws the NPCs `demo.pack` has and reports the eight types it lacks
+once each. The previous client dropped back to the title within seconds of
+the kitchen login. Tests: `on_demand` (the rule and the morph walk against a
+cache double), transcription tests citing the Java lines above.
+
 Earlier work (player and NPC bodies, animation, spot effects, overheads,
 ground items, sound effects and ambience) is described, with its corpora, in
 [visual-client.md](visual-client.md) and
@@ -914,11 +1004,12 @@ as before.
 What differs from the original:
 
 - The cache is in memory, about 92 MB when complete, as well as in IndexedDB.
-- The game starts only when every archive the original prefetches in the
-  background has arrived (everything but songs and Vorbis samples, which are
-  fetched on demand as in the original). The original opens its login screen
-  after the start-up sequence and lets a scene wait for what is missing; this
-  client's scene and interface code reads packs with no "not yet" answer.
+- The game starts once the start-up sequence has run and the start archives
+  are whole (see "Start-up and cache download"); maps, models, animations,
+  sound effects, jingles and instruments arrive behind it, and the starting
+  scene, the title scene and later scenes wait for the groups they need,
+  which are asked for as they are met. Until 2026-11-17 it started only
+  once every prefetched archive had arrived (about 35 s on localhost).
 - The world map is not offered in the browser (it needs a system typeface),
   and offline the starting scene has locations only for regions whose keys
   the page serves as `assets/visual/xteas.json`.
@@ -1082,8 +1173,13 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
   capture.
 ### Start-up, cache and login
 
-- (a)(d) The client waits for the whole cache download before it shows the
-  title, on the desktop and in the browser.
+- (b)(d) The client opens its title once the start-up sequence has run and
+  the start archives are whole (see "Start-up and cache download"); beyond
+  the original it also waits for archives 8, 9, 10 and 23 whole (about 2,400
+  groups), because sprites and textures are read with no "not yet" answer.
+  Interface models, animation frames and item icons met before their group
+  arrives are drawn missing for those frames (each retries every cycle); the
+  original draws nothing for them either until `isFileReady`.
 - (a) Account creation was never clicked through, and the Rust server has no
   create opcodes (147, 186 and 36 disconnect; the client then reports reply
   -1, as the original does at end of stream).
@@ -1495,7 +1591,9 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
 
 What was run, and how, is under "The browser build as run".
 
-- (a)(d) Start waits for the whole background download (above).
+- (b)(d) Start waits for the start archives only (see "Start-up and cache
+  download"); the rest arrives behind the title, with a few extra network
+  passes per frame (3 ms) beyond the original's one read window a cycle.
 - (a) Never run: browsers other than Chromium, a real high-DPI display, a
   slow or failing network, refused storage quota, a hidden tab, a logout
   sent by the server, account creation.

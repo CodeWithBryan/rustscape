@@ -192,9 +192,15 @@ impl Effects {
             if self.sounds.contains_key(&key) || self.failed.contains(&key) {
                 continue;
             }
+            let before = rs09_cache::store::misses_on_this_thread();
             let effect = pack
                 .get(&format!("sound/{}", key[0]))
                 .and_then(|b| SoundEffect::decode_for_queue(b).map_err(|e| e.to_string()));
+            if effect.is_err() && rs09_cache::store::misses_on_this_thread() != before {
+                // Still arriving from the update server: asked for, and
+                // tried again while the sound is queued.
+                continue;
+            }
             match effect {
                 Ok((effect, start)) => {
                     #[cfg(any(target_os = "windows", target_arch = "wasm32"))]

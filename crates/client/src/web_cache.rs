@@ -265,6 +265,10 @@ pub struct WebCache {
     pub on_demand_arrived: BTreeSet<(u8, u32)>,
     last_flush_ms: u64,
     error: Option<String>,
+    /// Groups readers of [`Self::store`] met before they arrived.
+    misses: rs09_cache::store::Misses,
+    /// Of those, the ones asked for and not in yet.
+    wanted: BTreeSet<(u8, u32)>,
 }
 impl WebCache {
     /// `store` is the restored store or an empty one; `blobs` where it is
@@ -301,6 +305,8 @@ impl WebCache {
             on_demand_arrived: BTreeSet::new(),
             last_flush_ms: 0,
             error: None,
+            misses: Default::default(),
+            wanted: BTreeSet::new(),
         }
     }
     /// One client cycle (20 ms): the original's update-server loop, resource
@@ -308,6 +314,11 @@ impl WebCache {
     /// has no thread of its own here.
     pub fn cycle(&mut self, now_ms: u64) -> Result<(), UpdateError> {
         let result = self.updater.cycle(now_ms);
+        // Groups read before they had arrived are asked for, urgently.
+        self.wanted.extend(self.misses.take());
+        let mut wanted = std::mem::take(&mut self.wanted);
+        self.updater.serve(&mut wanted);
+        self.wanted = wanted;
         self.updater.flush_store();
         if let Err(error) = &result {
             self.error = Some(error.to_string());
@@ -330,6 +341,16 @@ impl WebCache {
     pub fn ready(&self) -> bool {
         self.updater.settled()
     }
+    /// The start-up sequence has finished and the start archives
+    /// ([`Updater::set_start_archives`]) are whole: the client may open its
+    /// title while the rest arrives.
+    pub fn start_ready(&self) -> bool {
+        self.updater.start_ready()
+    }
+    /// Groups asked for on a reader's behalf that have not arrived yet.
+    pub fn wanted(&self) -> usize {
+        self.wanted.len()
+    }
     pub fn snapshot(&self) -> Snapshot {
         self.updater.snapshot()
     }
@@ -348,7 +369,11 @@ impl WebCache {
     }
     /// A reading view of the store as it is now and as it fills.
     pub fn store(&self) -> Store {
-        Store::live(Arc::clone(&self.store), Limits::default())
+        Store::live_recording(
+            Arc::clone(&self.store),
+            Limits::default(),
+            self.misses.clone(),
+        )
     }
     /// `Js5.isGroupReady`: whether a group can be read from the store. One
     /// that is not there is asked of the server at urgent priority; call
@@ -421,6 +446,8 @@ impl WebCache {
             "percentage": snapshot.percentage,
             "loaded": snapshot.loaded,
             "ready": self.ready(),
+            "start_ready": self.start_ready(),
+            "wanted": self.wanted.len(),
             "connected": snapshot.connected,
             "errors": snapshot.errors,
             "response": snapshot.response,
@@ -895,6 +922,78 @@ mod tests {
         again.run();
         assert!(again.cache.group_ready(6, 5));
         assert_eq!(again.server.requested, [(255, 255, true)]);
+    }
+
+    #[test]
+    fn a_group_read_before_it_arrived_is_asked_for_at_once() {
+        // `Js5.fetchFile` on a group the store lacks asks for it (urgent) and
+        // answers null meanwhile; a reader of the live view does the same.
+        let mut rig = Rig::new(server(), empty(), None);
+        rig.run();
+        rig.server.reset_counters();
+        let view = rig.cache.store();
+        assert_eq!(view.read(6, 5).unwrap(), None);
+        assert_eq!(rig.cache.wanted(), 0, "asked for at the next cycle");
+        let mut cycles = 0;
+        while view.read(6, 5).unwrap().is_none() {
+            rig.cycle();
+            cycles += 1;
+            assert!(cycles < 1000);
+        }
+        assert_eq!(rig.server.requested, [(6, 5, true)]);
+        let stored = view.read(6, 5).unwrap().unwrap();
+        assert_eq!(stored[..stored.len() - 2], rig.server.group_container(6, 5));
+        rig.cycle();
+        assert_eq!(rig.cache.wanted(), 0);
+        // A group the index does not list is never asked for.
+        assert_eq!(view.read(6, 3).unwrap(), None);
+        for _ in 0..5 {
+            rig.cycle();
+        }
+        assert_eq!(rig.server.requested.len(), 1);
+        assert_eq!(rig.cache.wanted(), 0);
+    }
+
+    #[test]
+    fn the_title_may_open_before_the_deferred_archives_are_in() {
+        // Maps with as many groups as the start archives together have.
+        let mut server = server();
+        let maps: Vec<_> = (0..3000).map(|id| (id, payload(id, 30), 1)).collect();
+        server.add_archive(5, 105, &maps);
+        let mut rig = Rig::new(server, empty(), None);
+        rig.cache
+            .updater
+            .set_start_archives(crate::cache_update::start_archives());
+        let mut cycles = 0;
+        while !rig.cache.start_ready() {
+            rig.cycle();
+            cycles += 1;
+            assert!(cycles < 50_000, "{}", rig.cache.status());
+        }
+        assert!(rig.cache.updater.loaded());
+        let master = rig.cache.updater.master().unwrap();
+        // Every group of every start archive is in the store ...
+        let view = rig.cache.store();
+        for archive in crate::cache_update::start_archives() {
+            let index = view.read(255, archive as u32).unwrap().unwrap();
+            let index = Index::decode(&index, None, Limits::default()).unwrap();
+            for group in &index.groups {
+                assert!(view.read(archive as u8, group.id).unwrap().is_some());
+            }
+        }
+        // ... while the deferred archives are still arriving.
+        let progress = rig.cache.progress();
+        assert!(progress.verified < progress.groups, "{progress:?}");
+        assert!(
+            crate::cache_update::DEFERRED_AT_START
+                .iter()
+                .any(|&archive| master.provider(archive as u8).unwrap().busy())
+        );
+        assert!(!rig.cache.ready());
+        // The download goes on to the end behind the title.
+        rig.run();
+        let progress = rig.cache.progress();
+        assert_eq!(progress.groups, progress.verified);
     }
 
     #[test]

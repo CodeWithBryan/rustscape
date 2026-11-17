@@ -38,6 +38,9 @@ pub struct CacheSource {
 
 impl CacheSource {
     pub fn open(directory: &Path) -> Result<Self, String> {
+        if let Some(store) = crate::cache_live::store_for(directory) {
+            return Self::from_store(store);
+        }
         let limits = Limits::default();
         let store = Store::open(directory, StorageMode::File, limits).map_err(|e| e.to_string())?;
         Self::from_store(store)
@@ -94,8 +97,9 @@ impl CacheSource {
                 return Ok(None);
             }
         }
-        archive
-            .file(group, file, [0; 4])
+        // A group an update has not delivered yet is "not there yet" too
+        // (it is asked for; `crate::on_demand::arriving`).
+        crate::on_demand::arriving(|| archive.file(group, file, [0; 4]))
             .map(|bytes| bytes.map(|bytes| bytes.to_vec()))
             .map_err(|e| e.to_string())
     }

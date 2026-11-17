@@ -30,8 +30,11 @@ impl CacheAssets {
     pub fn open_on_demand(directory: &Path) -> Result<Self, String> {
         use rs09_cache::store::{StorageMode, Store};
         let limits = rs09_cache::Limits::default();
-        let store = Store::open(directory, StorageMode::File, limits)
-            .map_err(|e| format!("{}: {e}", directory.display()))?;
+        let store = match crate::cache_live::store_for(directory) {
+            Some(store) => store,
+            None => Store::open(directory, StorageMode::File, limits)
+                .map_err(|e| format!("{}: {e}", directory.display()))?,
+        };
         Self::from_archives(|id| {
             Archive::open(store.clone(), id, None, limits).map_err(|e| format!("archive {id}: {e}"))
         })

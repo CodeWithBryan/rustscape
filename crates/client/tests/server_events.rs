@@ -333,6 +333,24 @@ const SOURCES: &[(&str, &str)] = &[
         "ShadowManager.java",
         "45c51ce9bc09a12b90c193f9498ddf3ce319abde12272bd4ce2c67c773ddff3f",
     ),
+    // Types read on demand and their defaults (`on_demand`, `npc_types`,
+    // `actor_motion::cancel_on_move`), and the start gate (`cache_update`).
+    (
+        "NpcTypeList.java",
+        "d13defd9ad8f5e80503c173af4a17aec734139ba51065b09329a93458c359666",
+    ),
+    (
+        "SeqType.java",
+        "2c0cbbae8b719619385474532fb999a6aec21052a2c99cd29af86232c3a64cb3",
+    ),
+    (
+        "SeqTypeList.java",
+        "f94b75d4c2de791d3a30cdc3147e4954ca839f849d85dbc256d419c1a775adb5",
+    ),
+    (
+        "Js5.java",
+        "b6c3449c5138544397539b9e052bb742be9fbdf3db34356d1f129036b786e07e",
+    ),
 ];
 
 #[test]

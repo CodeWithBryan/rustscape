@@ -1115,6 +1115,8 @@ impl Game {
                 .iter()
                 .filter_map(|&index| {
                     let npc = live_npcs.actors.get(&index)?;
+                    // A type not to be had stays in the update state only.
+                    workbench.npc_definitions.get(&(npc.type_id as u32))?;
                     workbench
                         .npc_bases
                         .contains_key(&npc.metadata.bas)

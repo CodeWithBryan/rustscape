@@ -76,6 +76,10 @@ pub struct Source {
 }
 impl Source {
     pub fn open(directory: &Path) -> Result<Self, String> {
+        // A directory an update is still filling is read as it fills.
+        if let Some(store) = crate::cache_live::store_for(directory) {
+            return Ok(Self::from_store(store));
+        }
         let limits = Limits::default();
         let store = Store::open(directory, StorageMode::Resident, limits)
             .map_err(|e| format!("{}: {e}", directory.display()))?;

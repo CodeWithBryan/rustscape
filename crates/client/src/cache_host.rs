@@ -56,6 +56,8 @@ const DATABASE: &str = "rs09-cache-530";
 const DATA_RESERVE: usize = rs09_cache::disk::DATA_MAX_LENGTH as usize;
 /// Work on the cache per drawn frame while the bar is up, in seconds.
 const LOADING_BUDGET: f64 = 0.010;
+/// The same once the client runs, per frame.
+const RUNNING_BUDGET: f64 = 0.003;
 
 thread_local! {
     static CACHE: RefCell<Option<Arc<Mutex<WebCache>>>> = const { RefCell::new(None) };
@@ -260,6 +262,11 @@ pub async fn start() {
     };
     let opener = StreamOpener::new(move |port| WsPort::open(&format!("{prefix}:{port}{path}")));
     let mut cache = WebCache::new(Box::new(opener), port, store, blobs);
+    // The client opens its title once these are whole (and the start-up
+    // sequence has run); maps, models and animations arrive behind it.
+    cache
+        .updater
+        .set_start_archives(rs09_client::cache_update::start_archives());
     // `Math.random()` for the update connection's XOR key.
     let mut seed = (miniquad::date::now() * 1000.0) as u64 | 1;
     cache.updater.set_random(Box::new(move || {
@@ -301,7 +308,7 @@ pub async fn start() {
             }
         }
         cache.mirror(now, 2000, false);
-        if frames % 10 == 0 || result.is_err() || cache.ready() {
+        if frames % 10 == 0 || result.is_err() || cache.start_ready() {
             publish("loading", cache.status());
         }
         frames += 1;
@@ -311,14 +318,16 @@ pub async fn start() {
             fail(&format!("Error connecting to server: {error}")).await;
             return;
         }
-        if cache.ready() {
+        if cache.start_ready() {
             break;
         }
         bar(&cache.snapshot(), Some(&cache), None);
         next_frame().await;
     }
     cache.mirror(now_ms(), 0, true);
-    publish("ready", cache.status());
+    let mut status = cache.status();
+    status["start_ms"] = now_ms().into();
+    publish("ready", status);
     NEXT_CYCLE.with(|next| next.set(now_ms()));
     CACHE.with(|slot| *slot.borrow_mut() = Some(Arc::new(Mutex::new(cache))));
 }
@@ -362,6 +371,17 @@ pub fn cycle() {
         next = now;
     }
     NEXT_CYCLE.with(|slot| slot.set(next));
+    // Beyond the original, as while the bar was up: a few more passes while
+    // there is something to read, so that the groups the title and the
+    // scene wait for (and the rest behind them) are not held to one read
+    // window per 20 ms. Bounded so that a frame keeps its time.
+    let started = miniquad::date::now();
+    while miniquad::date::now() - started < RUNNING_BUDGET {
+        let before = cache.updater.connection.queue.bytes_received;
+        if cache.io_pass(now).is_err() || cache.updater.connection.queue.bytes_received == before {
+            break;
+        }
+    }
     cache.mirror(now, 5000, false);
     let frames = FRAMES.with(|frames| {
         frames.set(frames.get().wrapping_add(1));
@@ -412,7 +432,27 @@ pub async fn world_pack() -> Result<Pack, String> {
         lenient: true,
         ..Options::default()
     };
-    let built = world_pack_from(&source, &inputs, &options, &server_commit().await)?;
+    let commit = server_commit().await;
+    // The starting scene's maps and models may still be arriving: built
+    // again until it read nothing that was not there (each group it missed
+    // is asked for at once), behind the loading box.
+    let waiting = Snapshot {
+        percentage: 100,
+        text: "Loading - please wait.".into(),
+        ..Snapshot::default()
+    };
+    let built = loop {
+        let before = rs09_cache::store::misses_on_this_thread();
+        let built = world_pack_from(&source, &inputs, &options, &commit);
+        if rs09_cache::store::misses_on_this_thread() == before {
+            break built?;
+        }
+        for _ in 0..10 {
+            cycle();
+            bar(&waiting, None, None);
+            next_frame().await;
+        }
+    };
     for note in &built.notes {
         macroquad::logging::info!("Starting scene: {}", note);
     }

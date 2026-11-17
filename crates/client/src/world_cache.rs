@@ -12,7 +12,7 @@ use rs09_client::{
     floor::{Overlay, Underlay},
     interaction::LocationType,
     model::Model,
-    npc,
+    npc, on_demand,
     terrain::Region,
     walking::ClippingDefinition,
     world::{self, Location, Slot},
@@ -62,6 +62,7 @@ pub struct Cache {
     frames: Archive,
     bases: Archive,
     npcs: Archive,
+    spots: Archive,
     spawns: BTreeMap<Tile, BTreeSet<u32>>,
 }
 
@@ -99,6 +100,9 @@ fn authored_types() -> Result<BTreeMap<Tile, BTreeSet<u32>>, String> {
 impl Cache {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn open(path: &Path) -> Result<Self, String> {
+        if let Some(store) = rs09_client::cache_live::store_for(path) {
+            return Self::from_store(store);
+        }
         let limits = Limits::default();
         let store = Store::open(path, StorageMode::File, limits).map_err(|e| e.to_string())?;
         Self::from_store(store)
@@ -117,19 +121,20 @@ impl Cache {
             sequences: archive(20)?,
             frames: archive(0)?,
             bases: archive(1)?,
+            spots: archive(21)?,
             spawns: authored_types()?,
         })
     }
+    /// A group still being downloaded reads as absent; the build that met
+    /// it is done again (`build_when_present`).
     fn read(archive: &Archive, group: u32, file: u32) -> Result<Option<File>, String> {
-        archive.file(group, file, [0; 4]).map_err(|e| e.to_string())
+        on_demand::arriving(|| archive.file(group, file, [0; 4])).map_err(|e| e.to_string())
     }
     fn map(&self, name: String, key: Key) -> Result<Option<File>, String> {
         let Some(id) = self.maps.index.group_by_ascii_name(&name) else {
             return Ok(None);
         };
-        self.maps
-            .file(id, 0, key)
-            .map_err(|e| format!("{name}: {e}"))
+        on_demand::arriving(|| self.maps.file(id, 0, key)).map_err(|e| format!("{name}: {e}"))
     }
     /// Whether the map archive has a group of this name (`n39_44`, ...).
     pub fn has_map(&self, name: &str) -> bool {
@@ -146,8 +151,46 @@ impl Cache {
             .map(|raw| npc::Definition::decode(&raw).map_err(|e| format!("npc/{id}: {e}")))
             .transpose()
     }
+    /// `NpcTypeList.get`'s read, telling a file the archive lacks from one
+    /// whose group has not arrived yet (`rs09_client::on_demand`).
+    pub fn npc_file(&self, id: u32) -> Result<on_demand::Read<npc::Definition>, String> {
+        use on_demand::Read;
+        let read = on_demand::classify(self.npcs.file(id >> 7, id & 127, [0; 4]))
+            .map_err(|e| format!("npc/{id}: {e}"))?;
+        Ok(match read {
+            Read::File(raw) => {
+                Read::File(npc::Definition::decode(&raw).map_err(|e| format!("npc/{id}: {e}"))?)
+            }
+            Read::NoFile => Read::NoFile,
+            Read::NotYet => Read::NotYet,
+        })
+    }
+    /// Every spot animation file (archive 21, `SpotAnimTypeList`), by id.
+    /// The archive is one of the config archives the start-up sequence
+    /// holds whole before the title (`client.mainLoad` state 70).
+    pub fn spot_files(&self) -> Result<Vec<(u32, File)>, String> {
+        let mut files = Vec::new();
+        for info in &self.spots.index.groups {
+            let Some(group) = self
+                .spots
+                .group(info.id, [0; 4])
+                .map_err(|e| format!("spot group {}: {e}", info.id))?
+            else {
+                continue;
+            };
+            for (file, data) in group.iter() {
+                files.push(((info.id << 8) + file, Arc::new(data.to_vec())));
+            }
+        }
+        Ok(files)
+    }
     pub fn location(&self, id: u32) -> Result<Option<File>, String> {
         Self::read(&self.locations, id >> 8, id & 255)
+    }
+    /// `LocTypeList.get`'s read (`rs09_client::on_demand`).
+    pub fn location_file(&self, id: u32) -> Result<on_demand::Read<File>, String> {
+        on_demand::classify(self.locations.file(id >> 8, id & 255, [0; 4]))
+            .map_err(|e| format!("loc/{id}: {e}"))
     }
     pub fn model(&self, id: u32) -> Result<Option<Model>, String> {
         Self::read(&self.models, id, 0)?
@@ -597,6 +640,26 @@ fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepared, S
     })
 }
 
+/// A build that met a group still being downloaded (`Store::live_recording`
+/// has asked for it): it is built again a little later, as the original's
+/// `LoginManager` waits for its map and model files.
+pub const NOT_YET: &str = "the scene's files are still arriving";
+
+/// [`build`], answering [`NOT_YET`] when it read any group that had not
+/// arrived (its result would lack what is still on its way).
+fn build_when_present(
+    cache: &Cache,
+    request: Request,
+    assets: &Assets,
+) -> Result<Prepared, String> {
+    let before = rs09_cache::store::misses_on_this_thread();
+    let result = build(cache, request, assets);
+    if rs09_cache::store::misses_on_this_thread() != before {
+        return Err(NOT_YET.into());
+    }
+    result
+}
+
 fn add_models(
     cache: &Cache,
     models: &mut BTreeMap<u32, Model>,
@@ -772,6 +835,8 @@ pub struct WorldMap {
     light_textures: Option<[Texture2D; 2]>,
     retired: Vec<super::Chunk>,
     failed: Option<Tile>,
+    /// A build met files still arriving: no new one before this time.
+    not_yet_until: Option<Instant>,
     previous: Option<Tile>,
     direction: Tile,
     switches: u32,
@@ -799,6 +864,8 @@ impl WorldMap {
         let cache = Arc::new(cache);
         let (underlays, overlays) = super::scene_floors(&world.pack)?;
         let stream = Stream::new(cache.clone(), keys, &world.textures, underlays, overlays)?;
+        // Spot animation types are read from the cache from now on.
+        world.attach_spot_catalog(&cache)?;
         world.world_cache = Some(cache);
         let side = 192 * 16;
         // The two large shadow textures are allocated during login and reused.
@@ -817,6 +884,7 @@ impl WorldMap {
             previous: None,
             direction: [0; 2],
             failed: None,
+            not_yet_until: None,
             switches: 0,
             max_frame_ms: 0.0,
             last_switch_ms: 0.0,
@@ -964,6 +1032,10 @@ impl WorldMap {
                         self.last_work = "discard";
                     }
                 }
+                // Asked for again shortly; the groups it met are on their way.
+                Err(error) if error == NOT_YET => {
+                    self.not_yet_until = Some(Instant::now() + Duration::from_millis(250));
+                }
                 Err(error) => {
                     self.failed = Some(target);
                     return Err(error);
@@ -1042,7 +1114,14 @@ impl WorldMap {
                 break;
             }
         }
-        if self.staged.is_none() && self.active != Some(target) && self.failed != Some(target) {
+        if self.staged.is_none()
+            && self.active != Some(target)
+            && self.failed != Some(target)
+            && self
+                .not_yet_until
+                .is_none_or(|until| Instant::now() >= until)
+        {
+            self.not_yet_until = None;
             self.stream
                 .request(target, world.navigation.origin, corrected_lights);
         }
@@ -1456,7 +1535,10 @@ impl Stream {
                 while let Ok(job) = jobs.recv() {
                     match job {
                         WorkerJob::Build(request) => {
-                            if output.send(build(&cache, request, &assets)).is_err() {
+                            if output
+                                .send(build_when_present(&cache, request, &assets))
+                                .is_err()
+                            {
                                 break;
                             }
                         }
@@ -1474,7 +1556,10 @@ impl Stream {
             while let Ok(job) = jobs.try_recv() {
                 match job {
                     WorkerJob::Build(request) => {
-                        if output.send(build(&cache, request, &assets)).is_err() {
+                        if output
+                            .send(build_when_present(&cache, request, &assets))
+                            .is_err()
+                        {
                             break;
                         }
                     }

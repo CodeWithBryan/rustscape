@@ -277,9 +277,10 @@ impl Title {
         self.decode_npcs(&mut scene, cycle);
         self.phase = Phase::Shown;
         eprintln!(
-            "Game state 28 -> 10: title scene built in {:.2} s, {} NPCs",
+            "Game state 28 -> 10: title scene built in {:.2} s, {} NPCs ({:.2} s after launch)",
             macroquad::time::get_time() - self.began,
-            scene.npcs.local_ids.len()
+            scene.npcs.local_ids.len(),
+            macroquad::time::get_time()
         );
     }
 

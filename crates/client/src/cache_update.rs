@@ -53,6 +53,26 @@ pub const PREFETCH_ALL: [bool; ARCHIVE_COUNT] = [
     true, true, true, true, true, true, false, true, true, true, true, true, true, true, false,
     true, true, true, true, true, true, true, true, true, true, true, true, true,
 ];
+/// Not in the original: the archives this client reads only where "not yet"
+/// is an answer it handles (scene streaming and the starting scene wait for
+/// their groups, NPC and spot bodies and changed locations are asked for
+/// again, interface models and animations retry each cycle, queued sounds
+/// and music wait), so it may open its title before they are complete:
+/// animation frames (0) and bases (1), sound effects (4), maps (5), models
+/// (7), jingles (11) and instruments (15). Every other archive the original
+/// prefetches is still held whole before the title ([`start_archives`]),
+/// because some reader of it would fail on a group that has not arrived.
+pub const DEFERRED_AT_START: [usize; 7] = [0, 1, 4, 5, 7, 11, 15];
+/// The archives the client holds whole before its title opens: every one
+/// the original prefetches ([`PREFETCH_ALL`]) except [`DEFERRED_AT_START`].
+/// The original's own start-up sequence already waits for 2, 3, 12, 13,
+/// 16-22 and 24-27 whole; this adds 8 (sprites), 9 (textures), 10 and 23,
+/// which it reads in part or on demand.
+pub fn start_archives() -> Vec<usize> {
+    (0..ARCHIVE_COUNT)
+        .filter(|&archive| PREFETCH_ALL[archive] && !DEFERRED_AT_START.contains(&archive))
+        .collect()
+}
 /// `LocalizedText.GAME0_LOADING`, drawn above the bar.
 pub const PRIMARY_TEXT: &str = "RuneScape is loading - please wait...";
 /// The client cycle: `mainLoop` runs 50 times a second.
@@ -362,6 +382,9 @@ pub struct Snapshot {
     pub loaded: bool,
     /// Every archive has settled: nothing left to verify or download.
     pub settled: bool,
+    /// Loaded, and every start archive ([`Updater::set_start_archives`]) is
+    /// whole: the client may open its title.
+    pub start_ready: bool,
 }
 
 /// The update half of the client: connection, providers and load sequence.
@@ -385,6 +408,8 @@ pub struct Updater {
     pub login_screen: i32,
     pub world_list: WorldList,
     loaded: bool,
+    start_archives: Vec<usize>,
+    start_ready: bool,
 }
 impl Updater {
     /// `store` is the opened cache (archives 0 to 27 and 255); without one
@@ -416,6 +441,45 @@ impl Updater {
             login_screen: -1,
             world_list: WorldList::NotFetched,
             loaded: false,
+            start_archives: Vec::new(),
+            start_ready: false,
+        }
+    }
+    /// Not in the original: archives the client needs whole before it opens
+    /// its title, beyond what the start-up sequence waits for. Once loaded,
+    /// each cycle asks for them as `client.mainLoad` asks for its config
+    /// archives (`Js5.fetchAll`, urgent requests) until they are complete;
+    /// [`Self::start_ready`] then turns true. Without any it equals
+    /// [`Self::loaded`].
+    pub fn set_start_archives(&mut self, archives: Vec<usize>) {
+        self.start_archives = archives;
+    }
+    /// Loaded, and every start archive is complete.
+    pub fn start_ready(&self) -> bool {
+        self.start_ready
+    }
+    /// Asks for groups readers met before they arrived (urgent requests,
+    /// `Js5.isGroupReady`), keeping in `wanted` those not in yet. A group
+    /// of an archive the client does not know is dropped.
+    pub fn serve(&mut self, wanted: &mut std::collections::BTreeSet<(u8, u32)>) {
+        let groups: Vec<(u8, u32)> = wanted.iter().copied().collect();
+        for (archive, group) in groups {
+            // An archive the client knows and whose index (once in hand)
+            // lists the group; anything else can never arrive.
+            let known = usize::from(archive) < self.archives.len()
+                && self
+                    .master
+                    .as_ref()
+                    .and_then(|master| master.provider(archive))
+                    .and_then(|provider| provider.index())
+                    .is_none_or(|table| table.index.group(group).is_some());
+            let ready = known
+                && i32::try_from(group)
+                    .ok()
+                    .is_some_and(|id| self.group_ready(usize::from(archive), id).unwrap_or(false));
+            if ready || !known {
+                wanted.remove(&(archive, group));
+            }
         }
     }
     /// Not in the original: also download archives 6 and 14 in full, and
@@ -500,6 +564,7 @@ impl Updater {
             replies_received: self.connection.queue.replies_received,
             loaded: self.loaded,
             settled: self.settled(),
+            start_ready: self.start_ready,
         }
     }
 
@@ -515,6 +580,14 @@ impl Updater {
         self.process_providers(now_ms)?;
         if matches!(self.connection.game_state, 0 | 5) {
             self.main_load()?;
+        }
+        if self.loaded && !self.start_ready {
+            // As state 70 does: ask for every archive, then see.
+            let mut complete = true;
+            for archive in self.start_archives.clone() {
+                complete &= self.fetch_all(archive)?;
+            }
+            self.start_ready = complete;
         }
         Ok(())
     }
@@ -865,7 +938,10 @@ pub fn login_crc_sums(checksums: &[i32; ARCHIVE_COUNT]) -> [i32; 29] {
 /// them after loading each index from it. `None` when an index is absent.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn stored_checksums(directory: &Path) -> io::Result<Option<[i32; ARCHIVE_COUNT]>> {
-    let store = Store::open(directory, StorageMode::File, Limits::default())?;
+    let store = match crate::cache_live::store_for(directory) {
+        Some(store) => store,
+        None => Store::open(directory, StorageMode::File, Limits::default())?,
+    };
     let mut sums = [0; ARCHIVE_COUNT];
     for (archive, sum) in sums.iter_mut().enumerate() {
         match store.read(255, archive as u32).map_err(io::Error::other)? {
@@ -964,6 +1040,11 @@ pub struct Options {
     /// Give up when nothing has been received or verified for this long
     /// although the update is not finished. The original waits forever.
     pub stall: Duration,
+    /// See [`Updater::set_start_archives`].
+    pub start_archives: Vec<usize>,
+    /// Groups a reader of the store met before they arrived, asked for each
+    /// cycle ([`Updater::serve`]) while the update runs.
+    pub misses: Option<rs09_cache::store::Misses>,
 }
 impl Default for Options {
     fn default() -> Self {
@@ -972,6 +1053,8 @@ impl Default for Options {
             fast: true,
             alternate_port: None,
             stall: Duration::from_secs(120),
+            start_archives: Vec::new(),
+            misses: None,
         }
     }
 }
@@ -1008,9 +1091,29 @@ pub fn run(
     options: &Options,
     progress: &mut dyn FnMut(&Snapshot),
 ) -> Result<Report, UpdateError> {
+    run_on(host, port, open_store(directory)?, options, progress)
+}
+
+/// The cache files in `directory` (created as needed) opened for the
+/// update to write into.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn open_store(directory: &Path) -> io::Result<Arc<Mutex<DiskStore>>> {
     std::fs::create_dir_all(directory)?;
     let archives = (0..ARCHIVE_COUNT as u8).chain([255]);
-    let store = Arc::new(Mutex::new(DiskStore::open(directory, archives)?));
+    Ok(Arc::new(Mutex::new(DiskStore::open(directory, archives)?)))
+}
+
+/// [`run`] on a store opened by the caller, which may read it meanwhile
+/// (`Store::live`).
+#[cfg(not(target_arch = "wasm32"))]
+pub fn run_on(
+    host: &str,
+    port: u16,
+    store: Arc<Mutex<DiskStore>>,
+    options: &Options,
+    progress: &mut dyn FnMut(&Snapshot),
+) -> Result<Report, UpdateError> {
+    let mut wanted = std::collections::BTreeSet::new();
     let mut updater = Updater::new(
         Box::new(TcpOpener::new(host)),
         port,
@@ -1019,6 +1122,7 @@ pub fn run(
         CacheQueue::threaded()?,
     );
     updater.set_complete(options.complete);
+    updater.set_start_archives(options.start_archives.clone());
     let started = Instant::now();
     let cycle = CYCLE.as_millis() as u64;
     let mut next_cycle = 0u64;
@@ -1030,6 +1134,10 @@ pub fn run(
         if now >= next_cycle {
             if let Err(error) = updater.cycle(now) {
                 break Err(error);
+            }
+            if let Some(misses) = &options.misses {
+                wanted.extend(misses.take());
+                updater.serve(&mut wanted);
             }
             cycles += 1;
             next_cycle = (next_cycle + cycle).max(now.saturating_sub(cycle));
@@ -1108,6 +1216,8 @@ pub fn run(
 pub struct Background {
     snapshot: Arc<Mutex<Snapshot>>,
     thread: Option<JoinHandle<Result<Report, UpdateError>>>,
+    store: Arc<Mutex<DiskStore>>,
+    misses: rs09_cache::store::Misses,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl Background {
@@ -1115,17 +1225,20 @@ impl Background {
         host: String,
         port: u16,
         directory: PathBuf,
-        options: Options,
+        mut options: Options,
     ) -> io::Result<Self> {
         let snapshot = Arc::new(Mutex::new(Snapshot {
             percentage: 10,
             ..Snapshot::default()
         }));
         let shared = Arc::clone(&snapshot);
+        let store = open_store(&directory)?;
+        let misses = options.misses.get_or_insert_with(Default::default).clone();
+        let writer = Arc::clone(&store);
         let thread = thread::Builder::new()
             .name("cache-update".into())
             .spawn(move || {
-                run(&host, port, &directory, &options, &mut |latest| {
+                run_on(&host, port, writer, &options, &mut |latest| {
                     if let Ok(mut shared) = shared.lock() {
                         shared.clone_from(latest);
                     }
@@ -1134,7 +1247,18 @@ impl Background {
         Ok(Self {
             snapshot,
             thread: Some(thread),
+            store,
+            misses,
         })
+    }
+    /// A reading view of the store as the update fills it; a group read
+    /// before it has arrived is asked for at the next cycle.
+    pub fn store(&self) -> Store {
+        Store::live_recording(
+            Arc::clone(&self.store),
+            Limits::default(),
+            self.misses.clone(),
+        )
     }
     pub fn snapshot(&self) -> Snapshot {
         self.snapshot
@@ -1380,6 +1504,55 @@ mod tests {
         assert_eq!(PREFETCH_ALL.iter().filter(|&&all| !all).count(), 2);
         assert!(!PREFETCH_ALL[6] && !PREFETCH_ALL[14]);
         assert_eq!(login_crc_sums(&[7; 28])[27..], [7, 0]);
+    }
+
+    #[test]
+    fn the_start_gate_waits_for_its_archives_and_not_for_the_deferred_ones() {
+        // Not in the original (see `DEFERRED_AT_START`): the title may open
+        // once the load sequence has run and the start archives are whole.
+        assert_eq!(
+            start_archives(),
+            [
+                2, 3, 8, 9, 10, 12, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27
+            ]
+        );
+        let mut rig = Rig::new(server(), empty_store());
+        rig.updater.set_start_archives(start_archives());
+        let mut cycles = 0;
+        while !rig.updater.start_ready() {
+            rig.cycle().unwrap();
+            // Never before the start-up sequence has finished.
+            assert!(rig.updater.loaded() || !rig.updater.start_ready());
+            cycles += 1;
+            assert!(cycles < 20_000, "{:?}", rig.updater.snapshot());
+        }
+        assert!(rig.updater.snapshot().start_ready);
+        // Every group of every start archive is in the store.
+        rig.updater.cache_queue.flush();
+        let mut disk = rig.store.lock().unwrap();
+        for archive in start_archives() {
+            let index = disk.read(255, archive as u32, 1 << 24).unwrap();
+            let index = Index::decode(&index, None, Limits::default()).unwrap();
+            for group in &index.groups {
+                assert!(disk.read(archive as u8, group.id, 1 << 24).is_some());
+            }
+        }
+        drop(disk);
+        // A group of a deferred archive a reader asked for is fetched (or
+        // found verified) and leaves the list; one the index does not list
+        // and one of an archive the client does not know are dropped.
+        let mut wanted = std::collections::BTreeSet::from([(7u8, 4u32), (7, 5), (40, 0)]);
+        for _ in 0..200 {
+            rig.updater.serve(&mut wanted);
+            if wanted.is_empty() {
+                break;
+            }
+            rig.cycle().unwrap();
+        }
+        assert!(wanted.is_empty(), "{wanted:?}");
+        assert!(rig.store.lock().unwrap().read(7, 4, 1 << 24).is_some());
+        rig.run();
+        assert!(rig.updater.settled());
     }
 
     #[test]

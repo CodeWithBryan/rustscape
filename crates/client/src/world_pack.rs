@@ -529,11 +529,19 @@ fn sequence_frame_groups(id: i32, data: &[u8], groups: &mut BTreeSet<i32>) -> Re
     Ok(())
 }
 
+// A group a live store has not received yet reads as empty here, so that one
+// pass meets every such group (each is asked for as it is met); the caller
+// builds again once they are in (`rs09_client::on_demand::arriving`).
 fn group_files(archive: &Archive, label: u8, id: u32) -> Result<Vec<(u32, Vec<u8>)>, String> {
-    let files = archive
-        .group(id, [0; 4])
-        .map_err(|e| format!("archive {label} group {id}: {e}"))?
-        .ok_or_else(|| format!("archive {label} group {id} is missing"))?;
+    let before = rs09_cache::store::misses_on_this_thread();
+    let files = crate::on_demand::arriving(|| archive.group(id, [0; 4]))
+        .map_err(|e| format!("archive {label} group {id}: {e}"))?;
+    let Some(files) = files else {
+        if rs09_cache::store::misses_on_this_thread() != before {
+            return Ok(Vec::new());
+        }
+        return Err(format!("archive {label} group {id} is missing"));
+    };
     Ok(files.iter().map(|(id, data)| (id, data.to_vec())).collect())
 }
 
@@ -541,8 +549,7 @@ fn file(archive: &Archive, label: u8, group: u32, file: u32) -> Result<Option<Ve
     if archive.index.group(group).is_none() {
         return Ok(None);
     }
-    archive
-        .file(group, file, [0; 4])
+    crate::on_demand::arriving(|| archive.file(group, file, [0; 4]))
         .map(|bytes| bytes.map(|bytes| bytes.to_vec()))
         .map_err(|e| format!("archive {label} group {group} file {file}: {e}"))
 }
@@ -554,7 +561,13 @@ fn required(
     id: i32,
     what: &str,
 ) -> Result<Vec<u8>, String> {
-    file(archive, label, group as u32, id as u32)?.ok_or_else(|| format!("missing {what}"))
+    let before = rs09_cache::store::misses_on_this_thread();
+    match file(archive, label, group as u32, id as u32)? {
+        Some(data) => Ok(data),
+        // Still arriving: an empty stand-in for this pass only.
+        None if rs09_cache::store::misses_on_this_thread() != before => Ok(Vec::new()),
+        None => Err(format!("missing {what}")),
+    }
 }
 
 /// Build the starting-scene pack.

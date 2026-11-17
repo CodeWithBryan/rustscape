@@ -1,7 +1,8 @@
 //! Read-only 530 sector store. Handles are private; every disk read uses an explicit offset.
 use crate::{CacheResult, Limits, disk::DiskStore};
 use std::{
-    collections::BTreeMap,
+    cell::Cell,
+    collections::{BTreeMap, BTreeSet},
     fs::{self, File},
     io,
     path::Path,
@@ -78,12 +79,43 @@ fn read_file_at(_: &File, _: u64, _: &mut [u8]) -> io::Result<()> {
     ))
 }
 
+/// Groups a live store was asked for before they had arrived, for the
+/// client to ask the update server for (as `Js5.fetchGroup` does for a group
+/// its store lacks). Clones share one set.
+#[derive(Clone, Debug, Default)]
+pub struct Misses(Arc<Mutex<BTreeSet<(u8, u32)>>>);
+impl Misses {
+    /// The groups recorded since the last call.
+    pub fn take(&self) -> BTreeSet<(u8, u32)> {
+        self.0
+            .lock()
+            .map(|mut set| std::mem::take(&mut *set))
+            .unwrap_or_default()
+    }
+    fn record(&self, archive: u8, group: u32) {
+        if let Ok(mut set) = self.0.lock() {
+            set.insert((archive, group));
+        }
+    }
+}
+
+thread_local! {
+    static MISSED: Cell<u64> = const { Cell::new(0) };
+}
+/// How many reads on the calling thread have met a group that a live store
+/// did not have yet. A reader that can wait compares it before and after a
+/// piece of work to learn that the work met data still on its way.
+pub fn misses_on_this_thread() -> u64 {
+    MISSED.with(Cell::get)
+}
+
 /// Clone cheaply and share across threads/clients. Index tables are immutable.
 #[derive(Clone)]
 pub struct Store {
     data: Arc<Data>,
     indices: Arc<BTreeMap<u8, Vec<u8>>>,
     max_container: usize,
+    misses: Option<Misses>,
 }
 impl Store {
     pub fn open(directory: &Path, mode: StorageMode, limits: Limits) -> io::Result<Self> {
@@ -113,6 +145,7 @@ impl Store {
             data: Arc::new(data),
             indices: Arc::new(indices),
             max_container: limits.max_container,
+            misses: None,
         })
     }
     pub fn from_bytes(data: Vec<u8>, indices: BTreeMap<u8, Vec<u8>>, limits: Limits) -> Self {
@@ -120,6 +153,7 @@ impl Store {
             data: Arc::new(Data::Resident(data)),
             indices: Arc::new(indices),
             max_container: limits.max_container,
+            misses: None,
         }
     }
     /// A reading view of a store that is still being filled: every read sees
@@ -131,6 +165,15 @@ impl Store {
             data: Arc::new(Data::Live(store)),
             indices: Arc::new(BTreeMap::new()),
             max_container: limits.max_container,
+            misses: None,
+        }
+    }
+    /// [`Self::live`], recording in `misses` every group it is asked for
+    /// before the group has arrived.
+    pub fn live_recording(store: Arc<Mutex<DiskStore>>, limits: Limits, misses: Misses) -> Self {
+        Self {
+            misses: Some(misses),
+            ..Self::live(store, limits)
         }
     }
     pub fn archives(&self) -> impl Iterator<Item = u8> + '_ {
@@ -158,11 +201,18 @@ impl Store {
             return Ok(None);
         }
         if let Data::Live(store) = &*self.data {
-            return Ok(store.lock().map_err(|_| crate::CacheError::Poisoned)?.read(
+            let found = store.lock().map_err(|_| crate::CacheError::Poisoned)?.read(
                 archive,
                 group,
                 self.max_container,
-            ));
+            );
+            if found.is_none() {
+                MISSED.with(|count| count.set(count.get().wrapping_add(1)));
+                if let Some(misses) = &self.misses {
+                    misses.record(archive, group);
+                }
+            }
+            return Ok(found);
         }
         let Some(index) = self.indices.get(&archive) else {
             return Ok(None);
@@ -213,4 +263,38 @@ impl Store {
 }
 fn u24(bytes: &[u8]) -> u32 {
     (u32::from(bytes[0]) << 16) | (u32::from(bytes[1]) << 8) | u32::from(bytes[2])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_live_store_records_the_groups_it_did_not_have_yet() {
+        let mut disk = DiskStore::in_memory(Vec::new(), BTreeMap::new());
+        disk.ensure_archive(7).unwrap();
+        assert!(disk.write(7, 3, b"model three", 1 << 20));
+        let disk = Arc::new(Mutex::new(disk));
+        let misses = Misses::default();
+        let store = Store::live_recording(Arc::clone(&disk), Limits::default(), misses.clone());
+        let before = misses_on_this_thread();
+        assert_eq!(
+            store.read(7, 3).unwrap().as_deref(),
+            Some(&b"model three"[..])
+        );
+        assert_eq!(
+            misses_on_this_thread(),
+            before,
+            "a present group is no miss"
+        );
+        assert_eq!(store.read(7, 4).unwrap(), None);
+        assert_eq!(store.read(7, 4).unwrap(), None);
+        assert_eq!(misses_on_this_thread(), before + 2);
+        assert_eq!(misses.take().into_iter().collect::<Vec<_>>(), [(7, 4)]);
+        assert!(misses.take().is_empty(), "taken once");
+        // Once written it reads as any other group.
+        assert!(disk.lock().unwrap().write(7, 4, b"four", 1 << 20));
+        assert_eq!(store.read(7, 4).unwrap().as_deref(), Some(&b"four"[..]));
+        assert!(misses.take().is_empty());
+    }
 }

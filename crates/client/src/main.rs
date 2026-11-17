@@ -13,6 +13,7 @@ mod ground_render;
 mod lifecycle_host;
 mod minimap_labels;
 mod minimap_render;
+mod npc_types;
 #[cfg(test)]
 mod part_pose_tests;
 mod render;
@@ -22,6 +23,7 @@ mod scene_cull;
 mod scene_detail;
 mod scene_lights;
 mod screen_frame;
+mod spot_types;
 mod static_render;
 mod title_world;
 mod ui_audio;
@@ -712,6 +714,8 @@ struct Workbench {
     tick: i32,
     actor_scene: actor_scene::ActorScene,
     world_cache: Option<std::sync::Arc<world_cache::Cache>>,
+    /// Types named by the server that could not be had, reported once.
+    on_demand: rs09_client::on_demand::Reported,
 }
 fn geometry_bounds(mesh: &Mesh, range: std::ops::Range<usize>) -> [Vec3; 2] {
     let mut bounds = [Vec3::splat(f32::INFINITY), Vec3::splat(f32::NEG_INFINITY)];
@@ -1576,6 +1580,7 @@ impl Workbench {
             tick: 0,
             actor_scene: Default::default(),
             world_cache: None,
+            on_demand: Default::default(),
         })
     }
     fn dynamic_location(
@@ -2261,6 +2266,15 @@ impl Workbench {
         Ok(true)
     }
     fn advance_world(&mut self) -> Result<(), String> {
+        // A change waiting for a type or model still on its way asks again.
+        if self.world_cache.is_some() {
+            let waiting: Vec<u32> = (self.world.changes.iter())
+                .filter_map(|c| u32::try_from(c.replacement.id).ok())
+                .collect();
+            for id in waiting {
+                let _ = self.ensure_location(id);
+            }
+        }
         let changes = self.world.advance(self.navigation.origin, |loc| {
             self.definitions
                 .get(&loc.id.to_string())
@@ -2352,34 +2366,9 @@ impl Workbench {
             .collect();
     }
     fn npc_metadata(&self, id: i32) -> rs09_protocol::Result<rs09_client::npc_updates::Metadata> {
-        let missing = rs09_client::npc::Definition::decode(&[0])?;
-        let d = match self.npc_definitions.get(&(id as u32)) {
-            Some(d) => d,
-            None if self.pack.get("npc-catalog-complete").is_ok() => &missing,
-            None => {
-                return Err(rs09_protocol::Error::new(
-                    0,
-                    "NPC definition absent from prepared catalog",
-                ));
-            }
-        };
-        let direct =
-            |d: &rs09_client::npc::Definition| [0, 2, 3].into_iter().any(|i| d.sounds[i] != -1);
-        let area_sound = d.children.as_ref().map_or_else(
-            || direct(d),
-            |ids| {
-                ids.iter()
-                    .filter_map(|id| self.npc_definitions.get(&(*id as u32)))
-                    .any(direct)
-            },
-        );
-        Ok(rs09_client::npc_updates::Metadata {
-            size: d.size,
-            bas: d.bas,
-            turn_speed: d.turn_speed,
-            rotates: d.rotates,
-            area_sound,
-        })
+        // Read on demand (npc_types); a type not to be had has the defaults.
+        self.npc_update_metadata(id)
+            .map_err(|_| rs09_protocol::Error::new(0, "NPC type defaults undecodable"))
     }
     fn receive_npcs(
         &mut self,
@@ -2470,6 +2459,11 @@ impl Workbench {
         }
         for index in &state.local_ids {
             let id = state.actors[index].type_id as u32;
+            let (held, missing) = self.ensure_npc_type(id);
+            diagnostics.extend(missing);
+            if !held {
+                continue;
+            }
             let prepare = self
                 .npc_definitions
                 .get(&id)
@@ -2565,9 +2559,13 @@ impl Workbench {
         };
         let key = id.to_string();
         if !self.definitions.contains_key(&key) {
-            let raw = cache
-                .location(id)?
-                .ok_or_else(|| format!("Location {id} unavailable"))?;
+            // LocTypeList.get: a type without a file keeps the defaults; one
+            // whose group is still arriving is asked for again (advance_world).
+            let raw = match cache.location_file(id)? {
+                rs09_client::on_demand::Read::File(raw) => raw,
+                rs09_client::on_demand::Read::NoFile => std::sync::Arc::new(vec![0]),
+                rs09_client::on_demand::Read::NotYet => return Ok(()),
+            };
             let (loc, visual, clip) =
                 rs09_client::interaction::LocationType::decode_with_visual(&raw)
                     .map_err(|e| format!("loc/{id}: {e}"))?;
@@ -2577,7 +2575,8 @@ impl Workbench {
         }
         for &id in &self.definitions[&key].models {
             if let std::collections::btree_map::Entry::Vacant(entry) = self.models.entry(id) {
-                if let Some(model) = cache.model(id)? {
+                // A model not in yet is asked for again; the change waits.
+                if let Ok(Some(model)) = cache.model(id) {
                     entry.insert(model);
                 }
             }
@@ -2644,6 +2643,13 @@ impl Workbench {
                 loop {
                     if !seen.insert(id) || seen.len() > 128 {
                         return Err(format!("NPC{id}: cyclic/deep morph graph"));
+                    }
+                    // Read on demand; one not to be had was reported when
+                    // first met and is not drawn.
+                    let (held, missing) = self.ensure_npc_type(id);
+                    errors.extend(missing);
+                    if !held {
+                        return Ok(None);
                     }
                     let Some(next) = self.npc_choice(id, vm, ui)? else {
                         return Ok(None);
@@ -3125,11 +3131,23 @@ impl Workbench {
         {
             let definition = match self.spot_definitions.get(&track.id) {
                 Some(d) => d.clone(),
-                None if self.pack.get("spot-catalog-complete").is_ok() => {
+                None if self.pack.get("spot-catalog-complete").is_ok()
+                    || self.world_cache.is_some() =>
+                {
                     rs09_client::spot::Definition::default()
                 }
                 None => return Err(format!("Spot{} metadata unavailable", track.id)),
             };
+            // The model on demand from an open cache, as for NPC bodies.
+            if let Some(cache) = self.world_cache.as_ref() {
+                if let std::collections::btree_map::Entry::Vacant(slot) =
+                    self.models.entry(definition.model)
+                {
+                    if let Some(model) = cache.model(definition.model)? {
+                        slot.insert(model);
+                    }
+                }
+            }
             let mut model = definition.assemble(&self.models)?;
             model.draw_order = rs09_client::surface::face_order(&model, &self.textures.materials);
             model.surfaces = rs09_client::surface::prepare(&model, &self.textures.materials);
@@ -3710,7 +3728,7 @@ async fn main() {
         Ok(bytes) => Pack::decode(bytes).and_then(Workbench::load),
         // Without a prepared pack the starting scene is built from the cache.
         #[cfg(not(target_arch = "wasm32"))]
-        Err(e) => native_world_pack()
+        Err(e) => cache_update_screen::when_present(native_world_pack)
             .map_err(|native| {
                 format!("{pack_path}: {e}\nBuilding the starting scene from the cache: {native}")
             })

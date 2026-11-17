@@ -32,7 +32,13 @@ impl Movement {
         state: &mut State,
         sequences: &BTreeMap<u32, Sequence>,
     ) -> Result<()> {
-        if state.action.id != -1 && sequence(sequences, state.action.id)?.move_type == 1 {
+        // A sequence that is not to be had is `SeqTypeList.get`'s new type
+        // with nothing decoded, whose `movetype` is -1 (`SeqType.java` 39):
+        // the action stays. An NPC update does not end over it.
+        let move_type = sequences
+            .get(&(state.action.id as u32))
+            .map_or(-1, |s| s.move_type);
+        if state.action.id != -1 && move_type == 1 {
             state.action.id = -1;
         }
         Ok(())
@@ -158,5 +164,29 @@ impl Movement {
         }
         self.advance_facing(bas, face_target);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Transcription test of `SeqTypeList.get` for an id without data: a new
+    //! `SeqType` whose `movetype` is -1 (`SeqType.java` 39).
+    use super::*;
+
+    #[test]
+    fn a_sequence_not_to_be_had_cancels_nothing_and_fails_nothing() {
+        let motion = Movement::new([3222, 3218]);
+        let mut state = State::default();
+        state.action.id = 4711;
+        motion.cancel_on_move(&mut state, &BTreeMap::new()).unwrap();
+        assert_eq!(state.action.id, 4711, "movetype -1 keeps the action");
+        // A known sequence with movetype 1 is cancelled, as before.
+        let walk_cancelled = Sequence {
+            move_type: 1,
+            ..Sequence::default()
+        };
+        let sequences = BTreeMap::from([(4711, walk_cancelled)]);
+        motion.cancel_on_move(&mut state, &sequences).unwrap();
+        assert_eq!(state.action.id, -1);
     }
 }

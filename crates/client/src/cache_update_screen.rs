@@ -8,10 +8,14 @@
 //! own (archives 6 and 14 are then only verified).
 //!
 //! The bar has `LoadingBarAwt`'s geometry and colour; the font is whatever
-//! macroquad draws by default, not the original's Helvetica. The original
-//! lets the player in while the rest downloads in the background; this
-//! client reads a finished store, so the bar stays until everything is in,
-//! showing verified groups out of listed groups for that part.
+//! macroquad draws by default, not the original's Helvetica. As the original
+//! lets the player in while the rest downloads in the background, the bar
+//! goes once the start-up sequence has finished and the archives this
+//! client still reads whole are in (`cache_update::start_archives`); maps,
+//! models and animation frames (`DEFERRED_AT_START`) keep arriving behind
+//! the title, read through `rs09_client::cache_live`, and a group asked for
+//! before it has arrived is requested at once. `--update-whole-cache` keeps
+//! the bar until everything is in, showing verified out of listed groups.
 use macroquad::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use rs09_client::cache_update::{self, Background, Options};
@@ -58,6 +62,25 @@ pub fn draw(snapshot: &Snapshot, note: Option<&str>) {
     }
 }
 
+/// Runs `work` again while it reads groups the update has not delivered yet
+/// (each one is asked for as it is met), for at most two minutes: for start-up
+/// work that cannot answer "not yet" itself, such as building the starting
+/// scene from the cache. Without an update running it runs once.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn when_present<T>(mut work: impl FnMut() -> T) -> T {
+    let started = std::time::Instant::now();
+    loop {
+        let before = rs09_cache::store::misses_on_this_thread();
+        let result = work();
+        if rs09_cache::store::misses_on_this_thread() == before
+            || started.elapsed() > std::time::Duration::from_secs(120)
+        {
+            return result;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+}
+
 /// Runs the update if the command line asks for one. Returns when it has
 /// finished or failed; a failure is shown until a key is pressed (not when
 /// capturing) and the client then carries on with whatever is on disk.
@@ -72,8 +95,15 @@ pub async fn run_if_requested() {
             return;
         }
     };
+    // `--update-whole-cache`: wait for every archive before going on, as
+    // this client did before it could start with archives still arriving.
+    let whole = args.iter().any(|a| a == "--update-whole-cache");
+    // `--update-original-pace`: one network pass per 20 ms cycle, as the
+    // original reads, instead of reading whatever has arrived in between.
     let options = Options {
         complete: !args.iter().any(|a| a == "--update-original-archives"),
+        fast: !args.iter().any(|a| a == "--update-original-pace"),
+        start_archives: cache_update::start_archives(),
         ..Options::default()
     };
     eprintln!(
@@ -82,6 +112,7 @@ pub async fn run_if_requested() {
         request.host,
         request.port
     );
+    let directory = request.directory.clone();
     let background = match Background::start(request.host, request.port, request.directory, options)
     {
         Ok(background) => background,
@@ -93,8 +124,36 @@ pub async fn run_if_requested() {
     let mut snapshot = background.snapshot();
     while !background.finished() {
         snapshot = background.snapshot();
+        if snapshot.start_ready && !whole {
+            break;
+        }
         draw(&snapshot, None);
         next_frame().await;
+    }
+    if !background.finished() {
+        // The original's login point: the rest arrives in the background,
+        // and from here on the cache directory is read as it fills.
+        eprintln!(
+            "Cache start gate open at {:.2} s: {} of {} groups verified, {} bytes received; \
+             archives {:?} continue in the background",
+            get_time(),
+            snapshot.groups_verified,
+            snapshot.groups,
+            snapshot.bytes_received,
+            cache_update::DEFERRED_AT_START
+        );
+        rs09_client::cache_live::install(&directory, background.store());
+        std::thread::spawn(move || match background.join() {
+            Ok(report) => eprintln!(
+                "Cache update finished in the background in {:.1}s: {} of {} groups verified, {} bytes received",
+                report.elapsed.as_secs_f64(),
+                report.groups_verified,
+                report.groups,
+                report.bytes_received
+            ),
+            Err(error) => eprintln!("Cache update stopped in the background: {error}"),
+        });
+        return;
     }
     match background.join() {
         Ok(report) => eprintln!(
