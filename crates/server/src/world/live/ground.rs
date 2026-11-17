@@ -153,7 +153,17 @@ impl chunk_sync::Context for Sync<'_> {
         }
         layer
     }
-    fn foreign_flag(&mut self, _: usize, _: &Buffer, _: &NodeHandle) -> chunk_sync::Result<()> {
+    fn foreign_flag(
+        &mut self,
+        id: usize,
+        buffer: &Buffer,
+        _: &NodeHandle,
+    ) -> chunk_sync::Result<()> {
+        // ProjectileUpdateFlag (combat/projectiles.rs) is the only foreign
+        // chunk flag the live world makes.
+        if super::combat::projectiles::Projectiles::owns(id) {
+            return self.0.write_projectile_flag(id, buffer);
+        }
         Err(chunk_sync::Error::Binding(
             "not ported in the live world: foreign chunk flags".into(),
         ))

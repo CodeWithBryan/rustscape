@@ -13,7 +13,7 @@
 //! (disabled ticks, cleared logs) at its end.
 //!
 //! A player's death (`Player.commenceDeath`/`finalizeDeath`,
-//! `world/player_death`) is not installed: it refuses by name.
+//! `world/player_death`) is [`super::player_death`].
 use super::super::{ground_items::World, host::Live};
 use super::{super::P, Attr, Submitted, host::bind};
 use crate::{
@@ -117,10 +117,17 @@ pub fn death_pulse(live: &mut Live, task: &Task) -> std::result::Result<bool, St
     result
 }
 
-/// `applyPoison(victim, source, severity)`: the Poison timer is not
-/// spawned from combat here.
-pub fn apply_poison(_: &mut Live, _: &P, _: &P, _: i32) -> cs::Result<()> {
-    super::host::refuse("applyPoison from combat (the Poison timer spawn is not bound)")
+/// `applyPoison(victim, source, severity)` from a swing: the ContentAPI glue
+/// of `timers::content` over the victim's timer manager. A poisoned NPC
+/// needs NPC timers, which are not installed (refused by name).
+pub fn apply_poison(live: &mut Live, victim: &P, source: &P, severity: i32) -> cs::Result<()> {
+    if !live.inner.is_player_node(victim.node()) {
+        return super::host::refuse("applyPoison on an NPC (NPC timers are not installed)");
+    }
+    let result = live.with_timers(victim, |natives, manager| {
+        crate::timers::content::apply_poison(natives, manager, source, severity)
+    });
+    result.map_err(|e| cs::Error::Binding(format!("{e:?}")))
 }
 
 /// `skills.restore()` of an NPC: every level back to its static level.
@@ -334,6 +341,11 @@ impl drop::Host for Live {
             .map_err(binding)
     }
     fn npc_id(&mut self, npc: &NodeHandle) -> Result<i32> {
+        // Node.getId() of a player (Entity.finalizeDeath's Loar shade
+        // test): a player's id is -1.
+        if self.inner.is_player_node(npc.node) {
+            return Ok(-1);
+        }
         self.inner
             .npcs
             .rows
@@ -686,11 +698,11 @@ impl npc_death::Host for Live {
             .skip("SelfDeathEvent dispatch (entity event hooks not ported)");
         Ok(())
     }
-    fn player_commence_death(&mut self, _: &NodeHandle, _: &NodeHandle) -> Result<()> {
-        refused("Player.commenceDeath (world/player_death is not installed)")
+    fn player_commence_death(&mut self, player: &NodeHandle, killer: &NodeHandle) -> Result<()> {
+        super::player_death::commence(self, player, killer)
     }
-    fn player_finalize_death(&mut self, _: &NodeHandle, _: &NodeHandle) -> Result<()> {
-        refused("Player.finalizeDeath (world/player_death is not installed)")
+    fn player_finalize_death(&mut self, player: &NodeHandle, killer: &NodeHandle) -> Result<()> {
+        super::player_death::finalize(self, player, killer)
     }
     fn skills_restore(&mut self, entity: &NodeHandle) -> Result<()> {
         let p = self.handle(entity);
@@ -724,7 +736,10 @@ impl npc_death::Host for Live {
                 .default_answer("NPC timer queries (none: no NPC timer is registered)");
             return Ok(());
         }
-        refused("timers.onEntityDeath for a player (world/player_death is not installed)")
+        // TimerManager.onEntityDeath: the ClearOnDeath timers are removed.
+        let p = self.handle(entity);
+        self.with_timers(&p, |natives, manager| manager.death(&mut (), natives))
+            .map_err(binding)
     }
     fn transform(&mut self, _: &NodeHandle, _: i32) -> Result<()> {
         refused("NPC.transform (the Loar shade)")

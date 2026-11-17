@@ -5,8 +5,9 @@
 //! NPC rows (levels, lifepoints, properties, definitions), the canonical
 //! actor state (locations, walking queues, locks, pulse managers) and the
 //! combat state of [`super::CombatWorld`]. A call into a system without a
-//! port refuses by name (spells, special attacks, projectiles, familiars,
-//! degradation, bolt effects, ...); see docs/live-world.md.
+//! port refuses by name (spells, familiars, degradation, bolt effects, ...);
+//! projectiles are [`super::projectiles`] and the special attacks
+//! [`super::specials`]; see docs/live-world.md.
 use super::super::{
     host::Live,
     inner::{SkillsContext, placeholder_skills},
@@ -161,6 +162,10 @@ impl Live {
     /// `playGlobalAudio(location, id)`: the area sound (97) after the zone
     /// origin (26) for every player within the default radius 8.
     pub(super) fn global_audio(&mut self, at: Location, id: i32) -> Result<()> {
+        self.global_audio_delayed(at, id, 0)
+    }
+    /// `playGlobalAudio(location, id, delay)`.
+    pub(super) fn global_audio_delayed(&mut self, at: Location, id: i32, delay: i32) -> Result<()> {
         let players = self
             .local(at.clone(), 8, crate::world::entity_regions::Select::Players)
             .map_err(bind)?;
@@ -186,7 +191,7 @@ impl Live {
             );
             self.inner.queue_native(
                 &p,
-                rs09_protocol::game::updates::area_sound(x, y, id, 8, 1, 0),
+                rs09_protocol::game::updates::area_sound(x, y, id, 8, 1, delay),
             );
         }
         Ok(())
@@ -659,11 +664,18 @@ impl cp::Host for Live {
     fn handler_class_name(&self, handler: &usize) -> String {
         self.inner.combat.handlers[*handler].class.to_owned()
     }
-    fn overrides(&self, _: &usize) -> Option<cp::Overrides<Self>> {
-        // Only the three CombatStyle singletons exist here: a weapon special
-        // attack's handler (world::special_attacks) is never selected
-        // (Player.getSwingHandler refuses a toggled special bar by name).
-        None
+    fn overrides(&self, handler: &usize) -> Option<cp::Overrides<Self>> {
+        // A special attack instance's overriding members
+        // (world::special_attacks, combat/specials.rs); the three
+        // CombatStyle singletons override nothing. NPC subclasses (dragons,
+        // world::dragonfire) are not installed: an NPC's swing handler is a
+        // singleton (combat/behaviour.rs).
+        self.inner
+            .combat
+            .handlers
+            .get(*handler)
+            .and_then(|slot| slot.special)
+            .map(crate::world::special_attacks::overrides::<Self>)
     }
     fn specials(&mut self, handler: &usize) -> &mut Specials<Self> {
         &mut self.inner.combat.handlers[*handler].specials
@@ -828,40 +840,20 @@ impl cp::Host for Live {
         if self.inner.is_npc_node(entity.node()) {
             return super::behaviour::npc_swing_handler(self, entity);
         }
-        // Player.getSwingHandler(swing).
-        let style = self.inner.combat_entry(entity).state.style;
-        let weapon = self.equipment_slot(entity, 3).map_or(0, |i| i.read().id());
-        if swing {
-            let spell = self
-                .inner
-                .with_profile(entity, |p| {
-                    p.properties.spell.is_some() || p.persisted.spells.autocast.is_some()
-                })
-                .map_err(bind)?;
-            if spell {
-                return Ok(MAGIC);
-            }
-            let special = self
-                .inner
-                .canonical(entity)
-                .player
-                .settings()
-                .fields
-                .read()
-                .special_toggled;
-            if special {
-                return refuse(&format!(
-                    "special attack handlers (getSpecial({weapon}); special attacks are not ported)"
-                ));
-            }
+        // Player.getSwingHandler(swing): special_attacks::player_swing_handler
+        // over the three CombatStyle singletons and the registered specials.
+        let _ = style_handler;
+        let chosen = crate::world::special_attacks::player_swing_handler(
+            self,
+            entity,
+            swing,
+            [&MELEE, &RANGE, &MAGIC],
+        )?;
+        match chosen {
+            crate::world::special_attacks::Chosen::Handler(handler) => Ok(handler),
+            crate::world::special_attacks::Chosen::Chinchompa => refuse("ChinchompaSwingHandler"),
+            crate::world::special_attacks::Chosen::Salamander => refuse("SalamanderSwingHandler"),
         }
-        if (style == CombatStyle::Range && weapon == 10033) || weapon == 10034 {
-            return refuse("ChinchompaSwingHandler");
-        }
-        if (10146..=10149).contains(&weapon) {
-            return refuse("SalamanderSwingHandler");
-        }
-        Ok(style_handler(style))
     }
     fn entity_attackable(
         &mut self,
@@ -1103,8 +1095,36 @@ impl cp::Host for Live {
     fn spell_add_experience(&mut self, _: &i32, _: &P, _: i32) -> Result<()> {
         refuse("MagicSpell.addExperience (spells are not installed)")
     }
-    fn equipment_replace(&mut self, _: &P, _: Option<(i32, i32, i32)>, _: i32) -> Result<()> {
-        refuse("equipment.replace from combat (ammunition and black mask charges)")
+    fn equipment_replace(
+        &mut self,
+        entity: &P,
+        item: Option<(i32, i32, i32)>,
+        slot: i32,
+    ) -> Result<()> {
+        // equipment.replace(item, slot): Container.replace with fire, over
+        // the canonical equipment and its listeners.
+        if !self.inner.is_player_node(entity.node()) {
+            return Err(Error::Null);
+        }
+        let definitions = self.inner.items.clone();
+        let item = item.map(|(id, amount, charge)| {
+            Shared::new(crate::inventory::item::Item::new(
+                id,
+                amount,
+                charge,
+                &definitions,
+            ))
+        });
+        let mut equipment = self.inner.canonical(entity).player.equipment();
+        let listeners = self.item_actions.listeners.clone();
+        let mut ctx = super::super::inner::EquipmentContext {
+            inner: &mut self.inner,
+            p: entity.clone(),
+            listeners: Some(listeners),
+        };
+        let result = equipment.replace(item.as_ref(), slot, true, &definitions, &mut ctx);
+        self.inner.drain(entity);
+        result.map(|_| ()).map_err(bind)
     }
     fn equipment_contains(&mut self, entity: &P, id: i32, amount: i32) -> Result<bool> {
         Ok(self.equipment_has(entity, id, amount))
@@ -1498,8 +1518,68 @@ impl cp::Host for Live {
                 .collect()
         }))
     }
-    fn send_projectile(&mut self, _: ProjectileRequest<'_, Self>) -> Result<()> {
-        refuse("Projectile.send (projectiles are not installed)")
+    fn send_projectile(&mut self, request: ProjectileRequest<'_, Self>) -> Result<()> {
+        // The Projectile factory call, then send() (combat/projectiles.rs).
+        let projectile = match request {
+            ProjectileRequest::AmmunitionCopy {
+                ammunition_id,
+                source,
+                victim,
+                speed,
+            } => {
+                let template = self
+                    .inner
+                    .combat
+                    .ranged
+                    .ammunition
+                    .get(&ammunition_id)
+                    .map(|a| a.projectile)
+                    .ok_or(Error::Null)?;
+                let victim = victim.ok_or(Error::Null)?;
+                self.projectile_copy(&template, source, victim, speed)?
+            }
+            ProjectileRequest::Create {
+                source,
+                victim,
+                id,
+                start_height,
+                end_height,
+                start_delay,
+                speed,
+                angle,
+            } => self.projectile_create(
+                source,
+                victim,
+                id,
+                start_height,
+                end_height,
+                start_delay,
+                speed,
+                angle,
+            ),
+            ProjectileRequest::Ranged {
+                source,
+                victim,
+                id,
+                start_height,
+                end_height,
+                start_delay,
+                angle,
+            } => {
+                let victim = victim.ok_or(Error::Null)?;
+                self.projectile_speed_based(
+                    source,
+                    victim,
+                    id,
+                    start_height,
+                    end_height,
+                    start_delay,
+                    angle,
+                    5.0,
+                )?
+            }
+        };
+        self.projectile_send(projectile)
     }
     fn skills_hit(&mut self, entity: &P, damage: i32) -> Result<i32> {
         if let Some(row) = self.inner.npcs.rows.get_mut(&entity.node()) {

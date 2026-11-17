@@ -438,6 +438,9 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         .map_err(|e| format!("item listeners: {e:?}"))?;
     // Combat: the ranged tables and the shared drop tables.
     live.install_combat_tables(ranged, &config_path, value_bool("isPvp")?);
+    // The special attack handlers' newInstance (CombatSwingHandler.register).
+    live.inner.combat.osrs_dragon_axe = constant_bool(&configuration, "DRAGON_AXE_USE_OSRS_SPEC")?;
+    live.install_specials()?;
     Ok(Booted {
         live,
         configuration,

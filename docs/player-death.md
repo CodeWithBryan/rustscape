@@ -4,8 +4,10 @@
 death, `Player.commenceDeath`/`finalizeDeath`, where the lost items go (a grave
 or the ground), the grave with its timer, blessing, repair, reading and
 demolition, the server-store copy of active graves, and the death-screen
-button. They are libraries. No example, alpha or session installs them, and
-Java is only the test oracle.
+button. They are libraries; `rs09-server --world` installs `commenceDeath`,
+`finalizeDeath`, `getContainers` and the death screen
+(world/live/combat/player_death.rs, docs/live-world.md); graves refuse there
+by name (no grave NPC is built at runtime). Java is only the test oracle.
 
 | Original | Rust | Scope |
 | --- | --- | --- |

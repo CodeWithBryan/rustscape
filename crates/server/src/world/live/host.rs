@@ -1022,10 +1022,35 @@ impl login::Host<P> for Live {
     ) -> login::Result<()> {
         self.inner.text(p, text, interface, child)
     }
-    fn send_last_login_info(&mut self, _: &P) -> login::Result<()> {
-        Err(login::Error::Exception(
-            "not ported: sendLastLoginInfo (the lobby)".into(),
-        ))
+    fn send_last_login_info(&mut self, p: &P) -> login::Result<()> {
+        // LastLoginInfo (164): imp4 of Inet4Address.getByName(details
+        // .ipAddress).hashCode() (the address as a big-endian int), written
+        // at once (session.write). A host name is not resolved here.
+        let ip = self
+            .inner
+            .with_profile(p, |profile| profile.details.ip_address().map(str::to_owned))
+            .map_err(native)?;
+        let address: std::net::Ipv4Addr = ip
+            .as_deref()
+            .ok_or_else(|| login::Error::Exception("NullPointerException: ipAddress".into()))?
+            .parse()
+            .map_err(|_| {
+                login::Error::Exception(
+                    "not ported: sendLastLoginInfo of a host name (no resolver)".into(),
+                )
+            })?;
+        let mut w = rs09_protocol::buffer::Writer::new();
+        w.imp4(u32::from(address) as i32);
+        if let Some(session) = self.inner.session_of(p) {
+            self.inner.direct_native(
+                session,
+                Frame {
+                    opcode: 164,
+                    payload: w.into_vec(),
+                },
+            );
+        }
+        Ok(())
     }
     fn inventory_refresh(&mut self, p: &P) -> login::Result<()> {
         let inner = &mut self.inner;
@@ -1599,6 +1624,7 @@ impl driver::Host<P> for Live {
     fn reset_chunks(&mut self) -> driver::Result<()> {
         // ChunkUpdateTracker.resetAll: every flagged chunk's update list.
         self.walk.scene.clear_updates();
+        self.inner.combat.projectiles.clear();
         Ok(())
     }
     fn ground_items_pulse(&mut self) -> driver::Result<()> {

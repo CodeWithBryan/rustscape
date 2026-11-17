@@ -61,6 +61,7 @@ pub mod npc_behaviour;
 pub mod npc_classes;
 pub mod npc_death;
 pub mod npc_init;
+pub mod npc_masks;
 pub mod npc_render;
 pub mod npc_spawns;
 pub mod npc_walk;

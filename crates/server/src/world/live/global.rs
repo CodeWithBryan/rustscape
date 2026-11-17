@@ -156,7 +156,7 @@ impl gh::Host for GHost<'_> {
     type Container = Container;
     type Pulse = pulses::Handle;
     type Weapon = P;
-    type Special = Absent;
+    type Special = usize;
     type Operate = Absent;
     type Quest = Absent;
     type Diary = Absent;
@@ -424,7 +424,9 @@ impl gh::Host for GHost<'_> {
         refuse("open_interface")
     }
     fn close_interface(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("close_interface")
+        // ContentAPI.closeInterface: interfaceManager.close().
+        let p = self.player(player)?;
+        crate::world::player_death::Host::close_interface(self.live, &p.0).map_err(bind)
     }
     fn open_single_tab(&mut self, player: &Self::Node, id: i32) -> Result<()> {
         refuse("open_single_tab")
@@ -616,7 +618,15 @@ impl gh::Host for GHost<'_> {
         repeat: i32,
         body: Task<Self::Node, Self::Clan>,
     ) -> Result<()> {
-        refuse("run_task")
+        // ContentAPI.runTask: `pulseManager.run(Pulse(delay))` whose pulse
+        // runs the body and ends when `--cycles <= 0`. A body run more than
+        // once is not bound; the pulse goes to GameWorld.Pulser directly
+        // (not through the entity's pulse manager, so a walk does not stop
+        // it: a named difference in docs/live-world.md).
+        if repeat > 1 {
+            return refuse("runTask with more than one repetition");
+        }
+        self.submit(delay, &[entity], body)
     }
     fn run_world_task(&mut self, body: Task<Self::Node, Self::Clan>) -> Result<()> {
         refuse("run_world_task")
@@ -699,10 +709,13 @@ impl gh::Host for GHost<'_> {
         refuse("visualize")
     }
     fn lock_key(&mut self, player: &Self::Node, key: &str, ticks: i32) -> Result<()> {
-        refuse("lock_key")
+        // player.locks.lock(key, ticks): the canonical actor's keyed locks.
+        let p = self.player(player)?;
+        crate::world::social::Host::lock(&mut self.live.inner, &p, key, ticks).map_err(bind)
     }
     fn is_locked(&mut self, player: &Self::Node, key: &str) -> Result<bool> {
-        refuse("is_locked")
+        let p = self.player(player)?;
+        crate::world::social::Host::is_locked(&mut self.live.inner, &p, key).map_err(bind)
     }
     fn interaction_locked(&mut self, player: &Self::Node) -> Result<bool> {
         refuse("interaction_locked")
@@ -855,7 +868,9 @@ impl gh::Host for GHost<'_> {
         refuse("set_loot_share_points")
     }
     fn set_disable_death_screen(&mut self, player: &Self::Node, value: bool) -> Result<()> {
-        refuse("set_disable_death_screen")
+        let p = self.player(player)?;
+        crate::world::player_death::Host::set_death_screen_disabled(self.live, &p.0, value)
+            .map_err(bind)
     }
     fn activity_start(&mut self, player: &Self::Node, name: &str, login: bool) -> Result<bool> {
         refuse("activity_start")
@@ -879,7 +894,12 @@ impl gh::Host for GHost<'_> {
         refuse("character_design")
     }
     fn configure_game_world(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("configure_game_world")
+        // LoginConfiguration.configureGameWorld after the lobby's play
+        // button: the login library over the live world.
+        let p = self.player(player)?;
+        let repository = self.live.repository.clone();
+        crate::world::login::configuration::configure_game_world(self.live, &repository, &p)
+            .map_err(bind)
     }
     fn random(&mut self, low: i32, high: i32) -> Result<i32> {
         refuse("random")
@@ -922,7 +942,12 @@ impl gh::Host for GHost<'_> {
         refuse("get")
     }
     fn get_new_id(&mut self, container: &Self::Container, slot: i32) -> Result<i32> {
-        refuse("get_new_id")
+        // container.getNew(slot).getId().
+        let item = container
+            .get_new(slot, &self.live.inner.items)
+            .map_err(bind)?;
+        let id = item.read().id();
+        Ok(id)
     }
     fn item_count(&mut self, container: &Self::Container) -> Result<i32> {
         refuse("item_count")
@@ -1107,13 +1132,26 @@ impl gh::Host for GHost<'_> {
         Ok(self.tabs(&p).autocast().map_err(bind)?.is_some())
     }
     fn special_handler(&mut self, item: i32) -> Result<Option<Self::Special>> {
-        refuse("special_handler")
+        // CombatStyle.MELEE.swingHandler.getSpecial(itemId).
+        Ok(self.live.melee_special(item))
     }
-    fn special_instant(&mut self, handler: &Self::Special, player: &Self::Node) -> Result<bool> {
-        refuse("special_instant")
+    fn special_instant(&mut self, handler: &Self::Special, _: &Self::Node) -> Result<bool> {
+        // fireEvent("instant_spec", player) == Boolean.TRUE.
+        let special = self
+            .live
+            .inner
+            .combat
+            .handlers
+            .get(*handler)
+            .and_then(|s| s.special)
+            .ok_or(Error::Cast)?;
+        let osrs = self.live.inner.combat.osrs_dragon_axe;
+        Ok(special.fire_event("instant_spec", osrs) == crate::world::special_attacks::Fired::True)
     }
     fn combat_victim(&mut self, player: &Self::Node) -> Result<Option<Self::Node>> {
-        refuse("combat_victim")
+        let p = self.player(player)?;
+        let victim = self.live.inner.combat_entry(&p).state.victim.clone();
+        Ok(victim.map(GNode::Entity))
     }
     fn special_swing(
         &mut self,
@@ -1121,7 +1159,22 @@ impl gh::Host for GHost<'_> {
         player: &Self::Node,
         victim: Option<&Self::Node>,
     ) -> Result<()> {
-        refuse("special_swing")
+        // handleInstantSpec: handler.swing(p, victim, null).
+        let p = self.player(player)?;
+        let victim = match victim {
+            None => None,
+            Some(GNode::Entity(v)) => Some(v.clone()),
+            Some(_) => return Err(Error::Cast),
+        };
+        let result = crate::world::special_attacks::swing(
+            self.live,
+            handler,
+            Some(&p),
+            victim.as_ref(),
+            None,
+        );
+        self.live.sync_combat();
+        result.map(|_| ()).map_err(bind)
     }
     fn spell_listeners(
         &mut self,

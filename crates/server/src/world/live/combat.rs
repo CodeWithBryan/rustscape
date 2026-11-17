@@ -20,7 +20,10 @@ pub mod behaviour;
 pub mod death;
 pub mod host;
 pub mod masks;
+pub mod player_death;
 pub mod prayer;
+pub mod projectiles;
+pub mod specials;
 
 use super::{P, host::Live, inner::Inner};
 use crate::{
@@ -73,6 +76,9 @@ pub struct HandlerSlot {
     pub handler: cs::Handler,
     pub specials: Specials<Live>,
     pub class: &'static str,
+    /// The special attack subclass of the instance (`None` for the three
+    /// `CombatStyle` singletons).
+    pub special: Option<crate::world::special_attacks::Special>,
 }
 
 /// A pulse combat or death submitted to `GameWorld.Pulser`.
@@ -85,6 +91,8 @@ pub enum Submitted {
     Death(npc_death::Task),
     /// `PrayerManager`'s head-icon pulse.
     HeadIcon(P),
+    /// A special attack's pulse (Chainhit, Snapshot).
+    Special(crate::world::special_attacks::SpecialPulse<Live>),
 }
 
 /// The combat state of the live world.
@@ -127,6 +135,21 @@ pub struct CombatWorld {
     pub wilderness_aggressors: HashSet<Node>,
     /// `GameWorld.settings.isPvp()` (the configuration's `pvp`).
     pub pvp_world: bool,
+    /// `GraveController`'s active graves (none are made: graves refuse).
+    pub graves: crate::world::player_death::Controller,
+    /// The player whose `finalizeDeath` is running (its containers'
+    /// listeners answer through its context).
+    pub death_subject: Option<P>,
+    /// Projectiles flagged on chunks this tick (`ProjectileUpdateFlag`),
+    /// by the chunk flag's key.
+    pub projectiles: projectiles::Projectiles,
+    /// The `chain-hit_v` attribute lists, by entity.
+    pub chain_victims: HashMap<Node, Vec<P>>,
+    /// The special handlers' settings calls, made after the combat call
+    /// ([`specials::SettingsCalls`]).
+    pub special_settings: specials::SettingsCalls,
+    /// `ServerConstants.DRAGON_AXE_USE_OSRS_SPEC`.
+    pub osrs_dragon_axe: bool,
 }
 
 impl CombatWorld {
@@ -135,6 +158,7 @@ impl CombatWorld {
             handler: cs::Handler::new(kind, &[]),
             specials: Specials::default(),
             class,
+            special: None,
         };
         Self {
             entities: HashMap::new(),
@@ -161,6 +185,12 @@ impl CombatWorld {
             kotlin_seed: 0,
             wilderness_aggressors: HashSet::new(),
             pvp_world: false,
+            graves: Default::default(),
+            death_subject: None,
+            projectiles: Default::default(),
+            chain_victims: HashMap::new(),
+            special_settings: Default::default(),
+            osrs_dragon_axe: false,
         }
     }
 }
@@ -347,6 +377,7 @@ impl Live {
     /// Keeps each touched combat pulse's runner object and the canonical
     /// actor's view (`combat_running`, `victim`) equal to the pulse.
     pub fn sync_combat(&mut self) {
+        specials::flush_settings(self);
         let touched: Vec<Node> = self.inner.combat.touched.drain().collect();
         for node in touched {
             let Some(entry) = self.inner.combat.entities.get(&node) else {
@@ -544,6 +575,16 @@ impl Live {
                 result
             }
             Submitted::HeadIcon(p) => prayer::head_icon_pulse(self, &p),
+            Submitted::Special(mut special) => {
+                let done = special.update(self).map_err(|e| format!("{e:?}"));
+                if matches!(done, Ok(false)) {
+                    self.inner
+                        .combat
+                        .submitted
+                        .push((handle, Submitted::Special(special)));
+                }
+                done
+            }
         };
         self.sync_combat();
         Some(result)

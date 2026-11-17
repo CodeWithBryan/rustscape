@@ -3,17 +3,17 @@
 //! `Animator` over them, and `UpdateMasks.prepare`'s impact poll from the
 //! NPC's `ImpactHandler` queue.
 //!
-//! The encoders are written from the pinned `NPCFlags530.kt` (hit marks,
-//! animation, face entity, spot animation, type swap, force chat, animation
-//! sequence, face location); they have no differential corpus of their own:
-//! the client-side decoder of `rs09_protocol::game::npcs` (the RT4 client's
-//! reader) reads every block back in the live-world test.
+//! The encoders are the library `world::npc_masks` (`NPCFlags530.writeTo`,
+//! replayed against npc-masks-oracle); this module maps the live payloads
+//! to its contexts and answers its reads (the hit mark owner's lifepoints,
+//! a face target's client index).
 use super::super::{P, host::Live};
 use crate::{
     definitions::{animation::CacheSource, item::Shared},
     world::{
         animation::{self, Animation, Animator, Graphics},
         doors::Location,
+        npc_masks,
         player_walk::{Node, NodeHandle},
         prepared_animation,
         update_masks::{self as um, Flag, Kind, Provider, ProviderHandle},
@@ -52,28 +52,18 @@ pub type NpcMasks = um::Masks<Node, Payload>;
 
 /// `NPCFlags530`: flag, presence bit, ordinal.
 static PROVIDERS: LazyLock<Vec<ProviderHandle>> = LazyLock::new(|| {
-    [
-        (Flag::PrimaryHit, 0x40, 0),
-        (Flag::SecondaryHit, 0x2, 1),
-        (Flag::Animate, 0x10, 2),
-        (Flag::FaceEntity, 0x4, 3),
-        (Flag::SpotAnim, 0x80, 4),
-        (Flag::TypeSwap, 0x1, 5),
-        (Flag::ForceChat, 0x20, 6),
-        (Flag::AnimSeq, 0x100, 7),
-        (Flag::FaceLocation, 0x200, 8),
-    ]
-    .into_iter()
-    .map(|(flag, presence, ordinal)| {
-        Arc::new(Provider {
-            revision: 530,
-            kind: Kind::Npc,
-            presence,
-            ordinal,
-            flag,
+    npc_masks::PROVIDERS
+        .into_iter()
+        .map(|(flag, presence, ordinal)| {
+            Arc::new(Provider {
+                revision: 530,
+                kind: Kind::Npc,
+                presence,
+                ordinal,
+                flag,
+            })
         })
-    })
-    .collect()
+        .collect()
 });
 
 /// The provider registry (`EntityFlags`) for NPC masks.
@@ -154,10 +144,53 @@ impl um::Impacts<Node, Payload> for Prepare<'_> {
     }
 }
 
-/// The NPC mask encoders (`NPCFlags530.writeTo`) over the live world.
+/// The NPC mask encoders (`world::npc_masks`, `NPCFlags530.writeTo`) over the
+/// live world.
 pub struct Encode<'a> {
     pub live: &'a Live,
+    /// `logInvalidType`'s lines, logged when the write returns.
+    pub logs: Vec<String>,
 }
+
+/// The entities an NPC mask's context names: the hit mark's owner, or a
+/// face target.
+#[derive(Clone)]
+pub enum MaskEntity {
+    Owner(Node),
+    Target(FaceTarget),
+}
+
+impl npc_masks::Host<MaskEntity> for Encode<'_> {
+    fn maximum_lifepoints(&mut self, entity: &MaskEntity) -> npc_masks::Result<i32> {
+        match entity {
+            MaskEntity::Owner(node) => Ok(self.live.health_of(*node).1),
+            MaskEntity::Target(_) => Err(npc_masks::Error::Binding(
+                "the skills of a face target".into(),
+            )),
+        }
+    }
+    fn lifepoints(&mut self, entity: &MaskEntity) -> npc_masks::Result<i32> {
+        match entity {
+            MaskEntity::Owner(node) => Ok(self.live.health_of(*node).0),
+            MaskEntity::Target(_) => Err(npc_masks::Error::Binding(
+                "the skills of a face target".into(),
+            )),
+        }
+    }
+    fn client_index(&mut self, entity: &MaskEntity) -> npc_masks::Result<i32> {
+        match entity {
+            MaskEntity::Target(target) => Ok(self.live.client_index(target)),
+            MaskEntity::Owner(_) => Err(npc_masks::Error::Binding(
+                "the client index of a hit mark's owner".into(),
+            )),
+        }
+    }
+    fn log_invalid(&mut self, provider: &'static str, message: &str) -> npc_masks::Result<()> {
+        self.logs.push(format!("{provider} ERR {message}"));
+        Ok(())
+    }
+}
+
 impl um::Writer<Node, Payload> for Encode<'_> {
     fn is_player(&self, _: Option<&Node>) -> bool {
         false
@@ -175,70 +208,46 @@ impl um::Writer<Node, Payload> for Encode<'_> {
         _: Node,
         buffer: &mut Vec<u8>,
     ) -> um::Result<()> {
-        let mut out = rs09_protocol::buffer::Writer::default();
-        match (provider.flag, context) {
-            (
-                Flag::PrimaryHit,
-                Some(Payload::Hit {
-                    owner,
-                    damage,
-                    kind,
-                }),
-            ) => {
-                out.p1(damage);
-                out.p1neg(kind);
-                let (lifepoints, maximum) = self.live.health_of(owner);
-                let mut ratio = 255;
-                if lifepoints < maximum {
-                    ratio = lifepoints.wrapping_mul(255) / maximum.max(1);
+        let context = context.map(|payload| match payload {
+            Payload::Hit {
+                owner,
+                damage,
+                kind,
+            } => npc_masks::Context::HitMark {
+                damage,
+                kind,
+                entity: Some(MaskEntity::Owner(owner)),
+            },
+            Payload::Animation(animation) => npc_masks::Context::Animation {
+                id: animation.id(),
+                delay: animation.delay(),
+            },
+            Payload::Graphics(graphics) => npc_masks::Context::Graphics {
+                id: graphics.id(),
+                height: graphics.height(),
+                delay: graphics.delay(),
+            },
+            Payload::Face(target) => {
+                let class = match target {
+                    FaceTarget::Player(_) => "Player",
+                    FaceTarget::Npc(_) => "NPC",
+                };
+                npc_masks::Context::Entity {
+                    entity: MaskEntity::Target(target),
+                    class,
                 }
-                out.p1sub(ratio);
             }
-            (Flag::SecondaryHit, Some(Payload::Hit { damage, kind, .. })) => {
-                out.p1neg(damage);
-                out.p1sub(kind);
-            }
-            (Flag::Animate, Some(Payload::Animation(animation))) => {
-                out.p2(animation.id());
-                out.p1(animation.delay());
-            }
-            (Flag::FaceEntity, None) => out.p2add(-1),
-            (Flag::FaceEntity, Some(Payload::Face(target))) => {
-                out.p2add(self.live.client_index(&target));
-            }
-            (Flag::SpotAnim, Some(Payload::Graphics(graphics))) => {
-                out.p2add(graphics.id());
-                out.ip4(
-                    graphics
-                        .height()
-                        .wrapping_shl(16)
-                        .wrapping_add(graphics.delay()),
-                );
-            }
-            (Flag::TypeSwap, Some(Payload::TypeSwap(id))) => out.ip2(id),
-            (Flag::ForceChat, Some(Payload::Chat(text))) => {
-                out.pjstr(text.as_bytes())
-                    .map_err(|e| um::Error::Binding(e.to_string()))?;
-            }
-            // AnimationSequence writes nothing (a TODO in the original).
-            (Flag::AnimSeq, _) => {}
-            (Flag::FaceLocation, Some(Payload::FaceLocation(location))) => {
+            Payload::FaceLocation(location) => {
                 let [x, y, _] = location.coordinates();
-                out.p2add(x.wrapping_shl(1).wrapping_add(1));
-                out.p2(y.wrapping_shl(1).wrapping_add(1));
+                npc_masks::Context::Location { x, y }
             }
-            (flag, _) => {
-                // logInvalidType: the original logs and writes nothing.
-                return Err(um::Error::Binding(format!(
-                    "an NPC {flag:?} mask with a context of another type"
-                )));
-            }
-        }
-        buffer.extend(out.into_vec());
-        Ok(())
+            Payload::Chat(text) => npc_masks::Context::Text(text),
+            Payload::TypeSwap(id) => npc_masks::Context::Int(id),
+        });
+        npc_masks::write_to(self, provider.flag, context.as_ref(), buffer)
+            .map_err(|e| um::Error::Binding(format!("NPCFlags530 {:?}: {e:?}", provider.flag)))
     }
 }
-
 /// `Entity.animator` of an NPC: its masks and its ten clocks.
 #[derive(Clone)]
 pub struct NpcOwner {
@@ -446,7 +455,7 @@ impl Live {
     /// `NPCRenderer.writeMaskUpdates`: `writeSynced(player, npc, buffer,
     /// true)` for a new NPC, `write` otherwise.
     pub fn write_npc_masks(
-        &self,
+        &mut self,
         node: Node,
         viewer: Node,
         buffer: &mut Vec<u8>,
@@ -457,13 +466,22 @@ impl Live {
             .combat
             .npc_masks
             .get(&node)
+            .cloned()
             .ok_or(um::Error::Null)?;
-        let mut encode = Encode { live: self };
-        if sync {
+        let mut encode = Encode {
+            live: self,
+            logs: Vec::new(),
+        };
+        let result = if sync {
             masks.write_synced(&mut encode, Some(viewer), Some(&node), true, buffer)
         } else {
             masks.write(&mut encode, Some(viewer), Some(&node), buffer)
+        };
+        let logs = encode.logs;
+        for line in logs {
+            self.inner.log_line(line);
         }
+        result
     }
     /// The client index of a face target: a player's index with 0x8000, an
     /// NPC's index.

@@ -90,6 +90,10 @@ struct Client {
     messages: Vec<(usize, String)>,
     /// Hit marks in NPC update mask blocks: (NPC index, damage, type).
     npc_hits: Vec<(usize, i32, i32)>,
+    /// Projectiles (zone update 16 inside 230): (frame number, projectile).
+    projectiles: Vec<(usize, updates::Projectile)>,
+    /// Interfaces opened (server opcode 155): (frame number, interface id).
+    opened: Vec<(usize, i32)>,
 }
 
 /// Item metadata for the ground reducer: the test reads lists, not piles.
@@ -160,6 +164,8 @@ impl Client {
                 skill_log: Vec::new(),
                 messages: Vec::new(),
                 npc_hits: Vec::new(),
+                projectiles: Vec::new(),
+                opened: Vec::new(),
             }),
         )
     }
@@ -231,6 +237,24 @@ impl Client {
                     }
                 }
                 _ => {
+                    if frame.opcode == 155 && frame.payload.len() == 9 {
+                        let id =
+                            i32::from(u16::from_be_bytes([frame.payload[7], frame.payload[8]]));
+                        self.opened.push((n, id));
+                    }
+                    if frame.opcode == 230 {
+                        if let Ok(Some(updates::ServerUpdate::ZoneEnclosed { frames, .. })) =
+                            updates::ServerUpdate::decode(&frame)
+                        {
+                            for child in frames.iter().filter(|f| f.opcode == 16) {
+                                let projectile =
+                                    updates::Projectile::decode(child).unwrap_or_else(|e| {
+                                        panic!("{}: projectile {n}: {e:?}", self.name)
+                                    });
+                                self.projectiles.push((n, projectile));
+                            }
+                        }
+                    }
                     if self.base.is_some() {
                         self.ground
                             .apply_frame(&frame, &mut NoMeta)
@@ -851,6 +875,9 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
     if std::env::var_os("RS09_LIVE_COMBAT_ONLY").is_some() {
         combat_scenario(address, saves).await;
         aggression_scenario(address, saves).await;
+        death_scenario(address, saves).await;
+        ranged_scenario(address, saves).await;
+        special_scenario(address, saves).await;
         return;
     }
     // traceone returns: the native parser loads the save at login.
@@ -874,7 +901,296 @@ async fn drive(address: std::net::SocketAddr, saves: &std::path::Path) {
     scenery_scenario(address, saves).await;
     combat_scenario(address, saves).await;
     aggression_scenario(address, saves).await;
+    death_scenario(address, saves).await;
+    ranged_scenario(address, saves).await;
+    special_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
+}
+
+/// A player's death: a saved character with one hitpoint, the tutorial
+/// complete (so `handleImpact` keeps the damage) and `allow_admin_aggression`,
+/// next to the Lumbridge swamp's giant rats. A rat's hit leaves it without
+/// lifepoints: `Entity.startDeath`, the death task (`DeathTask`, a strong
+/// pulse), `Player.commenceDeath`, then `Player.finalizeDeath`
+/// (`world/player_death`): "Oh dear, you are dead!", the skills restored,
+/// the death screen (153) opened and the respawn location. The test
+/// accounts are administrators: nothing is lost (no grave, no drop).
+async fn death_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3196, 3206, 0];
+    write_save_with(
+        &players,
+        "traceone",
+        "deathone",
+        at,
+        &[(0, 1205, 1)],
+        |save| {
+            save["skills"][3]["lifepoints"] = Value::String("1".into());
+            let list = save
+                .as_object_mut()
+                .unwrap()
+                .entry("attributes")
+                .or_insert_with(|| Value::Array(vec![]));
+            for key in ["allow_admin_aggression", "tutorial:complete"] {
+                list.as_array_mut()
+                    .unwrap()
+                    .push(serde_json::json!({"key": key, "type": "bool", "value": true}));
+            }
+        },
+    );
+    let (code, one) = Client::login(address, "deathone").await;
+    assert_eq!(code, 2, "deathone's login");
+    let mut one = one.unwrap();
+    let started = Instant::now();
+    // tutorial:complete: LoginConfiguration.sendLobbyScreen (the welcome
+    // screen 378 with LastLoginInfo); its play button (140) runs
+    // configureGameWorld a tick later.
+    one.until(Duration::from_secs(10), "deathone's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    one.send(button(378, 140)).await;
+    one.until(Duration::from_secs(10), "deathone in the game world", |c| {
+        !c.updates.is_empty()
+    })
+    .await;
+    eprintln!(
+        "deathone logged in at {:?}: hitpoints {:?}",
+        one.position(),
+        one.skills.get(&3)
+    );
+    one.until_pinging(Duration::from_secs(120), "Oh dear, you are dead!", |c| {
+        c.messages
+            .iter()
+            .any(|(_, m)| m == "Oh dear, you are dead!")
+    })
+    .await;
+    let died = started.elapsed();
+    one.until(
+        Duration::from_secs(10),
+        "the death screen and the restored hitpoints",
+        |c| c.opened.iter().any(|(_, id)| *id == 153) && c.skills.get(&3).map(|s| s.0) == Some(10),
+    )
+    .await;
+    let position = one.position();
+    eprintln!(
+        "deathone: killed by a giant rat after {:.1} s; death screen 153 opened, hitpoints {:?}, respawned at {position:?}; inventory {:?}",
+        died.as_secs_f64(),
+        one.skills.get(&3),
+        one.containers.get(&93)
+    );
+    assert_ne!(position, at, "deathone respawned away from the rats");
+    assert_eq!(
+        one.messages
+            .iter()
+            .filter(|(_, m)| m == "Oh dear, you are dead!")
+            .count(),
+        1,
+        "finalizeDeath ran once (the death task did not fail and stop again)"
+    );
+    assert_eq!(
+        one.containers.get(&93).and_then(|c| c.get(&0)).map(|i| i.0),
+        Some(1205),
+        "an administrator keeps its items"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The varps (opcode 60/226 through `updates::ServerUpdate`) a client saw,
+/// in order: (frame number, id, value).
+fn varps(c: &Client) -> Vec<(usize, i32, i32)> {
+    c.frames
+        .iter()
+        .enumerate()
+        .filter_map(|(n, f)| match updates::ServerUpdate::decode(f) {
+            Ok(Some(updates::ServerUpdate::Varp { id, value })) => Some((n, id, value)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// A weapon special attack: a saved character in the Lumbridge chicken pen
+/// wielding a dragon dagger (1215) turns the special bar on (the combat
+/// tab's special bar button: CombatTabInterface's pulse, `toggleSpecialBar`,
+/// varp 301 = 1), then attacks a chicken: `Player.getSwingHandler` finds
+/// the registered Puncture handler (`CombatSwingHandler.register` at boot),
+/// its swing drains 25 energy (varp 300 from 1000 to 750) and turns the bar
+/// off, and the hits land.
+async fn special_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3232, 3294, 0];
+    write_save_with(&players, "traceone", "specone", at, &[], |save| {
+        save["core_data"]["equipment"] =
+            serde_json::json!([{"slot": "3", "id": "1215", "amount": "1", "charge": "1000"}]);
+        for skill in [0, 2] {
+            save["skills"][skill]["static"] = Value::String("60".into());
+            save["skills"][skill]["dynamic"] = Value::String("60".into());
+            save["skills"][skill]["experience"] = Value::String("273742.0".into());
+        }
+    });
+    let (code, one) = Client::login(address, "specone").await;
+    assert_eq!(code, 2, "specone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "specone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty() && !c.npcs.actors.is_empty()
+    })
+    .await;
+    let tab = one
+        .opened
+        .iter()
+        .rev()
+        .map(|(_, id)| *id)
+        .find(|id| (75..=93).contains(id))
+        .expect("the weapon tab's interface");
+    let from = one.frames.len();
+    one.send(button(tab, 10)).await;
+    one.until(
+        Duration::from_secs(10),
+        "the special bar on (varp 301 = 1)",
+        |c| {
+            varps(c)
+                .iter()
+                .any(|(n, id, v)| *n >= from && *id == 301 && *v == 1)
+        },
+    )
+    .await;
+    eprintln!("specone: the special bar of weapon tab {tab} is on");
+    let base = one.base.unwrap();
+    let here = one.position();
+    let mut chickens: Vec<(usize, [i32; 3])> = one
+        .npcs
+        .actors
+        .iter()
+        .filter(|(_, n)| n.type_id == 41 || n.type_id == 1017)
+        .map(|(i, n)| (*i, [base[0] + n.tile[0], base[1] + n.tile[1], base[2]]))
+        .collect();
+    chickens.sort_by_key(|(_, t)| (t[0] - here[0]).abs() + (t[1] - here[1]).abs());
+    let from = one.frames.len();
+    let mut drained = false;
+    for (index, tile) in chickens.into_iter().take(4) {
+        eprintln!("specone at {here:?} attacks chicken {index} at {tile:?}");
+        one.send(frame(3, &[&la16(index as i32)])).await;
+        let end = Instant::now() + Duration::from_secs(20);
+        while Instant::now() < end
+            && !varps(&one)
+                .iter()
+                .any(|(n, id, v)| *n >= from && *id == 300 && *v == 750)
+        {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if varps(&one)
+            .iter()
+            .any(|(n, id, v)| *n >= from && *id == 300 && *v == 750)
+        {
+            drained = true;
+            break;
+        }
+        one.send(frame(93, &[])).await;
+    }
+    assert!(
+        drained,
+        "Puncture drained 25 special energy (varp 300 = 750)"
+    );
+    let bar_off = varps(&one)
+        .iter()
+        .any(|(n, id, v)| *n >= from && *id == 301 && *v == 0);
+    eprintln!(
+        "specone: Puncture swung: special energy 750/1000, bar turned off: {bar_off}; varps {:?}",
+        varps(&one)
+            .iter()
+            .filter(|(n, id, _)| *n >= from && (*id == 300 || *id == 301))
+            .collect::<Vec<_>>()
+    );
+    assert!(bar_off, "drainSpecial turned the bar off (varp 301 = 0)");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A ranged attack: a saved character in the Lumbridge chicken pen with a
+/// shortbow (841) worn and bronze arrows (882) in the ammunition slot uses
+/// Attack on a chicken: the range swing handler, the arrow's projectile
+/// (`Projectile.send`: zone update 16 in the chunk update), `useAmmo`
+/// (`equipment.replace`: one arrow fewer) and a hit mark on the chicken.
+async fn ranged_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3232, 3294, 0];
+    write_save_with(&players, "traceone", "rangeone", at, &[], |save| {
+        save["core_data"]["equipment"] = serde_json::json!([
+            {"slot": "3", "id": "841", "amount": "1", "charge": "1000"},
+            {"slot": "13", "id": "882", "amount": "100", "charge": "1000"}
+        ]);
+        save["skills"][4]["static"] = Value::String("40".into());
+        save["skills"][4]["dynamic"] = Value::String("40".into());
+        save["skills"][4]["experience"] = Value::String("37224.0".into());
+    });
+    let (code, one) = Client::login(address, "rangeone").await;
+    assert_eq!(code, 2, "rangeone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "rangeone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty() && !c.npcs.actors.is_empty()
+    })
+    .await;
+    let base = one.base.unwrap();
+    let here = one.position();
+    let mut chickens: Vec<(usize, [i32; 3])> = one
+        .npcs
+        .actors
+        .iter()
+        .filter(|(_, n)| n.type_id == 41 || n.type_id == 1017)
+        .map(|(i, n)| (*i, [base[0] + n.tile[0], base[1] + n.tile[1], base[2]]))
+        .collect();
+    chickens.sort_by_key(|(_, t)| (t[0] - here[0]).abs() + (t[1] - here[1]).abs());
+    let started = Instant::now();
+    let hits_from = one.npc_hits.len();
+    let shots_from = one.projectiles.len();
+    let mut chosen = None;
+    for (index, tile) in chickens.into_iter().take(4) {
+        eprintln!("rangeone at {here:?} shoots at chicken {index} at {tile:?}");
+        one.send(frame(3, &[&la16(index as i32)])).await;
+        let end = Instant::now() + Duration::from_secs(20);
+        while Instant::now() < end
+            && !one.npc_hits[hits_from..]
+                .iter()
+                .any(|(i, _, _)| *i == index)
+        {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if one.npc_hits[hits_from..]
+            .iter()
+            .any(|(i, _, _)| *i == index)
+        {
+            chosen = Some(index);
+            break;
+        }
+        one.send(frame(93, &[])).await;
+    }
+    let index = chosen.expect("a ranged hit mark on a chicken");
+    let shots: Vec<_> = one.projectiles[shots_from..]
+        .iter()
+        .map(|(_, p)| (p.spot, p.target, p.start_height, p.end_height))
+        .collect();
+    let arrows = one
+        .containers
+        .get(&94)
+        .and_then(|c| c.get(&13))
+        .map(|i| i.1);
+    eprintln!(
+        "rangeone: hit mark on chicken {index} after {:.1} s; projectiles {shots:?}; arrows left {arrows:?}",
+        started.elapsed().as_secs_f64()
+    );
+    assert!(
+        one.projectiles[shots_from..]
+            .iter()
+            .any(|(_, p)| p.target == index as i32 + 1),
+        "an arrow's projectile toward the chicken"
+    );
+    assert!(
+        arrows.is_some_and(|a| a < 100),
+        "useAmmo took arrows from the quiver"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// Combat against an NPC: a saved character in the
@@ -1204,6 +1520,15 @@ fn frame(opcode: u8, parts: &[&[u8]]) -> Frame {
     Frame {
         opcode,
         payload: parts.concat(),
+    }
+}
+/// IF_ACTION (155 from the client): a component's first option.
+fn button(interface: i32, child: i32) -> Frame {
+    let mut payload = ((interface << 16) | child).to_be_bytes().to_vec();
+    payload.extend((-1i16).to_be_bytes());
+    Frame {
+        opcode: 155,
+        payload,
     }
 }
 /// OBJSTACK_ACTION_1 (66): a ground item's third option, Take.

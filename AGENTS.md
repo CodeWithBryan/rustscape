@@ -123,7 +123,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   equipment registers and the chinchompa and salamander handlers are not
   ported (the dragonfire handler, FireType, SwitchAttack, MultiSwingHandler,
   MixedSwingHandlers and the dragon classes are world/dragonfire, next
-  bullet); nothing installs the library in `--world`. See
+  bullet); `rs09-server --world` installs the library: the 34 handlers are
+  registered at boot, the live world answers overrides, swing_handler,
+  special_attacks::Host and the combat tab's special services
+  (world/live/combat/specials.rs, docs/live-world.md). See
   docs/special-attacks.md.
 
 - For dragonfire and switching NPC attacks (world/dragonfire:
@@ -1302,8 +1305,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   fields and map orders. Every outside call is a required service; the
   driver order of the controller, ground pulse and grave NPC ticks is a case
   input. Permadeath.kt, GravePurchaseInterface and the forcegravedeath
-  command are not ported; nothing installs the library. See
-  docs/player-death.md.
+  command are not ported; `rs09-server --world` installs commenceDeath,
+  finalizeDeath, getContainers and the death screen
+  (world/live/combat/player_death.rs); graves refuse there by name (the grave
+  NPC is not built at runtime). See docs/player-death.md.
 - For NodeList, Repository, DisconnectionQueue or Player.clear/finishClear/
   allowRemoval (world/repository, world/disconnection), run
   `cargo test -p rs09-server --test repository` and `cargo xtask
@@ -1425,6 +1430,19 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   a closed gap or a new difference must fail it. The test clock is per
   thread. `rs09-server --world` installs the driver (next bullet); the
   scenarios reach no client input, NPCs or lobby. See docs/tick-driver.md.
+- For the NPC update-mask encoders (world/npc_masks: NPCFlags530's nine
+  providers and writeTo bodies, EFlagProvider.logInvalidType), run `cargo
+  test -p rs09-server --test npc_masks` and `cargo xtask npc-masks-oracle
+  --check` with Python/JDK 11, plus update_masks, npc_render and live_world.
+  Preserve the 1,545 cases. Keep PrimaryHit's two bytes before the entity
+  read, one maximumLifepoints read and two lifepoints reads below the
+  maximum, Java int ratio arithmetic with ArithmeticException for a zero
+  maximum, FaceEntity's null as -1, TypeSwap's Graphics in its log
+  message, AnimationSequence writing nothing, putString's bytes and 0, and
+  the log-and-write-nothing answer to a context of another class. The
+  entity reads and the log are required Host services with no default; the
+  live world encodes its NPC masks through the library. See
+  docs/npc-masks.md.
 - For the live world (world/live: `rs09-server --world`, its boot, the
   production login/driver/repository/social hosts, walking, the player
   update with prepared masks, the player tabs and their buttons, NPCs,
@@ -1434,8 +1452,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   EquipHandler, EquipmentContainer and the appearance body, the region zones
   of ZoneBuilder.startup with SkullManager, the engine timers, the global
   handlers, combat (combat_pulse/combat_swing, ImpactHandler, NPC update
-  masks, aggression, NPC death and drops, prayer), the worker loop and the
-  saver), run
+  masks, aggression, NPC death and drops, prayer, a player's death,
+  projectiles, ammunition use, poison from swings, special attacks), the
+  lobby (sendLobbyScreen, LastLoginInfo, the welcome screen's play button),
+  the worker loop and the saver), run
   `cargo test -p rs09-server --test live_world` (needs assets/cache and
   runs/startup-loaders-oracle/template; it prints SKIPPED without them, and a
   skip establishes nothing) plus world_login, tick_driver, tick, world_update,
@@ -1447,7 +1467,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   player_managers, equipment, inventory, interaction_listeners, timers,
   content_timers, global_handlers, scenery_action, wield_requirements,
   combat_pulse, combat_swing, prayer, npc_behaviour, npc_death, drop_tables,
-  update_masks, prepared_masks and special_attacks. Keep the libraries
+  update_masks, prepared_masks, special_attacks, player_death, projectile,
+  dragonfire and npc_masks. Keep the libraries
   unchanged: a host answers through them (prepared_masks gained the player
   hit encoders and queue_impact).
   `zones::Host` is `Live` itself (a monitor per entity); NPCs keep the
@@ -1459,7 +1480,7 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   the entity's canonical manager (STANDARD) and submitted to GameWorld.Pulser,
   dispatched by identity like every combat and death pulse; a walk's clear
   stops it right after the walking call. NPC masks are update_masks::Masks
-  with the NPCFlags530 encoders, prepared after the NPC's tick when it
+  with the world/npc_masks encoders (npc-masks-oracle), prepared after the NPC's tick when it
   reached Entity.tick; selectTarget runs right after the NPC's tick kernel. The engine timers run on
   the canonical profile's timer manager (its lists aliased, never copied)
   through `timers::content::Natives` with world/live/timers.rs as the host
@@ -1482,11 +1503,16 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   on file I/O. Ground items join the start-up's manager, spawns and option
   table; DropListener's soft script runs at the player's next tick; the
   appearance body is the canonical prepareBodyData copied into the prepared
-  data. Content, a player's death (player_death), NPC class overrides,
-  special attacks, spells, projectiles, poison from swings, teleports, NPC
-  timers, the dialogue interpreter, component use-with (spells), continue
-  and input handlers, the login plugin and region unloading remain open.
-  See docs/live-world.md.
+  data. A player's death is player_death over the live world (the dying
+  player's containers answer through its context; graves refuse); a
+  projectile is a foreign chunk flag written as ProjectileUpdateFlag at the
+  chunk update and dropped by resetAll (ported without a corpus of its own);
+  the special handlers are HandlerSlots with their Special, their settings
+  calls recorded and made after the combat call, their pulses dispatched by
+  identity. Content, graves, NPC class overrides (their quest and diary
+  content), spells, teleports, NPC timers, the dialogue interpreter,
+  component use-with (spells), continue and input handlers, the login plugin
+  and region unloading remain open. See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,

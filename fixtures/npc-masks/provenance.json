@@ -1,0 +1,37 @@
+{
+  "caseCount": 1545,
+  "fixtureSha256": "29ce9e14f1d79b0ae5eea6f99bddf967735c3f47e3d3adaafdc4a7c9b0c6d2d2",
+  "format": 1,
+  "scope": "Unchanged NPCFlags530 (all nine providers and writeTo bodies), EFlagProvider (logInvalidType), EntityFlag, HitMark, IoBuffer with PacketHeader, ISAACCipher and ByteBufferUtils on JDK 11 with -Dfile.encoding=UTF-8 (putString uses String.getBytes()). Entity/Player/NPC, Skills, Animation, Graphics, Location and ForceMovement are getter-only adapters; the entity reads (maximumLifepoints, lifepoints, getClientIndex) and logWithStack are recorded in order. Each case is one writeTo with its written bytes, recorded calls and NullPointerException/ArithmeticException. Not covered: the provider registry, UpdateMasks (update-masks oracle), the NPC renderer and buffers beyond 2048 bytes.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/npc-masks/Support.java": "722948c15411bcbdb48017bed64b07c1874ad491b399f810d7a717a5ca645e83",
+    "oracle/npc-masks/generate.py": "ff7aec7fcba54e9ca70cd59e4cf77eed6260a91d72828066bc2f41907a4e1a33",
+    "reference/server/Server/src/main/core/cache/crypto/ISAACCipher.kt": "5b0512534295c6e141b44cb2b0f059ae1090bbbe45b415f484da2fd4a25c9af7",
+    "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
+    "reference/server/Server/src/main/core/game/world/update/flag/EFlagProvider.kt": "3891d71d07886d720fca22f7790d295147496cc91459e35f450a63021a296712",
+    "reference/server/Server/src/main/core/game/world/update/flag/EntityFlag.kt": "10c523b9e816fbfc2a2318ca99d8122c8eb2d4ec10c33f8b45d8e4ced2251163",
+    "reference/server/Server/src/main/core/game/world/update/flag/NPCFlags530.kt": "417e5748e277b994f8c0a8883e2149ec1e78f504f137794aec2d610460c29bb2",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/HitMark.java": "a383feac05874340cb48761f42ac93e6052d7a9a3bae3f8500bbb57c51fd09d9",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "reference/server/Server/src/main/core/net/packet/PacketHeader.java": "a0635e12f2380381df12d534bc7695691d415c5c4dc0edf5692888082a623bc7",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

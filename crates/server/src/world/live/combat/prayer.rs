@@ -372,8 +372,23 @@ impl prayer::Host for PrayerHost<'_> {
     fn location(&mut self, entity: &P) -> Result<Option<[i32; 3]>> {
         Ok(self.live.cloc(entity).map(|l| l.coordinates()))
     }
-    fn send_projectile(&mut self, _: ProjectileRequest) -> Result<()> {
-        refuse("Projectile.send (projectiles are not installed)")
+    fn send_projectile(&mut self, r: ProjectileRequest) -> Result<()> {
+        // Projectile.create(start, destination, ...).send(): a location-based
+        // projectile without a victim (combat/projectiles.rs).
+        let at = |l: [i32; 3]| crate::world::doors::Location::new(l[0], l[1], l[2]);
+        let projectile = super::projectiles::Projectile {
+            source_location: Some(at(r.start)),
+            victim: None,
+            end_location: Some(at(r.destination)),
+            id: r.id,
+            start_height: r.start_height,
+            end_height: r.end_height,
+            start_delay: r.start_delay,
+            speed: r.speed,
+            angle: r.angle,
+            distance: r.distance,
+        };
+        self.live.projectile_send(projectile).map_err(perr)
     }
     fn manual_hit(&mut self, owner: &P, source: &P, hit: i32, kind: HitsplatType) -> Result<()> {
         cp::impact::manual_hit(self.live, owner, Some(source), hit, Some(kind))
@@ -420,7 +435,8 @@ impl prayer::Host for PrayerHost<'_> {
             .is_some_and(|s| s.playing))
     }
     fn entity_commence_death(&mut self, _: &P, _: Option<&P>) -> Result<()> {
-        refuse("Entity.commenceDeath for a player (world/player_death is not installed)")
+        // Entity.commenceDeath(killer): an empty body.
+        Ok(())
     }
     fn set_special_energy(&mut self, player: &P, value: i32) -> Result<()> {
         self.live

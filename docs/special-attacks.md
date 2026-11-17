@@ -11,8 +11,11 @@ content/global/handlers/item/equipment/special (`AncientMace`, `Backstab`,
 `SpearWall`, `Sweep`, `Warstrike`, `Weaken`), their registration, the lookup
 `Player.getSwingHandler` makes, their `fireEvent` answers with the combat
 tab's instant special, the anonymous timers and pulses they create, and
-core/game/node/entity/combat/MultihitTargets.kt. It is a library: nothing in
-a session or `--world` installs it yet (see Joins).
+core/game/node/entity/combat/MultihitTargets.kt. It is a library;
+`rs09-server --world` installs it (world/live/combat/specials.rs: the
+registration at boot, the overrides, `Player.getSwingHandler`, the combat
+tab's special bar; docs/live-world.md), and its live test drives a
+dragon dagger's Puncture (see Joins).
 
 `ChinchompaSwingHandler`, `DragonfireSwingHandler` and
 `SalamanderSwingHandler` live in the same folder but are not special attacks;
@@ -125,7 +128,8 @@ plain accessors.
   `special_instant` and `special_swing` services with
   `combat_pulse::handler::special` on the melee singleton,
   `Special::fire_event(.., "instant_spec") == Fired::True` and
-  `instant_swing`. No test drives that join yet.
+  `instant_swing`. The live world binds it (world/live/global.rs); its
+  test turns the bar on and swings a regular special, not an instant one.
 - **Start-up.** A world makes one handler per [`Special::ALL`] entry with
   `Special::instance` and calls `register_all` with the melee and range
   singletons.

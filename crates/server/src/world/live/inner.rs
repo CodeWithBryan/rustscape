@@ -472,6 +472,13 @@ impl interfaces::Context for Inner {
             .default_answer("InterfaceListeners.runClose (no content listener: true)");
         Ok(true)
     }
+    fn dispatch_close(&mut self, _: Option<interfaces::Handle>) -> interfaces::Result<()> {
+        // player.dispatch(InterfaceCloseEvent(component)): entity event
+        // hooks are not ported.
+        self.not_ported
+            .skip("InterfaceCloseEvent dispatch (entity event hooks not ported)");
+        Ok(())
+    }
     fn plugin_open(
         &mut self,
         _: interfaces::Plugin,
@@ -520,9 +527,11 @@ impl interfaces::Context for Inner {
         interfaces::component_open(self, m, c)
     }
     fn dispatch_open(&mut self, _: interfaces::Handle) -> interfaces::Result<()> {
-        Err(interfaces::Error::Binding(
-            "not ported: interface open dispatch to content".into(),
-        ))
+        // player.dispatch(InterfaceOpenEvent(component)): entity event hooks
+        // are not ported.
+        self.not_ported
+            .skip("InterfaceOpenEvent dispatch (entity event hooks not ported)");
+        Ok(())
     }
     fn set_varp(&mut self, id: i32, value: i32) -> interfaces::Result<()> {
         let p = self.current()?;
@@ -1122,6 +1131,14 @@ impl skills::Context for SkillsContext<'_> {
                 self.inner
                     .with_profile(&self.p, |p| p.summoning_combat_level = level)
                     .map_err(|_| skills::Error::Binding)?;
+                Ok(())
+            }
+            Effect::DynamicLevel { .. } => {
+                // entity.dispatch(DynamicSkillLevelChangeEvent): entity event
+                // hooks are not ported.
+                self.inner
+                    .not_ported
+                    .skip("DynamicSkillLevelChangeEvent dispatch (entity event hooks not ported)");
                 Ok(())
             }
             other => {
