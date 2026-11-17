@@ -1,0 +1,832 @@
+{
+ "items": {
+  "basic": {
+   "1": {
+    "examine": "Toolkit examine.",
+    "name": "Toolkit",
+    "tradeable": true,
+    "value": 0
+   },
+   "11238": {
+    "examine": "Baby impling jar examine.",
+    "name": "Baby impling jar",
+    "options": [
+     "Loot",
+     null,
+     null,
+     null,
+     "Destroy"
+    ],
+    "tradeable": true,
+    "value": 50
+   },
+   "12345": {
+    "examine": "Not for sale.",
+    "name": "Untradeable thing",
+    "value": 7
+   },
+   "13000": {
+    "examine": "Gold statue examine.",
+    "name": "Gold statue",
+    "tradeable": true,
+    "value": 2000000000
+   },
+   "14638": {
+    "examine": "Ring of wealth (i) examine.",
+    "name": "Ring of wealth (i)",
+    "tradeable": true,
+    "value": 1000
+   },
+   "1511": {
+    "examine": "Logs examine.",
+    "name": "Logs",
+    "noteId": 1512,
+    "tradeable": true,
+    "value": 4
+   },
+   "1512": {
+    "examine": "Logs examine.",
+    "name": "Logs",
+    "noteId": 1511,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 4
+   },
+   "1513": {
+    "examine": "Magic logs examine.",
+    "name": "Magic logs",
+    "noteId": 1514,
+    "tradeable": true,
+    "value": 320
+   },
+   "1514": {
+    "examine": "Magic logs examine.",
+    "name": "Magic logs",
+    "noteId": 1513,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 320
+   },
+   "1925": {
+    "examine": "Bucket examine.",
+    "name": "Bucket",
+    "noteId": 1926,
+    "tradeable": true,
+    "value": 2
+   },
+   "1926": {
+    "examine": "Bucket examine.",
+    "name": "Bucket",
+    "noteId": 1925,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 2
+   },
+   "2000": {
+    "examine": "Mystery note examine.",
+    "name": "Mystery note",
+    "noteId": 2001,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 10
+   },
+   "2572": {
+    "examine": "Ring of wealth examine.",
+    "name": "Ring of wealth",
+    "noteId": 2573,
+    "tradeable": true,
+    "value": 1000
+   },
+   "2573": {
+    "examine": "Ring of wealth examine.",
+    "name": "Ring of wealth",
+    "noteId": 2572,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 1000
+   },
+   "3000": {
+    "examine": "Filler 0 examine.",
+    "name": "Filler 0",
+    "tradeable": true,
+    "value": 10
+   },
+   "3001": {
+    "examine": "Filler 1 examine.",
+    "name": "Filler 1",
+    "tradeable": true,
+    "value": 17
+   },
+   "3002": {
+    "examine": "Filler 2 examine.",
+    "name": "Filler 2",
+    "tradeable": true,
+    "value": 24
+   },
+   "3003": {
+    "examine": "Filler 3 examine.",
+    "name": "Filler 3",
+    "tradeable": true,
+    "value": 31
+   },
+   "3004": {
+    "examine": "Filler 4 examine.",
+    "name": "Filler 4",
+    "tradeable": true,
+    "value": 38
+   },
+   "3005": {
+    "examine": "Filler 5 examine.",
+    "name": "Filler 5",
+    "tradeable": true,
+    "value": 45
+   },
+   "3006": {
+    "examine": "Filler 6 examine.",
+    "name": "Filler 6",
+    "tradeable": true,
+    "value": 52
+   },
+   "3007": {
+    "examine": "Filler 7 examine.",
+    "name": "Filler 7",
+    "tradeable": true,
+    "value": 59
+   },
+   "3008": {
+    "examine": "Filler 8 examine.",
+    "name": "Filler 8",
+    "tradeable": true,
+    "value": 66
+   },
+   "3009": {
+    "examine": "Filler 9 examine.",
+    "name": "Filler 9",
+    "tradeable": true,
+    "value": 73
+   },
+   "3010": {
+    "examine": "Filler 10 examine.",
+    "name": "Filler 10",
+    "tradeable": true,
+    "value": 80
+   },
+   "3011": {
+    "examine": "Filler 11 examine.",
+    "name": "Filler 11",
+    "tradeable": true,
+    "value": 87
+   },
+   "3012": {
+    "examine": "Filler 12 examine.",
+    "name": "Filler 12",
+    "tradeable": true,
+    "value": 94
+   },
+   "3013": {
+    "examine": "Filler 13 examine.",
+    "name": "Filler 13",
+    "tradeable": true,
+    "value": 101
+   },
+   "3014": {
+    "examine": "Filler 14 examine.",
+    "name": "Filler 14",
+    "tradeable": true,
+    "value": 108
+   },
+   "3015": {
+    "examine": "Filler 15 examine.",
+    "name": "Filler 15",
+    "tradeable": true,
+    "value": 115
+   },
+   "3016": {
+    "examine": "Filler 16 examine.",
+    "name": "Filler 16",
+    "tradeable": true,
+    "value": 122
+   },
+   "3017": {
+    "examine": "Filler 17 examine.",
+    "name": "Filler 17",
+    "tradeable": true,
+    "value": 129
+   },
+   "3018": {
+    "examine": "Filler 18 examine.",
+    "name": "Filler 18",
+    "tradeable": true,
+    "value": 136
+   },
+   "3019": {
+    "examine": "Filler 19 examine.",
+    "name": "Filler 19",
+    "tradeable": true,
+    "value": 143
+   },
+   "3020": {
+    "examine": "Filler 20 examine.",
+    "name": "Filler 20",
+    "tradeable": true,
+    "value": 150
+   },
+   "3021": {
+    "examine": "Filler 21 examine.",
+    "name": "Filler 21",
+    "tradeable": true,
+    "value": 157
+   },
+   "3022": {
+    "examine": "Filler 22 examine.",
+    "name": "Filler 22",
+    "tradeable": true,
+    "value": 164
+   },
+   "3023": {
+    "examine": "Filler 23 examine.",
+    "name": "Filler 23",
+    "tradeable": true,
+    "value": 171
+   },
+   "3024": {
+    "examine": "Filler 24 examine.",
+    "name": "Filler 24",
+    "tradeable": true,
+    "value": 178
+   },
+   "3025": {
+    "examine": "Filler 25 examine.",
+    "name": "Filler 25",
+    "tradeable": true,
+    "value": 185
+   },
+   "3026": {
+    "examine": "Filler 26 examine.",
+    "name": "Filler 26",
+    "tradeable": true,
+    "value": 192
+   },
+   "3027": {
+    "examine": "Filler 27 examine.",
+    "name": "Filler 27",
+    "tradeable": true,
+    "value": 199
+   },
+   "3028": {
+    "examine": "Filler 28 examine.",
+    "name": "Filler 28",
+    "tradeable": true,
+    "value": 206
+   },
+   "3029": {
+    "examine": "Filler 29 examine.",
+    "name": "Filler 29",
+    "tradeable": true,
+    "value": 213
+   },
+   "379": {
+    "examine": "Lobster examine.",
+    "name": "Lobster",
+    "noteId": 380,
+    "tradeable": true,
+    "value": 150
+   },
+   "380": {
+    "examine": "Lobster examine.",
+    "name": "Lobster",
+    "noteId": 379,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 150
+   },
+   "4045": {
+    "examine": "Explosive potion examine.",
+    "name": "Explosive potion",
+    "options": [
+     "Drink",
+     null,
+     null,
+     null,
+     "Destroy"
+    ],
+    "tradeable": true,
+    "value": 50
+   },
+   "4151": {
+    "examine": "Abyssal whip examine.",
+    "high_alchemy": 72000,
+    "low_alchemy": 48000,
+    "name": "Abyssal whip",
+    "noteId": 4152,
+    "tradeable": true,
+    "value": 120001
+   },
+   "4152": {
+    "examine": "Abyssal whip examine.",
+    "name": "Abyssal whip",
+    "noteId": 4151,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 120001
+   },
+   "554": {
+    "examine": "Fire rune examine.",
+    "name": "Fire rune",
+    "stackable": true,
+    "tradeable": true,
+    "value": 4
+   },
+   "590": {
+    "examine": "Tinderbox examine.",
+    "name": "Tinderbox",
+    "tradeable": true,
+    "value": 1
+   },
+   "7462": {
+    "examine": "Barrows gloves examine.",
+    "name": "Barrows gloves",
+    "tradeable": false,
+    "value": 130000
+   },
+   "7936": {
+    "examine": "Pure essence examine.",
+    "name": "Pure essence",
+    "noteId": 7937,
+    "tradeable": true,
+    "value": 1
+   },
+   "7937": {
+    "examine": "Pure essence examine.",
+    "name": "Pure essence",
+    "noteId": 7936,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 1
+   },
+   "995": {
+    "examine": "Coins examine.",
+    "name": "Coins",
+    "stackable": true,
+    "tradeable": true,
+    "value": 1
+   }
+  },
+  "sets": {
+   "1": {
+    "examine": "Toolkit examine.",
+    "name": "Toolkit",
+    "tradeable": true,
+    "value": 0
+   },
+   "10": {
+    "examine": "Cannon barrels examine.",
+    "name": "Cannon barrels",
+    "tradeable": true,
+    "value": 187500
+   },
+   "1075": {
+    "examine": "Bronze platelegs examine.",
+    "name": "Bronze platelegs",
+    "tradeable": true,
+    "value": 80
+   },
+   "1117": {
+    "examine": "Bronze platebody examine.",
+    "name": "Bronze platebody",
+    "tradeable": true,
+    "value": 160
+   },
+   "11238": {
+    "examine": "Baby impling jar examine.",
+    "name": "Baby impling jar",
+    "options": [
+     "Loot",
+     null,
+     null,
+     null,
+     "Destroy"
+    ],
+    "tradeable": true,
+    "value": 50
+   },
+   "1149": {
+    "examine": "Dragon med helm examine.",
+    "name": "Dragon med helm",
+    "tradeable": true,
+    "value": 100000
+   },
+   "1155": {
+    "examine": "Bronze full helm examine.",
+    "name": "Bronze full helm",
+    "tradeable": true,
+    "value": 44
+   },
+   "11814": {
+    "examine": "Bronze set (lg) examine.",
+    "name": "Bronze set (lg)",
+    "tradeable": true,
+    "value": 600
+   },
+   "11842": {
+    "examine": "Dragon chain set examine.",
+    "name": "Dragon chain set",
+    "tradeable": true,
+    "value": 1000000
+   },
+   "1189": {
+    "examine": "Bronze kiteshield examine.",
+    "name": "Bronze kiteshield",
+    "tradeable": true,
+    "value": 68
+   },
+   "11967": {
+    "examine": "Dwarf cannon set examine.",
+    "name": "Dwarf cannon set",
+    "tradeable": true,
+    "value": 750000
+   },
+   "12": {
+    "examine": "Cannon furnace examine.",
+    "name": "Cannon furnace",
+    "tradeable": true,
+    "value": 187500
+   },
+   "12345": {
+    "examine": "Not for sale.",
+    "name": "Untradeable thing",
+    "value": 7
+   },
+   "13000": {
+    "examine": "Gold statue examine.",
+    "name": "Gold statue",
+    "tradeable": true,
+    "value": 2000000000
+   },
+   "14638": {
+    "examine": "Ring of wealth (i) examine.",
+    "name": "Ring of wealth (i)",
+    "tradeable": true,
+    "value": 1000
+   },
+   "1511": {
+    "examine": "Logs examine.",
+    "name": "Logs",
+    "noteId": 1512,
+    "tradeable": true,
+    "value": 4
+   },
+   "1512": {
+    "examine": "Logs examine.",
+    "name": "Logs",
+    "noteId": 1511,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 4
+   },
+   "1513": {
+    "examine": "Magic logs examine.",
+    "name": "Magic logs",
+    "noteId": 1514,
+    "tradeable": true,
+    "value": 320
+   },
+   "1514": {
+    "examine": "Magic logs examine.",
+    "name": "Magic logs",
+    "noteId": 1513,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 320
+   },
+   "1925": {
+    "examine": "Bucket examine.",
+    "name": "Bucket",
+    "noteId": 1926,
+    "tradeable": true,
+    "value": 2
+   },
+   "1926": {
+    "examine": "Bucket examine.",
+    "name": "Bucket",
+    "noteId": 1925,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 2
+   },
+   "2000": {
+    "examine": "Mystery note examine.",
+    "name": "Mystery note",
+    "noteId": 2001,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 10
+   },
+   "2572": {
+    "examine": "Ring of wealth examine.",
+    "name": "Ring of wealth",
+    "noteId": 2573,
+    "tradeable": true,
+    "value": 1000
+   },
+   "2573": {
+    "examine": "Ring of wealth examine.",
+    "name": "Ring of wealth",
+    "noteId": 2572,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 1000
+   },
+   "3000": {
+    "examine": "Filler 0 examine.",
+    "name": "Filler 0",
+    "tradeable": true,
+    "value": 10
+   },
+   "3001": {
+    "examine": "Filler 1 examine.",
+    "name": "Filler 1",
+    "tradeable": true,
+    "value": 17
+   },
+   "3002": {
+    "examine": "Filler 2 examine.",
+    "name": "Filler 2",
+    "tradeable": true,
+    "value": 24
+   },
+   "3003": {
+    "examine": "Filler 3 examine.",
+    "name": "Filler 3",
+    "tradeable": true,
+    "value": 31
+   },
+   "3004": {
+    "examine": "Filler 4 examine.",
+    "name": "Filler 4",
+    "tradeable": true,
+    "value": 38
+   },
+   "3005": {
+    "examine": "Filler 5 examine.",
+    "name": "Filler 5",
+    "tradeable": true,
+    "value": 45
+   },
+   "3006": {
+    "examine": "Filler 6 examine.",
+    "name": "Filler 6",
+    "tradeable": true,
+    "value": 52
+   },
+   "3007": {
+    "examine": "Filler 7 examine.",
+    "name": "Filler 7",
+    "tradeable": true,
+    "value": 59
+   },
+   "3008": {
+    "examine": "Filler 8 examine.",
+    "name": "Filler 8",
+    "tradeable": true,
+    "value": 66
+   },
+   "3009": {
+    "examine": "Filler 9 examine.",
+    "name": "Filler 9",
+    "tradeable": true,
+    "value": 73
+   },
+   "3010": {
+    "examine": "Filler 10 examine.",
+    "name": "Filler 10",
+    "tradeable": true,
+    "value": 80
+   },
+   "3011": {
+    "examine": "Filler 11 examine.",
+    "name": "Filler 11",
+    "tradeable": true,
+    "value": 87
+   },
+   "3012": {
+    "examine": "Filler 12 examine.",
+    "name": "Filler 12",
+    "tradeable": true,
+    "value": 94
+   },
+   "3013": {
+    "examine": "Filler 13 examine.",
+    "name": "Filler 13",
+    "tradeable": true,
+    "value": 101
+   },
+   "3014": {
+    "examine": "Filler 14 examine.",
+    "name": "Filler 14",
+    "tradeable": true,
+    "value": 108
+   },
+   "3015": {
+    "examine": "Filler 15 examine.",
+    "name": "Filler 15",
+    "tradeable": true,
+    "value": 115
+   },
+   "3016": {
+    "examine": "Filler 16 examine.",
+    "name": "Filler 16",
+    "tradeable": true,
+    "value": 122
+   },
+   "3017": {
+    "examine": "Filler 17 examine.",
+    "name": "Filler 17",
+    "tradeable": true,
+    "value": 129
+   },
+   "3018": {
+    "examine": "Filler 18 examine.",
+    "name": "Filler 18",
+    "tradeable": true,
+    "value": 136
+   },
+   "3019": {
+    "examine": "Filler 19 examine.",
+    "name": "Filler 19",
+    "tradeable": true,
+    "value": 143
+   },
+   "3020": {
+    "examine": "Filler 20 examine.",
+    "name": "Filler 20",
+    "tradeable": true,
+    "value": 150
+   },
+   "3021": {
+    "examine": "Filler 21 examine.",
+    "name": "Filler 21",
+    "tradeable": true,
+    "value": 157
+   },
+   "3022": {
+    "examine": "Filler 22 examine.",
+    "name": "Filler 22",
+    "tradeable": true,
+    "value": 164
+   },
+   "3023": {
+    "examine": "Filler 23 examine.",
+    "name": "Filler 23",
+    "tradeable": true,
+    "value": 171
+   },
+   "3024": {
+    "examine": "Filler 24 examine.",
+    "name": "Filler 24",
+    "tradeable": true,
+    "value": 178
+   },
+   "3025": {
+    "examine": "Filler 25 examine.",
+    "name": "Filler 25",
+    "tradeable": true,
+    "value": 185
+   },
+   "3026": {
+    "examine": "Filler 26 examine.",
+    "name": "Filler 26",
+    "tradeable": true,
+    "value": 192
+   },
+   "3027": {
+    "examine": "Filler 27 examine.",
+    "name": "Filler 27",
+    "tradeable": true,
+    "value": 199
+   },
+   "3028": {
+    "examine": "Filler 28 examine.",
+    "name": "Filler 28",
+    "tradeable": true,
+    "value": 206
+   },
+   "3029": {
+    "examine": "Filler 29 examine.",
+    "name": "Filler 29",
+    "tradeable": true,
+    "value": 213
+   },
+   "3140": {
+    "examine": "Dragon chainbody examine.",
+    "name": "Dragon chainbody",
+    "tradeable": true,
+    "value": 250000
+   },
+   "379": {
+    "examine": "Lobster examine.",
+    "name": "Lobster",
+    "noteId": 380,
+    "tradeable": true,
+    "value": 150
+   },
+   "380": {
+    "examine": "Lobster examine.",
+    "name": "Lobster",
+    "noteId": 379,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 150
+   },
+   "4045": {
+    "examine": "Explosive potion examine.",
+    "name": "Explosive potion",
+    "options": [
+     "Drink",
+     null,
+     null,
+     null,
+     "Destroy"
+    ],
+    "tradeable": true,
+    "value": 50
+   },
+   "4087": {
+    "examine": "Dragon platelegs examine.",
+    "name": "Dragon platelegs",
+    "tradeable": true,
+    "value": 270000
+   },
+   "4151": {
+    "examine": "Abyssal whip examine.",
+    "high_alchemy": 72000,
+    "low_alchemy": 48000,
+    "name": "Abyssal whip",
+    "noteId": 4152,
+    "tradeable": true,
+    "value": 120001
+   },
+   "4152": {
+    "examine": "Abyssal whip examine.",
+    "name": "Abyssal whip",
+    "noteId": 4151,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 120001
+   },
+   "554": {
+    "examine": "Fire rune examine.",
+    "name": "Fire rune",
+    "stackable": true,
+    "tradeable": true,
+    "value": 4
+   },
+   "590": {
+    "examine": "Tinderbox examine.",
+    "name": "Tinderbox",
+    "tradeable": true,
+    "value": 1
+   },
+   "6": {
+    "examine": "Cannon base examine.",
+    "name": "Cannon base",
+    "tradeable": true,
+    "value": 187500
+   },
+   "7462": {
+    "examine": "Barrows gloves examine.",
+    "name": "Barrows gloves",
+    "tradeable": false,
+    "value": 130000
+   },
+   "7936": {
+    "examine": "Pure essence examine.",
+    "name": "Pure essence",
+    "noteId": 7937,
+    "tradeable": true,
+    "value": 1
+   },
+   "7937": {
+    "examine": "Pure essence examine.",
+    "name": "Pure essence",
+    "noteId": 7936,
+    "tradeable": true,
+    "unnoted": false,
+    "value": 1
+   },
+   "8": {
+    "examine": "Cannon stand examine.",
+    "name": "Cannon stand",
+    "tradeable": true,
+    "value": 187500
+   },
+   "995": {
+    "examine": "Coins examine.",
+    "name": "Coins",
+    "stackable": true,
+    "tradeable": true,
+    "value": 1
+   }
+  }
+ }
+}

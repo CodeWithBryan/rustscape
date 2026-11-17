@@ -1,0 +1,1 @@
+package content.global.handlers.iface;public class FriendsListInterface extends core.game.component.Component{public FriendsListInterface(){super(550);oracle.Support.emit("friendsCreate");}}

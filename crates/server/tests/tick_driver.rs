@@ -143,7 +143,7 @@ fn every_packet_type_has_a_route() {
         ("ChatMessage", Route::Native(Handler::Social)),
         ("ChatSetting", Route::Native(Handler::Social)),
         ("Command", Route::Native(Handler::Command)),
-        ("GESetOfferItem", Route::NotPorted("")),
+        ("GESetOfferItem", Route::Native(Handler::GrandExchange)),
         ("TrackFinished", Route::Native(Handler::TrackFinished)),
         ("ReportAbuse", Route::Native(Handler::ReportAbuse)),
         ("WorldspaceWalk", Route::Native(Handler::Walk)),

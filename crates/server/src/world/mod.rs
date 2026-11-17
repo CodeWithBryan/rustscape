@@ -22,6 +22,7 @@ pub mod drop_tables;
 pub mod entity_regions;
 pub mod gathering;
 pub mod global_handlers;
+pub mod grand_exchange;
 pub mod ground_action;
 pub mod ground_item;
 pub mod ground_manager;

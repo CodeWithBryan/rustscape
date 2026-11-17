@@ -1,0 +1,1 @@
+package core.game.world;public class GameSettings{private final boolean dev;public GameSettings(boolean dev){this.dev=dev;}public boolean isDevMode(){return dev;}}

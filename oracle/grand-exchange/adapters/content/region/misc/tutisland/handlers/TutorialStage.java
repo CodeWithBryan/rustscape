@@ -1,0 +1,1 @@
+package content.region.misc.tutisland.handlers;public class TutorialStage{public static void hideTabs(core.game.node.entity.player.Player p,boolean b){oracle.Support.emit("tutorialTabs");}}

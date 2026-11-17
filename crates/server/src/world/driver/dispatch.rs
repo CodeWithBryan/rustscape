@@ -278,6 +278,9 @@ pub enum Handler {
     /// The `ReportAbuse` branch: `world::abuse_report::handle_packet` (with
     /// the `REPORT_ABUSE` decoder).
     ReportAbuse,
+    /// The `GESetOfferItem` branch:
+    /// `world::grand_exchange::stock_market::set_offer_item`.
+    GrandExchange,
 }
 
 /// A branch of `PacketProcessor.process` ported in [`super`].
@@ -411,7 +414,7 @@ pub fn route(class: &str) -> Route {
         "InputPromptResponse" => Native(Handler::InputPrompt),
         "ReportAbuse" => Native(Handler::ReportAbuse),
         "TrackFinished" => Native(Handler::TrackFinished),
-        "GESetOfferItem" => NotPorted("StockMarket (Grand Exchange offer item)"),
+        "GESetOfferItem" => Native(Handler::GrandExchange),
         "Command" => Native(Handler::Command),
         "PacketCountUpdate" => Driver(Body::PacketCount),
         "ContinueOption" => Native(Handler::ContinueOption),

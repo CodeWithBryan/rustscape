@@ -23,6 +23,9 @@ toml = { version = "=0.8.23", default-features = false, features = ["parse"] }
 toml_edit = { version = "=0.22.27", default-features = false, features = ["parse"] }
 roxmltree = "=0.20.0"
 encoding_rs = "=0.8.35"
+# The Grand Exchange's database (GEDB): the original keeps offers and prices
+# in an SQLite file. `bundled` compiles SQLite's own C source; no system library.
+rusqlite = { version = "=0.40.2", features = ["bundled"] }
 
 [dev-dependencies]
 sha2.workspace = true

@@ -1,0 +1,1 @@
+package core.game.node.item;public class GroundItemManager{public static GroundItem create(Item item,core.game.node.entity.player.Player player){throw new UnsupportedOperationException("Container.add(item, player) is not reached by the shop classes");}}

@@ -1368,6 +1368,27 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   definitions in the corpus are authored inputs. Nothing installs the
   library; ShoppingPlugin.java is commented out in the pinned source. See
   docs/shops.md.
+- For the Grand Exchange (world/grand_exchange: GEDB over SQLite, GrandExchange,
+  GrandExchangeOffer, GrandExchangeRecords, GrandExchangeTimer.run, PriceIndex,
+  GEGuidePrice, GEItemSet, BotPrices, GEAutoStock, StockMarket,
+  GrandExchangeInterface, ExchangeItemSets, InterfaceContainer.generateItems
+  and PacketProcessor's GESetOfferItem branch), run `cargo test -p rs09-server
+  --test grand_exchange` and `cargo xtask grand-exchange-oracle --check` with
+  Python/JDK 11, plus the shops, trade, inventory, interfaces, input_prompt,
+  ironman, startup and tick_driver suites. Preserve all 321 cases; database
+  rows are compared, not file bytes. Keep the original SQL text, parameter
+  types and prepared-versus-direct split (a prepare on a missing table fails
+  before anything runs), the hashMapOf table order, xerial NULL reads, the
+  bot amount clamps, the stable best-price sort, the older-offer price rule
+  with ties to the buyer, the bot price at 110%, price-index volume resets,
+  confirmOffer's Success after a failed buy dispatch, withdraw emptying the
+  slot for other options, the slot-0-only collection check, parsePlayer's
+  pops over the class-scan instance's records, generateItems' second key,
+  the swallowed GE packet send, the Config writer's artificial-player skip
+  and the worker that dies on its first exception. The DB is native
+  (`rusqlite`, bundled); every other outside call is a required Host service
+  with no default. The worker is `exchange::run_worker`, which the world must
+  schedule; nothing installs the library. See docs/grand-exchange.md.
 - For interface metadata, component open/close/plugin lookup, gameframe/tab/chat
   orchestration or window-mode changes, run interfaces and game_packets tests,
   both movement_session/npc_session examples and fresh interfaces-oracle and
