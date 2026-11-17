@@ -75,6 +75,7 @@ fn category(error: &save::Error) -> &'static str {
         Category::Argument => "Argument",
         Category::Io => "Io",
         Category::NativeLimit => "NativeLimit",
+        Category::NegativeArraySize => "NegativeSize",
     }
 }
 /// JSONValue.toJSONString of one value.
@@ -421,7 +422,7 @@ impl Host for World {
     fn parse_quests(&mut self, data: &Json) -> save::Result<()> {
         self.call("quests.parse", vec![json!(data.text())])
     }
-    fn update_grave_type(&mut self, ordinal: i32) -> save::Result<()> {
+    fn update_grave_type(&mut self, _: &mut GameAttributes, ordinal: i32) -> save::Result<()> {
         self.call("grave", vec![json!(ordinal)])
     }
     fn set_autocast(&mut self, book: i32, spell: i32) -> save::Result<()> {
@@ -455,7 +456,7 @@ impl Host for World {
     fn parse_diaries(&mut self, data: &Json) -> save::Result<()> {
         self.call("diary.parse", vec![json!(data.text())])
     }
-    fn reset_diary_rewards(&mut self) -> save::Result<()> {
+    fn reset_diary_rewards(&mut self, _: &mut CoreData, _: &Registry) -> save::Result<()> {
         self.call("diary.reset", vec![])
     }
     fn parse_pouches(&mut self, data: &Json) -> save::Result<()> {
@@ -977,7 +978,7 @@ impl Case {
             "parseSettings" => parser::parse_settings(&mut profile, save_file, &mut env),
             "parseQuests" => parser::parse_quests(save_file, &mut env),
             "parseAppearance" => parser::parse_appearance(&mut profile, save_file),
-            "parseGrave" => parser::parse_grave(save_file, &mut env),
+            "parseGrave" => parser::parse_grave(&mut profile, save_file, &mut env),
             "parseVarps" => parser::parse_varps(&mut profile, save_file),
             "parseSpellbook" => parser::parse_spellbook(&mut profile, save_file),
             "parseSavedData" => parser::parse_saved_data(&mut profile, save_file),
@@ -991,7 +992,7 @@ impl Case {
             "parseIronman" => parser::parse_ironman(&mut profile, save_file),
             "parseEmoteManager" => parser::parse_emote_manager(save_file, &mut env),
             "parseStatistics" => parser::parse_statistics(save_file),
-            "parseAchievements" => parser::parse_achievements(save_file, &mut env),
+            "parseAchievements" => parser::parse_achievements(&mut profile, save_file, &mut env),
             "parsePouches" => parser::parse_pouches(save_file, &mut env),
             "parsePOHStorable" => parser::parse_poh_storable(save_file, &mut env),
             other => panic!("unknown parser section {other}"),

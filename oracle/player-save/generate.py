@@ -5,7 +5,7 @@ Their collaborators are, in order of preference: complete unchanged original
 classes, verbatim selected members of larger original classes, and recording
 adapters for systems that have no native port. --check never writes fixtures.
 """
-import argparse, hashlib, importlib.util, json, os, pathlib, random, re, shutil, subprocess, tempfile
+import argparse, hashlib, importlib.util, json, os, pathlib, random, re, shutil, subprocess, sys, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 HERE = pathlib.Path(__file__).resolve().parent
@@ -446,12 +446,16 @@ def generate(check):
     output = evaluate(cp, corpus.requests(seed))
     # Texts written by the original are then loaded by the original into profiles that start empty.
     output += evaluate(cp, corpus.second_generation(output))
-    data = ''.join(json.dumps(c, sort_keys=True, ensure_ascii=True, separators=(',', ':')) + '\n' for c in output).encode()
+    # The persisted state of the systems behind save::Host, appended; the cases above keep their bytes.
+    import state
+    output += state.generate(sys.modules[__name__])
+    data =''.join(json.dumps(c, sort_keys=True, ensure_ascii=True, separators=(',', ':')) + '\n' for c in output).encode()
     read(pathlib.Path(__file__))
     read(HERE / 'corpus.py')
     read(ROOT / 'oracle/login/generate.py')
     provenance = dict(format=1, upstream=json.loads(read(ROOT / 'upstream.lock.json')), sources=dict(sorted(compiler.SOURCES.items())), caseCount=len(output),
-        actionCount=sum(len(c['actions']) for c in output), fixtureSha256=hashlib.sha256(data).hexdigest(), sourceHashAlgorithm='sha256, CR removed', scope=SCOPE)
+        actionCount=sum(len(c['actions']) for c in output), fixtureSha256=hashlib.sha256(data).hexdigest(), sourceHashAlgorithm='sha256, CR removed', scope=SCOPE + state.SCOPE,
+        stateCaseCount=sum(1 for c in output if c.get('state')))
     folder = ROOT / 'fixtures/player-save'
     if check:
         if (folder / 'oracle.jsonl').read_bytes() != data or json.loads((folder / 'provenance.json').read_text(encoding='utf-8')) != provenance:

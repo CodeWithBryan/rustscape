@@ -49,6 +49,10 @@ fn whole_saves_parsed_state_hand_offs_and_failures_match_original() {
     let mut failures = Vec::new();
     for (index, line) in CORPUS.lines().enumerate() {
         let case: Value = serde_json::from_str(line).unwrap();
+        // The appended persisted-state cases are replayed by tests/player_state.rs.
+        if case["state"] == true {
+            continue;
+        }
         let actual = native::evaluate(&case, index);
         if let Some(d) = difference(&actual, &case["expected"], String::new()) {
             failures.push(format!(

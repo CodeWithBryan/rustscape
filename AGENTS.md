@@ -495,8 +495,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   Concrete content timers, registry/entity-startup wiring, actual inventory/bank/
   equipment listeners, full profiles/file I/O and world scheduling are separate
   work. Constructor/clock/registry adapters never establish playable world entry.
-- For the whole character save file (player/save.rs and save/parser.rs, order.rs),
-  run `cargo test -p rs09-server --test player_save` and
+- For the whole character save file (player/save.rs and save/parser.rs, order.rs)
+  or the state behind save::Host (player/persisted), run
+  `cargo test -p rs09-server --test player_save --test player_state` and
   `cargo xtask player-save-oracle --check` with Python/JDK 11; the composite also
   reproduces the timer and inventory corpora. Also run the suites of the section
   libraries it joins: core_data/timers, attributes, skills, settings, saved_data,
@@ -511,7 +512,13 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   this module. The 2,637 original cases compile PlayerSaver.kt and
   PlayerSaveParser.kt unchanged, but Skills, Settings, Appearance and
   BankPinManager contribute verbatim selected members there, and
-  kotlinx.coroutines is a same-thread stand-in. Not covered: the Java-below-11
+  kotlinx.coroutines is a same-thread stand-in. 267 appended state cases
+  compile both files again over the whole quest, music, emote, diary, pouch
+  and POH-storage classes; persisted::host::Native answers those Host
+  sections from native state, while house/familiar parsing, content hooks,
+  events and logging stay required services. Keep the first 2,637 fixture
+  lines byte for byte (player_state pins their SHA-256), append new cases,
+  and keep the brand-new-character file byte for byte. Not covered: the Java-below-11
   script-engine output, default-charset files, unpaired UTF-16 escapes (rejected
   natively), a null save path, most I/O failures, concurrent saves, and every
   login, logout and playable-alpha call site; the alpha still writes its own

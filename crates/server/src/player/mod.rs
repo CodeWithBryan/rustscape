@@ -9,6 +9,7 @@ pub mod details;
 pub mod ironman;
 pub mod item_ownership;
 pub mod owned;
+pub mod persisted;
 pub mod save;
 pub mod saved_data;
 pub mod settings;

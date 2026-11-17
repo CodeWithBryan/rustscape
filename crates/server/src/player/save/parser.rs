@@ -332,7 +332,11 @@ pub fn parse_appearance(profile: &mut Profile<'_>, save_file: Option<&Json>) -> 
     };
     Ok(profile.appearance.parse(object(get(root, "appearance"))?)?)
 }
-pub fn parse_grave<T, H: Host>(save_file: Option<&Json>, env: &mut Env<'_, T, H>) -> Result<()> {
+pub fn parse_grave<T, H: Host>(
+    profile: &mut Profile<'_>,
+    save_file: Option<&Json>,
+    env: &mut Env<'_, T, H>,
+) -> Result<()> {
     let Some(root) = save_file else {
         return Ok(());
     };
@@ -344,7 +348,7 @@ pub fn parse_grave<T, H: Host>(save_file: Option<&Json>, env: &mut Env<'_, T, H>
     if !(0..GRAVE_TYPES).contains(&ordinal) {
         return Err(Error::Index);
     }
-    env.host.update_grave_type(ordinal)
+    env.host.update_grave_type(profile.attributes, ordinal)
 }
 /// The legacy `varps` key and VarpManager.parse. Each completed row is
 /// written to the same varp and save-flag maps the core section uses.
@@ -488,12 +492,13 @@ pub fn parse_statistics(save_file: Option<&Json>) -> Result<()> {
     Ok(())
 }
 pub fn parse_achievements<T, H: Host>(
+    profile: &mut Profile<'_>,
     save_file: Option<&Json>,
     env: &mut Env<'_, T, H>,
 ) -> Result<()> {
     let root = required(save_file)?;
     if get(root, "achievementDiaries").is_none() {
-        return env.host.reset_diary_rewards();
+        return env.host.reset_diary_rewards(profile.core, env.definitions);
     }
     let data = get(root, "achievementDiaries");
     array(data)?;
@@ -537,7 +542,7 @@ where
     parse_settings(profile, save_file, env)?;
     parse_quests(save_file, env)?;
     parse_appearance(profile, save_file)?;
-    parse_grave(save_file, env)?;
+    parse_grave(profile, save_file, env)?;
     parse_varps(profile, save_file)?;
     parse_spellbook(profile, save_file)?;
     parse_saved_data(profile, save_file)?;
@@ -551,7 +556,7 @@ where
     parse_ironman(profile, save_file)?;
     parse_emote_manager(save_file, env)?;
     parse_statistics(save_file)?;
-    parse_achievements(save_file, env)?;
+    parse_achievements(profile, save_file, env)?;
     parse_pouches(save_file, env)?;
     parse_poh_storable(save_file, env)?;
     Ok(Loaded { legacy_attributes })

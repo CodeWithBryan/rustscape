@@ -1,9 +1,11 @@
 //! The original character save file: PlayerSaver.kt and PlayerSaveParser.kt
-//! joined to the native profile libraries. Systems without a native port
+//! joined to the native profile libraries. The other systems a save reaches
 //! (quests, house, familiars, music, diaries, emotes, autocast spells, graves,
 //! pouches, POH storage, content hooks) are reached only through [`Host`];
-//! nothing here models their behaviour. The playable alpha still uses its own
-//! snapshot format, and no world login or logout path calls this module yet.
+//! nothing here models them. `player::persisted` holds the persisted state of
+//! most of them and its `host::Native` answers those `Host` sections; the rest
+//! stay required services. The playable alpha still uses its own snapshot
+//! format, and no world login or logout path calls this module yet.
 mod order;
 pub mod parser;
 use super::{
@@ -50,6 +52,10 @@ pub enum Error {
     Saved(saved_data::Error),
     Appearance(appearance::Error),
     BankPin(bank_pin::Error),
+    /// A container of the persisted systems (rune pouches, diary rewards).
+    Inventory(inventory::Error),
+    /// Java's NegativeArraySizeException.
+    NegativeSize,
 }
 pub type Result<T> = std::result::Result<T, Error>;
 /// The original exception family, or the native-only rejection, behind an error.
@@ -66,6 +72,7 @@ pub enum Category {
     Io,
     /// Native text limits with no original counterpart.
     NativeLimit,
+    NegativeArraySize,
 }
 impl Error {
     pub fn category(&self) -> Category {
@@ -149,6 +156,8 @@ impl Error {
                 bank_pin::Error::Index => C::Index,
                 bank_pin::Error::Binding(_) => C::Binding,
             },
+            Self::Inventory(error) => inventory(error),
+            Self::NegativeSize => C::NegativeArraySize,
         }
     }
 }
@@ -279,8 +288,9 @@ pub trait Host {
     fn save_content(&mut self, hook: usize, root: &mut Json) -> Result<()>;
     fn parse_content(&mut self, hook: usize, root: &Json) -> Result<()>;
     fn parse_quests(&mut self, data: &Json) -> Result<()>;
-    /// GraveController.updateGraveType with GraveType.values()[ordinal].
-    fn update_grave_type(&mut self, ordinal: i32) -> Result<()>;
+    /// GraveController.updateGraveType with GraveType.values()[ordinal]. The
+    /// original keeps the type as a saved attribute of the player.
+    fn update_grave_type(&mut self, attributes: &mut GameAttributes, ordinal: i32) -> Result<()>;
     /// `SpellBook.values()[book].getSpell(spell) as CombatSpell`, then the
     /// assignment. A missing spell is [`Error::Null`], another spell kind [`Error::Type`].
     fn set_autocast(&mut self, book: i32, spell: i32) -> Result<()>;
@@ -293,7 +303,9 @@ pub trait Host {
     fn emote_unlocked(&mut self, ordinal: i32) -> Result<bool>;
     fn unlock_emote(&mut self, ordinal: i32) -> Result<()>;
     fn parse_diaries(&mut self, data: &Json) -> Result<()>;
-    fn reset_diary_rewards(&mut self) -> Result<()>;
+    /// AchievementDiaryManager.resetRewards, which removes reward items from
+    /// the player's containers.
+    fn reset_diary_rewards(&mut self, core: &mut CoreData, definitions: &Registry) -> Result<()>;
     fn parse_pouches(&mut self, data: &Json) -> Result<()>;
     fn parse_poh_storage(&mut self, data: &Json) -> Result<()>;
 }

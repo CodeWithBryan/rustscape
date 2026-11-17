@@ -4,6 +4,10 @@
 character: `PlayerSaver.kt` and `PlayerSaveParser.kt`. It produces the JSON text
 the original writes and loads what the original writes, using the native
 profile libraries that already exist for the individual sections.
+`server::player::persisted` holds the persisted state of most systems the two
+files reach through `save::Host` (quests, music, emotes, diaries, autocast,
+grave type, pouches, POH storage, and the saving side of the house and
+familiars); see [The persisted state behind `Host`](#the-persisted-state-behind-host).
 
 This is a library. Nothing calls it at login or logout yet, and the playable
 alpha still uses its own snapshot format (see [playable-alpha.md](playable-alpha.md)).
@@ -52,30 +56,93 @@ Handled by native libraries, joined here:
 | `varps`, `configs` (legacy, read only) | the same varp maps as `core_data` |
 | `statistics` | written empty; rows are converted and discarded when read, as in the original |
 
-Reached only through `save::Host`, because no native port of the owning system
-exists:
+Reached only through `save::Host`. The last column says where
+`persisted::host::Native` (next section) gets the answer:
 
-| Save keys | Saving | Parsing |
-| --- | --- | --- |
-| `quests` | points and stages as plain values | the object is handed over |
-| `autocastSpell` | book ordinal and spell id | book index is checked, the spell lookup is the host's |
-| `unlockedMusic` | ids in the host's order | each id is handed over for lookup and unlock |
-| `familiarManager` | pet details, current pet or familiar, burden container | the object is handed over |
-| `houseData` | ordinals, servant, rooms and hotspots | the object is handed over |
-| `achievementDiaries` | per-diary flags | the array is handed over, or rewards are reset when the key is absent |
-| `emoteData` | ordinals when the host says a save is required | index is checked, contains and add are the host's |
-| `grave_type` | not written by the saver | ordinal is checked and handed over |
-| `pouches` | the host writes its own keys into the root | the array is handed over |
-| `pohstorage` | the host supplies the object | the object is handed over |
-| content hooks | each hook writes into the root | each hook receives the root |
+| Save keys | Saving | Parsing | `Native` answers from |
+| --- | --- | --- | --- |
+| `quests` | points and stages as plain values | the object is handed over | `persisted::quests`, both ways |
+| `autocastSpell` | book ordinal and spell id | book index is checked, the spell lookup is the host's | `persisted::spells`, both ways |
+| `unlockedMusic` | ids in the host's order | each id is handed over for lookup and unlock | `persisted::music`, both ways |
+| `familiarManager` | pet details, current pet or familiar, burden container | the object is handed over | `persisted::familiars` when saving; parsing stays a required service |
+| `houseData` | ordinals, servant, rooms and hotspots | the object is handed over | `persisted::house` when saving; parsing stays a required service |
+| `achievementDiaries` | per-diary flags | the array is handed over, or rewards are reset when the key is absent | `persisted::diaries`, both ways, including resetRewards |
+| `emoteData` | ordinals when the host says a save is required | index is checked, contains and add are the host's | `persisted::emotes`, both ways |
+| `grave_type` | not written by the saver | ordinal is checked and handed over with the attributes | `persisted::graves`; the AttributeSetEvent stays a required service |
+| `pouches` | the host writes its own keys into the root | the array is handed over | `persisted::pouches`, both ways |
+| `pohstorage` | the host supplies the object | the object is handed over | `persisted::poh_storage`, both ways |
+| content hooks | each hook writes into the root | each hook receives the root | required services |
 
-For these sections the module ports what the two files themselves do: key
+For these sections this module ports what the two files themselves do: key
 names and put order, which values are stringified, the casts and index checks,
-and the order of calls. It does not port quest, construction, summoning,
-music, diary, emote, spell, grave, runecrafting-pouch or storage behaviour.
-Every `Host` method is a required service and must not report success for work
-it did not do. Iteration orders that belong to those systems' own maps are
-supplied by the host, not guessed here.
+and the order of calls. The systems' own state lives in `player::persisted`,
+not here. Every `Host` method is a required service and must not report
+success for work it did not do. Iteration orders that belong to those systems'
+own maps are supplied by the host, not guessed here.
+
+## The persisted state behind `Host`
+
+`player::persisted` holds, for each of these systems, what a character file
+holds, a new character's values, and the original save and parse methods:
+
+- `quests`: QuestRepository's HashMap from quest index to stage, the point
+  total and the world's registry (a TreeMap in `Quests` order). A new
+  character gets stage 0 for every quest registered at that moment. `parse`
+  stores the points, reads the stages, then lets syncPoints recompute the
+  points; a registered quest whose index the map lacks fails there. Also the
+  stage and point mutators and the read methods around them; log lines name
+  a quest by `Quests.toString()`, its display name.
+- `music`: MusicPlayer's HashMap from list index to song, against the world's
+  MusicEntry table.
+- `emotes`: EmoteManager's list, the first 22 constants for a new character.
+- `diaries`: the six diaries with three started and rewarded flags and three
+  25-task bitsets each, the DiaryType rewards table, `parse` (the first key in
+  HashMap order names the diary, read with `_` as `' ` and compared ignoring
+  case), and resetRewards over the inventory, the active bank and the
+  equipment. AchievementDiary's static `completedLevels` list, which every
+  player's parse appends to, is the world's `completed_levels`.
+- `spells`: the autocast spell as its own book and spell id, against the
+  world's spell books.
+- `graves`: the type is the saved attribute `/save:gravetype`; reading it
+  unboxes any integral value as Kotlin's `Number.intValue()` does.
+- `pouches`: the four pouches in declaration order with charges, current
+  capacity and their essence containers; `parse` ends quietly at an unknown
+  pouch id and keeps what it stored before a failure.
+- `poh_storage`: one insertion-ordered id set and page per StorableFamily.
+- `house` and `familiars`: the values the saver reads, with a new
+  character's defaults (NOWHERE, BASIC_WOOD, crest NULL, no rooms, no servant;
+  no pets or familiar).
+
+`IntHashMap` keeps a Java `HashMap<Integer, V>`'s iteration for its insertion
+order and table size, which `clear` keeps. `host::Persisted::new` builds a new
+character's state; `host::World` holds the server-wide inputs (registered
+quests, songs, spells, `completed_levels`), which are world start-up content
+and the caller's to provide. `host::Native` implements `save::Host` from them
+and forwards everything else to a `host::Remaining`: logging, retaliation, the
+AttributeSetEvent dispatch, the container listeners resetRewards notifies, the
+skill and settings services, FamiliarManager.parse, HouseManager.parse and the
+content hooks. Those stay required services with no defaults. With them, a
+brand-new character's whole file is produced from native state alone.
+
+No gameplay of these systems is ported: quest content, music playback, emote
+playing, diary tasks and rewards, spells, graves, pouch filling and decay,
+storage interfaces, construction and summoning.
+
+### Content hooks
+
+The pinned server registers seven `PersistPlayer` classes (ClassScanner adds
+every one it finds to both hook lists). None is ported; all stay behind
+`Remaining`:
+
+| Class | Root key it writes |
+| --- | --- |
+| TreasureTrailManager | `treasureTrails` (current trail, completed clues) |
+| BrawlingGlovesManager | `brawlingGloves` (glove id and charges), only when it holds any |
+| SlayerManager | `slayer` (removed tasks, streak, totals, flag words) |
+| BlastFurnace | `bf-state`, only for a player with a furnace state |
+| BarcrawlManager | `barCrawl` (started, bars visited) |
+| GrandExchangeRecords | `ge-history` |
+| JobManager | no key: it writes four `/save:jobs:*` attributes, which reach the file only on the next save because the hooks run after `saveAttributes` |
 
 `parseFarming` and `parseMonitor` have empty bodies in the pinned source, and
 `savePlayerMonitor` writes nothing.
@@ -149,11 +216,21 @@ supplied by the host, not guessed here.
   values. An object or array placed where a scalar is expected is stringified
   with sorted keys rather than JSON-simple's hash order. No save written by the
   original contains one.
+- **Pouch capacity.** A pouch container larger than 1,000,000 slots is refused
+  by the native container factory (`Index`); the original would try to
+  allocate it. A negative capacity fails as `NegativeArraySize` in both.
+- **Grave type held as an object.** An object-valued `/save:gravetype`
+  attribute is refused natively; the original would read a `Number` object
+  through `intValue()`. Saved attributes cannot hold one.
+- **World inputs.** Registered quests, songs and spells, and the static
+  `completedLevels` list, are explicit world state passed in, not process
+  globals. Which quests, songs and spells the pinned content registers is not
+  part of these files and not checked here.
 
 ## Verification
 
 ```powershell
-cargo test -p rs09-server --test player_save
+cargo test -p rs09-server --test player_save --test player_state
 cargo xtask player-save-oracle --check --python <python> --java-home <jdk11>
 ```
 
@@ -202,12 +279,55 @@ one value: a persistent timer loaded with `ticksLeft` 9 is written back as 0,
 because the save happens before the timer manager has processed a tick. The
 original does this too; the timer rules are in [core-profiles.md](core-profiles.md).
 
+### The persisted state cases
+
+**267 more original cases with 2,233 steps** follow those 2,637 in the same
+fixture, each marked `"state": true`. They are appended: the first 2,637 lines
+are byte for byte the earlier fixture, and `tests/player_state.rs` pins their
+SHA-256. `oracle/player-save/state.py` compiles `PlayerSaver.kt` and
+`PlayerSaveParser.kt` unchanged a second time, now over the complete unchanged
+`QuestRepository`, `Quest`, `Quests`, `MusicPlayer`, `MusicEntry`,
+`EmoteManager`, `AchievementDiaryManager`, `AchievementDiary`, `DiaryType`,
+`DiaryLevel`, `Bar`, `PouchManager`, `StorageState`, `StorageContainer`,
+`StorableFamily`, `SpellBookManager`, `Plugin`, `PluginManifest`, `PluginType`
+and `CloseEvent`. Verbatim selected members: GraveController's attribute key
+and its two accessors, ContentAPI's `setAttribute`, `getAttribute` and
+`setVarp`, Entity's attribute methods, and HouseManager's persisted fields and
+their accessors. `Emotes`, `HouseLocation`, `HousingStyle` and `CrestType`
+are generated with the original constant names and order only, and
+`org.rs09.consts.Items` constants take the number their name ends in. Familiar,
+pet and house loading and the content hooks stay recording adapters; packets,
+interfaces and the remaining ContentAPI functions are stand-ins outside the
+driven paths, and container listeners record. `oracle/player-save/State.kt`
+reads every observed value back through the original accessors, in the
+original collections' order.
+
+The cases cover, per system, a new character; values at their boundaries;
+each HashMap's iteration under several insertion orders, shared buckets,
+resizes and a clear that keeps the table; missing, null, extra and
+wrong-typed keys, with Java's and Kotlin's different `toString` of null; the
+static `completedLevels` list across two players; resetRewards with either
+bank active and a failing listener; and populated characters written whole,
+loaded into a new character and written again. Most important: **a brand-new
+character's whole file**, for four registries (none, a large quest/song/spell
+registry, two quests, and content hooks), written by the original and written
+natively from native state alone, before and after loading it back. All 16 of
+those texts and files are byte for byte identical
+(`brand_new_character_file_matches_byte_for_byte`).
+
 ## Remaining work
 
 - Call the module from the real login and logout paths, and replace or
   migrate the playable alpha's snapshot. Neither is started.
-- Native ports of the systems behind `Host`. Until each exists its section is
-  carried, not implemented.
+- The rest of the persisted state behind `Host`: HouseManager.parse (rooms
+  from RoomProperties, configured for the style, hotspots by index, Servant
+  parsing) and FamiliarManager.parse (the FAMILIARS registry, Pets, the v0/v1
+  migrations), and the seven content hooks. Until each exists its section is
+  carried, not implemented. The gameplay of every system behind `Host`,
+  ported or not, is separate work.
+- Bind `persisted::Persisted` and its `World` to the canonical player and to
+  world start-up (the real quest, song and spell registration). Nothing does
+  yet; the stand-ins in the corpus are oracle inputs.
 - The varp maps here are `core_data`'s. The canonical player's variable store
   in `player/owned/variables.rs` is a separate object and is not yet joined.
 - The Java-below-11 output, default-charset files and the I/O failure paths.
