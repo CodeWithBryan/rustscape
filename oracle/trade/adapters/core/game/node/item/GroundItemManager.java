@@ -1,0 +1,1 @@
+package core.game.node.item;public class GroundItemManager{public static GroundItem create(Item item,core.game.node.entity.player.Player player){oracle.Support.emit("ground",oracle.Support.index(player),item.getId(),item.getAmount());return null;}}

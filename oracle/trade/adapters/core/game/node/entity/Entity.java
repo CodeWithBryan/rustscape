@@ -1,0 +1,1 @@
+package core.game.node.entity;public abstract class Entity extends core.game.node.Node{public Entity(String name,core.game.world.map.Location location){super(name,location);}public abstract void removeAttribute(String key);}

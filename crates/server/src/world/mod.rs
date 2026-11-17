@@ -71,6 +71,7 @@ pub mod script_runtime;
 pub mod session;
 pub mod social;
 pub mod tick;
+pub mod trade;
 pub mod update;
 pub mod update_masks;
 pub mod walk_request;

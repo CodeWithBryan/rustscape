@@ -1,0 +1,1 @@
+package core.tools;public enum Log{WARN,FINE,ERR}

@@ -1,0 +1,1 @@
+package core.game.event;public class InterfaceCloseEvent{public core.game.component.Component component;public InterfaceCloseEvent(core.game.component.Component c){component=c;}}

@@ -976,6 +976,23 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   corpus runs a whole fight through the real CombatPulse/ImpactHandler/
   DeathTask with these members; AbstractNPC and IdleAbstractNPC are not
   ported; nothing installs the library. See docs/npc-behaviour.md.
+- For requests or trading (world/trade: RequestManager, RequestType,
+  TradeModule, TradeContainer, TradeCloseEvent, TradeInterfacePlugin), run
+  `cargo test -p rs09-server --test trade` and `cargo xtask trade-oracle
+  --check` with Python/JDK 11, plus the inventory, container_ownership,
+  container_listeners, interfaces, input_prompt, ironman, owned_player and
+  bank_interface suites. Preserve all 373 cases and their frame bytes. The
+  trade runs on native containers, the native InterfaceManager with the typed
+  TradeClose event (its reentrant partner close included), native Ironman and
+  the native input prompt with AmountScript; keep those joins, and keep every
+  other call a required Host service in the original order with no default.
+  Keep the quirks: no request timeout, the stale lastRequest accepted, the
+  requester's own interface closed, Int-wrapping distance, the placeholder's
+  stage 0, update's re-read stage, the in-place clamp at the exchange with
+  amount-0 ground items, stack overflow lost, the unconditional bot lookups,
+  Offer-X without m. The alert pulse body is ported; its scheduling, the
+  real InventoryListener and every content service are not. Nothing installs
+  the library in a session. See docs/trade.md.
 - For interface metadata, component open/close/plugin lookup, gameframe/tab/chat
   orchestration or window-mode changes, run interfaces and game_packets tests,
   both movement_session/npc_session examples and fresh interfaces-oracle and

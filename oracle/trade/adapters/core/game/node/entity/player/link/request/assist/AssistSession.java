@@ -1,0 +1,1 @@
+package core.game.node.entity.player.link.request.assist;import core.game.node.entity.player.Player;import core.game.node.entity.player.link.request.RequestModule;public class AssistSession implements RequestModule{public void open(Player p,Player t){oracle.Support.emit("assistOpen",oracle.Support.index(p),oracle.Support.index(t));}}

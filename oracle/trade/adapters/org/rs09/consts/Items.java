@@ -1,0 +1,1 @@
+package org.rs09.consts;public class Items{public static int MAGIC_CARPET_5614=5614;public static final int COINS_995=995;}

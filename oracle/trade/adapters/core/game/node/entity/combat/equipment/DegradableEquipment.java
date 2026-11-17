@@ -1,0 +1,1 @@
+package core.game.node.entity.combat.equipment;public class DegradableEquipment{public static int getDropReplacement(int id){throw new UnsupportedOperationException("degradation is not reached by the trade");}}
