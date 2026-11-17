@@ -299,6 +299,29 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
   ShopNPC are not ported; nothing installs the libraries in `--world` (the
   binding is described in docs/global-handlers.md).
+- For the global item handlers (world/global_items: EnchantedJewellery and
+  EnchantedJewelleryListener with its dialogue file, EnchantJewelleryTab,
+  TeleTabs, HouseTeleTabOption, TeleportCrystalPlugin with its dialogue,
+  EctophialListener, ExplorersRingPlugin, FaladorShieldPlugin and their
+  registrations), run `cargo test -p rs09-server --test global_items` and
+  `cargo xtask global-items-oracle --check` with Python/JDK 11, plus the
+  global_handlers, packet_handlers, item_option_registry,
+  interaction_listeners, teleport, wilderness, inventory, equipment and
+  consumables suites. Preserve the 835 cases. Keep idMap's JDK HashMap key
+  walk for the jewellery registration, one object for a non-capturing lambda,
+  operate options before prayer-restore for the shields; the jewellery zone
+  rule `teleport(1, next charge)` before Tarn's Lair, the location read after
+  both, the INSTANT teleport script with its stages and the last ring of
+  slaying's fallbacks (identity comparison of replaceSlot); the tablets' two
+  duration reads and identity dupe test; the two inInventory reads and
+  Ardougne's Boolean cast; the crystal's args[1] before args[0], teleport and
+  degrade whatever send answers; the ring's stale count and the two lower
+  cases; the shield's null-passing cast, Long cast and effect before the
+  array read. Every outside call is a required Host service with no default;
+  slayer, construction, runecrafting, alchemy and quest tables are named
+  content services. The everyday item options and item-on-object basics of
+  the slice are not ported; nothing installs the library in `--world` (the
+  binding is described in docs/global-items.md).
 - For eating and drinking (world/consumables: Consumable, Food, Drink, Potion,
   Cake, HalfableFood, BarbarianMix, FakeConsumable, ConsumableEffect, the
   Consumables table, the 34 effect classes and ConsumableListener), run
