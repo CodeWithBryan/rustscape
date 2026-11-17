@@ -189,6 +189,8 @@ pub struct Scene<A: Assets> {
     chunk_ids: HashMap<usize, usize>,
     pub dirty_chunks: chunk_sync::DirtyTracker,
     pub pulse_counts: HashMap<String, u64>,
+    /// DynamicRegion.RESERVED_AREAS: the instance areas in use.
+    pub reserved_areas: super::dynamic_region::Reserved,
 }
 impl<A: Assets> Scene<A> {
     pub fn new(assets: A, definitions: definitions::Registry, doors: doors::Registry) -> Self {
@@ -208,6 +210,7 @@ impl<A: Assets> Scene<A> {
             chunk_ids: HashMap::new(),
             dirty_chunks: chunk_sync::DirtyTracker::default(),
             pulse_counts: HashMap::new(),
+            reserved_areas: Default::default(),
         }
     }
     pub fn region(&mut self, id: i32) -> region::Handle {

@@ -21,6 +21,8 @@ pub mod door_option;
 pub mod door_runtime;
 pub mod doors;
 pub mod dragonfire;
+pub mod dynamic_region;
+pub mod dynamic_scene;
 pub mod driver;
 pub mod drop_tables;
 pub mod entity_regions;

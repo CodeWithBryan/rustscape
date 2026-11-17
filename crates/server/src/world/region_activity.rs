@@ -6,7 +6,11 @@
 //! Activation joins the native `region::load`; the pulse is a native
 //! `pulses::Pulse` that the owning world submits to its runner and whose body
 //! is `pulse_body`. NPC, repository and log effects are required `Host`
-//! services. A DynamicRegion is refused with `Error::Dynamic`.
+//! services. The functions without a suffix treat every region as a plain
+//! Region and refuse a DynamicRegion with `Error::Dynamic`; the `_in`
+//! versions take the region class (`Kind`), which is how
+//! `dynamic_region` reaches DynamicRegion's `flagInactive` override and the
+//! `instanceof DynamicRegion` branches of `unload` and `RegionChunk.clear`.
 use super::{
     chunk::{self, HandleChunk},
     player_walk::NodeHandle,
@@ -43,6 +47,8 @@ pub struct Activity {
     pub music: i32,
     pub music_zones: List<MusicZone>,
     zones: Option<Arc<dyn Any + Send + Sync>>,
+    /// DynamicRegion's own fields; `None` for a plain Region.
+    pub dynamic: Option<Shared<super::dynamic_region::Instance>>,
 }
 impl Default for Activity {
     fn default() -> Self {
@@ -60,6 +66,7 @@ impl Default for Activity {
             music: -1,
             music_zones: List::new(),
             zones: None,
+            dynamic: None,
         }
     }
 }
@@ -83,11 +90,31 @@ pub fn region_zones<H: zones::Host>(region: &region::Handle) -> Result<List<Regi
 fn activity(region: &region::Handle) -> Shared<Activity> {
     region.read().activity.clone()
 }
-fn refuse_dynamic(region: &region::Handle) -> Result<()> {
-    if region.read().dynamic_template.is_some() {
+fn is_dynamic(region: &region::Handle) -> bool {
+    region.read().dynamic_template.is_some()
+}
+fn refuse_dynamic<K: Kind<H>, H: Host>(region: &region::Handle) -> Result<()> {
+    if !K::DYNAMIC && is_dynamic(region) {
         return Err(Error::Dynamic);
     }
     Ok(())
+}
+/// The class of the region objects a host has: what Region's methods
+/// dispatch on. `Static` knows only Region; `dynamic_region::Dynamic` also
+/// DynamicRegion.
+pub trait Kind<H: Host> {
+    /// Whether DynamicRegion objects are accepted rather than refused.
+    const DYNAMIC: bool;
+    /// `region.flagInactive(force)`, a virtual call.
+    fn flag_inactive(host: &mut H, region: &region::Handle, force: bool) -> Result<bool>;
+}
+/// Plain regions only; a DynamicRegion is `Error::Dynamic`.
+pub struct Static;
+impl<H: Host> Kind<H> for Static {
+    const DYNAMIC: bool = false;
+    fn flag_inactive(host: &mut H, region: &region::Handle, force: bool) -> Result<bool> {
+        base_flag_inactive::<Self, H>(host, region, force)
+    }
 }
 /// `chunks[x][y][z]`, read again on every use as the original does.
 fn chunk_at(region: &region::Handle, x: usize, y: usize, z: usize) -> Result<HandleChunk> {
@@ -235,15 +262,37 @@ pub fn activity_pulse(region: &region::Handle) -> pulses::Handle {
 pub fn check_inactive<H: Host>(host: &mut H, region: &region::Handle) -> Result<bool> {
     is_inactive(host, region, true)
 }
-/// `isInactive(runPulse)`: viewed or populated regions are not inactive;
-/// otherwise a stopped pulse is rewound, started and submitted again, even
-/// while its earlier submission is still queued.
 pub fn is_inactive<H: Host>(
     host: &mut H,
     region: &region::Handle,
     run_pulse: bool,
 ) -> Result<bool> {
-    refuse_dynamic(region)?;
+    is_inactive_in::<Static, H>(host, region, run_pulse)
+}
+pub fn flag_active<H: Host>(host: &mut H, region: &region::Handle) -> Result<()> {
+    flag_active_in::<Static, H>(host, region)
+}
+pub fn flag_inactive<H: Host>(host: &mut H, region: &region::Handle, force: bool) -> Result<bool> {
+    <Static as Kind<H>>::flag_inactive(host, region, force)
+}
+pub fn unload<H: Host>(host: &mut H, region: &region::Handle, force: bool) -> Result<bool> {
+    unload_in::<Static, H>(host, region, force)
+}
+pub fn pulse_body<H: Host>(host: &mut H, region: &region::Handle) -> Result<bool> {
+    pulse_body_in::<Static, H>(host, region)
+}
+pub fn clear_chunk<H: Host>(host: &mut H, chunk: &HandleChunk) -> Result<()> {
+    clear_chunk_in::<Static, H>(host, chunk)
+}
+/// `isInactive(runPulse)`: viewed or populated regions are not inactive;
+/// otherwise a stopped pulse is rewound, started and submitted again, even
+/// while its earlier submission is still queued.
+pub fn is_inactive_in<K: Kind<H>, H: Host>(
+    host: &mut H,
+    region: &region::Handle,
+    run_pulse: bool,
+) -> Result<bool> {
+    refuse_dynamic::<K, H>(region)?;
     if is_viewed(region) {
         return Ok(false);
     }
@@ -273,8 +322,8 @@ pub fn is_inactive<H: Host>(
 }
 /// `flagActive()`: the pulse stops; a region that was not active loads and
 /// hands its active NPCs to the repository.
-pub fn flag_active<H: Host>(host: &mut H, region: &region::Handle) -> Result<()> {
-    refuse_dynamic(region)?;
+pub fn flag_active_in<K: Kind<H>, H: Host>(host: &mut H, region: &region::Handle) -> Result<()> {
+    refuse_dynamic::<K, H>(region)?;
     pulses::stop_base(&activity_pulse(region));
     let activity = activity(region);
     if activity.read().active {
@@ -298,22 +347,31 @@ pub fn flag_active<H: Host>(host: &mut H, region: &region::Handle) -> Result<()>
     }
     Ok(())
 }
-/// `flagInactive(force)`.
-pub fn flag_inactive<H: Host>(host: &mut H, region: &region::Handle, force: bool) -> Result<bool> {
-    if unload(host, region, force)? {
+/// Region's own `flagInactive(force)` (DynamicRegion's `super` call).
+pub fn base_flag_inactive<K: Kind<H>, H: Host>(
+    host: &mut H,
+    region: &region::Handle,
+    force: bool,
+) -> Result<bool> {
+    if unload_in::<K, H>(host, region, force)? {
         activity(region).write().active = false;
         return Ok(true);
     }
     Ok(false)
 }
 /// `unload(force)`: refused, with the region flagged active again, while it
-/// is viewed or holds a player; otherwise every NPC is told and every chunk
-/// cleared, x, y, plane order.
-pub fn unload<H: Host>(host: &mut H, region: &region::Handle, force: bool) -> Result<bool> {
-    refuse_dynamic(region)?;
+/// is viewed or holds a player; otherwise every NPC of a plain Region is
+/// told (a DynamicRegion's are not) and every chunk cleared, x, y, plane
+/// order.
+pub fn unload_in<K: Kind<H>, H: Host>(
+    host: &mut H,
+    region: &region::Handle,
+    force: bool,
+) -> Result<bool> {
+    refuse_dynamic::<K, H>(region)?;
     if !force && is_viewed(region) {
         host.log_error("Players viewing region!")?;
-        flag_active(host, region)?;
+        flag_active_in::<K, H>(host, region)?;
         return Ok(false);
     }
     for x in 0..CHUNKS {
@@ -331,7 +389,7 @@ pub fn unload<H: Host>(host: &mut H, region: &region::Handle, force: bool) -> Re
                     host.log_error(&format!(
                         "Players still in region! (region id {id}; {count} players on a chunk)"
                     ))?;
-                    flag_active(host, region)?;
+                    flag_active_in::<K, H>(host, region)?;
                     return Ok(false);
                 }
             }
@@ -340,12 +398,14 @@ pub fn unload<H: Host>(host: &mut H, region: &region::Handle, force: bool) -> Re
     for x in 0..CHUNKS {
         for y in 0..CHUNKS {
             for z in 0..PLANES {
-                // `new ArrayList<>(getNpcs())`: a copy.
-                let npcs = chunk_at(region, x, y, z)?.read().npcs.values();
-                for npc in npcs {
-                    host.npc_region_inactivity(&npc.ok_or(Error::Null)?)?;
+                if !is_dynamic(region) {
+                    // `new ArrayList<>(getNpcs())`: a copy.
+                    let npcs = chunk_at(region, x, y, z)?.read().npcs.values();
+                    for npc in npcs {
+                        host.npc_region_inactivity(&npc.ok_or(Error::Null)?)?;
+                    }
                 }
-                clear_chunk(host, &chunk_at(region, x, y, z)?)?;
+                clear_chunk_in::<K, H>(host, &chunk_at(region, x, y, z)?)?;
             }
         }
     }
@@ -354,18 +414,24 @@ pub fn unload<H: Host>(host: &mut H, region: &region::Handle, force: bool) -> Re
     Ok(true)
 }
 /// The activity pulse's `pulse()`: `flagInactive()`, then finished.
-pub fn pulse_body<H: Host>(host: &mut H, region: &region::Handle) -> Result<bool> {
-    flag_inactive(host, region, false)?;
+pub fn pulse_body_in<K: Kind<H>, H: Host>(host: &mut H, region: &region::Handle) -> Result<bool> {
+    K::flag_inactive(host, region, false)?;
     Ok(true)
 }
-/// RegionChunk.clear(): the update flags and both object layers. The entity
-/// lists stay. A chunk of a DynamicRegion is refused.
-pub fn clear_chunk<H: Host>(host: &mut H, chunk: &HandleChunk) -> Result<()> {
+/// RegionChunk.clear(): the update flags, a DynamicRegion chunk's item list
+/// (emptied and dropped, so `getItems` makes a new one), then both object
+/// layers. The entity lists stay.
+pub fn clear_chunk_in<K: Kind<H>, H: Host>(host: &mut H, chunk: &HandleChunk) -> Result<()> {
     let flags = chunk.read().update_flags.clone();
     flags.write().clear();
     let base = chunk.read().current_base.clone();
     let region = host.chunk_region(zones::region_id(&base))?;
-    refuse_dynamic(&region)?;
+    refuse_dynamic::<K, H>(&region)?;
+    let items = chunk.read().items.clone();
+    if let Some(items) = items.filter(|_| is_dynamic(&region)) {
+        items.write().clear();
+        chunk.write().items = None;
+    }
     let (statics, objects) = {
         let chunk = chunk.read();
         (chunk.static_objects.clone(), chunk.objects.clone())

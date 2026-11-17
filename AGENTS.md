@@ -1526,6 +1526,33 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   wilderness entry below), and nothing
   binds these libraries to a session: the examples' check_inactive,
   zone_update and ZoneMove answers are still fabricated. See docs/zones.md.
+- For DynamicRegion or RegionChunk instancing (world/dynamic_region.rs:
+  construction, reserved areas and findZoneBorders, create/copy/replaceChunk,
+  rebuildClippingFlags, RegionChunk.rotate, link, multiway, music, clear, the
+  flagInactive override, removeRegion; region_activity's `Kind` and `_in`
+  functions) or the instanced scene packets (world/dynamic_scene.rs:
+  BuildDynamicScene, Player.updateSceneGraph's choice, MinimapState,
+  ClearMinimapFlag), run `cargo test -p rs09-server --test dynamic_regions`
+  and `cargo xtask dynamic-regions-oracle --check` with Python/JDK 11 (it
+  exports the pinned cache regions, definitions and keys itself), plus the
+  zones, entity_regions, chunk_sync, map_chunk_render, scene, clipping,
+  scenery, region_load, world_update and wilderness suites and zones-oracle.
+  Preserve the 36 cases over 52 real cache regions. Keep an instance's first
+  load onto its own chunks before the replacement is stored, registration
+  after each copy (lookups while building reach a placeholder region), the
+  invalidated/cleared flag keys, the one shared borders object, fifteen
+  probes per row, rotate's first free static slot and diagonal fallback,
+  flagInactive's order (permanent, active parent, linked, Region's own, NPCs,
+  the cleared item list, release, multiway off, every linked region with
+  `&=`), unload without onRegionInactivity and the dropped item list of an
+  instance chunk, the build area lookups that create regions, keys in
+  first-use order and the last scene after the write. The unsuffixed
+  region_activity functions keep refusing an instance. NPC creation and
+  clearing, familiars, ground items, scene updates, logs and the multiway
+  zone are required services with no defaults. One difference is pinned
+  (toggleMulticombat without borders). Nothing installs the library in
+  `--world`; region specifications and the activity/cutscene framework are
+  not ported. See docs/dynamic-regions.md.
 - For TeleportManager, TeleportType, TeleportPulse or Entity.isTeleporting
   (world/teleport.rs), run `cargo test -p rs09-server --test teleport` and
   `cargo xtask teleport-oracle --check` with Python/JDK 11, plus the pulses,
