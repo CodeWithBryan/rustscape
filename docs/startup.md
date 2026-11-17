@@ -182,7 +182,8 @@ and registry (`timers`, `timers::registry`) and the `take` option handler
   and the nine `listeners.*` lists), checked against the boot record by the
   test. `scan::native` names the scanned classes with a native registration:
   `core.ServerStore` and `GraveController` (world persists), the timers below,
-  and `PickupPlugin`. Every other scanned class is reported by name, in the
+  `PickupPlugin` and the AbstractNPC classes of `npcs::STARTUP_NPC_CLASSES`
+  (docs/npc-classes.md). Every other scanned class is reported by name, in the
   original's order, as "content not ported".
 - `timers` (the engine timers the scan registers): native prototypes of
   `GrandExchangeTimer` (500, "GE periodic poll", soft, automatic), `AntiMacro`
@@ -228,10 +229,10 @@ the original's uncaught exception: `StartupError::Failed`.
 | 15 | ClassScanner.loadTimers | in part: GrandExchangeTimer, AntiMacro, HolidayRandoms registered in the original's order (with its log lines); 31 other timers named |
 | 16 | ServerStore.parse | native (`store`) |
 | 17 | other worldPersists.parse (GraveController) | native for an empty `active-graves` archive (`store`) |
-| 18 | ClassScanner.loadSideEffectfulPlugins | in part: PickupPlugin (the `take` handler); 1,500 other plugins named |
+| 18 | ClassScanner.loadSideEffectfulPlugins | in part: PickupPlugin (the `take` handler) and the prototypes and ids of ShopNPC, CowNPC, DuckNPC, RatNPC, GuardNPC, MonkNPC, HighwayManNPC and IceGiantNPC; 1,492 other plugins named |
 | 19 | ShopParser | native |
 | 20 | DropTableParser | native (`world::drop_tables::parser`, generators from the world) |
-| 21 | NPCSpawner | in part (`npcs`): every NPC a base NPC; zone updates, NPC interaction defaults, slayer tasks, magic autocast spells and the SkillRestore timer counted as not ported |
+| 21 | NPCSpawner | in part (`npcs`): NPCs of the registered AbstractNPC classes constructed as those classes (`npcs.subclasses` matches the original's), every other NPC a base NPC; zone updates, NPC interaction defaults, slayer tasks, magic autocast spells and the SkillRestore timer counted as not ported |
 | 22 | DoorConfigLoader | native (`world::doors`) |
 | 23 | GroundSpawnLoader | in part (`ground`): 717 spawns; ground items' option tables hold only the native `take` handler |
 | 24 | MusicConfigLoader | native |

@@ -6,11 +6,15 @@
 //!
 //! What `NPC.create` / `NPC.init` reach, and what answers it here:
 //!
-//! - `AbstractNPC.forId(id)`: the world's content NPC classes. The class scan
-//!   registers 1,118 ids of content subclasses in the original; this port has
-//!   none, so every NPC is a base `NPC` (`fixtures/startup-draws` lists the
-//!   content classes the original used: 3,646 NPCs of its spawner phase,
-//!   of 132 classes).
+//! - `AbstractNPC.forId(id)`: the registry of NPC subclasses
+//!   (`world::npc_classes::registry`) that the class scan filled with the
+//!   classes of [`STARTUP_NPC_CLASSES`] (their prototypes are
+//!   [`Prototype`]s); `construct` is the class's constructor over a
+//!   canonical NPC tagged with its class, and `init` runs the class's own
+//!   statements after `NPC.init`. The original registers 1,118 ids of
+//!   content subclasses; every other class is content not ported, so its
+//!   NPCs are base `NPC`s here (`fixtures/startup-draws` lists the classes
+//!   the original used: 3,646 NPCs of its spawner phase, of 132 classes).
 //! - `new NPC(id, location, direction)`: a canonical NPC actor, its
 //!   `NPCDefinition.forId(id)` (the world's lazy definition table, as the
 //!   constructor looks it up), size, direction and `NPCBehavior.forId(id)`
@@ -48,6 +52,10 @@ use crate::definitions::{
     property::{Animation, CombatStyle as PropertyStyle, Property},
 };
 use crate::timers::{self as timer_lib, registry::Registry as TimerRegistry};
+use crate::world::npc_classes::{
+    self as nc, Class,
+    registry::{self as classes, Registry},
+};
 use crate::world::{
     combat_swing::{self as cs, CombatStyle, Kind},
     doors::Location,
@@ -91,6 +99,8 @@ pub struct Properties {
 /// One NPC of the start-up world.
 pub struct Npc {
     pub id: i32,
+    /// The AbstractNPC subclass it was constructed as (`None`: a base NPC).
+    pub class: Option<Class>,
     pub definition: defs::Handle,
     pub brain: npc::State,
     pub direction: Option<Direction>,
@@ -121,6 +131,11 @@ pub struct Npcs {
     pub rows: BTreeMap<Node, Npc>,
     pub ai: BTreeMap<Node, Ai<Npcs>>,
     pub behaviours: behaviour::Registry<Npcs>,
+    /// `AbstractNPC.mapping`: each id's class and prototype (an index of
+    /// [`Npcs::prototypes`]).
+    pub classes: Registry<Class, usize>,
+    /// The prototype objects the class scan constructed.
+    pub prototypes: Vec<Prototype>,
     roots: BTreeMap<Node, NodeHandle>,
     pub unported: Unported,
 }
@@ -131,6 +146,8 @@ impl Npcs {
             rows: BTreeMap::new(),
             ai: BTreeMap::new(),
             behaviours: behaviour::Registry::default(),
+            classes: Registry::default(),
+            prototypes: Vec::new(),
             roots: BTreeMap::new(),
             unported: Unported::default(),
         })
@@ -162,6 +179,137 @@ impl Npcs {
 
 fn error(e: impl std::fmt::Display) -> npc_init::Error {
     npc_init::Error::Binding(e.to_string())
+}
+fn class_error(e: nc::Error) -> npc_init::Error {
+    match e {
+        nc::Error::Null => npc_init::Error::Null,
+        nc::Error::Index => npc_init::Error::Index,
+        nc::Error::Cast => npc_init::Error::Type,
+        nc::Error::Binding(m) => npc_init::Error::Binding(m.unwrap_or_default()),
+    }
+}
+
+/// The AbstractNPC classes the start-up world registers: those whose
+/// construction and `init` it can answer. `BankerNPC.init` looks for a bank
+/// booth with `getScenery` and `DarkWizardNPC.init` sets an autocast spell;
+/// the start-up world holds neither region objects nor spells, so those two
+/// stay unregistered here (their NPCs are base NPCs, as before) and are
+/// named as gaps by the class scan step.
+pub const STARTUP_NPC_CLASSES: [Class; 8] = [
+    Class::Shop,
+    Class::Cow,
+    Class::Duck,
+    Class::Rat,
+    Class::Guard,
+    Class::Monk,
+    Class::HighwayMan,
+    Class::IceGiant,
+];
+
+/// A prototype object the class scan constructed (`new ShopNPC()`): never
+/// initialised, never in the repository.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Prototype {
+    pub class: Class,
+    pub id: i32,
+    pub walks: bool,
+    pub aggressive: bool,
+}
+
+/// What the class scan's `newInstance()` of an AbstractNPC class reaches:
+/// `NPC(id, null)` (its `NPCDefinition.forId(id)` lookups) and the
+/// constructors' field writes, recorded on the prototype.
+pub struct Prototypes<'a> {
+    pub npcs: &'a mut Npcs,
+    pub definitions: &'a mut defs::Registry,
+    pub archive: Option<&'a Archive>,
+}
+impl nc::Factory for Prototypes<'_> {
+    type Npc = usize;
+    type Class = Class;
+    fn new_npc(
+        &mut self,
+        class: Option<Class>,
+        id: i32,
+        _: Option<[i32; 3]>,
+        _: Option<Direction>,
+    ) -> nc::Result<usize> {
+        let class =
+            class.ok_or_else(|| nc::Error::Binding(Some("a prototype has a class".into())))?;
+        let lookup = |e: defs::Error| nc::Error::Binding(Some(format!("{e:?}")));
+        // super(NPCDefinition.forId(id).getName(), location); definition = forId(id).
+        self.definitions
+            .for_id(&mut Files(self.archive), id)
+            .map_err(lookup)?;
+        self.definitions
+            .for_id(&mut Files(self.archive), id)
+            .map_err(lookup)?;
+        self.npcs.prototypes.push(Prototype {
+            class,
+            id,
+            walks: false,
+            aggressive: false,
+        });
+        Ok(self.npcs.prototypes.len() - 1)
+    }
+    fn set_walks(&mut self, npc: &usize, walks: bool) -> nc::Result<()> {
+        self.npcs.prototypes[*npc].walks = walks;
+        Ok(())
+    }
+    fn set_aggressive(&mut self, npc: &usize, aggressive: bool) -> nc::Result<()> {
+        self.npcs.prototypes[*npc].aggressive = aggressive;
+        Ok(())
+    }
+    fn log(&mut self, origin: &str, _: nc::LogLevel, message: &str) -> nc::Result<()> {
+        // Two registered classes never share an id; the start-up log has no
+        // ContentAPI.log line for it.
+        Err(nc::Error::Binding(Some(format!(
+            "{origin}: {message} (not answered in the start-up world)"
+        ))))
+    }
+}
+
+/// The subclass constructors over the start-up world's canonical NPCs.
+impl nc::Factory for Init<'_> {
+    type Npc = Node;
+    type Class = Class;
+    fn new_npc(
+        &mut self,
+        class: Option<Class>,
+        id: i32,
+        location: Option<[i32; 3]>,
+        direction: Option<Direction>,
+    ) -> nc::Result<Node> {
+        let fail = |e: npc_init::Error| nc::Error::Binding(Some(e.to_string()));
+        let location = location.map(|[x, y, z]| Location::new(x, y, z));
+        let node = npc_init::Context::base(self, id, location, direction).map_err(fail)?;
+        let row = self.row_mut(node).map_err(fail)?;
+        row.class = class;
+        if let Some(radius) = class.and_then(Class::walk_radius) {
+            row.brain.fields.write().walk_radius_override = Some(radius);
+        }
+        Ok(node)
+    }
+    fn set_walks(&mut self, npc: &Node, walks: bool) -> nc::Result<()> {
+        let fail = |e: npc_init::Error| nc::Error::Binding(Some(e.to_string()));
+        self.row(*npc).map_err(fail)?.brain.fields.write().walks = walks;
+        Ok(())
+    }
+    fn set_aggressive(&mut self, npc: &Node, aggressive: bool) -> nc::Result<()> {
+        let fail = |e: npc_init::Error| nc::Error::Binding(Some(e.to_string()));
+        self.row(*npc)
+            .map_err(fail)?
+            .brain
+            .fields
+            .write()
+            .aggressive = aggressive;
+        Ok(())
+    }
+    fn log(&mut self, origin: &str, _: nc::LogLevel, message: &str) -> nc::Result<()> {
+        Err(nc::Error::Binding(Some(format!(
+            "{origin}: {message} (construction does not log)"
+        ))))
+    }
 }
 
 struct Files<'a>(Option<&'a Archive>);
@@ -225,18 +373,31 @@ fn slot(s: Slot) -> usize {
 
 impl npc_init::Context for Init<'_> {
     type Arguments = ();
-    fn prototype(&mut self, _: i32) -> npc_init::Result<Option<Node>> {
-        // AbstractNPC.forId: no content NPC class is registered natively.
-        Ok(None)
+    fn prototype(&mut self, id: i32) -> npc_init::Result<Option<Node>> {
+        // AbstractNPC.forId(id): the prototype's index.
+        Ok(self.npcs.classes.for_id(id).map(|(_, p)| *p))
     }
     fn construct(
         &mut self,
-        _: Node,
-        _: i32,
-        _: Option<Location>,
+        prototype: Node,
+        id: i32,
+        location: Option<Location>,
         _: &(),
     ) -> npc_init::Result<Option<Node>> {
-        Err(error("content NPC classes are not ported"))
+        // ((AbstractNPC) n).construct(id, location, objects)
+        let class = self
+            .npcs
+            .prototypes
+            .get(prototype)
+            .ok_or(npc_init::Error::Index)?
+            .class;
+        let at = location.map(|l| l.coordinates());
+        match nc::Abstract::construct(&class, at).map_err(class_error)? {
+            None => Ok(None),
+            Some(constructor) => classes::construct_npc(self, class, id, at, constructor)
+                .map(Some)
+                .map_err(class_error),
+        }
     }
     fn base(
         &mut self,
@@ -273,6 +434,7 @@ impl npc_init::Context for Init<'_> {
             node,
             Npc {
                 id,
+                class: None,
                 definition,
                 brain,
                 direction,
@@ -548,7 +710,19 @@ impl npc_spawns::Context for Init<'_> {
         }
     }
     fn init(&mut self, n: &Node) -> npc_spawns::Result<()> {
-        npc_init::init(self, *n).map_err(|e| npc_spawns::Error::Binding(e.to_string()))
+        // A subclass's init(): super.init(), then its own statements
+        // (world::npc_classes::classes::init; only ShopNPC's of the
+        // registered classes has any).
+        let binding = |e: npc_init::Error| npc_spawns::Error::Binding(e.to_string());
+        npc_init::init(self, *n).map_err(binding)?;
+        match self.row(*n).map_err(binding)?.class {
+            Some(Class::Shop) => nc::Factory::set_walks(self, n, true)
+                .map_err(|e| npc_spawns::Error::Binding(e.to_string())),
+            Some(class @ (Class::Banker | Class::DarkWizard)) => Err(npc_spawns::Error::Binding(
+                format!("{} is not registered in the start-up world", class.name()),
+            )),
+            _ => Ok(()),
+        }
     }
     fn log(&mut self, count: i32) -> npc_spawns::Result<()> {
         self.spawned = Some(count);

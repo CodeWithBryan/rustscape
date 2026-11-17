@@ -97,7 +97,8 @@ RegionManager object, teleport-permission and clipping-flag queries
 SpecialLadders maps are `climb::Ladders` (the world keeps one and answers
 `special_destination`/`special_ladder` from it). Content stays a
 named service: `QuestTabUtils.showRequirementsInterface` (the quest
-requirement tables), `BankerNPC.checkLunarIsleRestriction`,
+requirement tables), `BankerNPC.checkLunarIsleRestriction` (ported in
+`world::npc_classes::banker`; the world answers the service with it),
 `ZogreFleshEatersListeners.ladderMakesSithikTurnIntoOgre`, `CharacterDesign`,
 `ActivityManager.start`, `LoginConfiguration.configureGameWorld`, the special
 attack handlers and the `caller`/item-select callback objects.
@@ -193,7 +194,9 @@ were added.
   and their evaluation are quest content).
 - `ClimbActionHandler.climbRope`/`climbTrapdoor` are empty in the original;
   `SpecialLadders.add` is ported (`Ladders::add`) but nothing calls it here.
-- `NPCTalkListener`, `BankerNPC`, `ShopNPC` (an AbstractNPC; shops themselves
-  are native in `world/shops`).
+- `NPCTalkListener`, `BankerNPC`, `ShopNPC` and the other global NPC classes
+  are `world/npc_classes` (docs/npc-classes.md);
+  `npc_classes::banker::check_lunar_isle_restriction` answers
+  `Host::lunar_restriction` here.
 - Nothing installs the libraries in `rs09-server --world` yet (see above for
   how); skill-specific and creature-specific handlers are content.

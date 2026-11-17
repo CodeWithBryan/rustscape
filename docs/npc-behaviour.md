@@ -184,7 +184,8 @@ attribute writes happen and are then recorded, as in the npc-tick oracle.
 ## Not ported
 
 `AbstractNPC` (its mapping and duplicate-name warning, which compares
-`getSimpleName()` strings by identity) and `IdleAbstractNPC`; `NPC.init`,
+`getSimpleName()` strings by identity) and `IdleAbstractNPC` are
+`world::npc_classes` (docs/npc-classes.md); `NPC.init`,
 `clear`, `transform`, `openShop`, `getShownNPC`, `initConfig`/`configure`
 (their own slice is `world::npc_init`), `getAudio` and the poison members;
 `Player.fullRestore`; the `Entity` members not listed above. The real

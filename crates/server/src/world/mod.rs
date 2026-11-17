@@ -49,6 +49,7 @@ pub mod movement;
 pub mod navigation;
 pub mod npc;
 pub mod npc_behaviour;
+pub mod npc_classes;
 pub mod npc_death;
 pub mod npc_init;
 pub mod npc_render;

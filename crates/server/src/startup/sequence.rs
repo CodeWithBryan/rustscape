@@ -164,10 +164,10 @@ impl Step {
                 "ClassScanner.loadTimers: only GrandExchangeTimer, AntiMacro and HolidayRandoms have native prototypes; the other scanned timers are not ported"
             }
             Self::LoadSideEffectfulPlugins => {
-                "ClassScanner.loadSideEffectfulPlugins: only PickupPlugin is native; every other legacy plugin is content not ported"
+                "ClassScanner.loadSideEffectfulPlugins: only PickupPlugin and the AbstractNPC classes ShopNPC, CowNPC, DuckNPC, RatNPC, GuardNPC, MonkNPC, HighwayManNPC and IceGiantNPC are native (BankerNPC and DarkWizardNPC need region objects and spells the start-up world does not hold); every other legacy plugin is content not ported"
             }
             Self::NpcSpawner => {
-                "NPCSpawner: every NPC is a base NPC (content NPC classes are not ported); zone updates, NPC interaction defaults, slayer tasks, magic autocast spells and the SkillRestore timer are not ported"
+                "NPCSpawner: NPCs of the registered AbstractNPC classes are constructed as those classes and every other NPC is a base NPC (content NPC classes are not ported); zone updates, NPC interaction defaults, slayer tasks, magic autocast spells and the SkillRestore timer are not ported"
             }
             Self::GroundSpawns => {
                 "GroundSpawnLoader: ground items' option tables hold only the natively registered item option handler (take); content registers the others"
@@ -860,6 +860,25 @@ impl World {
                             self.item_options
                                 .register_pickup()
                                 .map_err(|e| failed(debug(e)))?;
+                            self.legacy_plugins += 1;
+                        }
+                        Some(Native::NpcClass(class)) => {
+                            // new X() (an NPC prototype), then
+                            // AbstractNPC.newInstance(null): its ids.
+                            let archive = self.npc_archive.clone();
+                            let mut prototypes = npcs::Prototypes {
+                                npcs: &mut self.entities,
+                                definitions: &mut self.npcs,
+                                archive: archive.as_deref(),
+                            };
+                            let mut registry = std::mem::take(&mut prototypes.npcs.classes);
+                            let result = crate::world::npc_classes::registry::define(
+                                &mut prototypes,
+                                &mut registry,
+                                class,
+                            );
+                            prototypes.npcs.classes = registry;
+                            result.map_err(|e| failed(debug(e)))?;
                             self.legacy_plugins += 1;
                         }
                         _ => gaps.push(Gap {

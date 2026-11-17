@@ -57,6 +57,10 @@ pub enum Native {
     Timer(super::timers::Kind),
     /// `PickupPlugin`: `world::pickup::register` (the `take` option handler).
     PickupPlugin,
+    /// An AbstractNPC class the start-up world registers
+    /// (`startup::npcs::STARTUP_NPC_CLASSES`):
+    /// `world::npc_classes::registry::define`.
+    NpcClass(crate::world::npc_classes::Class),
 }
 
 /// The native registration of a scanned class, if it has one.
@@ -69,7 +73,13 @@ pub fn native(class: &str) -> Option<Native> {
         "core.game.system.timer.impl.AntiMacro" => Native::Timer(Kind::AntiMacro),
         "core.game.worldevents.holiday.HolidayRandoms" => Native::Timer(Kind::HolidayRandoms),
         "content.global.handlers.item.PickupPlugin" => Native::PickupPlugin,
-        _ => return None,
+        other => {
+            let class = crate::world::npc_classes::Class::named(other)?;
+            if !super::npcs::STARTUP_NPC_CLASSES.contains(&class) {
+                return None;
+            }
+            Native::NpcClass(class)
+        }
     })
 }
 

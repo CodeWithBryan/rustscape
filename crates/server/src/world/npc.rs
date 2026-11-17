@@ -19,6 +19,9 @@ pub struct Fields {
     pub location: Option<Location>,
     pub spawn: Option<Location>,
     pub radius: i32,
+    /// A subclass's `getWalkRadius()` override (ShopNPC: 3), read where the
+    /// original calls the method rather than the `walkRadius` field.
+    pub walk_radius_override: Option<i32>,
     pub walks: bool,
     pub path_bound: bool,
     pub path: Option<Shared<Vec<Option<Location>>>>,
@@ -53,6 +56,7 @@ impl State {
                 spawn: Some(location.clone()),
                 location: Some(location),
                 radius: 11,
+                walk_radius_override: None,
                 walks: false,
                 path_bound: false,
                 path: None,
@@ -275,7 +279,10 @@ impl State {
             (f.path_bound, f.path.clone())
         };
         if !fixed || path.as_ref().is_none_or(|p| p.read().is_empty()) {
-            let radius = self.fields.read().radius / 2;
+            let radius = {
+                let f = self.fields.read();
+                f.walk_radius_override.unwrap_or(f.radius) / 2
+            };
             let spawn = ctx.spawn(self).ok_or(Error::Null)?;
             let dx = ctx.random_range(self, radius.wrapping_neg(), radius.wrapping_add(1))?;
             let dy = ctx.random_range(self, radius.wrapping_neg(), radius.wrapping_add(1))?;

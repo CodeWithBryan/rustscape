@@ -223,9 +223,39 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   plane `(z + dz) % 4`, findLadder x outer, the negative-rotation swap, Java
   walk-flag shifts and at most three turns. Every outside call is a required
   Host service with no default; the classes' names are metadata only.
-  QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
-  ShopNPC are not ported; nothing installs the libraries in `--world` (the
-  binding is described in docs/global-handlers.md).
+  QuestTabUtils.showRequirementsInterface is not ported (NPCTalkListener,
+  BankerNPC and ShopNPC are world/npc_classes, next bullet); nothing installs
+  the libraries in `--world` (the binding is described in
+  docs/global-handlers.md).
+- For the NPC subclass framework or the global NPC handlers
+  (world/npc_classes: AbstractNPC's registry, newInstance, forId, construct
+  and the subclass half of NPC.create, IdleAbstractNPC, ShopNPC, BankerNPC,
+  CowNPC, DuckNPC, RatNPC, GuardNPC, MonkNPC, HighwayManNPC, IceGiantNPC,
+  DarkWizardNPC, NPCTalkListener, NPCDisturbPlugin, HairCutPlugin, their
+  registrations; the start-up join in startup/npcs.rs), run `cargo test -p
+  rs09-server --test npc_classes` and `cargo xtask npc-classes-oracle
+  --check` with Python/JDK 11, plus the startup (its `npcs.subclasses`
+  check needs runs/startup-loaders-oracle/template), npc_init, npc_behaviour,
+  npc_walk, npc_render, npc_death, drop_tables, shops, global_handlers and
+  interaction_listeners suites. Preserve the 815 cases. Keep newInstance's
+  class identity (JDK 11's cached simple name: the same class replaces
+  silently, another class keeps the id and logs once per id), the
+  constructors' setWalks (and Guard's/DarkWizard's setAggressive),
+  construct ignoring the direction, BankerNPC.construct's Kotlin null check,
+  the booth search order south/west/north/east with Location's 15-bit
+  packing, the destination override's id cases and BankerNPC-only search,
+  NPCTalkListener's repeated getEventNpc reads, identity comparison and
+  getter-read finalized, the two gnome cooking ordinal reads, the slayer
+  message that does not refuse, and the second getDiary before updateTask.
+  The subclass is data on the NPC (`Class`); overridden members dispatch in
+  `classes`. Every outside call is a required Host/Factory service with no
+  default; the banker conversation (DialogueLabeller), random event,
+  holiday, barcrawl and gnome cooking content are named services. The
+  start-up world registers only STARTUP_NPC_CLASSES (not BankerNPC or
+  DarkWizardNPC: no region objects or spells there); nothing installs the
+  library in `--world`. The dragon classes and behaviours, Sheep, Chinchompa,
+  stray dogs, cow milking, decanting and QuestTabUtils are not ported. See
+  docs/npc-classes.md.
 - For commands, quick chat or abuse reports (world/commands: CommandSystem,
   Command, CommandMapping, the legacy CommandSet enum, CommandPlugin's
   helpers, sets.CommandSet, the registration table and the Moderation,
@@ -1330,7 +1360,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (the combat pulse included) is a required service with no default. No
   corpus runs a whole fight through the real CombatPulse/ImpactHandler/
   DeathTask with these members; AbstractNPC and IdleAbstractNPC are not
-  ported; nothing installs the library. See docs/npc-behaviour.md.
+  ported here (they are world/npc_classes); nothing installs the library.
+  See docs/npc-behaviour.md.
 - For requests or trading (world/trade: RequestManager, RequestType,
   TradeModule, TradeContainer, TradeCloseEvent, TradeInterfacePlugin), run
   `cargo test -p rs09-server --test trade` and `cargo xtask trade-oracle

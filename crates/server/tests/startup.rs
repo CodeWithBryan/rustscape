@@ -919,7 +919,7 @@ const KNOWN_GAPS: &[(&str, &str)] = &[
     ),
     (
         "log:ClassScanner.loadSideEffectfulPlugins",
-        "native: 1 legacy plugin (PickupPlugin) of the original's 1,794",
+        "native: 9 legacy plugins (PickupPlugin and the start-up's AbstractNPC classes) of the original's 1,794",
     ),
     (
         "log:ClassScanner.loadTimers",
@@ -967,7 +967,10 @@ const KNOWN_GAPS: &[(&str, &str)] = &[
         "tables.contentInterfaces",
         "2 native (ServerStore, GraveController) of 645",
     ),
-    ("tables.legacyPlugins", "1 native (PickupPlugin) of 1,796"),
+    (
+        "tables.legacyPlugins",
+        "9 native (PickupPlugin and the start-up's eight AbstractNPC classes) of 1,796",
+    ),
     (
         "tables.pulseClasses",
         "the world pulses are submitted by content",
@@ -1374,6 +1377,45 @@ fn native_startup_against_the_boot_record() {
         "npcs.spawner",
         json!({"inOrder": cursor, "unexplained": unexplained}),
         json!({"inOrder": native_rows.len(), "unexplained": []}),
+    );
+    // AbstractNPC classes: every class the native start-up registers
+    // constructs exactly the spawner NPCs the original constructed as that
+    // class (how many, of which ids).
+    let mut native_classes: BTreeMap<String, (u64, BTreeSet<i64>)> = BTreeMap::new();
+    for row in w.entities.rows.values() {
+        if let Some(class) = row.class {
+            let entry = native_classes.entry(class.name().to_owned()).or_default();
+            entry.0 += 1;
+            entry.1.insert(i64::from(row.id));
+        }
+    }
+    let registered: BTreeSet<&str> = rs09_server::startup::npcs::STARTUP_NPC_CLASSES
+        .iter()
+        .map(|c| c.name())
+        .collect();
+    let original_classes: BTreeMap<String, (u64, BTreeSet<i64>)> = spawner["npcSubclasses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| registered.contains(c[0].as_str().unwrap()))
+        .map(|c| {
+            (
+                c[0].as_str().unwrap().to_owned(),
+                (
+                    c[1].as_u64().unwrap(),
+                    c[2].as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|v| v.as_i64().unwrap())
+                        .collect(),
+                ),
+            )
+        })
+        .collect();
+    check(
+        "npcs.subclasses",
+        json!(native_classes),
+        json!(original_classes),
     );
     // Draws: one AntiMacro registration per NPC the spawner creates; the
     // rest of the original's draws are content (by drawing class).
