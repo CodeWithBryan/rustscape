@@ -658,8 +658,12 @@ impl Directory {
         let root =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../runs/player-save-native-tests");
         std::fs::create_dir_all(&root).unwrap();
+        // (A counter as well: two cases of one process can start within one tick
+        // of the clock, and would otherwise be given the same directory.)
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let unique = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let path = root.join(format!(
-            "{}-{}-{index}",
+            "{}-{unique}-{}-{index}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
