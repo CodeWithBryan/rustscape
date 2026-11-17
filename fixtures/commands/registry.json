@@ -1,0 +1,1650 @@
+{
+ "legacySets": {
+  "ADMINISTRATOR": [
+   "core.game.system.command.MapDumpCommand",
+   "core.game.system.command.oldsys.SimpleDumpingCommands",
+   "core.game.system.command.oldsys.VisualCommand"
+  ],
+  "BETA": [],
+  "DEVELOPER": [],
+  "MODERATOR": [],
+  "PLAYER": []
+ },
+ "pageIndices": [
+  [
+   0
+  ],
+  [
+   0
+  ],
+  [
+   0,
+   85,
+   171
+  ],
+  [
+   0,
+   85,
+   171
+  ]
+ ],
+ "registry": [
+  [
+   "potionkit",
+   "potionkit",
+   "ADMIN",
+   "",
+   "Adds 1000x of each potion ingredient to the player's bank.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$2"
+  ],
+  [
+   "setconfig",
+   "setconfig",
+   "ADMIN",
+   "::setconfig <lt>config-id<gt> <lt>value<gt>",
+   "DEPRECATED: use ::setvarp or ::setvarbit. Sets the raw varp <lt>config-id<gt> to <lt>value<gt>.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$27"
+  ],
+  [
+   "godbooks",
+   "godbooks",
+   "ADMIN",
+   "::godbooks",
+   "Resets god book save state and gives the player coins and pages to buy/finish a new set from Jossik.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$9"
+  ],
+  [
+   "hrevent",
+   "hrevent",
+   "ADMIN",
+   "::hrevent [-p] <lt>player name<gt> [-e <lt>event name<gt>]",
+   "Spawns a holiday random event for the target player.<br>Optional -e parameter to pass a specific event.",
+   "core.game.worldevents.holiday.HolidayRandoms$defineCommands$1"
+  ],
+  [
+   "setrevcap",
+   "setrevcap",
+   "ADMIN",
+   "::setrevcap <lt>amount<gt>",
+   "Sets revenant spawn cap to <lt>amount<gt>",
+   "content.region.wilderness.handlers.revenants.RevenantController$defineCommands$1"
+  ],
+  [
+   "objects",
+   "objects",
+   "STANDARD",
+   "::objects",
+   "Prints a list of all ten sceneries at your current coordinates",
+   "core.game.system.command.sets.SpawnCommandSet$defineCommands$7"
+  ],
+  [
+   "ban",
+   "ban",
+   "ADMIN",
+   "::ban <lt>USERNAME<gt> <lt>TIME<gt>",
+   "Bans the user. Time format: <lt>INT<gt>d/s/m/h ex: 30d for 30 days.",
+   "core.game.system.command.sets.ModerationCommandSet$defineCommands$2"
+  ],
+  [
+   "forcehrevents",
+   "forcehrevents",
+   "ADMIN",
+   "::forcehrevents [eventname]",
+   "Force enable holiday random events.",
+   "core.game.worldevents.holiday.HolidayRandoms$defineCommands$2"
+  ],
+  [
+   "teleto",
+   "teleto",
+   "ADMIN",
+   "::teleto <lt>USERNAME<gt>",
+   "Teleports to the named player.",
+   "core.game.system.command.sets.TeleportCommandSet$defineCommands$3"
+  ],
+  [
+   "bank",
+   "bank",
+   "ADMIN",
+   "",
+   "Opens your bank.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$3"
+  ],
+  [
+   "removeitem",
+   "removeitem",
+   "ADMIN",
+   "::removeitem <lt>LOC<gt> <lt>USERNAME<gt> <lt>ITEM ID<gt> <lt>AMOUNT<gt>",
+   "LOC = bank,inventory,equipment",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$6"
+  ],
+  [
+   "setvarbits",
+   "setvarbits",
+   "ADMIN",
+   "::setvarbits <lt>FROM VARBIT ID<gt> <lt>TO VARBIT ID<gt> <lt>VALUE<gt>",
+   "",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$31"
+  ],
+  [
+   "stats",
+   "stats",
+   "STANDARD",
+   "::stats [player-name]",
+   "Opens the statistics book for you or the specified player.",
+   "core.game.system.command.sets.StatsCommandSet$defineCommands$1"
+  ],
+  [
+   "ifaces",
+   "ifaces",
+   "ADMIN",
+   "::ifaces <From Interface ID> <To Interface ID> <(opt) Duration Per Interface>",
+   "Opens interfaces from the From ID to the To ID, with a delay of 3 between each, unless specified otherwise",
+   "core.game.system.command.sets.ConfigCommandSet$defineCommands$4"
+  ],
+  [
+   "mrboneswildride",
+   "mrboneswildride",
+   "ADMIN",
+   "",
+   "",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$7"
+  ],
+  [
+   "xface",
+   "xface",
+   "STANDARD",
+   "",
+   "Closes the currently opened interface/dialogue.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$19"
+  ],
+  [
+   "loopanim",
+   "loopanim",
+   "ADMIN",
+   "::loopanim <lt>Animation ID<gt> <lt>Times<gt>",
+   "Plays the animation with the given ID the given number of times",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$3"
+  ],
+  [
+   "models",
+   "models",
+   "ADMIN",
+   "",
+   "Opens the in-game model viewer toolkit.",
+   "core.game.system.command.sets.ModelViewerCommandSet$defineCommands$1"
+  ],
+  [
+   "timers",
+   "timers",
+   "ADMIN",
+   "::timers",
+   "Print out timers",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$32"
+  ],
+  [
+   "grow",
+   "grow",
+   "ADMIN",
+   "",
+   "Grows all planted crops by 1 stage.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$35"
+  ],
+  [
+   "finishtask",
+   "finishtask",
+   "ADMIN",
+   "",
+   "Spawns a finisher NPC so your current Slayer task ends instantly.",
+   "core.game.system.command.sets.SlayerCommandSet$defineCommands$1"
+  ],
+  [
+   "mute",
+   "mute",
+   "MODERATOR",
+   "::mute <lt>USERNAME<gt> <lt>TIME<gt>",
+   "Mutes the user. Time format: <lt>INT<gt>d/s/m/h ex: 30d for 30 days.",
+   "core.game.system.command.sets.ModerationCommandSet$defineCommands$4"
+  ],
+  [
+   "setslayerpoints",
+   "setslayerpoints",
+   "ADMIN",
+   "::setslayerpoints <lt>amount<gt>",
+   "Sets your Slayer points total to <lt>amount<gt>.",
+   "core.game.system.command.sets.SlayerCommandSet$defineCommands$2"
+  ],
+  [
+   "camview",
+   "camview",
+   "ADMIN",
+   "",
+   "Opens the in-game camera viewer.",
+   "core.game.system.command.sets.CameraViewerCommandSet$defineCommands$1"
+  ],
+  [
+   "sconfigrange",
+   "sconfigrange",
+   "ADMIN",
+   "::sconfigrange <lt>start-id<gt> <lt>end-id<gt>",
+   "Sets each varp from <lt>start-id<gt> (inclusive) up to <lt>end-id<gt> (exclusive) to Integer.MAX_VALUE.",
+   "core.game.system.command.sets.ConfigCommandSet$defineCommands$1"
+  ],
+  [
+   "confirmrules",
+   "confirmrules",
+   "STANDARD",
+   "",
+   "",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$45"
+  ],
+  [
+   "setqueststage",
+   "setqueststage",
+   "ADMIN",
+   "::setqueststage <lt>quest-index<gt> <lt>stage<gt>",
+   "Sets quest <lt>quest-index<gt> to stage <lt>stage<gt>; use ::quest to find indices.",
+   "core.game.system.command.sets.QuestCommandSet$defineCommands$3"
+  ],
+  [
+   "anim",
+   "anim",
+   "ADMIN",
+   "::anim <lt>Animation ID<gt>",
+   "Plays the animation with the given ID.",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$1"
+  ],
+  [
+   "items",
+   "items",
+   "ADMIN",
+   "::items <lt>start-id<gt> <lt>end-id<gt> [amount]",
+   "Loops through item ids from 'start-id' to 'end-id' and spawns 'amount' of them in your inventory.",
+   "core.game.system.command.sets.SpawnCommandSet$defineCommands$3"
+  ],
+  [
+   "object",
+   "object",
+   "ADMIN",
+   "::object <lt>object-id<gt> [type] [rotation]",
+   "Spawns an object at your tile with optional type and rotation.",
+   "core.game.system.command.sets.SpawnCommandSet$defineCommands$4"
+  ],
+  [
+   "playsong",
+   "playsong",
+   "STANDARD",
+   "::playsong <lt>song-id<gt>",
+   "Plays the music track <lt>song-id<gt>.",
+   "core.game.system.command.sets.MusicCommandSet$defineCommands$1"
+  ],
+  [
+   "shakecam",
+   "shakecam",
+   "ADMIN",
+   "::shakecam <lt>Camera Movement Type (0-4)<gt> [<lt>Jitter<gt> <lt>Amplitude<gt> <lt>Frequency<gt> <lt>Speed<gt>]",
+   "Type (0-4) Jitter, Amplitude, Frequency (0-255)",
+   "core.game.system.command.sets.CameraCommandSet$defineCommands$4"
+  ],
+  [
+   "rotcam",
+   "rotcam",
+   "ADMIN",
+   "::rotcam <lt>Region X<gt> <lt>Region Y<gt> [<lt>Height<gt> <lt>Speed<gt>]",
+   "Rotates the camera to face the given region-local coordinates.",
+   "core.game.system.command.sets.CameraCommandSet$defineCommands$3"
+  ],
+  [
+   "listifmodels",
+   "listifmodels",
+   "ADMIN",
+   "::listifmodels <lt>id<gt>",
+   "Prints all default model values and their child index.",
+   "core.game.system.command.sets.IfCommandSet$defineCommands$3"
+  ],
+  [
+   "pnpc",
+   "pnpc",
+   "MODERATOR",
+   "::pnpc <lt>NPC ID<gt>",
+   "Transforms the player into the given NPC.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$2"
+  ],
+  [
+   "allowge",
+   "allowge",
+   "ADMIN",
+   "::allowge <lt>item-id<gt>",
+   "Allows/whitelists the specified item to be traded on the GE.",
+   "core.game.ge.GrandExchange$defineCommands$3"
+  ],
+  [
+   "drawroute",
+   "drawroute",
+   "ADMIN",
+   "",
+   "Visualizes the path your player is taking",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$23"
+  ],
+  [
+   "setslayertask",
+   "setslayertask",
+   "ADMIN",
+   "::setslayertask <lt>npc id<gt> [amount]",
+   "Set the slayer task to npc. Amount optional.",
+   "core.game.system.command.sets.SlayerCommandSet$defineCommands$3"
+  ],
+  [
+   "implings",
+   "implings",
+   "ADMIN",
+   "",
+   "Lists the currently active implings/spawners",
+   "content.global.skill.hunter.implings.ImplingController$defineCommands$1"
+  ],
+  [
+   "pos",
+   "pos",
+   "STANDARD",
+   "",
+   "",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$6"
+  ],
+  [
+   "drawregions",
+   "drawregions",
+   "ADMIN",
+   "",
+   "DRaws the border of the region you're standing in",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$22"
+  ],
+  [
+   "audio",
+   "audio",
+   "ADMIN",
+   "::audio <lt>id<gt> loops[optional]",
+   "Plays audio by ID. Loopable with optional integer argument.",
+   "core.game.system.command.sets.MusicCommandSet$defineCommands$5"
+  ],
+  [
+   "resetpassword",
+   "resetpassword",
+   "STANDARD",
+   "",
+   "WARNING: Case insensitive due to dialogue limitations.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$3"
+  ],
+  [
+   "expression",
+   "expression",
+   "ADMIN",
+   "::expression id",
+   "Visualizes chathead animations from ID.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$31"
+  ],
+  [
+   "charge",
+   "charge",
+   "ADMIN",
+   "::charge <lt>equipment slot name | item id<gt> [sd] [<lt>charge<gt>]",
+   "Get/set the charge of an item. Flags: s = set, d = distinct(#).",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$10"
+  ],
+  [
+   "poison",
+   "poison",
+   "ADMIN",
+   "::poison <lt>player<gt> <lt>damage<gt>",
+   "Applies poison to <lt>player<gt> for <lt>damage<gt> initial damage.",
+   "content.global.skill.magic.lunar.LunarListeners$defineCommands$1"
+  ],
+  [
+   "movcam",
+   "movcam",
+   "ADMIN",
+   "::movcam <lt>Region X<gt> <lt>Region Y<gt> [<lt>Height<gt> <lt>Speed<gt>]",
+   "Moves the camera to the given region-local coordinates.",
+   "core.game.system.command.sets.CameraCommandSet$defineCommands$2"
+  ],
+  [
+   "emptybank",
+   "emptybank",
+   "ADMIN",
+   "",
+   "Clears your bank contents.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$26"
+  ],
+  [
+   "playid",
+   "playid",
+   "STANDARD",
+   "::playid <lt>song-id<gt>",
+   "Plays a music track by musicId instead of numeric music track ID.",
+   "core.game.system.command.sets.MusicCommandSet$defineCommands$3"
+  ],
+  [
+   "kick",
+   "kick",
+   "MODERATOR",
+   "::kick <player>",
+   "Disconnects the specified player from the game.",
+   "core.game.system.command.sets.ModerationCommandSet$defineCommands$1"
+  ],
+  [
+   "ipban",
+   "ipban",
+   "ADMIN",
+   "::ipban <lt>IP<gt> <lt>TIME<gt>",
+   "Bans all players on the given ip. Time format: <lt>INT<gt>d/s/m/h ex: 30d for 30 days.",
+   "core.game.system.command.sets.ModerationCommandSet$defineCommands$3"
+  ],
+  [
+   "to",
+   "to",
+   "ADMIN",
+   "::to <lt>String<gt>",
+   "See ServerConstants.TELEPORT_DESTINATIONS",
+   "core.game.system.command.sets.TeleportCommandSet$defineCommands$1"
+  ],
+  [
+   "god",
+   "god",
+   "ADMIN",
+   "",
+   "Makes you invulnerable to damage.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$6"
+  ],
+  [
+   "resetsprite",
+   "resetsprite",
+   "ADMIN",
+   "",
+   "Resets your star sprite reward cooldown.",
+   "content.global.activity.shootingstar.ShootingStarPlugin$defineCommands$3"
+  ],
+  [
+   "itemsearch",
+   "itemsearch",
+   "STANDARD",
+   "::itemsearch <lt>name<gt>",
+   "Searches for items that match the name.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$18"
+  ],
+  [
+   "removeitemall",
+   "removeitemall",
+   "ADMIN",
+   "::removeitemall <lt>USERNAME<gt> <lt>ITEM ID<gt>",
+   "Removes ALL of a given item from the player.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$7"
+  ],
+  [
+   "giveitem",
+   "giveitem",
+   "ADMIN",
+   "::giveitem <lt>USERNAME<gt> <lt>ITEM ID<gt> <lt>AMOUNT<gt>",
+   "Gives the user the amount of the given item.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$5"
+  ],
+  [
+   "rules",
+   "rules",
+   "STANDARD",
+   "",
+   "Shows the rules.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$44"
+  ],
+  [
+   "drawchunks",
+   "drawchunks",
+   "ADMIN",
+   "",
+   "Draws the border of the chunk you're standing in",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$20"
+  ],
+  [
+   "quest",
+   "quest",
+   "ADMIN",
+   "::quest [-p username] [quest-filter]",
+   "Shows quest stages for you, or for [username] if -p is used. Add optional text to filter by quest name.",
+   "core.game.system.command.sets.QuestCommandSet$defineCommands$2"
+  ],
+  [
+   "empty",
+   "empty",
+   "ADMIN",
+   "",
+   "Empties/clears your inventory.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$10"
+  ],
+  [
+   "toadbomb",
+   "toadbomb",
+   "ADMIN",
+   "",
+   "Toad detoadation.",
+   "content.region.kandarin.feldip.quest.chompybird.BloatedToadListeners$defineCommands$2"
+  ],
+  [
+   "spellbook",
+   "spellbook",
+   "ADMIN",
+   "::spellbook <lt>book ID<gt> (0 = MODERN, 1 = ANCIENTS, 2 = LUNARS)",
+   "Swaps your spellbook to the given book ID.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$7"
+  ],
+  [
+   "define_varbit",
+   "define_varbit",
+   "ADMIN",
+   "::define_varbit <varbit-id>",
+   "Prints detailed information about <varbit-id>.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$29"
+  ],
+  [
+   "objanim",
+   "objanim",
+   "ADMIN",
+   "::objanim <lt>objectId<gt> <lt>animFrom<gt> <lt>(opt) animTo<gt> <lt>(opt) delay<gt>",
+   "Spawns an object and animates it with the provided anim ID. If a second ID is provided, it iterates through the anims.",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$9"
+  ],
+  [
+   "objectgrid",
+   "objectgrid",
+   "ADMIN",
+   "::objectgrid <lt>start-id<gt> <lt>end-id<gt> <lt>type<gt> <lt>rotation<gt>",
+   "Spawns a 10-wide grid cycling through the given object id range.",
+   "core.game.system.command.sets.SpawnCommandSet$defineCommands$5"
+  ],
+  [
+   "ranimsearch",
+   "ranimsearch",
+   "ADMIN",
+   "::ranimsearch <lt>Animation ID<gt>",
+   "Searches all animation definitions for render animations that incorporate the given animation ID.",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$7"
+  ],
+  [
+   "cancelupdate",
+   "cancelupdate",
+   "ADMIN",
+   "",
+   "Cancels any active update countdown.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$2"
+  ],
+  [
+   "reply",
+   "reply",
+   "STANDARD",
+   "",
+   "Opens a reply prompt to your last DM. Same as pressing tab.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$18"
+  ],
+  [
+   "commands",
+   "commands",
+   "STANDARD",
+   "::commands <lt>page<gt>",
+   "Lists all the commands (you are here.)",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$16"
+  ],
+  [
+   "setsaveversion",
+   "setsaveversion",
+   "ADMIN",
+   "::setsaveversion <lt>version<gt>",
+   "Overrides your save version to <lt>version<gt> so migration logic can run.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$4"
+  ],
+  [
+   "dumpstructs",
+   "dumpstructs",
+   "ADMIN",
+   "",
+   "Dumps all the cache structs to structs.txt",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$12"
+  ],
+  [
+   "logdone",
+   "logdone",
+   "ADMIN",
+   "",
+   "Copies the queued location log to your clipboard and clears it.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$23"
+  ],
+  [
+   "quests",
+   "quests",
+   "STANDARD",
+   "",
+   "Opens the quests interface listing current implementations.",
+   "core.game.system.command.sets.QuestCommandSet$defineCommands$4"
+  ],
+  [
+   "setvarbit",
+   "setvarbit",
+   "ADMIN",
+   "::setvarbit <lt>varbit-id<gt> <lt>value<gt>",
+   "Sets <lt>varbit-id<gt> to <lt>value<gt> for your player.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$30"
+  ],
+  [
+   "getobjectvarp",
+   "getobjectvarp",
+   "ADMIN",
+   "::getobjectvarp <lt>object-id<gt>",
+   "Looks up which varp controls the state of <lt>object-id<gt>.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$28"
+  ],
+  [
+   "jail",
+   "jail",
+   "MODERATOR",
+   "::jail <lt>SECONDS<gt> <lt>USERNAME<gt>",
+   "Sends the player to the jail cells in Varrock.",
+   "core.game.system.command.sets.ModerationCommandSet$defineCommands$5"
+  ],
+  [
+   "fillbank",
+   "fillbank",
+   "ADMIN",
+   "",
+   "Fills your bank with sequential item IDs.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$25"
+  ],
+  [
+   "varbits",
+   "varbits",
+   "ADMIN",
+   "::varbits <lt>Varp ID<gt>",
+   "Lists all the varbits assigned to the given varp.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$15"
+  ],
+  [
+   "dropadmin",
+   "dropadmin",
+   "ADMIN",
+   "::dropadmin",
+   "Permanently drops admin rights from self",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$35"
+  ],
+  [
+   "resetbins",
+   "resetbins",
+   "ADMIN",
+   "",
+   "Resets the player's compost bins to their initial states.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$37"
+  ],
+  [
+   "bange",
+   "bange",
+   "ADMIN",
+   "::bange <lt>item-id<gt>",
+   "Bans/blacklists the specified item from GE trades.",
+   "core.game.ge.GrandExchange$defineCommands$2"
+  ],
+  [
+   "modcr",
+   "modcr",
+   "MODERATOR",
+   "::modcr <lt>user_name<gt> <lt>amount<gt>",
+   "Modifies user_name's credits by the given amount.",
+   "core.game.system.command.sets.ModerationCommandSet$defineCommands$6"
+  ],
+  [
+   "shop",
+   "shop",
+   "STANDARD",
+   "",
+   "Opens the credit shop.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$14"
+  ],
+  [
+   "submit",
+   "submit",
+   "ADMIN",
+   "",
+   "Rebuilds and fires the shooting star event immediately.",
+   "content.global.activity.shootingstar.ShootingStarPlugin$defineCommands$2"
+  ],
+  [
+   "getattribute",
+   "getattribute",
+   "ADMIN",
+   "::getattribute [player] <lt>attribute<gt>",
+   "Prints the value of the chosen attribute on you or another player. Omit [player] to use on self.",
+   "core.game.system.command.sets.PlayerAttributeCommandSet$defineCommands$1"
+  ],
+  [
+   "update",
+   "update",
+   "ADMIN",
+   "::update [seconds]",
+   "Flags the world for an update, optionally using [seconds] as the countdown.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$1"
+  ],
+  [
+   "addbotoffer",
+   "addbotoffer",
+   "ADMIN",
+   "::addbotoffer <lt>item-id<gt> <lt>amount<gt>",
+   "Adds a GE bot sell offer for the given item ID and amount.",
+   "core.game.ge.GrandExchange$defineCommands$1"
+  ],
+  [
+   "mimereset",
+   "mimereset",
+   "ADMIN",
+   "::resetmime",
+   "Resets mime Emotes.",
+   "content.global.ame.events.mime.MimeTestCommands$defineCommands$2"
+  ],
+  [
+   "allmusic",
+   "allmusic",
+   "ADMIN",
+   "",
+   "Unlocks every music track for you.",
+   "core.game.system.command.sets.MusicCommandSet$defineCommands$4"
+  ],
+  [
+   "sconfigrange0",
+   "sconfigrange0",
+   "ADMIN",
+   "::sconfigrange0 <lt>start-id<gt> <lt>end-id<gt>",
+   "Sets each varp from <lt>start-id<gt> (inclusive) up to <lt>end-id<gt> (exclusive) to 0.",
+   "core.game.system.command.sets.ConfigCommandSet$defineCommands$2"
+  ],
+  [
+   "botinfo",
+   "botinfo",
+   "STANDARD",
+   "::botinfo <lt>botname<gt>",
+   "Prints debug information about a bot",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$13"
+  ],
+  [
+   "addxp",
+   "addxp",
+   "ADMIN",
+   "::addxp <lt>skill name | id<gt> <lt>xp<gt>",
+   "Add xp to skill",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$39"
+  ],
+  [
+   "ge",
+   "ge",
+   "STANDARD",
+   "::ge <lt>MODE<gt> (Modes: buying, selling, search, bots, botsearch, mute)",
+   "Various commands for viewing GE offers.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$15"
+  ],
+  [
+   "npc",
+   "npc",
+   "ADMIN",
+   "::npc <lt>npc-id<gt> [amount] [iswalks]",
+   "Spawns one or more NPCs at your location, optionally letting them walk.",
+   "core.game.system.command.sets.SpawnCommandSet$defineCommands$1"
+  ],
+  [
+   "ranimdump",
+   "ranimdump",
+   "ADMIN",
+   "::ranimdump <lt>Animation ID<gt>",
+   "Dumps the render animation sub-animations for the given animation ID.",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$6"
+  ],
+  [
+   "brewkit",
+   "brewkit",
+   "ADMIN",
+   "brewkit <lt>0-10<gt>",
+   "Give yourself everything you need to brew ales.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$48"
+  ],
+  [
+   "home",
+   "home",
+   "ADMIN",
+   "",
+   "Teleports to ServerConstants.HOME_LOCATION",
+   "core.game.system.command.sets.TeleportCommandSet$defineCommands$5"
+  ],
+  [
+   "calcaccuracy",
+   "calcaccuracy",
+   "STANDARD",
+   "::calcaccuracy <lt>NPC ID<gt>",
+   "Calculates and prints your current chance to hit a given NPC.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$2"
+  ],
+  [
+   "dumpdatamaps",
+   "dumpdatamaps",
+   "ADMIN",
+   "",
+   "Dumps all the cache data maps to datamaps.txt",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$13"
+  ],
+  [
+   "testpacket",
+   "testpacket",
+   "ADMIN",
+   "",
+   "Sends the reset-interface packet to the client.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$16"
+  ],
+  [
+   "struct",
+   "struct",
+   "ADMIN",
+   "::struct <lt>struct-id<gt>",
+   "Logs the struct definition for the given cache id.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$10"
+  ],
+  [
+   "burymessage",
+   "burymessage",
+   "ADMIN",
+   "",
+   "Buries a secret message at your current location.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$11"
+  ],
+  [
+   "cleardiary",
+   "cleardiary",
+   "ADMIN",
+   "",
+   "Resets all achievement diary progress.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$5"
+  ],
+  [
+   "permadeath",
+   "permadeath",
+   "ADMIN",
+   "::permadeath <lt>PLAYER<gt>",
+   "Permadeaths PLAYER (self if omitted), completely wiping their save.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$21"
+  ],
+  [
+   "anims",
+   "anims",
+   "ADMIN",
+   "::anims <lt>From Animation ID<gt> <lt>To Animation ID<gt> <lt>(opt) Duration Per Animation<gt>",
+   "Plays animations from the From ID to the To ID, with a delay of 3 between animations, unless specified otherwise",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$2"
+  ],
+  [
+   "tostar",
+   "tostar",
+   "ADMIN",
+   "",
+   "Teleports you adjacent to the currently active star.",
+   "content.global.activity.shootingstar.ShootingStarPlugin$defineCommands$1"
+  ],
+  [
+   "rolltrawlerloot",
+   "rolltrawlerloot",
+   "ADMIN",
+   "::rolltrawlerloot <lt>ROLL COUNT<gt>",
+   "Rolls some trawler loot.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$24"
+  ],
+  [
+   "addcredits",
+   "addcredits",
+   "ADMIN",
+   "",
+   "Adds 100 ::shop credits to your account.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$39"
+  ],
+  [
+   "teletome",
+   "teletome",
+   "ADMIN",
+   "::teletome <lt>USERNAME<gt>",
+   "Teleports the given user to you.",
+   "core.game.system.command.sets.TeleportCommandSet$defineCommands$4"
+  ],
+  [
+   "dumpappearance",
+   "dumpappearance",
+   "MODERATOR",
+   "",
+   "Copies your appearance and equipment as JSON to the clipboard.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$9"
+  ],
+  [
+   "calcdefence",
+   "calcdefence",
+   "STANDARD",
+   "::calcdefence <lt>NPC ID<gt> <lt>opt: swing handler<gt>",
+   "Calculates and prints your current raw defence values for Melee, Ranged and Magic against a given NPC. Supply a swing handler to specify what calculation is done.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$9"
+  ],
+  [
+   "diseasecrops",
+   "diseasecrops",
+   "ADMIN",
+   "",
+   "Disease all crops",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$38"
+  ],
+  [
+   "setplayerstrong",
+   "setplayerstrong",
+   "ADMIN",
+   "setplayerstrong <lt>0-4<gt>",
+   "Set the player progress through the Stronghold of Player Safety test.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$46"
+  ],
+  [
+   "invis",
+   "invis",
+   "ADMIN",
+   "",
+   "Makes you invisible to others.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$4"
+  ],
+  [
+   "setvarc",
+   "setvarc",
+   "ADMIN",
+   "::setvarc <lt>VARC ID<gt> <lt>VALUE<gt>",
+   "",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$34"
+  ],
+  [
+   "buryitem",
+   "buryitem",
+   "ADMIN",
+   "",
+   "Buries a specific item at your current location.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$12"
+  ],
+  [
+   "item",
+   "item",
+   "ADMIN",
+   "::item <lt>item-id<gt> [amount]",
+   "Spawns the specified item stack into your inventory.",
+   "core.game.system.command.sets.SpawnCommandSet$defineCommands$2"
+  ],
+  [
+   "iftriggers",
+   "iftriggers",
+   "ADMIN",
+   "::iftriggers <lt>id<gt>",
+   "Lists all known triggers for the given interface.",
+   "core.game.system.command.sets.IfCommandSet$defineCommands$1"
+  ],
+  [
+   "resetew",
+   "resetew",
+   "ADMIN",
+   "",
+   "Resets Elemental Workshop I progress and teleports you to the start.",
+   "content.region.kandarin.seers.quest.elementalworkshop.ElementalWorkshopQuest$defineCommands$1"
+  ],
+  [
+   "revent",
+   "revent",
+   "ADMIN",
+   "::revent [-p] <lt>player name<gt> [-e <lt>event name<gt>]",
+   "Spawns a random event for the target player.<br>Optional -e parameter to pass a specific event.",
+   "core.game.system.timer.impl.AntiMacro$defineCommands$1"
+  ],
+  [
+   "players",
+   "players",
+   "MODERATOR",
+   "",
+   "Lists the online players.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$12"
+  ],
+  [
+   "npcsearch",
+   "npcsearch",
+   "STANDARD",
+   "::npcsearch <lt>name<gt>",
+   "Searches for NPCs that match the name either in main or children.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$17"
+  ],
+  [
+   "removeobject",
+   "removeobject",
+   "ADMIN",
+   "::removeobject",
+   "Removes the first scenery at your current coordinates (the meaning of 'the first' is currently arbitrary, do not use this in production)",
+   "core.game.system.command.sets.SpawnCommandSet$defineCommands$6"
+  ],
+  [
+   "brew",
+   "brew",
+   "ADMIN",
+   "brew <lt>mode<gt>",
+   "0: force natural step, 1: force good step without maturity, 2: force good step with maturity, 3: force bad step",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$49"
+  ],
+  [
+   "announce",
+   "announce",
+   "ADMIN",
+   "::announce <lt>String<gt>",
+   "Sends the given string as a News message.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$11"
+  ],
+  [
+   "completediaries",
+   "completediaries",
+   "ADMIN",
+   "",
+   "Completes all diaries.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$20"
+  ],
+  [
+   "runekit",
+   "runekit",
+   "ADMIN",
+   "",
+   "Gives 1000 of each rune type. We love casting spells",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$19"
+  ],
+  [
+   "rolldrops",
+   "rolldrops",
+   "ADMIN",
+   "::rolldrops <lt>NPC ID<gt> <lt>AMOUNT<gt> [true|false]",
+   "Rolls the given NPC drop table AMOUNT times. Add true to persist the items in your bank.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$14"
+  ],
+  [
+   "resetcam",
+   "resetcam",
+   "ADMIN",
+   "::resetcam",
+   "Resets the current camera position.",
+   "core.game.system.command.sets.CameraCommandSet$defineCommands$5"
+  ],
+  [
+   "loc",
+   "loc",
+   "STANDARD",
+   "",
+   "Prints quite a lot of information about your current location.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$5"
+  ],
+  [
+   "commandsearch",
+   "commandsearch",
+   "STANDARD",
+   "::commandsearch <lt>search term<gt> [--chat]",
+   "Searches for commands containing the given term.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$17"
+  ],
+  [
+   "log",
+   "log",
+   "ADMIN",
+   "",
+   "Adds your current coordinates to the location log buffer.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$22"
+  ],
+  [
+   "allowaggro",
+   "allowaggro",
+   "ADMIN",
+   "::allowaggro [true|false]",
+   "Toggles NPCs aggroing on you as an admin.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$43"
+  ],
+  [
+   "toggle-giftmas",
+   "toggle-giftmas",
+   "ADMIN",
+   "",
+   "Toggles the giftmas christmas event.",
+   "core.game.worldevents.holiday.christmas.Giftmas$defineCommands$1"
+  ],
+  [
+   "clearjob",
+   "clearjob",
+   "ADMIN",
+   "",
+   "Clears your current job assignment.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$6"
+  ],
+  [
+   "drawintersect",
+   "drawintersect",
+   "ADMIN",
+   "",
+   "Visualizes the predicted intersection point with an NPC",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$30"
+  ],
+  [
+   "shopscript",
+   "shopscript",
+   "ADMIN",
+   "::shopscript <lt>object<gt>",
+   "Runs CS2 script 25 with string \"vg\" and objects \"<lt>object<gt>, 92\"",
+   "core.game.shops.Shops$defineCommands$2"
+  ],
+  [
+   "ranimnpc",
+   "ranimnpc",
+   "ADMIN",
+   "::ranimnpc <lt>NPC ID<gt>",
+   "Prints the render animation ID (and sub-animation IDs) of an NPC.",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$8"
+  ],
+  [
+   "potato",
+   "potato",
+   "ADMIN",
+   "",
+   "Gives you a rotten potato.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$8"
+  ],
+  [
+   "farmkit",
+   "farmkit",
+   "ADMIN",
+   "",
+   "Provides a kit of various farming equipment.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$1"
+  ],
+  [
+   "coords",
+   "coords",
+   "STANDARD",
+   "",
+   "",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$7"
+  ],
+  [
+   "fmend",
+   "fmend",
+   "ADMIN",
+   "",
+   "Marks your current tile as the force-movement destination.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$25"
+  ],
+  [
+   "fmanim",
+   "fmanim",
+   "ADMIN",
+   "::fmanim <lt>animation-id<gt>",
+   "Sets the animation id to play during ::testfm.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$29"
+  ],
+  [
+   "max",
+   "max",
+   "ADMIN",
+   "::max <lt>player_name<gt>",
+   "Sets all skills to 99s for <lt>player_name<gt> (or self if empty)",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$36"
+  ],
+  [
+   "setattribute",
+   "setattribute",
+   "ADMIN",
+   "::setattribute [player] <lt>attribute<gt> <lt>value<gt>",
+   "Sets a simple attribute on you or another player.",
+   "core.game.system.command.sets.PlayerAttributeCommandSet$defineCommands$2"
+  ],
+  [
+   "testfm",
+   "testfm",
+   "ADMIN",
+   "",
+   "Runs the configured force-movement from the saved start to end point.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$28"
+  ],
+  [
+   "listiftext",
+   "listiftext",
+   "ADMIN",
+   "::listiftext <lt>id<gt>",
+   "Prints all text values and their child index on an interface.",
+   "core.game.system.command.sets.IfCommandSet$defineCommands$2"
+  ],
+  [
+   "setlevel",
+   "setlevel",
+   "ADMIN",
+   "::setlevel <lt>SKILL NAME<gt> <lt>LEVEL<gt> <lt>PLAYER<gt>",
+   "Sets SKILL NAME to LEVEL for PLAYER (self if omitted).",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$38"
+  ],
+  [
+   "appearance",
+   "appearance",
+   "ADMIN",
+   "",
+   "Allows you to change your appearance.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$13"
+  ],
+  [
+   "anmacs",
+   "anmacs",
+   "ADMIN",
+   "",
+   "Starts the AnmaCutscene sequence for testing.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$3"
+  ],
+  [
+   "datamap",
+   "datamap",
+   "ADMIN",
+   "::datamap <lt>data-map-id<gt>",
+   "Logs the data map definition for the given cache id.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$11"
+  ],
+  [
+   "poscam",
+   "poscam",
+   "ADMIN",
+   "::poscam <lt>Region X<gt> <lt>Region Y<gt> [<lt>Height<gt>]",
+   "Positions the camera to the given region-local coordinates.",
+   "core.game.system.command.sets.CameraCommandSet$defineCommands$1"
+  ],
+  [
+   "listrevs",
+   "listrevs",
+   "ADMIN",
+   "",
+   "Logs the IDs and locations of all tracked revenants.",
+   "content.region.wilderness.handlers.revenants.RevenantController$defineCommands$2"
+  ],
+  [
+   "toadzone",
+   "toadzone",
+   "MODERATOR",
+   "",
+   "Toad inflation.",
+   "content.region.kandarin.feldip.quest.chompybird.BloatedToadListeners$defineCommands$1"
+  ],
+  [
+   "pohstorableitems",
+   "pohstorableitems",
+   "ADMIN",
+   "::pohstorableitems TYPE",
+   "Adds POH storable items to bank. To see TYPEs, use the command with no argument.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$3"
+  ],
+  [
+   "stophrevents",
+   "stophrevents",
+   "ADMIN",
+   "::stophrevents",
+   "Stops all holiday random events.",
+   "core.game.worldevents.holiday.HolidayRandoms$defineCommands$3"
+  ],
+  [
+   "tele",
+   "tele",
+   "ADMIN",
+   "::tele <lt>X<gt> <lt>Y<gt> <lt>Z<gt> OR <lt>JAGCOORD<gt>",
+   "JAGCOORD is Z_REGIONX_REGIONY_LOCALX_LOCALY",
+   "core.game.system.command.sets.TeleportCommandSet$defineCommands$2"
+  ],
+  [
+   "mimeroll",
+   "mimeroll",
+   "ADMIN",
+   "::mimeroll",
+   "Rolls mime rewards.",
+   "content.global.ame.events.mime.MimeTestCommands$defineCommands$1"
+  ],
+  [
+   "fmspeed",
+   "fmspeed",
+   "ADMIN",
+   "::fmspeed <lt>start-speed<gt>",
+   "Sets the starting force-movement speed (client cycles between steps) used by ::testfm.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$26"
+  ],
+  [
+   "fmspeedend",
+   "fmspeedend",
+   "ADMIN",
+   "::fmspeedend <lt>end-speed<gt>",
+   "Sets the ending speed (client cycles between steps) used by ::testfm.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$27"
+  ],
+  [
+   "infinitespecialmove",
+   "infinitespecialmove",
+   "ADMIN",
+   "::infinitespecialmove [true|false]",
+   "Toggles infinite Summoning familiar special move points for your player.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$42"
+  ],
+  [
+   "drawclipping",
+   "drawclipping",
+   "ADMIN",
+   "",
+   "Draws the clipping flags of the region you're standing in",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$21"
+  ],
+  [
+   "muteglobal",
+   "muteglobal",
+   "STANDARD",
+   "",
+   "Toggles global chat on or off.",
+   "core.game.system.communication.GlobalChat$defineCommands$1"
+  ],
+  [
+   "makeadmin",
+   "makeadmin",
+   "ADMIN",
+   "::makeadmin <lt>player_name<gt>",
+   "Permanently gives admin rights to player_name (or self if empty)",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$34"
+  ],
+  [
+   "calcmaxhit",
+   "calcmaxhit",
+   "STANDARD",
+   "",
+   "Calculates and prints your current maximum hit.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$8"
+  ],
+  [
+   "getnpcparent",
+   "getnpcparent",
+   "ADMIN",
+   "::getnpcparent <lt>npc-id<gt>",
+   "Finds the parent NPC whose child list includes <lt>npc-id<gt>.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$40"
+  ],
+  [
+   "clearrevs",
+   "clearrevs",
+   "ADMIN",
+   "",
+   "Despawns all revenants.",
+   "content.region.wilderness.handlers.revenants.RevenantController$defineCommands$3"
+  ],
+  [
+   "iface",
+   "iface",
+   "ADMIN",
+   "::iface <lt>Interface ID<gt>",
+   "Opens the interface with the given ID.",
+   "core.game.system.command.sets.ConfigCommandSet$defineCommands$3"
+  ],
+  [
+   "makeover",
+   "makeover",
+   "MODERATOR",
+   "",
+   "Opens the makeover interface for your character.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$8"
+  ],
+  [
+   "openshop",
+   "openshop",
+   "ADMIN",
+   "::openshop <lt>shop-id<gt>",
+   "Opens the shop interface for <lt>shop-id<gt>.",
+   "core.game.shops.Shops$defineCommands$1"
+  ],
+  [
+   "csvmodcr",
+   "csvmodcr",
+   "ADMIN",
+   "::csvmodcr filename",
+   "Awards credits based on a csv list from a file. Relative to data dir.",
+   "core.game.system.command.sets.ModerationCommandSet$defineCommands$7"
+  ],
+  [
+   "fmstart",
+   "fmstart",
+   "ADMIN",
+   "",
+   "Marks your current tile as the force-movement start point.",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$24"
+  ],
+  [
+   "reloadjson",
+   "reloadjson",
+   "ADMIN",
+   "",
+   "Reloads all the JSON configs.",
+   "core.game.system.config.ConfigParser$defineCommands$1"
+  ],
+  [
+   "shutdown",
+   "shutdown",
+   "ADMIN",
+   "",
+   "Immediately terminates the server process. Do NOT test on a remote server you don't own.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$9"
+  ],
+  [
+   "setpestpoints",
+   "setpestpoints",
+   "ADMIN",
+   "::setpestpoints <lt>points<gt> player_name[optional]",
+   "Sets your (or <lt>player_name<gt>s) Pest Control points to <lt>points<gt>",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$33"
+  ],
+  [
+   "cs2",
+   "cs2",
+   "ADMIN",
+   "::cs2 id args",
+   "Allows you to call arbitrary cs2 scripts during runtime",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$4"
+  ],
+  [
+   "spawnpenguin",
+   "spawnpenguin",
+   "ADMIN",
+   "::spawnPenguin <lt>Ordinal<gt>",
+   "Adds a new Penguin spawn to this weeks list based on the ordinal provided 0-64",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$40"
+  ],
+  [
+   "barrage",
+   "barrage",
+   "ADMIN",
+   "::barrage <lt>radius<gt>",
+   "Cast a weak Ice Barrage on all nearby players. Will never kill players",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$14"
+  ],
+  [
+   "setplaqueread",
+   "setplaqueread",
+   "ADMIN",
+   "setplaqueread <lt>true/false<gt>",
+   "Set the plaques in the player safety stronghold to read or not read.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$47"
+  ],
+  [
+   "getvarbit",
+   "getvarbit",
+   "ADMIN",
+   "::getvarbit <lt>VARBIT ID<gt>",
+   "Prints the current value of <lt>VARBIT ID<gt>.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$32"
+  ],
+  [
+   "infinitespecial",
+   "infinitespecial",
+   "ADMIN",
+   "::infinitespecial [true|false]",
+   "Toggles infinite special attack energy for your player (special-attack flag).",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$41"
+  ],
+  [
+   "allquest",
+   "allquest",
+   "ADMIN",
+   "",
+   "Instantly completes every quest for your account.",
+   "core.game.system.command.sets.QuestCommandSet$defineCommands$1"
+  ],
+  [
+   "setpasswordother",
+   "setpasswordother",
+   "ADMIN",
+   "::resetpasswordother <lt>USERNAME<gt> <lt>NEW<gt>",
+   "Gives the username password NEW.",
+   "core.game.system.command.sets.SystemCommandSet$defineCommands$4"
+  ],
+  [
+   "petrate",
+   "petrate",
+   "ADMIN",
+   "::petrate <lt>0-2<gt>",
+   "Sets pet hunger and growth to off, normal, or dev.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$15"
+  ],
+  [
+   "setvarp",
+   "setvarp",
+   "ADMIN",
+   "::setvarp <lt>VARP ID<gt> <lt>BIT OFFSET<gt> <lt>VALUE<gt>",
+   "Sets the value starting at the BIT OFFSET of the varp.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$33"
+  ],
+  [
+   "1hit",
+   "1hit",
+   "ADMIN",
+   "",
+   "Makes you kill things in 1 hit.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$5"
+  ],
+  [
+   "instachop",
+   "instachop",
+   "ADMIN",
+   "",
+   "Fells trees after a single log is gathered.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$16"
+  ],
+  [
+   "humidifykit",
+   "humidifykit",
+   "ADMIN",
+   "",
+   "Gives you the runes and items needed to test Humidify.",
+   "content.global.skill.magic.lunar.LunarListeners$defineCommands$2"
+  ],
+  [
+   "npcanim",
+   "npcanim",
+   "ADMIN",
+   "::npcanim <lt>animation-id<gt> [end-animation-id]",
+   "Makes nearby NPCs play <lt>animation-id<gt>, or loop that id up to <lt>end-animation-id<gt>.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$1"
+  ],
+  [
+   "debug",
+   "debug",
+   "STANDARD",
+   "",
+   "Toggles debug mode.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$1"
+  ],
+  [
+   "forcegravedeath",
+   "forcegravedeath",
+   "ADMIN",
+   "",
+   "Forces a death that should produce a grave.",
+   "core.game.node.entity.combat.graves.GraveController$defineCommands$1"
+  ],
+  [
+   "ranimreset",
+   "ranimreset",
+   "ADMIN",
+   "",
+   "Resets the player's render (walk/idle) animation to default.",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$5"
+  ],
+  [
+   "playjingle",
+   "playjingle",
+   "STANDARD",
+   "::playjingle <lt>jingle-id<gt>",
+   "Plays the sound effect with ID <lt>jingle-id<gt>.",
+   "core.game.system.command.sets.MusicCommandSet$defineCommands$2"
+  ],
+  [
+   "wheel",
+   "wheel",
+   "STANDARD",
+   "",
+   "",
+   "core.game.worldevents.holiday.aprilfools.AprilFoolsEvent$defineCommands$1"
+  ],
+  [
+   "killme",
+   "killme",
+   "ADMIN",
+   "",
+   "Literally kills you in-game even",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$8"
+  ],
+  [
+   "globalaudio",
+   "globalaudio",
+   "ADMIN",
+   "::globalaudio <lt>id<gt> radius[max 15] location[<lt>player name<gt> OR <lt>x y z<gt>]",
+   "Play global audio by ID, radius, and location",
+   "core.game.system.command.sets.MusicCommandSet$defineCommands$6"
+  ],
+  [
+   "noobme",
+   "noobme",
+   "ADMIN",
+   "::noobme <lt>player_name<gt>",
+   "Sets <lt>player_name<gt> (or self if empty) back to default stats",
+   "core.game.system.command.sets.DevelopmentCommandSet$defineCommands$37"
+  ],
+  [
+   "readyew",
+   "readyew",
+   "ADMIN",
+   "",
+   "Sets Elemental Workshop I furnace as ready (queststage->95, changes all required attributes/varbits)",
+   "content.region.kandarin.seers.quest.elementalworkshop.ElementalWorkshopQuest$defineCommands$2"
+  ],
+  [
+   "bury",
+   "bury",
+   "ADMIN",
+   "",
+   "Buries your entire inventory at your current location for treasure hunters. Required true/false to hide players name and an optional custom message.",
+   "core.game.system.command.sets.FunCommandSet$defineCommands$10"
+  ],
+  [
+   "finishbins",
+   "finishbins",
+   "ADMIN",
+   "",
+   "Finishes any in-progress compost bins.",
+   "core.game.system.command.sets.MiscCommandSet$defineCommands$36"
+  ],
+  [
+   "ranim",
+   "ranim",
+   "ADMIN",
+   "::ranim <lt>Render Anim ID<gt>",
+   "Sets the player's render (walk/idle) animation.",
+   "core.game.system.command.sets.AnimationCommandSet$defineCommands$4"
+  ]
+ ],
+ "t": "commands"
+}

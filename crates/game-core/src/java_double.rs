@@ -101,6 +101,22 @@ fn render(negative: bool, digits: &[u8], exponent: i32) -> String {
     out
 }
 pub fn format(value: f64) -> String {
+    format_bits(value, None)
+}
+/// `Float.toString(value)`: `FloatingDecimal` runs the same `dtoa` on the
+/// float's significand widened to the double's position, with the float's
+/// significant-bit count (24, or fewer for a subnormal) setting the stopping
+/// margin.
+pub fn format_float(value: f32) -> String {
+    let raw = value.to_bits();
+    let significant = if (raw >> 23) & 255 == 0 {
+        32 - (raw & ((1 << 23) - 1)).leading_zeros() as i32
+    } else {
+        24
+    };
+    format_bits(f64::from(value), Some(significant))
+}
+fn format_bits(value: f64, float_significant: Option<i32>) -> String {
     if value.is_nan() {
         return "NaN".into();
     }
@@ -130,6 +146,7 @@ pub fn format(value: f64) -> String {
         fraction |= 1 << 52;
         53
     };
+    let significant = float_significant.unwrap_or(significant);
     binary -= 1023;
     let trailing = fraction.trailing_zeros() as i32;
     let bits = 53 - trailing;

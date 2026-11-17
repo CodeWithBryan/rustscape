@@ -1,4 +1,5 @@
 //! Native world systems; the live world/session lifecycle remains under construction.
+pub mod abuse_report;
 pub mod action_locks;
 pub mod animation;
 pub mod appearance;
@@ -7,6 +8,7 @@ pub mod chunk;
 pub mod chunk_sync;
 pub mod clipping;
 pub mod combat_pulse;
+pub mod commands;
 pub mod combat_swing;
 pub mod component_objects;
 pub mod dark_zone;
@@ -66,6 +68,7 @@ pub mod player_walk;
 pub mod prayer;
 pub mod prepared_animation;
 pub mod prepared_masks;
+pub mod quick_chat;
 pub mod rebuild;
 pub mod region;
 pub mod region_activity;

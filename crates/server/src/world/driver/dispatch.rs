@@ -269,6 +269,15 @@ pub enum Handler {
     Examine,
     /// The `TrackFinished` branch: `world::packet_handlers::examine::track_finished`.
     TrackFinished,
+    /// The `Command` branch: `world::commands::handle_packet` (the
+    /// `COMMAND` decoder runs there on the undecoded payload).
+    Command,
+    /// The `QuickChat` branch: `world::quick_chat::handle_packet` (with the
+    /// `QUICKCHAT` decoder).
+    QuickChat,
+    /// The `ReportAbuse` branch: `world::abuse_report::handle_packet` (with
+    /// the `REPORT_ABUSE` decoder).
+    ReportAbuse,
 }
 
 /// A branch of `PacketProcessor.process` ported in [`super`].
@@ -398,12 +407,12 @@ pub fn route(class: &str) -> Route {
         "TrackingDisplayUpdate" => Native(Handler::DisplayUpdate),
         "TrackingAfkTimeout" => Driver(Body::AfkTimeout),
         "Ping" => Driver(Body::Ping),
-        "QuickChat" => NotPorted("QCRepository.sendQC (quick chat)"),
+        "QuickChat" => Native(Handler::QuickChat),
         "InputPromptResponse" => Native(Handler::InputPrompt),
-        "ReportAbuse" => NotPorted("AbuseReport (report abuse)"),
+        "ReportAbuse" => Native(Handler::ReportAbuse),
         "TrackFinished" => Native(Handler::TrackFinished),
         "GESetOfferItem" => NotPorted("StockMarket (Grand Exchange offer item)"),
-        "Command" => NotPorted("CommandSystem.parse (commands)"),
+        "Command" => Native(Handler::Command),
         "PacketCountUpdate" => Driver(Body::PacketCount),
         "ContinueOption" => Native(Handler::ContinueOption),
         "ItemExamine" | "SceneryExamine" | "NpcExamine" => Native(Handler::Examine),

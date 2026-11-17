@@ -36,16 +36,19 @@ types (the adapters stash the driver error and return it).
 - `dispatch::decode` is `Decoders530.process` (the 83 decoders, checked
   against the pinned enum's text): the numeric client actions decode through
   `rs09_protocol::game::ClientAction`, the social opcodes through
-  `world::social::chat::decode`; COMMAND, QUICKCHAT and REPORT_ABUSE have no
-  native decoder and become `Packet::Undecoded`.
+  `world::social::chat::decode`; COMMAND, QUICKCHAT and REPORT_ABUSE stay
+  `Packet::Undecoded` here and are decoded by their handlers
+  (`world::commands::decode`, `world::quick_chat::decode`,
+  `world::abuse_report::decode`) when the packet is processed; see
+  docs/commands.md for what that moves from the read to the packet phase.
 - `dispatch::route` is the `when` of `PacketProcessor.process`, by `Packet`
   class (checked against the pinned `Packet.kt`):
 
 | Route | Packet types |
 | --- | --- |
-| native handler (`Host::handle`) | `WorldspaceWalk`, `MinimapWalk`, `InteractWalk` (walk_request); `SceneryAction` (scenery_action); `GroundItemAction` (ground_action / ground_runtime); `IfAction` (interface_packets; bank, prayer tab and trade buttons are interface listeners behind it); `CloseIface`, `ContinueOption` (interface_packets); `InputPromptResponse` (input_prompt); `AddFriend`, `RemoveFriend`, `AddIgnore`, `RemoveIgnore`, `JoinClan`, `SetClanRank`, `KickFromClan`, `ChatMessage`, `ChatSetting`, `PrivateMessage` (social); `TrackingDisplayUpdate` (client info and `interfaces::switch_window_mode`); `ItemAction`, `NpcAction`, `PlayerAction`, the five `UseWith*`, the five `Component*Action`, both `SlotSwitch*`, `ItemExamine`, `SceneryExamine`, `NpcExamine`, `TrackFinished` (packet_handlers; see docs/packet-handlers.md) |
+| native handler (`Host::handle`) | `WorldspaceWalk`, `MinimapWalk`, `InteractWalk` (walk_request); `SceneryAction` (scenery_action); `GroundItemAction` (ground_action / ground_runtime); `IfAction` (interface_packets; bank, prayer tab and trade buttons are interface listeners behind it); `CloseIface`, `ContinueOption` (interface_packets); `InputPromptResponse` (input_prompt); `AddFriend`, `RemoveFriend`, `AddIgnore`, `RemoveIgnore`, `JoinClan`, `SetClanRank`, `KickFromClan`, `ChatMessage`, `ChatSetting`, `PrivateMessage` (social); `TrackingDisplayUpdate` (client info and `interfaces::switch_window_mode`); `ItemAction`, `NpcAction`, `PlayerAction`, the five `UseWith*`, the five `Component*Action`, both `SlotSwitch*`, `ItemExamine`, `SceneryExamine`, `NpcExamine`, `TrackFinished` (packet_handlers; see docs/packet-handlers.md); `Command` (commands), `QuickChat` (quick_chat), `ReportAbuse` (abuse_report; see docs/commands.md) |
 | ported here | `Ping` (last ping), `PacketCountUpdate`, `TrackingAfkTimeout` (`isAfkLogout`, `sendLogout`), and the original's empty branches: `TrackingFocus`, `TrackingCameraPos`, `TrackingMouseClick`, `PlayerPrefsUpdate` |
-| refused, not ported (logged, recorded in `Driver::refusals`, never a success) | `GESetOfferItem`, `Command`, `QuickChat`, `ReportAbuse` |
+| refused, not ported (logged, recorded in `Driver::refusals`, never a success) | `GESetOfferItem` |
 
 - `Driver::close` is `IoSession.disconnect` (then `Player.clear`: the queue
   and `details.save()`); the disconnection queue finishes the player at the

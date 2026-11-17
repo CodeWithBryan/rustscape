@@ -226,6 +226,38 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
   ShopNPC are not ported; nothing installs the libraries in `--world` (the
   binding is described in docs/global-handlers.md).
+- For commands, quick chat or abuse reports (world/commands: CommandSystem,
+  Command, CommandMapping, the legacy CommandSet enum, CommandPlugin's
+  helpers, sets.CommandSet, the registration table and the Moderation,
+  System, Teleport and PlayerAttribute sets; world/quick_chat:
+  QCRepository, QuickChatPacketHandler, the QUICKCHAT decoder;
+  world/abuse_report: AbuseReport, Rule, the REPORT_ABUSE decoder) or their
+  driver routes, run `cargo test -p rs09-server --test commands --test
+  tick_driver` and `cargo xtask commands-oracle --check` with Python/JDK 11
+  (it boots the world-trace build for the registry: needs assets/cache),
+  plus the social, auth, player, world_login, teleport and saved_data
+  suites. Preserve the 325 behaviour cases (128 designed, 197 injected
+  failures) and the 202-command registry byte for byte (HashMap walk
+  order, last registration wins in place, PlayerAttribute's getattribute
+  over Moderation's, the inactive EasterEvent, three legacy plugins on
+  ADMINISTRATOR). Keep: parse's catch of
+  IllegalStateException only; the legacy sets walked in enum order with a
+  zone check per validated set and BETA's null-settings failure; rights read
+  once more only with PLAYER_COMMANDS; "bank" alone earning the silly chat;
+  the never-cleared duration token; ban writing the online account then
+  always submitting the store pulse; mute's pulse only when offline; jail's
+  location and release time captured at construction; modcr's default
+  account check; csvmodcr's singleton-list index message; `::to`'s last
+  matching row and the castle-wars row's start-up location; Kotlin's float
+  parse and JDK 11's Float.toString (java_double::format_float); quick chat's
+  getIndex, the item check before the data maps, replace versus replaceFirst
+  and the chat icon read in ChatMessage's constructor; the self-report that
+  is still filed and the mute through attemptHandling. Bodies that are not
+  ported are Body::Content services named by class and lambda; dispatch only
+  through the registry. Accounts join crate::auth through
+  commands::accounts. The decoders run at dispatch (dispatch.rs keeps the
+  payload undecoded): see docs/commands.md for that and the other pinned
+  differences. Nothing installs the libraries in the live world.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
   owned_player, plain_dialogue and all three controlled examples. Preserve initial790

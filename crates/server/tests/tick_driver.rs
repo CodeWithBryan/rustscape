@@ -142,15 +142,15 @@ fn every_packet_type_has_a_route() {
         ("PrivateMessage", Route::Native(Handler::Social)),
         ("ChatMessage", Route::Native(Handler::Social)),
         ("ChatSetting", Route::Native(Handler::Social)),
-        ("Command", Route::NotPorted("")),
+        ("Command", Route::Native(Handler::Command)),
         ("GESetOfferItem", Route::NotPorted("")),
         ("TrackFinished", Route::Native(Handler::TrackFinished)),
-        ("ReportAbuse", Route::NotPorted("")),
+        ("ReportAbuse", Route::Native(Handler::ReportAbuse)),
         ("WorldspaceWalk", Route::Native(Handler::Walk)),
         ("MinimapWalk", Route::Native(Handler::Walk)),
         ("InteractWalk", Route::Native(Handler::Walk)),
         ("Ping", Route::Driver(dispatch::Body::Ping)),
-        ("QuickChat", Route::NotPorted("")),
+        ("QuickChat", Route::Native(Handler::QuickChat)),
         ("InputPromptResponse", Route::Native(Handler::InputPrompt)),
         ("PlayerPrefsUpdate", Route::Driver(dispatch::Body::Nothing)),
     ];
@@ -209,15 +209,16 @@ fn decoding_follows_decoders530() {
         }
     ));
     assert_eq!(packet.class(), "AddFriend");
-    // COMMAND has no native decoder: kept for the refusal.
+    // COMMAND stays undecoded here: world::commands decodes it when the
+    // packet is processed.
     let Decoded::Packet(packet) = dispatch::decode(1usize, 44, b"x\0") else {
         panic!()
     };
     assert_eq!(packet.class(), "Command");
-    assert!(matches!(
+    assert_eq!(
         dispatch::route(packet.class()),
-        Route::NotPorted(_)
-    ));
+        Route::Native(Handler::Command)
+    );
     // A short ITEM_ACTION_1: DecodingError.
     assert!(matches!(
         dispatch::decode(1usize, 156, &[1]),
@@ -799,8 +800,8 @@ fn packets_dispatch_by_route_and_refusals_are_logged_not_run() {
     // Ticks 1 and 2: the disconnection queue the AFK logout fills is not
     // looked at (only when the counter is a multiple of three).
     driver.ticks().set(1);
-    // WORLDSPACE_WALK (size -1), COMMAND (no native decoder), PACKET_COUNT,
-    // AFK_TIMEOUT.
+    // WORLDSPACE_WALK (size -1), COMMAND (undecoded, routed to the command
+    // handler), PACKET_COUNT, AFK_TIMEOUT.
     let mut bytes = vec![215, 5, 0, 0, 0, 0, 0];
     bytes.extend([44, 2, b'x', 0]);
     bytes.extend([177, 0, 9]);
@@ -808,13 +809,9 @@ fn packets_dispatch_by_route_and_refusals_are_logged_not_run() {
     driver.read(&mut host, &1, &bytes).unwrap();
     host.calls.clear();
     driver.tick(&mut host, true).unwrap();
-    assert_eq!(host.handled, [Handler::Walk]);
-    let refusals = driver.refusals();
-    assert_eq!(refusals.len(), 1);
-    assert_eq!(refusals[0].class, "Command");
-    assert!(host.calls.iter().any(|c| c.starts_with(
-        "PacketProcessor Warn Not ported: Command (opcode 44) needs CommandSystem.parse"
-    )));
+    assert_eq!(host.handled, [Handler::Walk, Handler::Command]);
+    assert!(driver.refusals().is_empty());
+    assert!(!host.calls.iter().any(|c| c.contains("Not ported")));
     // PacketCountUpdate: getPacketCount(count - getPacketCount(0)).
     assert!(host.calls.iter().any(|c| c == "packet count 0"));
     assert!(host.calls.iter().any(|c| c == "packet count 2"));
