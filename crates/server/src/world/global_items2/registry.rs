@@ -859,10 +859,10 @@ impl<C: interactions::Casing> Registrar for Native<'_, C> {
     type ObjectRef = Class;
     type ComponentRef = ComponentPlugin;
     fn function(&mut self, f: Interaction) -> interactions::Function {
-        if f.shared() {
-            if let Some((_, existing)) = self.shared.iter().find(|(k, _)| *k == f) {
-                return existing.clone();
-            }
+        if f.shared()
+            && let Some((_, existing)) = self.shared.iter().find(|(k, _)| *k == f)
+        {
+            return existing.clone();
         }
         let function = interactions::Function::new(f.kind(), f.class(), f);
         if f.shared() {
@@ -871,10 +871,10 @@ impl<C: interactions::Casing> Registrar for Native<'_, C> {
         function
     }
     fn interface_function(&mut self, f: InterfaceFn) -> interface_listeners::Callback {
-        if f.shared() {
-            if let Some((_, existing)) = self.shared_interfaces.iter().find(|(k, _)| *k == f) {
-                return existing.clone();
-            }
+        if f.shared()
+            && let Some((_, existing)) = self.shared_interfaces.iter().find(|(k, _)| *k == f)
+        {
+            return existing.clone();
         }
         let callback = match f {
             InterfaceFn::MorphButton => interface_listeners::Callback::button(f),

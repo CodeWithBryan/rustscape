@@ -44,10 +44,10 @@ struct Counted<H>(H);
 impl<H: Context> Context for Counted<H> {
     fn call(&mut self, service: Service, args: &[Arg]) -> Result<Arg> {
         let mut key = service.name().to_owned();
-        if matches!(service, Service::ApiAddItem | Service::ApiRemoveItem) {
-            if let Some(Arg::Text(container)) = args.last() {
-                key = format!("{key}:{container}");
-            }
+        if matches!(service, Service::ApiAddItem | Service::ApiRemoveItem)
+            && let Some(Arg::Text(container)) = args.last()
+        {
+            key = format!("{key}:{container}");
         }
         REQUESTED.with(|r| *r.borrow_mut().entry(key).or_insert(0) += 1);
         self.0.call(service, args)

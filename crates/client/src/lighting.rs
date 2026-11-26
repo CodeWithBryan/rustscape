@@ -207,13 +207,12 @@ pub fn grid(width: usize, height: usize, lights: &[Light]) -> Vec<[u8; 4]> {
         for plane in 0..4 {
             for z in 0..height {
                 for x in 0..width {
-                    if light.contains(plane, x as i32, z as i32) {
-                        if let Some(slot) = grid[(plane * height + z) * width + x]
+                    if light.contains(plane, x as i32, z as i32)
+                        && let Some(slot) = grid[(plane * height + z) * width + x]
                             .iter_mut()
                             .find(|v| **v == 0)
-                        {
-                            *slot = (i + 1) as u8;
-                        }
+                    {
+                        *slot = (i + 1) as u8;
                     }
                 }
             }

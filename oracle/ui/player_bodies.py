@@ -1,5 +1,10 @@
 """Compare original wearable/identity-kit raw body assembly and BAS transforms."""
 import argparse,hashlib,importlib.util,json,pathlib,random,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 ROOT=pathlib.Path(__file__).resolve().parents[2];RUN=ROOT/'runs/player-body-oracle';FIX=ROOT/'fixtures/ui/player-bodies.json'
 def module(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
@@ -32,7 +37,7 @@ def generate(check=False):
     ''')
     c=subprocess.run(['javac','-encoding','UTF-8','-d',str(RUN),*[str(p)for p in RUN.glob('*.java')]],text=True,capture_output=True)
     if c.returncode:raise SystemExit(c.stderr)
-    path=ROOT/'assets/visual/ui-players.pack';pack=heads.pack(path);data=RUN/'data';data.mkdir(exist_ok=True)
+    path=_recorded(ROOT,'ui-players.pack');pack=heads.pack(path);data=RUN/'data';data.mkdir(exist_ok=True)
     for name,b in pack.items():
      if name.startswith('model/'):(data/('model_'+name[6:]+'.bin')).write_bytes(b)
     cases=[];requests=[];kits=[];items=[];valid_bas=[]

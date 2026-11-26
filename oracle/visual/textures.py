@@ -7,6 +7,11 @@ import shutil
 import struct
 import subprocess
 from generate import clean, method, ROOT, SRC
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 
 RUN = ROOT / "runs/texture-oracle"
 
@@ -36,7 +41,7 @@ def main(check=False):
     software=source("SoftwareSprite")
     (RUN/"SoftwareSprite.java").write_text("class SoftwareSprite {int width,height,innerWidth,innerHeight,xOffset,yOffset;int[] pixels;"+method(software,"public final void trim()")+"}")
     shutil.copyfile(pathlib.Path(__file__).with_name("TextureOracle.java"), RUN / "TextureOracle.java")
-    blob = (ROOT / "assets/visual/demo.pack").read_bytes()
+    blob = _recorded(ROOT,'demo.pack').read_bytes()
     length = struct.unpack_from("<I", blob, 8)[0]
     manifest = json.loads(blob[12:12+length]); payload = blob[12+length:]
     for name, (off, size) in manifest["files"].items():

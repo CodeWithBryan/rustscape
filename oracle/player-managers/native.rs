@@ -814,16 +814,16 @@ impl diary::Host for Model {
             if left <= 0 {
                 break;
             }
-            if let Some((item, held)) = *slot {
-                if item == id {
-                    let take = left.min(held);
-                    left -= take;
-                    *slot = if held == take {
-                        None
-                    } else {
-                        Some((id, held - take))
-                    };
-                }
+            if let Some((item, held)) = *slot
+                && item == id
+            {
+                let take = left.min(held);
+                left -= take;
+                *slot = if held == take {
+                    None
+                } else {
+                    Some((id, held - take))
+                };
             }
         }
         Ok(true)

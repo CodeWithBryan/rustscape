@@ -28,10 +28,10 @@ impl<T> Press<T> {
         Ok(())
     }
     pub fn after_action<E>(&self, mut redraw: impl FnMut(&T) -> Result<(), E>) -> Result<(), E> {
-        if let Some(c) = &self.component {
-            if self.tick == 0 {
-                redraw(c)?;
-            }
+        if let Some(c) = &self.component
+            && self.tick == 0
+        {
+            redraw(c)?;
         }
         Ok(())
     }

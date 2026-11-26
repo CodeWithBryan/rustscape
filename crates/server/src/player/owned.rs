@@ -435,11 +435,11 @@ pub(crate) fn trace<'a>(
         if c.strong_count() > references + 1 {
             external_containers.insert(id);
         }
-        if let Some(Some(owner)) = c.equipment_owner() {
-            if local(&owner) {
-                *graph.internal_leases.entry(owner.node).or_default() += 1;
-                container_nodes.entry(id).or_default().insert(owner.node);
-            }
+        if let Some(Some(owner)) = c.equipment_owner()
+            && local(&owner)
+        {
+            *graph.internal_leases.entry(owner.node).or_default() += 1;
+            container_nodes.entry(id).or_default().insert(owner.node);
         }
         if c.is_bank() {
             let bank = Bank::from_container(c.clone()).unwrap();

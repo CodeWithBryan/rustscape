@@ -520,19 +520,19 @@ pub fn close(ctx: &mut impl Context, m: &Manager) -> Result<bool> {
         close_overlay(ctx, m)?;
     }
     let opened = m.fields.read().opened.clone();
-    if let Some(c) = opened {
-        if component_close(ctx, &c)? {
-            // Callback mutations change which current component receives the packet/event.
+    if let Some(c) = opened
+        && component_close(ctx, &c)?
+    {
+        // Callback mutations change which current component receives the packet/event.
+        let opened = m.fields.read().opened.clone();
+        if let Some(c) = opened
+            && (!def(&c)?.read().walkable || c.read().id == 14)
+        {
+            close_packet(ctx, m, &c, false)?;
             let opened = m.fields.read().opened.clone();
-            if let Some(c) = opened {
-                if !def(&c)?.read().walkable || c.read().id == 14 {
-                    close_packet(ctx, m, &c, false)?;
-                    let opened = m.fields.read().opened.clone();
-                    ctx.dispatch_close(opened)?;
-                }
-            }
-            m.fields.write().opened = None;
+            ctx.dispatch_close(opened)?;
         }
+        m.fields.write().opened = None;
     }
     Ok(m.fields.read().opened.is_none())
 }
@@ -549,12 +549,13 @@ pub fn close_component(ctx: &mut impl Context, m: &Manager, c: &Handle) -> Resul
 pub fn close_chatbox(ctx: &mut impl Context, m: &Manager) -> Result<()> {
     ctx.validate_manager(m)?;
     let chat = m.fields.read().chatbox.clone();
-    if let Some(c) = chat {
-        if c.read().id != 137 && close_component(ctx, m, &c)? {
-            let c = ctx.component(137)?;
-            open_chatbox(ctx, m, &c)?;
-            ctx.run_script(m, 101, None)?;
-        }
+    if let Some(c) = chat
+        && c.read().id != 137
+        && close_component(ctx, m, &c)?
+    {
+        let c = ctx.component(137)?;
+        open_chatbox(ctx, m, &c)?;
+        ctx.run_script(m, 101, None)?;
     }
     Ok(())
 }
@@ -580,10 +581,10 @@ pub fn open_single_tab(ctx: &mut impl Context, m: &Manager, c: &Handle) -> Resul
 pub fn close_single_tab(ctx: &mut impl Context, m: &Manager) -> Result<bool> {
     ctx.validate_manager(m)?;
     let single = m.fields.read().single_tab.clone();
-    if let Some(c) = single {
-        if close_component(ctx, m, &c)? {
-            m.fields.write().single_tab = None;
-        }
+    if let Some(c) = single
+        && close_component(ctx, m, &c)?
+    {
+        m.fields.write().single_tab = None;
     }
     Ok(true)
 }
@@ -697,11 +698,11 @@ pub fn close_default_tabs(ctx: &mut impl Context, m: &Manager) -> Result<()> {
         if i >= 65536 {
             return Err(Error::Limit);
         }
-        if let Some(c) = tab(m, i as i32)? {
-            if c.read().id != 182 {
-                close_component(ctx, m, &c)?;
-                store_tab(m, i as i32, None)?;
-            }
+        if let Some(c) = tab(m, i as i32)?
+            && c.read().id != 182
+        {
+            close_component(ctx, m, &c)?;
+            store_tab(m, i as i32, None)?;
         }
         i += 1;
     }
@@ -732,10 +733,10 @@ pub fn get_component(ctx: &mut impl Context, m: &Manager, id: i32) -> Result<Opt
     let len = array.read().len();
     for i in 0..len {
         let c = array.read()[i].clone();
-        if let Some(c) = c {
-            if c.read().id == id {
-                return Ok(Some(c));
-            }
+        if let Some(c) = c
+            && c.read().id == id
+        {
+            return Ok(Some(c));
         }
     }
     if [751, 750, 747].contains(&id) {
@@ -746,10 +747,10 @@ pub fn get_component(ctx: &mut impl Context, m: &Manager, id: i32) -> Result<Opt
 pub fn open_overlay(ctx: &mut impl Context, m: &Manager, c: Option<Handle>) -> Result<()> {
     ctx.validate_manager(m)?;
     let old = m.fields.read().overlay.clone();
-    if let Some(old) = old {
-        if !component_close(ctx, &old)? {
-            return Ok(());
-        }
+    if let Some(old) = old
+        && !component_close(ctx, &old)?
+    {
+        return Ok(());
     }
     m.fields.write().overlay = c.clone();
     let overlay = c.ok_or(Error::Null)?;
@@ -772,10 +773,10 @@ pub fn open_overlay(ctx: &mut impl Context, m: &Manager, c: Option<Handle>) -> R
 pub fn close_overlay(ctx: &mut impl Context, m: &Manager) -> Result<()> {
     ctx.validate_manager(m)?;
     let overlay = m.fields.read().overlay.clone();
-    if let Some(c) = overlay {
-        if close_component(ctx, m, &c)? {
-            m.fields.write().overlay = None;
-        }
+    if let Some(c) = overlay
+        && close_component(ctx, m, &c)?
+    {
+        m.fields.write().overlay = None;
     }
     Ok(())
 }

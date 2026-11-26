@@ -217,11 +217,11 @@ impl Model {
                 }
             }
             "logout" => {
-                if self.player {
-                    if let Some(l) = self.listener.clone() {
-                        self.emit("setLocation", vec![json!(l.coordinates())])?;
-                        self.own = l;
-                    }
+                if self.player
+                    && let Some(l) = self.listener.clone()
+                {
+                    self.emit("setLocation", vec![json!(l.coordinates())])?;
+                    self.own = l;
                 }
             }
             "fail" => return Err(Error::Binding("callback".into())),

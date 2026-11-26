@@ -92,10 +92,10 @@ impl Metrics {
                 continue;
             };
             let c = c as usize;
-            if let Some(k) = &self.kerning {
-                if last != 0 {
-                    n += i32::from(k[last * 256 + c]);
-                }
+            if let Some(k) = &self.kerning
+                && last != 0
+            {
+                n += i32::from(k[last * 256 + c]);
             }
             n += self.advances[c];
             last = c;
@@ -127,10 +127,10 @@ impl Metrics {
             }
             if let Some(ch) = glyph {
                 width += self.advances[ch as usize];
-                if previous != 0 {
-                    if let Some(k) = &self.kerning {
-                        width += i32::from(k[previous * 256 + ch as usize]);
-                    }
+                if previous != 0
+                    && let Some(k) = &self.kerning
+                {
+                    width += i32::from(k[previous * 256 + ch as usize]);
                 }
                 previous = ch as usize;
             } else if let Some(icon_width) = self.icon_width(&raw) {
@@ -143,14 +143,15 @@ impl Metrics {
                 break_width = width;
                 trim = 1;
             }
-            if let (Some(widths), Some(pos)) = (widths, break_pos) {
-                if !widths.is_empty() && width > widths[lines.len().min(widths.len() - 1)] {
-                    lines.push(buffer[start..pos - trim].into());
-                    start = pos;
-                    break_pos = None;
-                    width -= break_width;
-                    previous = 0;
-                }
+            if let (Some(widths), Some(pos)) = (widths, break_pos)
+                && !widths.is_empty()
+                && width > widths[lines.len().min(widths.len() - 1)]
+            {
+                lines.push(buffer[start..pos - trim].into());
+                start = pos;
+                break_pos = None;
+                width -= break_width;
+                previous = 0;
             }
             if literal == Some(45) {
                 break_pos = Some(buffer.len());

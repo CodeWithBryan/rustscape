@@ -199,11 +199,11 @@ pub fn experience<H: Host + ?Sized>(h: &mut H, p: &H::Node, b: Button) -> Result
             23 => Some((Quest::WolfWhistle, "Wolf Whistle")),
             _ => None,
         };
-        if let Some((quest, name)) = required {
-            if !h.quest_complete(p, quest)? {
-                h.message(p, &format!("You need to have completed {name} for this."))?;
-                return Ok(true);
-            }
+        if let Some((quest, name)) = required
+            && !h.quest_complete(p, quest)?
+        {
+            h.message(p, &format!("You need to have completed {name} for this."))?;
+            return Ok(true);
         }
         let Some(caller) = h.attributes_get(p, "caller")? else {
             return Ok(true);

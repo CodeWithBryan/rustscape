@@ -68,4 +68,4 @@ def generate(check):
  else:(folder/'oracle.jsonl').write_bytes(fixture);(folder/'provenance.json').write_text(json.dumps(provenance,indent=2)+'\n',encoding='utf-8')
  print(len(rows),'original plain dialogue/Continue scenarios reproduced'if check else'original plain dialogue/Continue scenarios generated',flush=True)
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('--check',action='store_true');p.add_argument('--java-home',type=pathlib.Path);v=p.parse_args();c.JAVA_HOME=v.java_home;generate(v.check)
+ p=argparse.ArgumentParser();p.add_argument('--check',action='store_true');p.add_argument('--java-home',type=pathlib.Path);v=p.parse_args();c.JAVA_HOME=v.java_home or(pathlib.Path(os.environ['RS09_ORACLE_JAVA_HOME'])if'RS09_ORACLE_JAVA_HOME'in os.environ else None);generate(v.check)

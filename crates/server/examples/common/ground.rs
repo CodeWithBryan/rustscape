@@ -280,10 +280,10 @@ impl gw::Services<scene::CacheAssets> for Services<'_> {
         r: &region::Handle,
         name: String,
     ) -> Result<()> {
-        if let Some(v) = self.viewers.get_mut(&r.identity()) {
-            if let Some(i) = v.iter().position(|n| *n == name) {
-                v.remove(i);
-            }
+        if let Some(v) = self.viewers.get_mut(&r.identity())
+            && let Some(i) = v.iter().position(|n| *n == name)
+        {
+            v.remove(i);
         }
         Ok(())
     }

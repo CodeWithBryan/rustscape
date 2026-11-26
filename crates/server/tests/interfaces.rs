@@ -18,12 +18,12 @@ fn diff(a: &Value, b: &Value, p: String) -> Option<String> {
             }
         }
     }
-    if let (Some(a), Some(b)) = (a.as_array(), b.as_array()) {
-        if a.len() == b.len() {
-            for (i, (a, b)) in a.iter().zip(b).enumerate() {
-                if let Some(d) = diff(a, b, format!("{p}/{i}")) {
-                    return Some(d);
-                }
+    if let (Some(a), Some(b)) = (a.as_array(), b.as_array())
+        && a.len() == b.len()
+    {
+        for (i, (a, b)) in a.iter().zip(b).enumerate() {
+            if let Some(d) = diff(a, b, format!("{p}/{i}")) {
+                return Some(d);
             }
         }
     }

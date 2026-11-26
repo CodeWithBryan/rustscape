@@ -156,10 +156,10 @@ pub fn scene(source: &Source, name: &str, base: [i32; 2]) -> Result<Scene, Strin
                     continue;
                 }
                 for &id in &definition.models {
-                    if let std::collections::btree_map::Entry::Vacant(entry) = models.entry(id) {
-                        if let Some(model) = source.model(id) {
-                            entry.insert(model);
-                        }
+                    if let std::collections::btree_map::Entry::Vacant(entry) = models.entry(id)
+                        && let Some(model) = source.model(id)
+                    {
+                        entry.insert(model);
                     }
                 }
                 let piece = Piece {
@@ -516,10 +516,10 @@ pub fn sections(source: &Source, scene: &Scene) -> (Vec<(String, Vec<u8>)>, Stat
         };
         let (interaction, definition) = scene.kinds[&id].decoded.as_ref().unwrap();
         for &id in &definition.models {
-            if let std::collections::btree_map::Entry::Vacant(entry) = models.entry(id) {
-                if let Some(model) = source.model(id) {
-                    entry.insert(model);
-                }
+            if let std::collections::btree_map::Entry::Vacant(entry) = models.entry(id)
+                && let Some(model) = source.model(id)
+            {
+                entry.insert(model);
             }
         }
         let entities = under

@@ -542,10 +542,10 @@ pub fn get_container<H: Host>(h: &mut H, shop: &Shop, p: &NodeHandle) -> Result<
     let owner = listener
         .as_ref()
         .map(|l| l.value::<ShopListener>().map(|s| s.player.clone()));
-    if let Some(Some(owner)) = &owner {
-        if owner != p {
-            container.unregister(listener.clone());
-        }
+    if let Some(Some(owner)) = &owner
+        && owner != p
+    {
+        container.unregister(listener.clone());
     }
     let replace = match &owner {
         None => true,

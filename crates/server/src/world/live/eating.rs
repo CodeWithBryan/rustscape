@@ -104,10 +104,10 @@ impl<'a> Eating<'a> {
         let shared = ctx.live.inner.state.clocks(&ctx.p.0).map_err(bind)?;
         let mut shared = shared.write();
         for i in 0..10 {
-            if clocks[i] != before[i] {
-                if let Some(slot) = shared.get_mut(i) {
-                    *slot = clocks[i];
-                }
+            if clocks[i] != before[i]
+                && let Some(slot) = shared.get_mut(i)
+            {
+                *slot = clocks[i];
             }
         }
         Ok(())
@@ -396,6 +396,9 @@ impl<'a> c::Host for Eating<'a> {
     }
     fn remove_disease(&mut self) -> Result<()> {
         self.outside(|live, p| {
+            // A closure, not the function path: the path is not general
+            // enough over the host lifetime.
+            #[allow(clippy::redundant_closure)]
             live.with_timers(p, |natives, manager| join::remove_disease(natives, manager))
         })?
         .map_err(bind)

@@ -570,10 +570,11 @@ pub(crate) mod tests {
                 "decode" => {
                     let mut p = from_state(&case["before"]);
                     let data = unhex(case["data"].as_str().unwrap());
-                    if let Some(&version) = data.first() {
-                        if usize::from(version) < 12 && state(&p) != from_after(&case) {
-                            versions[usize::from(version)] += 1;
-                        }
+                    if let Some(&version) = data.first()
+                        && usize::from(version) < 12
+                        && state(&p) != from_after(&case)
+                    {
+                        versions[usize::from(version)] += 1;
                     }
                     decode(&mut p, &data, memory);
                     check(&case, &p, line);

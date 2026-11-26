@@ -420,14 +420,14 @@ impl<S: ScriptState> Factories<S> for Harness {
         let label = format!("created{}", self.created);
         self.created += 1;
         let timer = self.construct(&desc, label, true);
-        if desc["useArgs"] == true {
-            if let Some(args) = args {
-                timer.write().run_interval = args[0]
-                    .as_i64()
-                    .map(|v| v as i32)
-                    .or_else(|| args[0].as_f64().map(|v| v as i32))
-                    .ok_or(Error::Type)?;
-            }
+        if desc["useArgs"] == true
+            && let Some(args) = args
+        {
+            timer.write().run_interval = args[0]
+                .as_i64()
+                .map(|v| v as i32)
+                .or_else(|| args[0].as_f64().map(|v| v as i32))
+                .ok_or(Error::Type)?;
         }
         Ok(Some(timer))
     }

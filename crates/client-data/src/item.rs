@@ -118,12 +118,12 @@ impl ItemType {
     }
     pub fn count_variant(&self, count: i32) -> i32 {
         let mut result = self.id;
-        if count > 1 {
-            if let (Some(ids), Some(amounts)) = (&self.countobj, &self.countco) {
-                for i in 0..10 {
-                    if amounts[i] != 0 && amounts[i] <= count {
-                        result = ids[i];
-                    }
+        if count > 1
+            && let (Some(ids), Some(amounts)) = (&self.countobj, &self.countco)
+        {
+            for i in 0..10 {
+                if amounts[i] != 0 && amounts[i] <= count {
+                    result = ids[i];
                 }
             }
         }

@@ -78,7 +78,7 @@ impl<H: Host> Familiar<H> {
             details.update_hunger(amount);
         }
         let hunger = details.hunger();
-        if hunger >= 75.0 && hunger <= 90.0 && self.has_warned()? < 1 {
+        if (75.0..=90.0).contains(&hunger) && self.has_warned()? < 1 {
             host.player_message(&owner, "<col=ff0000>Your pet is getting hungry.</col>")?;
             self.pet_set_has_warned(1);
         } else if hunger >= 90.0 && self.has_warned()? < 2 {

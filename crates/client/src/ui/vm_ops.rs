@@ -377,7 +377,7 @@ fn format_number(language: i32, grouping: bool, value: i64) -> String {
         out.push('-');
     }
     for (i, c) in digits.chars().enumerate() {
-        if grouping && i != 0 && (digits.len() - i) % 3 == 0 {
+        if grouping && i != 0 && (digits.len() - i).is_multiple_of(3) {
             out.push(separator);
         }
         out.push(c);
@@ -1015,23 +1015,23 @@ impl Vm {
                     .ok()
                     .and_then(|path| self.camera_paths.get_mut(path))
                     .and_then(Option::as_mut)
+                    && index >= 0
+                    && (index as usize) + 1 < points.len() + 1
                 {
-                    if index >= 0 && (index as usize) + 1 < points.len() + 1 {
-                        let index = index as usize;
-                        if index + 1 < points.len() {
-                            points[index] = [
-                                (position >> 14 & 0x3fff) * 128,
-                                height,
-                                (position & 0x3fff) * 128,
-                                speed,
-                            ];
-                            points[index + 1] = [
-                                (look >> 14 & 0x3fff) * 128,
-                                look_height,
-                                (look & 0x3fff) * 128,
-                                0,
-                            ];
-                        }
+                    let index = index as usize;
+                    if index + 1 < points.len() {
+                        points[index] = [
+                            (position >> 14 & 0x3fff) * 128,
+                            height,
+                            (position & 0x3fff) * 128,
+                            speed,
+                        ];
+                        points[index + 1] = [
+                            (look >> 14 & 0x3fff) * 128,
+                            look_height,
+                            (look & 0x3fff) * 128,
+                            0,
+                        ];
                     }
                 }
             }

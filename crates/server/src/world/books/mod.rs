@@ -441,10 +441,8 @@ pub fn set_pagination<H: Host + ?Sized>(
     host.send_string(player, &left, component, at(lines, 1)?)?;
     let right = page.wrapping_mul(2).wrapping_add(2).to_string();
     host.send_string(player, &right, component, at(lines, 2)?)?;
-    if right_page_missing {
-        if let Some((own, _)) = ids(component) {
-            host.send_string(player, "", component, own[2])?;
-        }
+    if right_page_missing && let Some((own, _)) = ids(component) {
+        host.send_string(player, "", component, own[2])?;
     }
     Ok(())
 }

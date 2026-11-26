@@ -1,5 +1,10 @@
 """Original ObjType.getModel GL geometry, palette and post-construction resize."""
 import argparse,hashlib,importlib.util,json,pathlib,re,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 ROOT=pathlib.Path(__file__).resolve().parents[2];RUN=ROOT/'runs/ui-item-models-oracle';FIX=ROOT/'fixtures/ui/item-models.json'
 def module(name,path):
     s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
@@ -22,7 +27,7 @@ def generate(check=False):
     (RUN/'ItemOracle.java').write_text(SUPPORT,encoding='utf-8')
     compiled=subprocess.run(['javac','-encoding','UTF-8','-d',str(RUN),*[str(p)for p in RUN.glob('*.java')]],capture_output=True,text=True)
     if compiled.returncode:raise SystemExit(compiled.stderr)
-    ui_path=ROOT/'assets/visual/ui-models.pack';world_path=ROOT/'assets/visual/live/lumbridge-minimap.pack';ui=heads.pack(ui_path);world=heads.pack(world_path);data=RUN/'data';data.mkdir(exist_ok=True)
+    ui_path=_recorded(ROOT,'ui-models.pack');world_path=ROOT/'assets/visual/live/lumbridge-minimap.pack';ui=heads.pack(ui_path);world=heads.pack(world_path);data=RUN/'data';data.mkdir(exist_ok=True)
     for name,raw in ui.items():
         if name.startswith('model/'):(data/('model_'+name[6:]+'.bin')).write_bytes(raw)
     (data/'materials.bin').write_bytes(world['materials']);requests=[];cases=[]

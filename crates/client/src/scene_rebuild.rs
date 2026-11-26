@@ -47,11 +47,11 @@ pub fn apply(previous: Option<[i32; 2]>, base: [i32; 2], parts: Parts<'_>) {
     });
     parts.camera.locked = false;
     parts.camera.spline = None;
-    if let Some(previous) = previous {
-        if parts.flag.tile[0] != 0 {
-            parts.flag.tile[0] -= base[0] - previous[0];
-            parts.flag.tile[1] -= base[1] - previous[1];
-        }
+    if let Some(previous) = previous
+        && parts.flag.tile[0] != 0
+    {
+        parts.flag.tile[0] -= base[0] - previous[0];
+        parts.flag.tile[1] -= base[1] - previous[1];
     }
     parts.spots.effects.clear();
     parts.spots.projectiles.clear();
