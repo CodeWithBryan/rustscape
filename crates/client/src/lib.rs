@@ -93,6 +93,7 @@ pub mod title_scene;
 pub mod title_window;
 pub mod transport;
 pub mod ui;
+pub mod ui_packs;
 pub mod underwater;
 pub mod walking;
 pub mod web_cache;

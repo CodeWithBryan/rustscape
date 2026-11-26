@@ -6,6 +6,10 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+#[path = "support/packs.rs"]
+mod packs;
+use packs::recorded;
+
 fn fixture() -> Value {
     serde_json::from_str(include_str!("../../../fixtures/ui/models.json")).unwrap()
 }
@@ -245,7 +249,7 @@ fn every_cached_item_widget_geometry_normals_uvs_palette_resize_and_bounds_match
     let corpus: Value =
         serde_json::from_str(include_str!("../../../fixtures/ui/item-models.json")).unwrap();
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let ui_bytes = std::fs::read(root.join("assets/visual/ui-models.pack")).unwrap();
+    let ui_bytes = std::fs::read(recorded("ui-models.pack")).unwrap();
     let world_bytes =
         std::fs::read(root.join("assets/visual/live/lumbridge-minimap.pack")).unwrap();
     assert_eq!(hash(&ui_bytes), corpus["uiSha256"]);
@@ -330,7 +334,7 @@ fn real_kit_item_npc_and_player_head_geometry_matches_original_assembly() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let fixture: Value =
         serde_json::from_str(include_str!("../../../fixtures/ui/model-geometry.json")).unwrap();
-    let ui_bytes = std::fs::read(root.join("assets/visual/ui-models.pack")).unwrap();
+    let ui_bytes = std::fs::read(recorded("ui-models.pack")).unwrap();
     let world_bytes =
         std::fs::read(root.join("assets/visual/live/lumbridge-minimap.pack")).unwrap();
     assert_eq!(hash(&ui_bytes), fixture["uiSha256"]);
@@ -497,7 +501,7 @@ fn original_model_update_readers_delayed_overwrites_protection_and_partial_write
     let corpus: Value =
         serde_json::from_str(include_str!("../../../fixtures/ui/model-updates.json")).unwrap();
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let bytes = std::fs::read(root.join("assets/visual/ui.pack")).unwrap();
+    let bytes = std::fs::read(recorded("ui.pack")).unwrap();
     assert_eq!(hash(&bytes), corpus["uiSha256"]);
     let mut state = State::new(Pack::decode(bytes).unwrap());
     let pointer = corpus["pointer"].as_i64().unwrap() as i32;

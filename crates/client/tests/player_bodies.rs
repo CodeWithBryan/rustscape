@@ -41,12 +41,16 @@ fn raw(case: &Value, pack: &Pack, name: &str) -> Vec<u8> {
         pack.get(name).unwrap().to_vec()
     }
 }
+#[path = "support/packs.rs"]
+mod packs;
+use packs::recorded;
+
 #[test]
 fn original_all_wearable_bodies_kit_arrays_bas_transforms_and_compositions_match() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let fixture: Value =
         serde_json::from_str(include_str!("../../../fixtures/ui/player-bodies.json")).unwrap();
-    let bytes = std::fs::read(root.join("assets/visual/ui-players.pack")).unwrap();
+    let bytes = std::fs::read(recorded("ui-players.pack")).unwrap();
     assert_eq!(
         format!("{:x}", Sha256::digest(&bytes)),
         fixture["packSha256"]
