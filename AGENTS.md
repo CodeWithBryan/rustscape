@@ -17,8 +17,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   ownership/native objects and a real actor-clock/tick phase bridge exist;
   `rs09-server --world` runs `run` with the listener movement and arrival
   for NPC and player targets (world/live/talk.rs); defineInteraction
-  scripts, use-with arrivals, scenery targets, events and booth content are
-  still required runtime joins. See docs/interaction-listeners.md.
+  scripts, scenery on-listeners, content use-with listener bodies, events
+  and booth content are still required runtime joins (only the unhandled
+  use-with MovementPulse to NPCs, players and scenery is joined:
+  world/live/items/use_with.rs). See docs/interaction-listeners.md.
 
 - For ActionLocks/Lock/LockElapse changes, run action_locks/owned_player and all
   affected script/pulse/player/NPC/world/ownership/input/interface suites plus all

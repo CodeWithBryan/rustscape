@@ -51,6 +51,9 @@ pub enum Node {
     Npc(NodeHandle),
     Item(ItemHandle),
     Ground(Ground),
+    /// A scene object (`RegionManager.getObject`, or its child for the
+    /// player): only use-with reaches one here (super::items::use_with).
+    Scenery(crate::world::doors::Handle),
 }
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
@@ -58,6 +61,7 @@ impl PartialEq for Node {
             (Self::Player(a), Self::Player(b)) | (Self::Npc(a), Self::Npc(b)) => a.node == b.node,
             (Self::Item(a), Self::Item(b)) => a.same(b),
             (Self::Ground(a), Self::Ground(b)) => a.same(b),
+            (Self::Scenery(a), Self::Scenery(b)) => a.same(b),
             _ => false,
         }
     }
@@ -144,7 +148,7 @@ pub struct ItemActions {
     /// `DropListener`'s soft queued scripts: due tick and captures.
     pub drops: Vec<(i32, drop::DropScript<Node>)>,
     /// `runUnhandledAction` pulses of use-with ([`use_with`]).
-    pub use_pulses: Vec<(pulses::Handle, use_with::UsePulse)>,
+    pub use_pulses: Vec<(pulses::Handle, Node)>,
 }
 
 /// The item ids `Pets.forId` answers (every constant's baby, grown and
@@ -185,6 +189,10 @@ fn lrefused<T>(what: &str) -> listeners::Result<T> {
     Err(listeners::Error::Binding(format!(
         "not ported in the live world: {what}"
     )))
+}
+/// `Location.toString`: `[x, y, z]`.
+fn location_text([x, y, z]: [i32; 3]) -> String {
+    format!("[{x}, {y}, {z}]")
 }
 fn text(s: &str) -> Text {
     s.encode_utf16().collect()
@@ -478,6 +486,7 @@ impl Base for Ctx<'_> {
                 .ok_or(Error::Null),
             // Node.id of a player is never set: 0.
             Node::Player(_) => Ok(0),
+            Node::Scenery(s) => Ok(s.read().id),
         }
     }
     fn node_kind(&mut self, node: &Node) -> NodeKind {
@@ -486,6 +495,7 @@ impl Base for Ctx<'_> {
             Node::Npc(_) => NodeKind::Npc,
             Node::Item(_) => NodeKind::Item,
             Node::Ground(_) => NodeKind::GroundItem,
+            Node::Scenery(_) => NodeKind::Scenery,
         }
     }
     fn index(&mut self, node: &Node) -> Result<i32> {
@@ -494,6 +504,7 @@ impl Base for Ctx<'_> {
             Node::Ground(g) => Ok(g.read().item.read().index),
             Node::Player(h) => Ok(self.0.inner.players.get(&h.node).ok_or(Error::Null)?.index),
             Node::Npc(h) => Ok(self.0.inner.state.actor(h.node).map_err(err)?.wire_index),
+            Node::Scenery(_) => refused("Node.getIndex of scenery"),
         }
     }
     fn set_index(&mut self, node: &Node, index: i32) -> Result<()> {
@@ -516,6 +527,7 @@ impl Base for Ctx<'_> {
                 .get(&h.node)
                 .is_some_and(|r| r.active),
             Node::Item(_) | Node::Ground(_) => true,
+            Node::Scenery(s) => s.read().active,
         })
     }
     fn text(&mut self, node: Option<&Node>) -> Result<String> {
@@ -523,7 +535,31 @@ impl Base for Ctx<'_> {
             None => "null".into(),
             Some(Node::Item(i)) => i.read().text(),
             Some(Node::Ground(g)) => ground::as_item(g).read().text(),
-            Some(_) => return refused("Node.toString of an entity"),
+            // NPC.toString: "NPC " + id + ", " + getLocation() + ", " + getIndex().
+            Some(Node::Npc(h)) => {
+                let id = self.id(&Node::Npc(h.clone()))?;
+                let at = self
+                    .0
+                    .inner
+                    .state
+                    .node_location(h.node)
+                    .map_err(err)?
+                    .map_or_else(|| "null".into(), |l| location_text(l.coordinates()));
+                let index = self.0.inner.state.actor(h.node).map_err(err)?.wire_index;
+                format!("NPC {id}, {at}, {index}")
+            }
+            // Scenery.toString.
+            Some(Node::Scenery(s)) => {
+                let s = s.read();
+                format!(
+                    "[Scenery {}, {}, type={}, rot={}]",
+                    s.id,
+                    location_text(s.location.coordinates()),
+                    s.shape,
+                    s.rotation
+                )
+            }
+            Some(Node::Player(_)) => return refused("Node.toString of a player"),
         })
     }
     fn lowercase_default(&self, text: &str) -> String {
@@ -618,6 +654,9 @@ impl Base for Ctx<'_> {
             }
             Node::Ground(_) => {
                 return refused("a ground item's interaction from the item handlers");
+            }
+            Node::Scenery(_) => {
+                return refused("a scenery's interaction from the item handlers");
             }
         };
         Ok(Some(Interaction {

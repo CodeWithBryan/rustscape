@@ -913,6 +913,7 @@ async fn drive(
                 "trade" => trade_scenario(address, saves).await,
                 "follow" => follow_scenario(address, saves).await,
                 "eat" => eat_scenario(address, saves).await,
+                "usewith" => use_with_scenario(address, saves).await,
                 other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
             }
         }
@@ -961,6 +962,7 @@ async fn drive(
     trade_scenario(address, saves).await;
     follow_scenario(address, saves).await;
     eat_scenario(address, saves).await;
+    use_with_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
 }
 
@@ -1774,6 +1776,118 @@ async fn scenery_scenario(address: std::net::SocketAddr, saves: &std::path::Path
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
+/// Item on an NPC and on scenery (`processUseWith`): no listener, plugin or
+/// UseWithHandler takes a bronze dagger on Lumbridge's shop keeper or on the
+/// ladder 36768, so `UseWithHandler.run` runs its `MovementPulse` toward the
+/// node (`UseWithHandler$1`): the player walks next to it, then "Nothing
+/// interesting happens." on arrival, not before.
+async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let nothing = "Nothing interesting happens.";
+    // On an NPC: the shop keeper (520) a few tiles north.
+    let start = [3214, 3241, 0];
+    write_save(&players, "traceone", "useone", start, &[(0, 1205, 1)]);
+    let (code, one) = Client::login(address, "useone").await;
+    assert_eq!(code, 2, "useone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "useone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let keeper = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 520)
+            .map(|(i, _)| *i as i32)
+    };
+    one.until(Duration::from_secs(15), "the shop keeper", |c| {
+        keeper(c).is_some()
+    })
+    .await;
+    let index = keeper(&one).unwrap();
+    let from = one.messages.len();
+    one.send(use_with_npc(1205, 0, index)).await;
+    one.until(Duration::from_secs(20), "nothing interesting (NPC)", |c| {
+        c.messages[from..].iter().any(|(_, m)| m == nothing)
+    })
+    .await;
+    // Where both stand when the message came (the shop keeper wanders: it
+    // may take its own step in the arrival's tick).
+    let at = one.position();
+    let base = one.base.unwrap();
+    let tile = one.npcs.actors.get(&(index as usize)).unwrap().tile;
+    let keeper_at = [base[0] + tile[0], base[1] + tile[1], base[2]];
+    let distance = (at[0] - keeper_at[0])
+        .abs()
+        .max((at[1] - keeper_at[1]).abs());
+    eprintln!(
+        "useone used the dagger on the shop keeper (index {index}) at {keeper_at:?}: walked {start:?} -> {at:?}"
+    );
+    assert_ne!(at, start, "useone walked toward the shop keeper");
+    let with = one.messages[from..]
+        .iter()
+        .find(|(_, m)| m.starts_with("With: "))
+        .map(|(_, m)| m.clone());
+    let expected = format!("With: NPC 520, {keeper_at:?}, {index}");
+    eprintln!("useone's debug line: {with:?}");
+    assert!(
+        with.as_deref().is_some_and(
+            |w| w.starts_with("With: NPC 520, [") && w.ends_with(&format!("], {index}"))
+        ),
+        "useone's debug line for the shop keeper, like {expected}"
+    );
+    assert!(
+        distance <= 2,
+        "useone beside the shop keeper (one wander step allowed), not {distance} tiles away"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // On scenery: the ladder 36768 east of the castle, from two tiles west
+    // and one south (the walk goes round to the ladder's north side).
+    let start = [3227, 3212, 0];
+    write_save(&players, "traceone", "usetwo", start, &[(0, 1205, 1)]);
+    let (code, two) = Client::login(address, "usetwo").await;
+    assert_eq!(code, 2, "usetwo's login");
+    let mut two = two.unwrap();
+    two.until(Duration::from_secs(10), "usetwo's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = two.messages.len();
+    two.send(use_with_scenery(1205, 0, 36768, 3229, 3213)).await;
+    two.until(
+        Duration::from_secs(20),
+        "nothing interesting (scenery)",
+        |c| c.messages[from..].iter().any(|(_, m)| m == nothing),
+    )
+    .await;
+    let at = two.position();
+    eprintln!(
+        "usetwo used the dagger on the ladder 36768 at [3229, 3213, 0]: walked {start:?} -> {at:?}"
+    );
+    assert_eq!(at, [3229, 3214, 0], "usetwo beside the ladder, on plane 0");
+    // The test accounts have debug mode on: UseWithHandler$1's debug lines
+    // (Item.toString and Scenery.toString) come before the message.
+    let lines: Vec<&str> = two.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .collect();
+    assert_eq!(
+        lines,
+        [
+            "Unhandled use with interaction:",
+            "Used: Item id=1205, name=Bronze dagger, amount=1",
+            "With: [Scenery 36768, [3229, 3213, 0], type=10, rot=0]",
+            nothing,
+        ],
+        "usetwo's messages"
+    );
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 /// The engine timers: a saved character with 5 of its 10 hitpoints logs in;
 /// `TimerRegistry.addAutoTimers` installs SkillRestore, which heals one
 /// hitpoint once its counter passes 100 ticks (the client's skill packet for
@@ -1910,6 +2024,28 @@ fn use_item_on_item(used: i32, used_slot: i32, with: i32, with_slot: i32) -> Fra
 /// OBJECT_ACTION_1 (254): a scenery's first option.
 fn scenery_option1(id: i32, x: i32, y: i32) -> Frame {
     frame(254, &[&le16(x), &sa16(id), &be16(y)])
+}
+/// OPLOCU (115): an inventory item (interface 149) used on an NPC.
+fn use_with_npc(item: i32, slot: i32, npc_index: i32) -> Frame {
+    frame(
+        115,
+        &[&ib32(149 << 16), &le16(slot), &le16(npc_index), &la16(item)],
+    )
+}
+/// OPLOCU (134): an inventory item used on a scene object.
+fn use_with_scenery(item: i32, slot: i32, id: i32, x: i32, y: i32) -> Frame {
+    frame(
+        134,
+        &[
+            &sa16(x),
+            &be16(item),
+            &le16(y),
+            &be16(slot),
+            &le16(0),
+            &be16(149),
+            &sa16(id),
+        ],
+    )
 }
 /// NPC_ACTION_1 (78): an NPC's first option.
 fn npc_option1(index: i32) -> Frame {

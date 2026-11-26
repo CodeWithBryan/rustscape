@@ -524,7 +524,7 @@ impl player_walk::Services for WalkHost<'_> {
                 .approaches
                 .arrivals
                 .iter()
-                .any(|(o, _, _)| o.same(option))
+                .any(|a| a.option.same(option))
             {
                 self.deferred.push(Deferred::Listener(option.clone()));
                 return Ok(true);
