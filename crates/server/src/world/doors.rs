@@ -512,11 +512,12 @@ pub fn end_location(ctx: &mut impl Context, entity: Entity, object: &Handle) -> 
 pub fn destination(ctx: &mut impl Context, entity: Entity, door: &Handle) -> Result<Location> {
     let mut l = loc(door);
     let mut rotation = rot(door);
-    if door.read().constructed && close_action(door) {
-        if let Some(o) = door.read().replaced.clone() {
-            l = loc(&o);
-            rotation = rot(&o);
-        }
+    if door.read().constructed
+        && close_action(door)
+        && let Some(o) = door.read().replaced.clone()
+    {
+        l = loc(&o);
+        rotation = rot(&o);
     }
     if shape(door) == 9 {
         match rotation {

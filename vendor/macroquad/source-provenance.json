@@ -599,22 +599,22 @@
   "registryChecksum": "1cbd54d99d4d3ac59deed7ee4927bbbf4eb33a55635530af3be9395a55746090",
   "patches": {
     "src/text/atlas.rs": {
-      "bytes": 6338,
-      "sha256": "b6109888609afb5bd3b79988ec5511c4443e79b71f7e2448cff286643fd1e54e"
+      "bytes": 6141,
+      "sha256": "1507282b544b2779f1265ad8904b9f7a7a65935cde1f000b3f7608cbce07480c"
     },
     "src/texture.rs": {
-      "bytes": 32155,
-      "sha256": "91ace4eedaf555ab8690171a7535a1376c9e0473ad28b472406e27b655cc2441"
+      "bytes": 31176,
+      "sha256": "f2f3bbdc38c282b68bbcec8dfa8b240cf7197327c9a3ad6159b6df81348a29f2"
     }
   },
   "addedFiles": {
     "atlas-lifetime.patch": {
-      "bytes": 2826,
-      "sha256": "90fe483eac689db4b51b8e955a7d024d45a948c0c1cfc6008cbc8083cc9c6e9a"
+      "bytes": 2749,
+      "sha256": "24f0466b06e42b8ef613a0eb852bd0a4746dc63d2fae119bea61b94cb9ada6c1"
     },
     "UPSTREAM_PATCH.md": {
-      "bytes": 2033,
-      "sha256": "34d98317c78369f75169397692945bdf8ea4227d969bd2c39cd4240fbd82ea82"
+      "bytes": 2002,
+      "sha256": "f8f62cbfd4acb6234212a1ad774701bf1af8ea4c11aa9a39d4fee74ca9006f2a"
     }
   }
 }

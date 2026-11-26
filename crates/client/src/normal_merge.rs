@@ -455,18 +455,18 @@ impl Scene {
                     };
                     let tile = self.tiles[index].clone();
                     // A wall with only a secondary piece fails in the original.
-                    if let Some([Some(primary), secondary]) = tile.wall {
-                        if self.bodies[primary].can_merge() {
-                            self.merge_entity(&heights, primary, level, [x, y], [1, 1]);
-                            if let Some(secondary) = secondary {
-                                if self.bodies[secondary].can_merge() {
-                                    self.merge_entity(&heights, secondary, level, [x, y], [1, 1]);
-                                    self.merge_pair(primary, secondary, [0; 3]);
-                                    self.bodies[secondary].finish();
-                                }
-                            }
-                            self.bodies[primary].finish();
+                    if let Some([Some(primary), secondary]) = tile.wall
+                        && self.bodies[primary].can_merge()
+                    {
+                        self.merge_entity(&heights, primary, level, [x, y], [1, 1]);
+                        if let Some(secondary) = secondary
+                            && self.bodies[secondary].can_merge()
+                        {
+                            self.merge_entity(&heights, secondary, level, [x, y], [1, 1]);
+                            self.merge_pair(primary, secondary, [0; 3]);
+                            self.bodies[secondary].finish();
                         }
+                        self.bodies[primary].finish();
                     }
                     for s in &tile.scenery {
                         if self.bodies[s.entity].can_merge() {
@@ -475,20 +475,20 @@ impl Scene {
                             self.bodies[s.entity].finish();
                         }
                     }
-                    if let Some(ground) = tile.ground {
-                        if self.bodies[ground].can_merge() {
-                            // mergeGroundDecorNormals: east, north, north-east
-                            // and south-east neighbours on the same level.
-                            for (dx, dy) in [(1, 0), (0, 1), (1, 1), (1, -1)] {
-                                let neighbour = self
-                                    .index(level, x + dx, y + dy)
-                                    .and_then(|index| self.tiles[index].ground);
-                                if let Some(neighbour) = neighbour {
-                                    self.merge_pair(ground, neighbour, [dx * 128, 0, dy * 128]);
-                                }
+                    if let Some(ground) = tile.ground
+                        && self.bodies[ground].can_merge()
+                    {
+                        // mergeGroundDecorNormals: east, north, north-east
+                        // and south-east neighbours on the same level.
+                        for (dx, dy) in [(1, 0), (0, 1), (1, 1), (1, -1)] {
+                            let neighbour = self
+                                .index(level, x + dx, y + dy)
+                                .and_then(|index| self.tiles[index].ground);
+                            if let Some(neighbour) = neighbour {
+                                self.merge_pair(ground, neighbour, [dx * 128, 0, dy * 128]);
                             }
-                            self.bodies[ground].finish();
                         }
+                        self.bodies[ground].finish();
                     }
                 }
             }

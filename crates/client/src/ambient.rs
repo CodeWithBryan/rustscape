@@ -81,10 +81,10 @@ impl Emitter {
     pub fn update(&mut self, definition: Option<Definition>, host: &mut impl Host) {
         let old = self.definition.sound;
         self.definition = definition.unwrap_or_default();
-        if old != self.definition.sound {
-            if let Some(id) = self.primary.take() {
-                host.stop(id);
-            }
+        if old != self.definition.sound
+            && let Some(id) = self.primary.take()
+        {
+            host.stop(id);
         }
     }
     pub fn remove(&mut self, host: &mut impl Host) {
@@ -145,13 +145,13 @@ impl Emitter {
             if self.remaining <= 0 {
                 // Empty/out-of-range lists are bounded malformed metadata,
                 // rather than reproducing the original array exception.
-                if let Some(&sound) = sounds.get((sounds.len() as f64 * random()) as usize) {
-                    if let Some(id) = host.start(sound, volume, 0) {
-                        self.remaining = (f64::from(d.intervals[1].wrapping_sub(d.intervals[0]))
-                            * random()) as i32;
-                        self.remaining = self.remaining.wrapping_add(d.intervals[0]);
-                        self.secondary = Some(id);
-                    }
+                if let Some(&sound) = sounds.get((sounds.len() as f64 * random()) as usize)
+                    && let Some(id) = host.start(sound, volume, 0)
+                {
+                    self.remaining =
+                        (f64::from(d.intervals[1].wrapping_sub(d.intervals[0])) * random()) as i32;
+                    self.remaining = self.remaining.wrapping_add(d.intervals[0]);
+                    self.secondary = Some(id);
                 }
             }
         }

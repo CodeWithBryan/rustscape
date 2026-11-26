@@ -306,10 +306,10 @@ impl Js5NetQueue {
             let elapsed = (now_ms.saturating_sub(self.previous_loop)).min(200) as i64;
             self.previous_loop = now_ms;
             self.latency += elapsed;
-            if self.latency > LATENCY_LIMIT_MS {
-                if let Some(mut socket) = self.socket.take() {
-                    socket.close();
-                }
+            if self.latency > LATENCY_LIMIT_MS
+                && let Some(mut socket) = self.socket.take()
+            {
+                socket.close();
             }
         }
         let Some(mut socket) = self.socket.take() else {

@@ -842,10 +842,10 @@ impl Host {
                     // Leaving the title screen fades its music out; entering
                     // it starts the title song.
                     #[cfg(any(target_os = "windows", target_arch = "wasm32"))]
-                    if from == GameState::Title {
-                        if let Some(music) = r.music.as_mut() {
-                            music.fade_out();
-                        }
+                    if from == GameState::Title
+                        && let Some(music) = r.music.as_mut()
+                    {
+                        music.fade_out();
                     }
                     if to == GameState::Title {
                         self.title_song = true;

@@ -683,11 +683,11 @@ pub fn flag_inactive<H: Host>(host: &mut H, region: &region::Handle, force: bool
     if fields.read().permanent {
         return Ok(true);
     }
-    if let Some(parent) = parent(region)? {
-        if region_activity::is_active(&parent) {
-            check_inactive(host, &parent)?;
-            return Ok(false);
-        }
+    if let Some(parent) = parent(region)?
+        && region_activity::is_active(&parent)
+    {
+        check_inactive(host, &parent)?;
+        return Ok(false);
     }
     if let Some(linked) = linked(region)? {
         for r in &linked {

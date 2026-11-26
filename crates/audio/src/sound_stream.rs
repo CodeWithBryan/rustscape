@@ -123,7 +123,7 @@ impl PcmResampler {
                 while lo < hi {
                     let x = (f64::from(lo) - center) * std::f64::consts::PI;
                     let mut sinc = gain;
-                    if -1.0e-4 > x || x > 1.0e-4 {
+                    if !(-1.0e-4..=1.0e-4).contains(&x) {
                         sinc = gain * (x.sin() / x);
                     }
                     sinc *= ((f64::from(lo) - center) * 0.2243994752564138).cos() * 0.46 + 0.54;

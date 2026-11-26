@@ -544,10 +544,10 @@ impl Scene {
     }
 
     fn push_pending(&mut self, level: usize, x: i32, y: i32) {
-        if let Some(tile) = self.at(level, x, y) {
-            if self.tiles[tile].pending {
-                self.push(tile);
-            }
+        if let Some(tile) = self.at(level, x, y)
+            && self.tiles[tile].pending
+        {
+            self.push(tile);
         }
     }
 
@@ -637,17 +637,17 @@ impl Scene {
                             }
                         }
                         for [x, y] in corners.into_iter().flatten() {
-                            if let Some(start) = self.at(level, x, y) {
-                                if self.tiles[start].visible {
-                                    self.render_tile(
-                                        start,
-                                        check_interior,
-                                        &frame,
-                                        &mut count,
-                                        cull,
-                                        &mut emit,
-                                    );
-                                }
+                            if let Some(start) = self.at(level, x, y)
+                                && self.tiles[start].visible
+                            {
+                                self.render_tile(
+                                    start,
+                                    check_interior,
+                                    &frame,
+                                    &mut count,
+                                    cull,
+                                    &mut emit,
+                                );
                             }
                         }
                         if count == 0 {
@@ -949,10 +949,10 @@ impl Scene {
                 // The other model follows when the tile is finished, except
                 // on the camera's own tile, which has no near side: there it
                 // is not drawn at all.
-                if wall_draw == 0 {
-                    if let Some(other) = other {
-                        cull.culled(other);
-                    }
+                if wall_draw == 0
+                    && let Some(other) = other
+                {
+                    cull.culled(other);
                 }
                 shown
             } else {

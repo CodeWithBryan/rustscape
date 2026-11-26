@@ -265,6 +265,7 @@ pub fn prepare(m: &Model, materials: &[Option<Material>]) -> Vec<Surface> {
     let order = face_order(m, materials);
     let mut shared = std::collections::BTreeMap::new();
     for i in order {
+        #[allow(clippy::needless_range_loop)]
         for j in 0..3 {
             let key = (m.faces[i][j], keys[i][j]);
             let original = (

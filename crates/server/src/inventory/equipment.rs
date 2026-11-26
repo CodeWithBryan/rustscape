@@ -227,12 +227,11 @@ pub fn add_at(
         }
     } else if slot == SHIELD {
         let equipment = ctx.equipment(owner.as_ref().ok_or(Error::Null)?)?;
-        if let Some(current) = equipment.get(WEAPON) {
-            if boolean(&current, "two_handed")? {
-                if let Some(current) = container.get(WEAPON) {
-                    remove.push(current);
-                }
-            }
+        if let Some(current) = equipment.get(WEAPON)
+            && boolean(&current, "two_handed")?
+            && let Some(current) = container.get(WEAPON)
+        {
+            remove.push(current);
         }
     }
     if from_inventory {
@@ -583,12 +582,12 @@ pub fn update_bonuses(player: &NodeHandle, ctx: &mut impl Context) -> Result<()>
             bonuses[i] = (f64::from(bonuses[i]) + (f64::from(bonuses[i]) * 0.20).ceil()) as i32;
         }
     }
-    if let Some(shield) = shield {
-        if shield.read().id() == 11283 {
-            let increase = shield.read().charge() / 20;
-            for i in [5, 6, 7, 9, 10] {
-                bonuses[i] = bonuses[i].wrapping_add(increase);
-            }
+    if let Some(shield) = shield
+        && shield.read().id() == 11283
+    {
+        let increase = shield.read().charge() / 20;
+        for i in [5, 6, 7, 9, 10] {
+            bonuses[i] = bonuses[i].wrapping_add(increase);
         }
     }
     let properties = ctx.properties(player)?;

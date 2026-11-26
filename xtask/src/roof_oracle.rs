@@ -339,6 +339,7 @@ fn assemble(
     let mut flags = Vec::new();
     let mut heights = Vec::new();
     let mut roofed: [Vec<[i32; 2]>; 4] = Default::default();
+    #[allow(clippy::needless_range_loop)]
     for plane in 0..4 {
         for x in 0..104 {
             for y in 0..104 {
@@ -489,7 +490,7 @@ fn synthetic() -> Result<Prepared> {
         }
     }
     let heights: Vec<i32> = (0..4 * 105 * 105)
-        .map(|i| -240 * (i / 11025) as i32 - random.next(64))
+        .map(|i| -240 * (i / 11025) - random.next(64))
         .collect();
     let scene = Scene::new(
         |plane, x, y| flags[at(plane, x, y)],

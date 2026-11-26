@@ -1172,10 +1172,10 @@ impl zones::Host for Model {
         let owner = self.handle(&self.attr(familiar, "owner"));
         // The Java adapter casts its stored owner to Player before recording
         // the call; a non-player owner is a harness state, not original data.
-        if let Some(owner) = &owner {
-            if self.nodes[&self.slot_of(owner)].kind != EntityKind::Player {
-                return Err(Error::ClassCast);
-            }
+        if let Some(owner) = &owner
+            && self.nodes[&self.slot_of(owner)].kind != EntityKind::Player
+        {
+            return Err(Error::ClassCast);
         }
         self.emit("owner", vec![self.slot(Some(familiar))])?;
         Ok(owner)

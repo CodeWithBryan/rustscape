@@ -169,25 +169,25 @@ pub fn swing<H: Host>(
                 return Ok(-1);
             }
             need(&mut state)?.style = RANGE;
-            if let Some(v) = victim.filter(|v| h.kind(v).is_npc()) {
-                if h.id(v)? == 2440 {
-                    for l in DOOR_SUPPORTS {
-                        let Some(n) = h.find_npc(l)? else { continue };
-                        if h.is_dead(&n)? || h.id(&n)? != h.original_id(&n)? {
-                            continue;
-                        }
-                        let speed = (32.0 + distance(h, v, &n)? * 5.0) as i32;
-                        create(h, v, Some(&n), 258, 40, 36, 32, speed, 5)?;
-                        h.heal(&n, 100)?;
-                        h.submit_special(SpecialPulse::new(
-                            3,
-                            vec![],
-                            SpecialTask::ChainDoor {
-                                npc: n.clone(),
-                                victim: v.clone(),
-                            },
-                        ))?;
+            if let Some(v) = victim.filter(|v| h.kind(v).is_npc())
+                && h.id(v)? == 2440
+            {
+                for l in DOOR_SUPPORTS {
+                    let Some(n) = h.find_npc(l)? else { continue };
+                    if h.is_dead(&n)? || h.id(&n)? != h.original_id(&n)? {
+                        continue;
                     }
+                    let speed = (32.0 + distance(h, v, &n)? * 5.0) as i32;
+                    create(h, v, Some(&n), 258, 40, 36, 32, speed, 5)?;
+                    h.heal(&n, 100)?;
+                    h.submit_special(SpecialPulse::new(
+                        3,
+                        vec![],
+                        SpecialTask::ChainDoor {
+                            npc: n.clone(),
+                            victim: v.clone(),
+                        },
+                    ))?;
                 }
             }
             let mut made = instance(h, r);
@@ -578,10 +578,10 @@ fn victims_list<H: Host>(h: &mut H, e: &H::Entity, victim: &H::Entity) -> Result
             .chain_victims_mut(e)
             .map(|l| l.clone())
             .unwrap_or_default();
-        if let Some(found) = list.iter().position(|x| h.same_entity(x, removed)) {
-            if let Some(stored) = h.chain_victims_mut(e) {
-                stored.remove(found);
-            }
+        if let Some(found) = list.iter().position(|x| h.same_entity(x, removed))
+            && let Some(stored) = h.chain_victims_mut(e)
+        {
+            stored.remove(found);
         }
     }
     Ok(())

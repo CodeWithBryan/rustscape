@@ -92,10 +92,10 @@ impl CacheSource {
         if archive.index.group(group).is_none() {
             return Ok(None);
         }
-        if let Some(ready) = &mut self.ready {
-            if !ready(id, group) {
-                return Ok(None);
-            }
+        if let Some(ready) = &mut self.ready
+            && !ready(id, group)
+        {
+            return Ok(None);
         }
         // A group an update has not delivered yet is "not there yet" too
         // (it is asked for; `crate::on_demand::arriving`).

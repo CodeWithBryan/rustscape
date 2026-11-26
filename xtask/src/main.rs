@@ -324,7 +324,9 @@ fn main() -> Result<()> {
         Some("equipment-registers-oracle") => {
             profile_oracle::generate(root, &args, "equipment-registers")?
         }
-        Some("wield-requirements-oracle") => profile_oracle::generate(root, &args, "wield-requirements")?,
+        Some("wield-requirements-oracle") => {
+            profile_oracle::generate(root, &args, "wield-requirements")?
+        }
         Some("dynamic-regions-oracle") => dynamic_regions_oracle::generate(root, &args)?,
         Some("activities-oracle") => profile_oracle::generate(root, &args, "activities")?,
         Some("books-oracle") => profile_oracle::generate(root, &args, "books")?,

@@ -1009,7 +1009,7 @@ mod tests {
             if !rig.cache.mirror(rig.now, 100, false) && blobs.shelf().commits > 0 {
                 held += 1;
             }
-            if rig.now % 2000 == 0 {
+            if rig.now.is_multiple_of(2000) {
                 blobs.finish();
             }
         }

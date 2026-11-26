@@ -179,12 +179,15 @@ pub struct WorldPack {
     pub notes: Vec<String>,
 }
 
-struct Reader<'a> {
+pub(crate) struct Reader<'a> {
     data: &'a [u8],
     at: usize,
 }
 impl<'a> Reader<'a> {
-    fn take(&mut self, count: usize) -> Result<&'a [u8], String> {
+    pub(crate) fn new(data: &'a [u8]) -> Self {
+        Self { data, at: 0 }
+    }
+    pub(crate) fn take(&mut self, count: usize) -> Result<&'a [u8], String> {
         let end = self
             .at
             .checked_add(count)
@@ -194,10 +197,10 @@ impl<'a> Reader<'a> {
         self.at = end;
         Ok(bytes)
     }
-    fn u1(&mut self) -> Result<i32, String> {
+    pub(crate) fn u1(&mut self) -> Result<i32, String> {
         Ok(i32::from(self.take(1)?[0]))
     }
-    fn u2(&mut self) -> Result<i32, String> {
+    pub(crate) fn u2(&mut self) -> Result<i32, String> {
         let bytes = self.take(2)?;
         Ok(i32::from(u16::from_be_bytes([bytes[0], bytes[1]])))
     }
@@ -532,7 +535,11 @@ fn sequence_frame_groups(id: i32, data: &[u8], groups: &mut BTreeSet<i32>) -> Re
 // A group a live store has not received yet reads as empty here, so that one
 // pass meets every such group (each is asked for as it is met); the caller
 // builds again once they are in (`rs09_client::on_demand::arriving`).
-fn group_files(archive: &Archive, label: u8, id: u32) -> Result<Vec<(u32, Vec<u8>)>, String> {
+pub(crate) fn group_files(
+    archive: &Archive,
+    label: u8,
+    id: u32,
+) -> Result<Vec<(u32, Vec<u8>)>, String> {
     let before = rs09_cache::store::misses_on_this_thread();
     let files = crate::on_demand::arriving(|| archive.group(id, [0; 4]))
         .map_err(|e| format!("archive {label} group {id}: {e}"))?;
@@ -545,7 +552,12 @@ fn group_files(archive: &Archive, label: u8, id: u32) -> Result<Vec<(u32, Vec<u8
     Ok(files.iter().map(|(id, data)| (id, data.to_vec())).collect())
 }
 
-fn file(archive: &Archive, label: u8, group: u32, file: u32) -> Result<Option<Vec<u8>>, String> {
+pub(crate) fn file(
+    archive: &Archive,
+    label: u8,
+    group: u32,
+    file: u32,
+) -> Result<Option<Vec<u8>>, String> {
     if archive.index.group(group).is_none() {
         return Ok(None);
     }
@@ -749,8 +761,9 @@ pub fn world_pack_from(
             pending.push(other);
         }
     }
-    // Morph children keep their raw definitions for the minimap's icons,
-    // without their models.
+    // Morph children keep their raw definitions for the minimap's icons, and
+    // their models and animations so that a client with this pack alone can
+    // draw whichever child a variable selects.
     let mut seen: BTreeSet<i32> = definitions.keys().copied().collect();
     let mut pending = order.clone();
     while let Some(id) = pending.pop() {
@@ -771,6 +784,14 @@ pub fn world_pack_from(
             )
             .map_err(|e| format!("loc/{child}: {e}"))?;
             pack.add(format!("loc/{child}"), &raw);
+            let definition = loc_def(&raw).map_err(|e| format!("loc/{child}: {e}"))?;
+            for model in definition.0["models"].as_array().into_iter().flatten() {
+                models.insert(model.as_i64().unwrap_or(0) as i32);
+            }
+            let animation = definition.0["animation"].as_i64().unwrap_or(-1) as i32;
+            if animation != -1 && animation != 65535 {
+                sequences.insert(animation);
+            }
             raw_definitions.insert(child, raw);
             pending.push(child);
         }

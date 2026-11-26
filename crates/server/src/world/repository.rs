@@ -349,12 +349,12 @@ impl<E: Clone + PartialEq> Repository<E> {
             let size = self.players.size();
             let mut index = 1;
             while index < size {
-                if let Some(current) = self.players.get(index)? {
-                    if host.uid(&current) == host.uid(player) {
-                        self.players.remove(Some(&current));
-                        host.player_clear(self, &current)?;
-                        break;
-                    }
+                if let Some(current) = self.players.get(index)?
+                    && host.uid(&current) == host.uid(player)
+                {
+                    self.players.remove(Some(&current));
+                    host.player_clear(self, &current)?;
+                    break;
                 }
                 index += 1;
             }

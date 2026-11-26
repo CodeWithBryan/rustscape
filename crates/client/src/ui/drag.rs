@@ -128,11 +128,12 @@ impl Controller {
     /// Rendering may scroll the parent after drawing the icon; compensate the
     /// captured press position before the next layout/input iteration.
     pub fn inventory_presented(&mut self, visual: Option<InventoryVisual>) {
-        if let (Some(g), Some(v)) = (&mut self.gesture, visual) {
-            if g.key == v.key && g.slot == Some(v.slot) {
-                g.press = v.press;
-                self.last_inventory_presented = Some(v);
-            }
+        if let (Some(g), Some(v)) = (&mut self.gesture, visual)
+            && g.key == v.key
+            && g.slot == Some(v.slot)
+        {
+            g.press = v.press;
+            self.last_inventory_presented = Some(v);
         }
     }
     /// Public bounded diagnostics used by native captures and browser review.
@@ -308,13 +309,14 @@ impl Controller {
             }
             self.inventory_released = true;
             if g.dragging && cycle.wrapping_sub(g.start) >= 5 {
-                if let Some((key, target, _)) = state.inventory_slot_at(nodes, point) {
-                    if key == g.key && target != slot {
-                        // Original helper order is hover slot then pressed slot.
-                        match rearrange(state, key, target, slot, inserting) {
-                            Ok(frame) => packet = Some(Release::Inventory(frame)),
-                            Err(e) => state.diagnostic(e),
-                        }
+                if let Some((key, target, _)) = state.inventory_slot_at(nodes, point)
+                    && key == g.key
+                    && target != slot
+                {
+                    // Original helper order is hover slot then pressed slot.
+                    match rearrange(state, key, target, slot, inserting) {
+                        Ok(frame) => packet = Some(Release::Inventory(frame)),
+                        Err(e) => state.diagnostic(e),
                     }
                 }
             } else {
@@ -369,12 +371,12 @@ impl Controller {
                 .map(|n| n.key);
             for tick in g.last_tick.wrapping_add(1)..=cycle {
                 g.dragging |= tick.wrapping_sub(g.start).wrapping_add(1) > c.drag_deadtime && moved;
-                if g.dragging {
-                    if let Some(args) = &c.on_drag_start {
-                        let mut hook = Hook::new(g.key, args.clone());
-                        hook.mouse = mouse;
-                        hooks.push(hook);
-                    }
+                if g.dragging
+                    && let Some(args) = &c.on_drag_start
+                {
+                    let mut hook = Hook::new(g.key, args.clone());
+                    hook.mouse = mouse;
+                    hooks.push(hook);
                 }
             }
             if g.dragging {

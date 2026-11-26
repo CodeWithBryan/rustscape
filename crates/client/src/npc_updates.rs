@@ -306,15 +306,15 @@ impl State {
             }
         }
         for &index in &out.removed_candidates {
-            if let Some(npc) = self.actors.get(&index) {
-                if npc.last_seen != ctx.cycle {
-                    if npc.metadata.area_sound {
-                        out.events.push(Event::AreaRemove(index));
-                    }
-                    out.events.push(Event::Type { index, id: None });
-                    self.actors.remove(&index);
-                    out.removed.push(index);
+            if let Some(npc) = self.actors.get(&index)
+                && npc.last_seen != ctx.cycle
+            {
+                if npc.metadata.area_sound {
+                    out.events.push(Event::AreaRemove(index));
                 }
+                out.events.push(Event::Type { index, id: None });
+                self.actors.remove(&index);
+                out.removed.push(index);
             }
         }
         if r.remaining() != 0 {

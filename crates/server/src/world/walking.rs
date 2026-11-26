@@ -484,20 +484,20 @@ impl Queue {
                 }
             }
             let mut dest = moved(&self.location()?, dx, dy);
-            if let Some(p) = &run_point {
-                if !ctx.zone_move(self, walk, dest.clone())? {
-                    let p = p.read();
-                    dest = moved(&dest, p.diff_x.wrapping_neg(), p.diff_y.wrapping_neg());
-                    drop(p);
-                    run_point = None;
-                    run_direction = -1;
-                    self.reset(ctx, None)?;
-                }
+            if let Some(p) = &run_point
+                && !ctx.zone_move(self, walk, dest.clone())?
+            {
+                let p = p.read();
+                dest = moved(&dest, p.diff_x.wrapping_neg(), p.diff_y.wrapping_neg());
+                drop(p);
+                run_point = None;
+                run_direction = -1;
+                self.reset(ctx, None)?;
             }
-            if let Some(p) = run_point.as_ref().or(point.as_ref()) {
-                if let Some(d) = p.read().direction {
-                    self.state.write().entity.direction = Some(d);
-                }
+            if let Some(p) = run_point.as_ref().or(point.as_ref())
+                && let Some(d) = p.read().direction
+            {
+                self.state.write().entity.direction = Some(d);
             }
             self.state.write().foot_print = self.entity().location.clone();
             self.state.write().entity.location = Some(dest.clone());

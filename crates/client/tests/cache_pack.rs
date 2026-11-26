@@ -1,5 +1,6 @@
 //! The native pack builder against the pack an earlier `tools/prepare_ui.py`
 //! wrote from the same pinned cache. Requires `assets/cache` and `assets/visual`.
+//! The script's pack is the recorded one (`support/packs.rs`).
 //!
 //! The recorded pack predates three additions to that script (the parameter
 //! definitions, the `p12_full` overhead font and the scrollbar sprite), so
@@ -9,6 +10,10 @@
 use rs09_client::pack::Pack;
 use sha2::{Digest, Sha256};
 use std::path::Path;
+
+#[path = "support/packs.rs"]
+mod packs;
+use packs::recorded;
 
 fn root() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -32,15 +37,34 @@ fn order(pack: &Pack) -> Vec<&str> {
 
 #[test]
 fn native_interface_pack_reproduces_the_recorded_python_pack() {
-    let recorded_bytes = std::fs::read(root().join("assets/visual/ui.pack")).unwrap();
-    let provenance: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(root().join("assets/visual/ui.provenance.json")).unwrap(),
-    )
-    .unwrap();
+    // Needs local assets that are not in the repository.
+    if !recorded("ui.pack").exists()
+        || !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("assets/cache")
+            .exists()
+    {
+        eprintln!(
+            "skipped: needs {}, {}, nothing was checked",
+            recorded("ui.pack").display(),
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join("assets/cache")
+                .display()
+        );
+        return;
+    }
+    let recorded_bytes = std::fs::read(recorded("ui.pack")).unwrap();
+    let provenance: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(recorded("ui.provenance.json")).unwrap()).unwrap();
     assert_eq!(
         format!("{:x}", Sha256::digest(&recorded_bytes)),
         provenance["sha256"].as_str().unwrap(),
-        "assets/visual/ui.pack is not the pack its provenance records"
+        "the recorded ui.pack is not the pack its provenance records"
+    );
+    assert!(
+        provenance["builder"].is_null(),
+        "the pack compared with is the script's, not a rebuilt one"
     );
     let recorded = Pack::decode(recorded_bytes).unwrap();
     let native = Pack::decode(
@@ -125,10 +149,25 @@ fn native_interface_pack_reproduces_the_recorded_python_pack() {
 /// descriptions and map files are outside its scope and are skipped by name.
 #[test]
 fn whole_cache_pack_serves_every_entry_of_the_prepared_packs() {
+    // Needs local assets that are not in the repository.
+    if !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join("assets/cache")
+        .exists()
+    {
+        eprintln!(
+            "skipped: needs {}, nothing was checked",
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join("assets/cache")
+                .display()
+        );
+        return;
+    }
     let cache = rs09_client::cache_pack::cache_pack(&root().join("assets/cache"), &server_commit())
         .unwrap();
     let mut total = 0usize;
-    for name in [
+    let mut names = vec![
         "ui.pack",
         "ui-models.pack",
         "ui-players.pack",
@@ -137,14 +176,35 @@ fn whole_cache_pack_serves_every_entry_of_the_prepared_packs() {
         "live/lumbridge.pack",
         "live/lumbridge-minimap.pack",
         "tour/varrock.pack",
-    ] {
+    ];
+    // The scripts' packs too, where the default ones have been rebuilt and
+    // the scripts' copies were kept.
+    if packs::rebuilt() {
+        names.extend(
+            [
+                "recorded/ui.pack",
+                "recorded/ui-models.pack",
+                "recorded/ui-players.pack",
+                "recorded/demo.pack",
+            ]
+            .into_iter()
+            .filter(|name| packs::visual().join(name).is_file()),
+        );
+    }
+    for name in names {
         let prepared =
             Pack::decode(std::fs::read(root().join("assets/visual").join(name)).unwrap()).unwrap();
         let mut compared = 0usize;
         for entry in prepared.manifest.files.keys() {
+            // Underwater maps are map files too; `underwater-complete` is a
+            // scene pack's statement about its own regions; the world map
+            // lists are read from the cache by the minimap itself.
             if entry == "scene.json"
+                || entry == "underwater-complete"
                 || entry.starts_with("terrain/")
                 || entry.starts_with("locations/")
+                || entry.starts_with("underwater/")
+                || entry.starts_with("worldmap/")
             {
                 continue;
             }

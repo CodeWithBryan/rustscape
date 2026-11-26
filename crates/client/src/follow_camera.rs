@@ -259,10 +259,10 @@ impl Follow {
         if pitch < self.max_pitch_distance / 256 {
             pitch = self.max_pitch_distance / 256;
         }
-        if let Some(floor) = pitch_floor {
-            if floor > pitch {
-                pitch = floor;
-            }
+        if let Some(floor) = pitch_floor
+            && floor > pitch
+        {
+            pitch = floor;
         }
         render_position(
             self.position,
@@ -330,11 +330,11 @@ pub fn rebuild(flag: &mut [i32; 2], old_base: Option<[i32; 2]>, base: [i32; 2]) 
     if old_base == Some(base) {
         return false;
     }
-    if let Some(old) = old_base {
-        if flag[0] != 0 {
-            flag[1] = flag[1].wrapping_sub(base[1].wrapping_sub(old[1]));
-            flag[0] = flag[0].wrapping_sub(base[0].wrapping_sub(old[0]));
-        }
+    if let Some(old) = old_base
+        && flag[0] != 0
+    {
+        flag[1] = flag[1].wrapping_sub(base[1].wrapping_sub(old[1]));
+        flag[0] = flag[0].wrapping_sub(base[0].wrapping_sub(old[0]));
     }
     true
 }

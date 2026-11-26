@@ -345,15 +345,14 @@ impl Inner {
             entity: p.clone(),
             registry,
         };
-        if first {
-            if let Err(e) =
+        if first
+            && let Err(e) =
                 timers::content::register_prototypes(&mut timers, &mut timers::Manager::default())
-            {
-                timers
-                    .host
-                    .lines
-                    .push(format!("ClassScanner.loadTimers: {e:?}"));
-            }
+        {
+            timers
+                .host
+                .lines
+                .push(format!("ClassScanner.loadTimers: {e:?}"));
         }
         let mut rest = Rest {
             hooks: self.hooks,
@@ -479,10 +478,10 @@ impl interfaces::Context for Inner {
     fn listener_close(&mut self, component: &interfaces::Handle) -> interfaces::Result<bool> {
         // The shop's onClose(620) (super::shopping).
         let id = component.read().id;
-        if let Some(callback) = self.interface_listeners.get_close(id)? {
-            if let Some(result) = self.shop_open_listener(&callback) {
-                return result;
-            }
+        if let Some(callback) = self.interface_listeners.get_close(id)?
+            && let Some(result) = self.shop_open_listener(&callback)
+        {
+            return result;
         }
         // InterfaceListeners.runClose answers true when no listener is
         // registered for the interface; none is (content).

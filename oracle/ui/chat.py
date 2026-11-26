@@ -1,5 +1,10 @@
 """Original chat/dialog writer branches, real Huffman table and character predicates."""
 import hashlib,json,pathlib,random,re,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 def generate(root,clean,method,check=False):
     src=root/'reference/client/client/src/main/java/rt4';run=root/'runs/ui-oracle/chat';run.mkdir(parents=True,exist_ok=True);hashes={}
     def source(name):
@@ -27,7 +32,7 @@ public static void main(String[]args)throws Exception{BufferedReader r=new Buffe
 '''
     (run/'Probe.java').write_text(code,encoding='utf-8')
     subprocess.run(['javac','-encoding','UTF-8','-d',str(run),*[str(p)for p in run.glob('*.java')]],check=True)
-    data=(root/'assets/visual/ui.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);offset,size=manifest['files']['huffman'];table=data[12+n+offset:12+n+offset+size];inputs=['H;'+table.hex()];cases=[];rng=random.Random(530)
+    data=_recorded(root,'ui.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);offset,size=manifest['files']['huffman'];table=data[12+n+offset:12+n+offset+size];inputs=['H;'+table.hex()];cases=[];rng=random.Random(530)
     for _ in range(1024):
         text=rng.choice(['','RED:','Green:','yellow:','flash1:','glow3:','unknown:','::'])+rng.choice(['','wave:','wave2:','SLIDE:','shake:','scroll:'])+''.join(rng.choice('a Bcd345\xe9-!')for _ in range(rng.randrange(1,65)));case=dict(op=5008,text=text,rights=rng.choice([0,2]),restricted=rng.randrange(2),quick=rng.randrange(2));cases.append(case)
     for text in ['', '0','-1','+1','2147483647','-2147483648','2147483648','-2147483649','+','12a','00',' 1','Name Here','Caf\xe9','::hello']:

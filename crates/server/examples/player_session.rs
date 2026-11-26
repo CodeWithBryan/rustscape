@@ -66,7 +66,9 @@ pub(crate) struct Actor {
     pub(crate) input: mpsc::Receiver<Frame>,
     pub(crate) output: mpsc::Sender<Vec<Frame>>,
     pub(crate) username: String,
+    #[allow(dead_code)]
     pub(crate) chat_rights: u8,
+    #[allow(dead_code)]
     pub(crate) muted: bool,
     pub(crate) masks: PreparedMasks,
     pub(crate) animator: Animator<Owner>,
@@ -243,15 +245,14 @@ async fn world(
                         }
                     }
                 }
-                if ticks % 10 == 0 {
-                    if let Some(id) = animation_probe {
+                if ticks.is_multiple_of(10)
+                    && let Some(id) = animation_probe {
                         for a in actors.values_mut() {
                             a.animator.animate(&mut animations,Some(Animation::new(id)),None).expect("controlled animation context");
                             a.masks.sync_appearance(millis).expect("controlled appearance context");
                         }
                         if !actors.is_empty() { println!("visual animation probe: id={id}, delay=0, fixture tick={ticks}"); }
                     }
-                }
                 let mut remove=vec![];
                 for(&id,a)in &mut actors{
                     loop{match a.input.try_recv(){Ok(frame)=>{if ![22,21,245,93,20,110,75,98].contains(&frame.opcode){eprintln!("stationary fixture ignores opcode {}: gameplay handlers are not configured",frame.opcode);}},Err(mpsc::error::TryRecvError::Empty)=>break,Err(mpsc::error::TryRecvError::Disconnected)=>{remove.push(id);break;}}}
@@ -262,11 +263,10 @@ async fn world(
                     let a=&actors[&id];
                     match render(&actors,&order,&keys,&a.player,false) {
                         Ok(mut frames) => {
-                            if ticks % 10 == 0 {
-                                if let Some(sound) = sound_probe {
+                            if ticks.is_multiple_of(10)
+                                && let Some(sound) = sound_probe {
                                     frames.push(rs09_protocol::game::updates::synth_sound(sound,1,0));
                                 }
-                            }
                             if a.output.try_send(frames).is_err() { remove.push(id); }
                         }
                         Err(e) => { eprintln!("stationary render failed: {e:?}"); remove.push(id); }
@@ -450,12 +450,20 @@ mod tests {
     }
     #[test]
     fn public_chat_is_delivered_once_to_the_sender_and_nearby_players() {
-        use rs09_protocol::game::{chat, players::{Field, SELF, State}};
+        use rs09_protocol::game::{
+            chat,
+            players::{Field, SELF, State},
+        };
         let speaker = actor(1);
         let listener = actor(2);
         let mut payload = vec![3, 1, 5];
         payload.extend(chat::WORDPACK.encode(b"hello").unwrap());
-        let (effects, text) = chat::public_mask(&Frame { opcode: chat::PUBLIC, payload }).unwrap().unwrap();
+        let (effects, text) = chat::public_mask(&Frame {
+            opcode: chat::PUBLIC,
+            payload,
+        })
+        .unwrap()
+        .unwrap();
         speaker.masks.chat(effects, 0, text).unwrap();
         for p in [&speaker.player, &listener.player] {
             let mut p = p.write();
@@ -464,11 +472,20 @@ mod tests {
         }
         let actors = BTreeMap::from([(1, speaker), (2, listener)]);
         for (viewer, source) in [(1, SELF), (2, 1)] {
-            let frames = render(&actors, &[1, 2], &HashMap::new(), &actors[&viewer].player, false).unwrap();
+            let frames = render(
+                &actors,
+                &[1, 2],
+                &HashMap::new(),
+                &actors[&viewer].player,
+                false,
+            )
+            .unwrap();
             let update = State::new(55, 48).decode_frame(&frames[0], 1).unwrap();
             let message = update.extended.iter().find(|e| e.index == source).unwrap();
-            assert!(matches!(&message.fields[0], Field::PublicChat { color_effect: 769, rights: 0, payload }
-                if chat::public_text(payload).unwrap() == b"Hello"));
+            assert!(
+                matches!(&message.fields[0], Field::PublicChat { color_effect: 769, rights: 0, payload }
+                if chat::public_text(payload).unwrap() == b"Hello")
+            );
         }
         actors[&1].masks.reset();
         assert_eq!(actors[&1].masks.status().presence & 0x80, 0);

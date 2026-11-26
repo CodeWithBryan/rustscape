@@ -4,6 +4,11 @@ No original methods are rewritten. Cached and synthetic BAS inputs cover
 directional runs, slow walks, ID aliases and duplicate/ignored opcodes.
 """
 import argparse,hashlib,importlib.util,json,pathlib,random,re,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 ROOT=pathlib.Path(__file__).resolve().parents[2];SRC=ROOT/'reference/client/client/src/main/java/rt4';RUN=ROOT/'runs/bas-motion-oracle';FIX=ROOT/'fixtures/players/bas-motion.json'
 spec=importlib.util.spec_from_file_location('visual',ROOT/'oracle/visual/generate.py');v=importlib.util.module_from_spec(spec);spec.loader.exec_module(v)
 
@@ -29,7 +34,7 @@ int[]c=Arrays.stream(a[2].split(",")).mapToInt(Integer::parseInt).toArray();Path
 List<String>states=new ArrayList<>();for(int i=0;i<Integer.parseInt(a[4]);i++){NpcList.processMovement(p);NpcList.processFacing(p);states.add(snapshot(p));}System.out.println(states);}}}
 '''.replace('BUFFER',''.join(v.method(buffer,s)for s in ['public final int g1(', 'public final int g2(', 'public final int g2b('])).replace(' BAS ',fields(bas[:bas.index('public final void postDecode(')])).replace('DECODE',v.method(bas,'public final void decode(')+v.method(bas,'private void decode(')).replace(' FIELDS ',fields(path[:path.index('public final BasType getBasType(')])).replace(' PHASES ',''.join(v.method(npc,s)for s in ['public static void processMovement(', 'public static void processFacing(']))
  (RUN/'Probe.java').write_text(code,encoding='utf-8');subprocess.run(['javac','-encoding','UTF-8','-d',str(RUN),str(RUN/'Probe.java')],check=True)
- pack=ROOT/'assets/visual/ui-players.pack';raw=pack.read_bytes();size=struct.unpack_from('<I',raw,8)[0];manifest=json.loads(raw[12:12+size]);offset=12+size
+ pack=_recorded(ROOT,'ui-players.pack');raw=pack.read_bytes();size=struct.unpack_from('<I',raw,8)[0];manifest=json.loads(raw[12:12+size]);offset=12+size
  decoded=[]
  for name,(start,length)in sorted(manifest['files'].items()):
   if name.startswith('bas/'):decoded.append(dict(id=int(name[4:]),bytes=raw[offset+start:offset+start+length].hex()))

@@ -232,11 +232,9 @@ async fn configured_windows_executable_applies_backend_policy_and_explicit_liste
                     .parse::<std::net::SocketAddr>()
                     .ok();
             }
-            if !sent {
-                if let (Some(tcp), Some(ws)) = (tcp, ws) {
-                    let _ = tx.send((tcp, ws));
-                    sent = true;
-                }
+            if !sent && let (Some(tcp), Some(ws)) = (tcp, ws) {
+                let _ = tx.send((tcp, ws));
+                sent = true;
             }
         }
     });

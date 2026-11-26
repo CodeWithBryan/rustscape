@@ -61,11 +61,11 @@ pub(super) fn revert<H: Host>(ctx: &mut Natives<'_, H>, manager: &mut Manager) -
     }
     let player = ctx.entity.clone();
     let weapon = ctx.host.weapon_interface(&player)?;
-    if let Some(weapon) = &weapon {
-        if ctx.host.autocast_set(&player)? {
-            ctx.host
-                .select_auto_spell(&player, weapon, -1, true, true)?;
-        }
+    if let Some(weapon) = &weapon
+        && ctx.host.autocast_set(&player)?
+    {
+        ctx.host
+            .select_auto_spell(&player, weapon, -1, true, true)?;
     }
     if ctx.host.attribute_flag(&player, "autocast_select", false)? {
         ctx.host.remove_attribute(&player, "autocast_select")?;

@@ -262,10 +262,10 @@ impl gm::Context for Model {
     fn flagged(&mut self, chunk: &HandleChunk) -> gm::Result<()> {
         let flags = chunk.read().update_flags.clone();
         let last = flags.read().last().cloned().flatten();
-        if let Some(flag) = last {
-            if let Flag::Item { item, kind, .. } = &*flag.read() {
-                self.emit(json!(["flagged", kind, ground_triple(item)]));
-            }
+        if let Some(flag) = last
+            && let Flag::Item { item, kind, .. } = &*flag.read()
+        {
+            self.emit(json!(["flagged", kind, ground_triple(item)]));
         }
         Ok(())
     }
@@ -1412,11 +1412,11 @@ impl Model {
             op @ ("get" | "take") => {
                 let player = self.named(&a["player"]);
                 let found = gm::get(self, int(&a["id"]), place(&a["location"]), player)?;
-                if let Some(found) = &found {
-                    if op == "take" {
-                        let manager = self.manager.clone();
-                        gm::destroy(self, &manager, Some(found.clone()))?;
-                    }
+                if let Some(found) = &found
+                    && op == "take"
+                {
+                    let manager = self.manager.clone();
+                    gm::destroy(self, &manager, Some(found.clone()))?;
                 }
                 Ok(found.map_or(Value::Null, |found| json!(self.ground_label(&found))))
             }

@@ -129,34 +129,34 @@ impl SoftFont {
             }
             // The original's strings are Latin-1 bytes.
             let mut ch = (u32::from(raw) & 0xff) as usize;
-            if raw == '>' {
-                if let Some(start) = tag_start.take() {
-                    let tag: String = chars[start + 1..index].iter().collect();
-                    ch = match tag.as_str() {
-                        "lt" => 60,
-                        "gt" => 62,
-                        "nbsp" => 160,
-                        "shy" => 173,
-                        "times" => 215,
-                        "euro" => 128,
-                        "copy" => 169,
-                        "reg" => 174,
-                        _ => {
-                            if !tag.starts_with("img=") {
-                                style.tag(&tag);
-                            }
-                            continue;
+            if raw == '>'
+                && let Some(start) = tag_start.take()
+            {
+                let tag: String = chars[start + 1..index].iter().collect();
+                ch = match tag.as_str() {
+                    "lt" => 60,
+                    "gt" => 62,
+                    "nbsp" => 160,
+                    "shy" => 173,
+                    "times" => 215,
+                    "euro" => 128,
+                    "copy" => 169,
+                    "reg" => 174,
+                    _ => {
+                        if !tag.starts_with("img=") {
+                            style.tag(&tag);
                         }
-                    };
-                }
+                        continue;
+                    }
+                };
             }
             if tag_start.is_some() {
                 continue;
             }
-            if let Some(kerning) = &self.kerning {
-                if previous != 0 {
-                    x = x.wrapping_add(i32::from(kerning[(previous << 8) + ch]));
-                }
+            if let Some(kerning) = &self.kerning
+                && previous != 0
+            {
+                x = x.wrapping_add(i32::from(kerning[(previous << 8) + ch]));
             }
             let glyph = &self.glyphs[ch];
             // A space draws nothing; justified spacing does not apply to

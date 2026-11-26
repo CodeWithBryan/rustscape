@@ -442,17 +442,15 @@ impl Game {
                                             }
                                         }
                                         Field::Animation { id, delay } => {
-                                            if let Some(ui) = &ui {
-                                                if let Err(e) =
+                                            if let Some(ui) = &ui
+                                                && let Err(e) =
                                                     workbench.player_sequence(&ui.pack, id)
+                                            {
+                                                let message = format!("Player animation {id}: {e}");
+                                                if !live_diagnostics.contains(&message)
+                                                    && live_diagnostics.len() < 32
                                                 {
-                                                    let message =
-                                                        format!("Player animation {id}: {e}");
-                                                    if !live_diagnostics.contains(&message)
-                                                        && live_diagnostics.len() < 32
-                                                    {
-                                                        live_diagnostics.push(message);
-                                                    }
+                                                    live_diagnostics.push(message);
                                                 }
                                             }
                                             let queue = if extended.index == SELF {

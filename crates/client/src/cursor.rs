@@ -125,12 +125,10 @@ pub fn select(
     script_cursor: i32,
 ) -> i32 {
     let mut cursor = -1;
-    if !menu_open {
-        if let Some(index) = crate::context_menu::top_entry(entries.len(), shift_click) {
-            cursor = entries[index].cursor;
-            if cursor == -1 {
-                cursor = default_cursor;
-            }
+    if !menu_open && let Some(index) = crate::context_menu::top_entry(entries.len(), shift_click) {
+        cursor = entries[index].cursor;
+        if cursor == -1 {
+            cursor = default_cursor;
         }
     }
     if cursor == -1 {

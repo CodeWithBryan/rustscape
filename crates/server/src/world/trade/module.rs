@@ -632,7 +632,7 @@ pub fn formatted_number(amount: i32) -> String {
     let digits = (amount as i64).unsigned_abs().to_string();
     let mut out = String::new();
     for (i, c) in digits.chars().enumerate() {
-        if i > 0 && (digits.len() - i) % 3 == 0 {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
             out.push(',');
         }
         out.push(c);
@@ -991,13 +991,13 @@ pub fn listener_update<H: Host>(
     let player = listener.player.clone().ok_or(Error::Null)?;
     let items = container.items().read().clone();
     send_container(h, &player, -1, 64212, 90, &items)?;
-    if let Some(own) = extension(h, Some(&player))? {
-        if extension(h, own.target().as_ref())?.is_some() {
-            let own = extension_req(h, Some(&player))?;
-            let other = extension_req(h, own.target().as_ref())?;
-            let items = other.container_req()?.items().read().clone();
-            send_container(h, &player, 60981, -2, 91, &items)?;
-        }
+    if let Some(own) = extension(h, Some(&player))?
+        && extension(h, own.target().as_ref())?.is_some()
+    {
+        let own = extension_req(h, Some(&player))?;
+        let other = extension_req(h, own.target().as_ref())?;
+        let items = other.container_req()?.items().read().clone();
+        send_container(h, &player, 60981, -2, 91, &items)?;
     }
     check_alert(h, &player)
 }

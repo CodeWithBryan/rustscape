@@ -868,23 +868,22 @@ impl MidiPcmStream {
     fn note_on(&mut self, velocity: i32, channel: usize, key: i32) {
         self.note_off(key, 64, channel);
         let k = (key & 127) as usize;
-        if self.channel_flags[channel] & 2 != 0 {
-            if let Some(index) = self
+        if self.channel_flags[channel] & 2 != 0
+            && let Some(index) = self
                 .notes
                 .iter()
                 .rposition(|note| note.channel == channel && note.release_timer < 0)
-            {
-                let note = &mut self.notes[index];
-                self.active[channel][(note.note_key & 127) as usize] = 0;
-                self.active[channel][k] = note.id;
-                let current_pitch =
-                    note.base_pitch + (note.pitch_modifier.wrapping_mul(note.pitch_delta) >> 12);
-                note.pitch_modifier = 4096;
-                note.base_pitch += (key - note.note_key) << 8;
-                note.pitch_delta = current_pitch - note.base_pitch;
-                note.note_key = key;
-                return;
-            }
+        {
+            let note = &mut self.notes[index];
+            self.active[channel][(note.note_key & 127) as usize] = 0;
+            self.active[channel][k] = note.id;
+            let current_pitch =
+                note.base_pitch + (note.pitch_modifier.wrapping_mul(note.pitch_delta) >> 12);
+            note.pitch_modifier = 4096;
+            note.base_pitch += (key - note.note_key) << 8;
+            note.pitch_delta = current_pitch - note.base_pitch;
+            note.note_key = key;
+            return;
         }
         let Some(instrument) = self.instruments.get(&self.channel_program[channel]) else {
             return;
@@ -932,10 +931,10 @@ impl MidiPcmStream {
             note.stream = SoundPcmStream::create_with_rate(sound, pitch, 0, pan, self.output);
             self.apply_loop_start_offset(&mut note, pitch_offset < 0);
         }
-        if pitch_offset < 0 {
-            if let Some(stream) = &mut note.stream {
-                stream.set_loops(-1);
-            }
+        if pitch_offset < 0
+            && let Some(stream) = &mut note.stream
+        {
+            stream.set_loops(-1);
         }
         if let Ok(group) = usize::try_from(note.exclusive_group) {
             let previous = self.exclusive[channel][group];
@@ -946,11 +945,11 @@ impl MidiPcmStream {
                         self.active[channel][(previous.note_key & 127) as usize] = 0;
                         previous.release_timer = 0;
                     }
-                } else if let Some((timer, key)) = self.detached.get_mut(&previous) {
-                    if *timer < 0 {
-                        self.active[channel][(*key & 127) as usize] = 0;
-                        *timer = 0;
-                    }
+                } else if let Some((timer, key)) = self.detached.get_mut(&previous)
+                    && *timer < 0
+                {
+                    self.active[channel][(*key & 127) as usize] = 0;
+                    *timer = 0;
                 }
                 self.detached.remove(&previous);
             }
@@ -1205,10 +1204,8 @@ impl MidiPcmStream {
             self.apply_loop_start_offset(&mut note, forever);
             self.notes.insert(index, note);
         }
-        if forever {
-            if let Some(stream) = &mut self.notes[index].stream {
-                stream.set_loops(-1);
-            }
+        if forever && let Some(stream) = &mut self.notes[index].stream {
+            stream.set_loops(-1);
         }
     }
 
@@ -1241,10 +1238,10 @@ impl MidiPcmStream {
                         let fade = (self.output.sample_rate / 100).min(262144 / step);
                         self.notes[index].portamento_pos += step * until - 1048576;
                         self.retrigger(index, &previous);
-                        if self.channel_sample_offset[channel] != 0 {
-                            if let Some(stream) = &mut self.notes[index].stream {
-                                stream.fade_to_volume(fade, previous.get_volume());
-                            }
+                        if self.channel_sample_offset[channel] != 0
+                            && let Some(stream) = &mut self.notes[index].stream
+                        {
+                            stream.fade_to_volume(fade, previous.get_volume());
                         }
                         offset += until.max(0) as usize;
                         previous.fade_out_and_release(fade);
@@ -1351,19 +1348,21 @@ impl MidiPcmStream {
                 release = true;
             }
         }
-        if note.release_timer >= 0 && !held && !named {
-            if let Some(envelope) = &state.release_envelope {
-                note.release_timer = note.release_timer.wrapping_add(step(state.release_rate));
-                let last = envelope.len() as i32 - 2;
-                while last > note.release_envelope_index
-                    && (i32::from(envelope[note.release_envelope_index as usize + 2]) & 255) << 8
-                        < note.release_timer
-                {
-                    note.release_envelope_index += 2;
-                }
-                if note.release_envelope_index == last {
-                    release = true;
-                }
+        if note.release_timer >= 0
+            && !held
+            && !named
+            && let Some(envelope) = &state.release_envelope
+        {
+            note.release_timer = note.release_timer.wrapping_add(step(state.release_rate));
+            let last = envelope.len() as i32 - 2;
+            while last > note.release_envelope_index
+                && (i32::from(envelope[note.release_envelope_index as usize + 2]) & 255) << 8
+                    < note.release_timer
+            {
+                note.release_envelope_index += 2;
+            }
+            if note.release_envelope_index == last {
+                release = true;
             }
         }
         let delay = note.retrigger_delay;
@@ -1618,11 +1617,11 @@ impl MidiPcmStream {
             );
             volume = (value.wrapping_mul(volume) + 32) >> 6;
         }
-        if note.release_timer > 0 {
-            if let Some(envelope) = &state.release_envelope {
-                let value = level(envelope, note.release_envelope_index, note.release_timer);
-                volume = (volume.wrapping_mul(value) + 32) >> 6;
-            }
+        if note.release_timer > 0
+            && let Some(envelope) = &state.release_envelope
+        {
+            let value = level(envelope, note.release_envelope_index, note.release_timer);
+            volume = (volume.wrapping_mul(value) + 32) >> 6;
         }
         volume
     }

@@ -806,10 +806,10 @@ impl Movement {
                 self.target_angle = ((f64::from(dx).atan2(f64::from(dy)) * 325.949) as i32) & 2047;
             }
         };
-        if self.face_entity != -1 {
-            if let Some(target) = target {
-                face(target);
-            }
+        if self.face_entity != -1
+            && let Some(target) = target
+        {
+            face(target);
         }
         if self.face_tile != [0; 2] && (self.queue.is_empty() || self.catchup > 0) {
             face(self.face_tile.map(|n| n.wrapping_mul(64)));

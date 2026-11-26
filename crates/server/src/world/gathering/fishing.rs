@@ -1015,41 +1015,40 @@ impl Pulse {
         }
         // success(): the delay is no longer one here.
         self.fish = self.option.ok_or(Error::NullPointer)?.roll_fish(ctx)?;
-        if let Some(fish) = self.fish {
-            if ctx.boolean(Service::InventoryHasSpaceFor, &[fish.id.into(), 1.into()])?
-                && self.option.ok_or(Error::NullPointer)?.remove_bait(ctx)?
-            {
-                if ctx.boolean(Service::SkillTasksHasTask, &[])? {
-                    for &task in skill_tasks(fish) {
-                        ctx.unit(Service::SkillTasksDecreaseTask, &[task.into()])?;
-                    }
+        if let Some(fish) = self.fish
+            && ctx.boolean(Service::InventoryHasSpaceFor, &[fish.id.into(), 1.into()])?
+            && self.option.ok_or(Error::NullPointer)?.remove_bait(ctx)?
+        {
+            if ctx.boolean(Service::SkillTasksHasTask, &[])? {
+                for &task in skill_tasks(fish) {
+                    ctx.unit(Service::SkillTasksDecreaseTask, &[task.into()])?;
                 }
-                ctx.unit(
-                    Service::PlayerDispatch,
-                    &[fish.id.into(), 1.into(), self.node.into(), (-1).into()],
-                )?;
-                if ctx.boolean(Service::SkillcapePerksIsActive, &["GREAT_AIM".into()])?
-                    && random::random(ctx, 100)? <= 5
-                {
-                    add_item_or_drop(ctx, fish.id, 1)?;
-                    ctx.unit(Service::PlayerSendMessage, &[colorize(SECOND_FISH).into()])?;
-                }
-                add_item_or_drop(ctx, fish.id, 1)?;
-                let caught =
-                    match ctx.call(Service::PlayerGetAttribute, &[FISH_KEY.into(), 0.into()])? {
-                        Arg::Int(v) => i32::try_from(v).map_err(|_| Error::Reply)?,
-                        _ => return Err(Error::ClassCast),
-                    };
-                ctx.unit(
-                    Service::PlayerSetAttribute,
-                    &[SAVED_FISH_KEY.into(), caught.wrapping_add(1).into()],
-                )?;
-                ctx.unit(
-                    Service::SkillsAddExperience3,
-                    &[FISHING.into(), fish.experience.into(), true.into()],
-                )?;
-                self.message(ctx, 2)?;
             }
+            ctx.unit(
+                Service::PlayerDispatch,
+                &[fish.id.into(), 1.into(), self.node.into(), (-1).into()],
+            )?;
+            if ctx.boolean(Service::SkillcapePerksIsActive, &["GREAT_AIM".into()])?
+                && random::random(ctx, 100)? <= 5
+            {
+                add_item_or_drop(ctx, fish.id, 1)?;
+                ctx.unit(Service::PlayerSendMessage, &[colorize(SECOND_FISH).into()])?;
+            }
+            add_item_or_drop(ctx, fish.id, 1)?;
+            let caught =
+                match ctx.call(Service::PlayerGetAttribute, &[FISH_KEY.into(), 0.into()])? {
+                    Arg::Int(v) => i32::try_from(v).map_err(|_| Error::Reply)?,
+                    _ => return Err(Error::ClassCast),
+                };
+            ctx.unit(
+                Service::PlayerSetAttribute,
+                &[SAVED_FISH_KEY.into(), caught.wrapping_add(1).into()],
+            )?;
+            ctx.unit(
+                Service::SkillsAddExperience3,
+                &[FISHING.into(), fish.experience.into(), true.into()],
+            )?;
+            self.message(ctx, 2)?;
         }
         Ok(ctx.int(Service::InventoryFreeSlots, &[])? == 0)
     }

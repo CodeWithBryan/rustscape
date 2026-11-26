@@ -435,16 +435,16 @@ pub fn clue(ctx: &mut Context<'_>, level: ClueLevel) -> Result<Option<RolledItem
 /// player who wins it and wears one of the gloves gets that glove's herb and
 /// loses a charge, everyone else rolls the herb table.
 fn herb(ctx: &mut Context<'_>, receiver: &mut Looter<'_>) -> Option<RolledItem> {
-    if ctx.random.next_boolean() {
-        if let Looter::Player(player) = receiver {
-            for (gloves, herb) in HERB_GLOVES {
-                if player.in_equipment(gloves) {
-                    player.update_glove_charges();
-                    return Some(RolledItem {
-                        id: herb,
-                        amount: 1,
-                    });
-                }
+    if ctx.random.next_boolean()
+        && let Looter::Player(player) = receiver
+    {
+        for (gloves, herb) in HERB_GLOVES {
+            if player.in_equipment(gloves) {
+                player.update_glove_charges();
+                return Some(RolledItem {
+                    id: herb,
+                    amount: 1,
+                });
             }
         }
     }
