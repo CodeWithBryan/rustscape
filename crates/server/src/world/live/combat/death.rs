@@ -122,12 +122,9 @@ pub fn death_pulse(live: &mut Live, task: &Task) -> std::result::Result<bool, St
 }
 
 /// `applyPoison(victim, source, severity)` from a swing: the ContentAPI glue
-/// of `timers::content` over the victim's timer manager. A poisoned NPC
-/// needs NPC timers, which are not installed (refused by name).
+/// of `timers::content` over the victim's timer manager (a player's, or an
+/// NPC's: super::super::timers).
 pub fn apply_poison(live: &mut Live, victim: &P, source: &P, severity: i32) -> cs::Result<()> {
-    if !live.inner.is_player_node(victim.node()) {
-        return super::host::refuse("applyPoison on an NPC (NPC timers are not installed)");
-    }
     let result = live.with_timers(victim, |natives, manager| {
         crate::timers::content::apply_poison(natives, manager, source, severity)
     });
@@ -733,15 +730,11 @@ impl npc_death::Host for Live {
         Ok(())
     }
     fn timers_on_death(&mut self, entity: &NodeHandle) -> Result<()> {
-        if self.inner.is_npc_node(entity.node) {
-            // NPC timers are not installed: an NPC has none to clear.
-            self.inner
-                .not_ported
-                .default_answer("NPC timer queries (none: no NPC timer is registered)");
-            return Ok(());
-        }
         // TimerManager.onEntityDeath: the ClearOnDeath timers are removed.
         let p = self.handle(entity);
+        if self.inner.is_npc_node(entity.node) {
+            return self.npc_timers_on_death(&p).map_err(binding);
+        }
         self.with_timers(&p, |natives, manager| manager.death(&mut (), natives))
             .map_err(binding)
     }

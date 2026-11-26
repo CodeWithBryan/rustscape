@@ -65,6 +65,9 @@ pub struct TimerWorld {
     pub hooks: HashMap<Node, HashMap<EventClass, Vec<Hook>>>,
     /// Calls a timer registered by a save's parse made, made after the parse.
     pub calls: Vec<TimerCall>,
+    /// NPCs whose `SkillRestore` was registered on joining the live timers
+    /// (the start-up has no port of its hooks: [`Live::with_npc_timers`]).
+    pub npc_restore: std::collections::HashSet<Node>,
 }
 
 /// A call of a timer registered while a save file was parsed, made right
@@ -118,6 +121,147 @@ fn unhook(world: &mut TimerWorld, node: Node, hook: &Hook) {
     }
 }
 
+// ---------------------------------------------------- NPC skills
+
+/// An NPC's `Skills` as the timers read them: its row's static and current
+/// levels and lifepoints (an NPC's `lifepointsIncrease` is 0 and it has no
+/// experience).
+pub fn npc_skills(row: &crate::startup::npcs::Npc) -> Skills {
+    let mut skills = placeholder_skills();
+    skills
+        .static_levels
+        .copy_from_slice(&row.static_levels[..24]);
+    skills.dynamic_levels.copy_from_slice(&row.levels[..24]);
+    skills.lifepoints = row.lifepoints;
+    skills.lifepoints_increase = 0;
+    skills.prayer_points = f64::from(row.levels[5]);
+    skills
+}
+
+/// Writes what a timer changed of an NPC's skills back to its row: the
+/// current levels and the lifepoints (timers change no static level).
+pub fn put_npc_skills(row: &mut crate::startup::npcs::Npc, skills: &Skills) {
+    row.levels[..24].copy_from_slice(&skills.dynamic_levels);
+    row.lifepoints = skills.lifepoints;
+}
+
+/// `GrandExchangeTimer`, the start-up's automatic timer on every NPC: its
+/// class name there (`startup::timers`).
+const GRAND_EXCHANGE_TIMER: &str = "GrandExchangeTimer";
+
+/// The timers' `Context` for an NPC's manager: `timers::content`'s
+/// [`Natives`], and the NPC branch of `GrandExchangeTimer`, which the
+/// start-up registered on every NPC (`Entity.init`'s `addAutoTimers`):
+/// no registration hooks, the constructor's interval as the initial delay,
+/// and `run` answering false (`if (entity !is Player) return false`), so
+/// the manager removes it at its first run, 500 ticks after its first
+/// process.
+pub struct NpcNatives<'n, 'a, 'h> {
+    pub natives: &'n mut Natives<'a, Host<'h>>,
+}
+
+fn grand_exchange(timer: &Handle) -> bool {
+    timer.read().class_name == GRAND_EXCHANGE_TIMER
+}
+
+impl timers::Context<()> for NpcNatives<'_, '_, '_> {
+    fn is_player(&self, state: &()) -> bool {
+        timers::Context::<()>::is_player(self.natives, state)
+    }
+    fn modal_open(&mut self, state: &mut ()) -> Result<bool> {
+        timers::Context::<()>::modal_open(self.natives, state)
+    }
+    fn script_delay(&mut self, state: &mut ()) -> Result<i32> {
+        timers::Context::<()>::script_delay(self.natives, state)
+    }
+    fn ticks(&mut self, state: &mut ()) -> Result<i32> {
+        timers::Context::<()>::ticks(self.natives, state)
+    }
+    fn entity_name(&mut self, state: &mut ()) -> Result<Option<String>> {
+        timers::Context::<()>::entity_name(self.natives, state)
+    }
+    fn before_register(
+        &mut self,
+        timer: &Handle,
+        manager: &mut Manager,
+        state: &mut (),
+    ) -> Result<()> {
+        if grand_exchange(timer) {
+            return Ok(());
+        }
+        self.natives.before_register(timer, manager, state)
+    }
+    fn on_register(&mut self, timer: &Handle, manager: &mut Manager, state: &mut ()) -> Result<()> {
+        if grand_exchange(timer) {
+            return Ok(());
+        }
+        self.natives.on_register(timer, manager, state)
+    }
+    fn on_removal(&mut self, timer: &Handle, manager: &mut Manager, state: &mut ()) -> Result<()> {
+        if grand_exchange(timer) {
+            return Ok(());
+        }
+        self.natives.on_removal(timer, manager, state)
+    }
+    fn run(&mut self, timer: &Handle, manager: &mut Manager, state: &mut ()) -> Result<bool> {
+        if grand_exchange(timer) {
+            return Ok(false);
+        }
+        self.natives.run(timer, manager, state)
+    }
+    fn initial_delay(
+        &mut self,
+        timer: &Handle,
+        manager: &mut Manager,
+        state: &mut (),
+    ) -> Result<i32> {
+        if grand_exchange(timer) {
+            return Ok(timer.read().run_interval);
+        }
+        self.natives.initial_delay(timer, manager, state)
+    }
+    fn save(
+        &mut self,
+        timer: &Handle,
+        root: &mut crate::definitions::item_config::json::Json,
+        manager: &mut Manager,
+        state: &mut (),
+    ) -> Result<()> {
+        self.natives.save(timer, root, manager, state)
+    }
+    fn parse(
+        &mut self,
+        timer: &Handle,
+        data: &crate::definitions::item_config::json::Json,
+        manager: &mut Manager,
+        state: &mut (),
+    ) -> Result<()> {
+        self.natives.parse(timer, data, manager, state)
+    }
+    fn resolve(
+        &mut self,
+        identifier: &str,
+        manager: &mut Manager,
+        state: &mut (),
+    ) -> Result<Option<Handle>> {
+        self.natives.resolve(identifier, manager, state)
+    }
+    fn run_failure(
+        &mut self,
+        class_name: &str,
+        entity_name: Option<&str>,
+        state: &mut (),
+    ) -> Result<()> {
+        self.natives.run_failure(class_name, entity_name, state)
+    }
+    fn unknown_timer(&mut self, identifier: &str, state: &mut ()) -> Result<()> {
+        self.natives.unknown_timer(identifier, state)
+    }
+    fn exception(&mut self, error: &Error, state: &mut ()) -> Result<()> {
+        timers::Context::<()>::exception(self.natives, error, state)
+    }
+}
+
 // ---------------------------------------------------- the runtime host
 
 /// The skills and settings context of the timers' player: the live
@@ -128,10 +272,13 @@ pub struct Ctx<'a> {
     /// The skills handed out are a failed lookup's placeholder: every
     /// effect refuses (the operation reports the failure).
     pub disabled: bool,
+    /// The skills handed out are an NPC's (its row's levels): `kind` is NPC,
+    /// so `Skills` asks none of the player services below.
+    pub npc: bool,
 }
 impl Ctx<'_> {
     fn check(&self) -> skills::Result<()> {
-        if self.disabled {
+        if self.disabled || self.npc {
             return Err(skills::Error::Binding);
         }
         Ok(())
@@ -151,7 +298,11 @@ impl Ctx<'_> {
 }
 impl skills::Context for Ctx<'_> {
     fn kind(&self) -> SkillsKind {
-        SkillsKind::Player
+        if self.npc {
+            SkillsKind::Npc
+        } else {
+            SkillsKind::Player
+        }
     }
     fn version(&self) -> i32 {
         6
@@ -163,7 +314,7 @@ impl skills::Context for Ctx<'_> {
         self.live.inner.ticks
     }
     fn combat_level(&self) -> i32 {
-        if self.disabled {
+        if self.disabled || self.npc {
             return 3;
         }
         self.live
@@ -172,7 +323,7 @@ impl skills::Context for Ctx<'_> {
             .unwrap_or(3)
     }
     fn summoning_combat_level(&self) -> i32 {
-        if self.disabled {
+        if self.disabled || self.npc {
             return 0;
         }
         self.live
@@ -327,11 +478,42 @@ impl<'a> Host<'a> {
                 live,
                 p,
                 disabled: false,
+                npc: false,
             },
         }
     }
     fn inner(&mut self) -> &mut Inner {
         &mut self.ctx.live.inner
+    }
+    /// Writes skills taken for an operation back to their owner: a player's
+    /// profile or an NPC's row (levels and lifepoints).
+    fn put_back(&mut self, node: Node, p: &P, skills: Skills) -> Result<()> {
+        if node == usize::MAX {
+            // The placeholder of a failed lookup: never written back.
+            return Ok(());
+        }
+        if let Some(row) = self.ctx.live.inner.npcs.rows.get_mut(&node) {
+            put_npc_skills(row, &skills);
+            return Ok(());
+        }
+        if !self.ctx.live.inner.players.contains_key(&p.node()) {
+            // A player who left during the operation.
+            return Ok(());
+        }
+        self.ctx
+            .live
+            .inner
+            .with_profile(p, |profile| profile.skills = skills)
+            .map_err(err)
+    }
+    /// Puts `entity`'s held skills back before a service that reads them
+    /// from their owner (a hit reads and writes the lifepoints there); the
+    /// next `skills` call takes them again.
+    fn release(&mut self, entity: &P) -> Result<()> {
+        match self.held.remove(&entity.node()) {
+            Some((p, skills)) => self.put_back(entity.node(), &p, skills),
+            None => Ok(()),
+        }
     }
     fn is_player(&self, entity: &P) -> bool {
         self.ctx.live.inner.players.contains_key(&entity.node())
@@ -346,16 +528,7 @@ impl<'a> Host<'a> {
     /// Puts back what the operation took out of the profiles.
     pub fn finish(mut self) -> Result<()> {
         for (node, (p, skills)) in std::mem::take(&mut self.held) {
-            if node == usize::MAX || !self.ctx.live.inner.players.contains_key(&p.node()) {
-                // The placeholder of a failed lookup (never written back),
-                // or a player who left during the operation.
-                continue;
-            }
-            self.ctx
-                .live
-                .inner
-                .with_profile(&p, |profile| profile.skills = skills)
-                .map_err(err)?;
+            self.put_back(node, &p, skills)?;
         }
         if let Some((p, book)) = self.book.take().filter(|(p, _)| self.is_player(p)) {
             self.ctx
@@ -402,8 +575,13 @@ impl<'a> content::Host for Host<'a> {
                         std::mem::replace(&mut profile.skills, placeholder_skills())
                     })
                     .map_err(|e| format!("{e:?}"))
+            } else if let Some(row) = self.ctx.live.inner.npcs.rows.get(&node) {
+                Ok(npc_skills(row))
             } else {
-                Err("not ported in the live world: NPC skills in timers".to_owned())
+                Err(
+                    "timers asked the skills of a node that is neither a player nor an NPC"
+                        .to_owned(),
+                )
             };
             match taken {
                 Ok(skills) => {
@@ -415,6 +593,7 @@ impl<'a> content::Host for Host<'a> {
                     self.held
                         .insert(usize::MAX, (entity.clone(), placeholder_skills()));
                     self.ctx.disabled = true;
+                    self.ctx.npc = false;
                     let (_, skills) = self.held.get_mut(&usize::MAX).expect("inserted");
                     return (skills, &mut self.ctx);
                 }
@@ -422,6 +601,7 @@ impl<'a> content::Host for Host<'a> {
         }
         self.ctx.p = entity.clone();
         self.ctx.disabled = false;
+        self.ctx.npc = !self.is_player(entity);
         let (_, skills) = self.held.get_mut(&node).expect("held");
         (skills, &mut self.ctx)
     }
@@ -487,13 +667,20 @@ impl<'a> content::Host for Host<'a> {
         let delay = scripts.fields.read().delay;
         Ok(delay)
     }
-    fn remove_weak_scripts(&mut self, _: &P) -> Result<()> {
-        refused("Entity.scripts.removeWeakScripts from a timer")
+    fn remove_weak_scripts(&mut self, entity: &P) -> Result<()> {
+        // Entity.scripts.removeWeakScripts() over the canonical processor.
+        let scripts = self.inner().state.scripts(&entity.0).map_err(err)?;
+        scripts.remove_weak();
+        Ok(())
     }
     fn name(&mut self, entity: &P) -> Result<Option<String>> {
-        match self.ctx.live.inner.players.get(&entity.node()) {
-            Some(slot) => Ok(Some(slot.name.clone())),
-            None => refused("NPC names in timers"),
+        if let Some(slot) = self.ctx.live.inner.players.get(&entity.node()) {
+            return Ok(Some(slot.name.clone()));
+        }
+        // NPC.getName(): the definition's name.
+        match self.ctx.live.inner.npcs.rows.get(&entity.node()) {
+            Some(row) => Ok(row.definition.read().name.clone()),
+            None => refused("the name of a node that is neither a player nor an NPC"),
         }
     }
     fn location(&mut self, entity: &P) -> Result<Option<[i32; 3]>> {
@@ -547,6 +734,8 @@ impl<'a> content::Host for Host<'a> {
             .ok_or_else(|| Error::Binding("RANDOM.nextInt: bound must be positive".into()))
     }
     fn manual_hit(&mut self, owner: &P, source: &P, hit: i32, kind: HitsplatType) -> Result<()> {
+        // The hit reads and writes the owner's lifepoints where they live.
+        self.release(owner)?;
         self.ctx
             .live
             .timer_manual_hit(owner, source, hit, kind)
@@ -588,8 +777,12 @@ impl<'a> content::Host for Host<'a> {
             .find(|slot| slot.uid == uid && slot.active)
             .map(|slot| P(slot.canonical.owner.clone())))
     }
-    fn npc_task(&mut self, _: &P) -> Result<Option<i32>> {
-        refused("NPC slayer tasks")
+    fn npc_task(&mut self, npc: &P) -> Result<Option<i32>> {
+        // NPC.task: Tasks.forId(id) as configure() set it (the current id).
+        match self.ctx.live.inner.npcs.rows.get(&npc.node()) {
+            Some(row) => Ok(crate::world::slayer_tasks::level_req(row.id)),
+            None => refused("the slayer task of a node that is not an NPC"),
+        }
     }
     fn familiar_owner(&mut self, _: &P) -> Result<Option<P>> {
         refused("familiars")
@@ -992,7 +1185,10 @@ impl Live {
         f: impl FnOnce(&mut Natives<'_, Host<'_>>, &mut Manager) -> Result<T>,
     ) -> Result<T> {
         if !self.inner.players.contains_key(&p.node()) {
-            return refused("timers of an entity that is not a live player (NPC timers)");
+            if self.inner.npcs.rows.contains_key(&p.node()) {
+                return self.with_npc_timers(p, f);
+            }
+            return refused("timers of a node that is neither a player nor an NPC");
         }
         let mut manager = self
             .inner
@@ -1020,6 +1216,74 @@ impl Live {
         Ok(value)
     }
 
+    /// Runs `f` with the timers' host for the NPC `npc` and an alias of its
+    /// timer manager (the start-up's, `startup::npcs::Npc::timers`).
+    ///
+    /// The start-up's `Entity.init` registered three of the four automatic
+    /// timers (`startup::timers`); `SkillRestore`, whose hooks it has no port
+    /// of, is registered here on the NPC's first timer operation (before
+    /// `f`, so its place in the manager's lists is the original's: after the
+    /// start-up's, before any timer registered later). Its first run is
+    /// due one interval after the NPC's first `processTimers`, as the
+    /// original's, which sets it then too.
+    pub fn with_npc_timers<T>(
+        &mut self,
+        npc: &P,
+        f: impl FnOnce(&mut Natives<'_, Host<'_>>, &mut Manager) -> Result<T>,
+    ) -> Result<T> {
+        let node = npc.node();
+        let mut manager = match self.inner.npcs.rows.get(&node) {
+            Some(row) => alias(&row.timers),
+            None => return refused("timers of a node that is not an NPC"),
+        };
+        let registry = self.inner.timers.registry.clone();
+        let first = !self.inner.timers.registered;
+        self.inner.timers.registered = true;
+        let join = self.inner.timers.npc_restore.insert(node);
+        let mut host = Host::new(self, npc.clone());
+        let result = (|| {
+            let mut natives = Natives {
+                host: &mut host,
+                entity: npc.clone(),
+                registry,
+            };
+            if first {
+                content::register_prototypes(&mut natives, &mut Manager::default())?;
+            }
+            if join && !content::has(&manager, content::Kind::SkillRestore)? {
+                let restore =
+                    content::spawn(&mut natives, &mut manager, content::Kind::SkillRestore, &[])?;
+                manager.register(Some(&restore), &mut (), &mut natives)?;
+            }
+            f(&mut natives, &mut manager)
+        })();
+        let finished = host.finish();
+        let value = result?;
+        finished?;
+        Ok(value)
+    }
+
+    /// An NPC's `timers.processTimers()` at the end of its `Entity.tick`.
+    pub fn process_npc_timers(&mut self, npc: &P) -> Result<()> {
+        self.with_npc_timers(npc, |natives, manager| {
+            manager.process(&mut (), &mut NpcNatives { natives })
+        })
+    }
+
+    /// `TimerManager.onEntityDeath()` of an NPC: its ClearOnDeath timers.
+    pub fn npc_timers_on_death(&mut self, npc: &P) -> Result<()> {
+        self.with_npc_timers(npc, |natives, manager| {
+            manager.death(&mut (), &mut NpcNatives { natives })
+        })
+    }
+
+    /// `timers.removeTimer(identifier)` of an NPC (`fullRestore`).
+    pub fn remove_npc_timer(&mut self, npc: &P, identifier: &str) -> Result<()> {
+        self.with_npc_timers(npc, |natives, manager| {
+            manager.remove_identifier(identifier, &mut (), &mut NpcNatives { natives })
+        })
+    }
+
     /// `TimerRegistry.addAutoTimers(entity)` at `Entity.init`.
     pub fn add_auto_timers_of(&mut self, p: &P) -> Result<()> {
         // GrandExchangeTimer and HolidayRandoms are auto timers of the
@@ -1042,7 +1306,10 @@ impl Live {
     /// `hasTimerActive(entity, identifier)` for a live player.
     pub fn has_timer_of(&self, node: Node, identifier: &str) -> Result<bool> {
         let Some(slot) = self.inner.players.get(&node) else {
-            return refused("NPC timers");
+            return match self.inner.npcs.rows.get(&node) {
+                Some(row) => content::has_identifier(&row.timers, identifier),
+                None => refused("timers of a node that is neither a player nor an NPC"),
+            };
         };
         slot.canonical
             .player
