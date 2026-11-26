@@ -66,6 +66,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '11'
+      # Oracles that compile the original Kotlin read RS09_ORACLE_JAVA_HOME and
+      # use JDK 11. The rest use the default JDK, and some need APIs newer than 11.
+      - name: Keep JDK 25 as the default and point the Kotlin oracles at JDK 11
+        run: |
+          "RS09_ORACLE_JAVA_HOME=$env:JAVA_HOME_11_X64" >> $env:GITHUB_ENV
+          "JAVA_HOME=$env:JAVA_HOME_25_X64" >> $env:GITHUB_ENV
+          "$env:JAVA_HOME_25_X64\bin" >> $env:GITHUB_PATH
       - name: Reproduce original Java and Kotlin login cases
         run: cargo xtask login-oracle --check
       # Later oracles reuse the classes and pinned jars these runs leave in runs/,
