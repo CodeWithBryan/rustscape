@@ -452,7 +452,7 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   DiangoReclaimInterface `newInstance`. Every outside call is a required Host
   service with no default; quests, slayer, POH storage, random reachable
   locations and the dig callbacks are named content services. The global
-  books (they need BookInterface) are not ported; nothing installs the
+  books are world/books (next bullet); nothing installs the
   library in `--world` (the binding is described in docs/global-items2.md).
 - For core.api (world/content_api: every ContentAPI.kt function, its
   ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
@@ -487,6 +487,24 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   binds Host to the live world yet; WeightedTable, PlayerCamera,
   PlayerStatsCounter and Permadeath are not ported. See
   docs/content-api.md.
+- For the book interface and the global books (world/books: BookInterface
+  with its three components, page setup, pagination, models/items on pages
+  and the page-turning listeners; GeneralRuleBook, GoblinBook, GrimDiary,
+  SecurityBookPlugin, StrongholdNotes and their registrations), run `cargo
+  test -p rs09-server --test books`, `cargo xtask books-oracle --check` with
+  Python/JDK 11 and `oracle/books/port_contents.py --check` (the page tables
+  in contents.rs are generated; never edit them by hand), plus the
+  global_items2, global_handlers, interaction_listeners and interfaces
+  suites. Preserve the 1,239 cases (49 designed, 1,190 injected failures).
+  Keep the current page read before the setup, the component reopened by
+  every setup, `contents[currentPage]` failing after the title, the
+  right-page number blanked for single-page sets, button children shown
+  then sent, the callback cast before the page moves, the rules index only
+  on page 0 and its "Index" button elsewhere, no house store for the Grim
+  Reaper's diary, and the lambda and `::display` classes. Every outside call
+  (attributes, interfaces, packet dispatch, storeBookInHouse, the world's
+  names) is a required Host service with no default; nothing installs the
+  books in `--world`. See docs/books.md.
 - For eating and drinking (world/consumables: Consumable, Food, Drink, Potion,
   Cake, HalfableFood, BarbarianMix, FakeConsumable, ConsumableEffect, the
   Consumables table, the 34 effect classes and ConsumableListener), run
@@ -652,8 +670,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   service with no default; scripted content calls only original DSL members.
   Nothing installs the library in `--world`; the npc_classes
   `banker_conversation` service is answered by `banker::talk_to` once a host
-  binds these traits. The activity/cutscene framework is not ported. See
-  docs/dialogue-dsl.md.
+  binds these traits. The activity/cutscene framework is world/activities
+  (docs/activities.md). See docs/dialogue-dsl.md.
 - For plain dialogue or Continue changes, reproduce plain-dialogue-oracle and the
   affected input/interface/bank corpora; run plain_dialogue, input_prompt, interfaces,
   bank_interface and all three controlled examples. Preserve the initial424 cases
@@ -1686,8 +1704,36 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   clearing, familiars, ground items, scene updates, logs and the multiway
   zone are required services with no defaults. One difference is pinned
   (toggleMulticombat without borders). Nothing installs the library in
-  `--world`; region specifications and the activity/cutscene framework are
-  not ported. See docs/dynamic-regions.md.
+  `--world`; region specifications are not ported (the activity/cutscene
+  framework is world/activities, next bullet). See docs/dynamic-regions.md.
+- For the activity and cutscene framework (world/activities: ActivityManager's
+  registry, register and start; ActivityPlugin and CutscenePlugin as a native
+  zones::Zone with their enter/leave, region bases over native instances,
+  start/leave/stop/end and the StartPulse/EndPulse bodies; Cutscene.kt with
+  its stages, dialogue updates, camera, NPC and teleport helpers, timed and
+  ending pulses, death hook and logout listener), run `cargo test -p
+  rs09-server --test activities` and `cargo xtask activities-oracle --check`
+  with Python/JDK 11 (its cache input is fixtures/dynamic-regions/cache.json,
+  hash-checked, never re-exported), plus the dynamic_regions, zones,
+  dialogue, dialogue_dsl, interfaces, pulses and content_timers suites and
+  dynamic-regions-oracle. Preserve the 513 cases (68 designed, 445 injected
+  failures). Keep register's configure only when not instanced, start's
+  reassigned plugin (a failing configure reports the new instance) and the
+  dev-mode reads that fail on null settings; safeRespawn read at
+  construction; the start/end pulses built with `checks = [null]` and their
+  `counter++` switches; "real-end" removed then stored, the EndPulse's
+  original-loc read before real-end with one cast; setRegionBase(regions)
+  comparing region units with tile coordinates and adding RegionZones to the
+  lists directly; Cutscene.start running the stored stage before resetting
+  it; the lateinit base failing as Uninitialized; the fading end's `when`
+  returning true right after the ninth-run teleport; the stop override's
+  empty-simple-name log of failing end actions; addedNPCs in Java HashMap
+  order with the table kept by clear(). Every outside call is a required
+  Host service with no default (the host is the zones and dynamic_region
+  host); PlayerCamera and the ContentAPI dialogue functions are services;
+  pulses dispatch by identity through activities::Pulses. Content
+  activities and cutscenes are Content/Script implementations, none ported;
+  nothing installs the framework in `--world`. See docs/activities.md.
 - For TeleportManager, TeleportType, TeleportPulse or Entity.isTeleporting
   (world/teleport.rs), run `cargo test -p rs09-server --test teleport` and
   `cargo xtask teleport-oracle --check` with Python/JDK 11, plus the pulses,

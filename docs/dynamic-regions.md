@@ -146,9 +146,8 @@ marks a projectile ChunkFlags landscape, so the copied marks are always false.
   body, check_inactive and unload go through `dynamic_region::*`; and
   `region_dynamic` answers `dynamic_region::is_dynamic`.
 - The region specification DSL (`core.api.regionspec`), HouseManager and
-  the content that builds instances, and the activity and cutscene framework
-  (ActivityManager, ActivityPlugin, CutscenePlugin, Cutscene.kt) are not
-  ported.
+  the content that builds instances are not ported. The activity and
+  cutscene framework is `world/activities` (docs/activities.md).
 - A copied NPC's own creation (NPC.create, init) and the familiar recall
   script are services; the recall script never runs in the corpus.
 - `create_area`'s scene update loop is ported but unreachable in the original

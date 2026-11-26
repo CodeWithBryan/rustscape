@@ -3,8 +3,8 @@
 `crates/server/src/world/global_items2/` ports the everyday item options and
 the item-on-object basics of `content/global/handlers/item`, the second pass
 of that slice after the teleport items of `world/global_items`
-(docs/global-items.md). The global books (`book/`) are not ported yet (see
-the end of this page).
+(docs/global-items.md). The global books (`book/`) are `world/books`
+(docs/books.md).
 
 Each Kotlin lambda and OptionHandler the original registers is a typed native
 value (`registry::Interaction`, `registry::InterfaceFn`,
@@ -228,8 +228,7 @@ the same order in tables of 16 and 32, so no reachable state tells them apart.
 ## Not ported or not joined
 
 - `book/` (GeneralRuleBook, GoblinBook, GrimDiary, SecurityBookPlugin,
-  StrongholdNotes): they need `content.global.handlers.iface.BookInterface`,
-  which is not native yet.
+  StrongholdNotes) and BookInterface are `world/books` (docs/books.md).
 - The content services named above (quest tables, slayer, POH storage,
   random reachable locations, the content's dig callbacks).
 - Nothing installs the library in `rs09-server --world` yet (see above for

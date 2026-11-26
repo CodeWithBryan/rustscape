@@ -1,9 +1,11 @@
 //! Native world systems; the live world/session lifecycle remains under construction.
 pub mod abuse_report;
 pub mod action_locks;
+pub mod activities;
 pub mod animation;
 pub mod appearance;
 pub mod bank_interface;
+pub mod books;
 pub mod chunk;
 pub mod chunk_sync;
 pub mod clipping;

@@ -1,0 +1,106 @@
+{
+  "caseCount": 1239,
+  "constantsJar": {
+    "checkedAgainstNames": [
+      "GOBLIN_BOOK_10999",
+      "SECURITY_BOOK_9003",
+      "STRONGHOLD_NOTES_9004",
+      "THE_GRIM_REAPERS_DIARY_11780"
+    ],
+    "lock": "oracle/bank/constants.lock.json"
+  },
+  "coverage": {
+    "actions": 5036,
+    "errors": {
+      "ClassCast": 3,
+      "Failure": 1190,
+      "Index": 40
+    },
+    "events": {
+      "angleOnInterface": 2,
+      "closeInterface": 1243,
+      "getAttribute": 6313,
+      "interfaceConfig": 57075,
+      "itemOnInterface": 1,
+      "modelOnInterface": 3,
+      "on": 924,
+      "onInterface": 3717,
+      "openInterface": 4003,
+      "sendString": 115562,
+      "setAttribute": 4264,
+      "storeBookInHouse": 522
+    },
+    "failureCases": 1190,
+    "groups": {
+      "GoblinBook": 232,
+      "GrimDiary": 147,
+      "SecurityBookPlugin": 287,
+      "StrongholdNotes": 241,
+      "attributes": 6,
+      "names": 1,
+      "pictures": 5,
+      "registration": 1,
+      "rules": 319
+    },
+    "operations": {
+      "attr": 10,
+      "button": 1606,
+      "clearModels": 2,
+      "define": 2163,
+      "isLastPage": 3,
+      "itemOnPage": 2,
+      "model": 7,
+      "read": 924,
+      "rules": 319
+    }
+  },
+  "fixtureSha256": "3214d2b458391b40adfccdbee7bec3cfed505de8d6866980395d5798b1d286df",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "locale": "en-US",
+  "scope": "The unchanged BookInterface and GeneralRuleBook, GoblinBook, GrimDiary, SecurityBookPlugin and StrongholdNotes on JDK 11 with Kotlin 1.8.20 and the published ConstLib 1.4.28 (Items values checked against the suffixes of the names used), with the unchanged IntType. Original text inserted: ContentAPI getAttribute, setAttribute, openInterface and closeInterface. Recording adapters: the InteractionListener and InterfaceListener registries (registration recorded in order with the lambda classes), the player attributes, interface manager and packet dispatch, storeBookInHouse, GameWorld.settings and ServerConstants. Every case runs in a class loader of its own; the k-th recorded call of a marked operation fails in the injected failure cases.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/books/Support.java": "f14a39c9a2503b62ce4cfeaa253eee3701145ba23bd1de0dcfea9dd0716ed9ca",
+    "oracle/books/adapters.py": "9738d24479e3bec54561752f12dd5867c61e543677ca98033b0491eedb1ce45e",
+    "oracle/books/cases.py": "df2cb2f44f2c5d60ce0ff20c82ce13c67681a0e2c00c5a3c78e358e2ca508ff2",
+    "oracle/books/generate.py": "4d054d82cf78f101a53196d3927509e6414b1f3f12313ce06a5ddb9906b994b0",
+    "oracle/global-items2/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/content/global/handlers/iface/BookInterface.kt": "087ddf649ac1243ab3f436bc8279e79d750bd1c9d1ea159dfdd7f09617101aa2",
+    "reference/server/Server/src/main/content/global/handlers/item/book/GeneralRuleBook.kt": "1a4213857a00a71923f9fb89897ee0a4d663337d86770cd118a0ad935bd8c821",
+    "reference/server/Server/src/main/content/global/handlers/item/book/GoblinBook.kt": "8685c8f996cccfc9e58860e48903a91ccc8d8b12610c7e478c43d0012d06e8ba",
+    "reference/server/Server/src/main/content/global/handlers/item/book/GrimDiary.kt": "ba0b6b380b92b0faa8f10ddf36e5111b09d92bb9a8a5372bc6cf0fba6bc01daf",
+    "reference/server/Server/src/main/content/global/handlers/item/book/SecurityBookPlugin.kt": "e1bcbdfda8ff6dafd856f00f87b88aba9e0053c7447d252f0fc6cfbd23279eff",
+    "reference/server/Server/src/main/content/global/handlers/item/book/StrongholdNotes.kt": "818d4b24fdb2f46e9fe4feeec14f6c5da5f4a3ebebd5c1b72af8eca62216f6a9",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/game/interaction/IntType.kt": "b3f4424d59503eea383dbdaf77b80434eb406bcf9d1c0c4fe99dfc50fe40ff63",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unchanged": [
+    "content/global/handlers/iface/BookInterface.kt",
+    "content/global/handlers/item/book/GeneralRuleBook.kt",
+    "content/global/handlers/item/book/GoblinBook.kt",
+    "content/global/handlers/item/book/GrimDiary.kt",
+    "content/global/handlers/item/book/SecurityBookPlugin.kt",
+    "content/global/handlers/item/book/StrongholdNotes.kt",
+    "core/game/interaction/IntType.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

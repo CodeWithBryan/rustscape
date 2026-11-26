@@ -193,10 +193,8 @@ over the canonical player, interfaces, packets, attributes, events and
 bank. The input op of the corpus invokes the stored runscript directly, not
 through RunScript.processInput (`input_prompt`); no other content dialogue
 is ported. The activity and cutscene framework (ActivityManager,
-ActivityPlugin, CutscenePlugin, Cutscene) is not ported: it needs
-DynamicRegion/RegionBuilder (not native), pulses submitted to the world,
-MinimapState, tab removal/restore, locks, camera packets, logout listeners
-and AntiMacro pause.
+ActivityPlugin, CutscenePlugin, Cutscene) is `world/activities`
+(docs/activities.md).
 
 ```powershell
 cargo test -p rs09-server --test dialogue_dsl --test dialogue --test npc_classes
