@@ -11,6 +11,11 @@ import re
 import shutil
 import struct
 import subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 SRC=ROOT/"reference/client/client/src/main/java/rt4"
@@ -166,7 +171,7 @@ LocClock(SeqType seq,int loop,double[] random){this.seq=seq;client.loop=loop;boo
     support=support.replace("class GlRenderer {static GL2 gl=new GL2();}","class GlRenderer {static GL2 gl=new GL2();static boolean orthographicActive;static float projectionDistance,depthBias,projectionZScale,projectionZOffset;static float[] matrix=new float[16];"+method(renderer,"public static void setDepthBias(")+"}")
     (RUN/"Support.java").write_text(support)
     if build_only:return sources
-    blob=(ROOT/"assets/visual/demo.pack").read_bytes();length=struct.unpack_from("<I",blob,8)[0];manifest=json.loads(blob[12:12+length]);payload=blob[12+length:]
+    blob=_recorded(ROOT,'demo.pack').read_bytes();length=struct.unpack_from("<I",blob,8)[0];manifest=json.loads(blob[12:12+length]);payload=blob[12+length:]
     def get(name):
         off,size=manifest["files"][name];return payload[off:off+size]
     inputs={}

@@ -34,6 +34,39 @@ pub struct Layered {
     pub report: serde_json::Value,
 }
 
+/// The parts of a pack manifest the layered builders read.
+#[derive(serde::Deserialize)]
+struct Manifest {
+    source: String,
+    files: OrderedFiles,
+}
+
+/// The manifest's `files` object as its members are written, keeping their
+/// order (the order the scripts' dictionaries had) and a name met again.
+struct OrderedFiles(Vec<(String, [usize; 2])>);
+impl<'de> serde::Deserialize<'de> for OrderedFiles {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = OrderedFiles;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("an object of [offset, size] spans")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<OrderedFiles, A::Error> {
+                let mut files = Vec::new();
+                while let Some(entry) = map.next_entry()? {
+                    files.push(entry);
+                }
+                Ok(OrderedFiles(files))
+            }
+        }
+        deserializer.deserialize_map(Visitor)
+    }
+}
+
 /// Named entries in first-insertion order, each holding its latest bytes.
 struct Entries {
     names: Vec<String>,
@@ -55,44 +88,20 @@ impl Entries {
             .get(12..12 + length)
             .ok_or("truncated pack manifest")?;
         let blob = &bytes[12 + length..];
-        let source = serde_json::from_slice::<serde_json::Value>(manifest)
-            .map_err(|e| format!("pack manifest: {e}"))?["source"]
-            .as_str()
-            .ok_or("pack manifest has no source")?
-            .to_owned();
-        let text = std::str::from_utf8(manifest).map_err(|e| format!("pack manifest: {e}"))?;
-        let marker = "\"files\":{";
-        let mut rest =
-            &text[text.find(marker).ok_or("pack manifest has no files")? + marker.len()..];
+        let manifest: Manifest =
+            serde_json::from_slice(manifest).map_err(|e| format!("pack manifest: {e}"))?;
         let mut entries = Self {
             names: vec![],
             data: vec![],
             lookup: HashMap::new(),
-            source,
+            source: manifest.source,
         };
-        let malformed = || "pack manifest is not in the packers' compact form".to_string();
-        while !rest.starts_with('}') {
-            rest = rest.strip_prefix('"').ok_or_else(malformed)?;
-            let end = rest.find('"').ok_or_else(malformed)?;
-            let name = &rest[..end];
-            if name.contains('\\') {
-                return Err(malformed());
-            }
-            rest = rest[end..].strip_prefix("\":[").ok_or_else(malformed)?;
-            let comma = rest.find(',').ok_or_else(malformed)?;
-            let close = rest.find(']').ok_or_else(malformed)?;
-            let start: usize = rest[..comma].parse().map_err(|_| malformed())?;
-            let size: usize = rest
-                .get(comma + 1..close)
-                .ok_or_else(malformed)?
-                .parse()
-                .map_err(|_| malformed())?;
-            let data = blob
-                .get(start..start + size)
+        for (name, [start, size]) in manifest.files.0 {
+            let data = start
+                .checked_add(size)
+                .and_then(|end| blob.get(start..end))
                 .ok_or_else(|| format!("{name} lies outside the pack"))?;
-            entries.set(name.to_owned(), data.to_vec());
-            rest = &rest[close + 1..];
-            rest = rest.strip_prefix(',').unwrap_or(rest);
+            entries.set(name, data.to_vec());
         }
         Ok(entries)
     }

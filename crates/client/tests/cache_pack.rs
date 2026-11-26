@@ -145,14 +145,19 @@ fn whole_cache_pack_serves_every_entry_of_the_prepared_packs() {
         "live/lumbridge-minimap.pack",
         "tour/varrock.pack",
     ];
-    // The scripts' packs too, where the default ones have been rebuilt.
+    // The scripts' packs too, where the default ones have been rebuilt and
+    // the scripts' copies were kept.
     if packs::rebuilt() {
-        names.extend([
-            "recorded/ui.pack",
-            "recorded/ui-models.pack",
-            "recorded/ui-players.pack",
-            "recorded/demo.pack",
-        ]);
+        names.extend(
+            [
+                "recorded/ui.pack",
+                "recorded/ui-models.pack",
+                "recorded/ui-players.pack",
+                "recorded/demo.pack",
+            ]
+            .into_iter()
+            .filter(|name| packs::visual().join(name).is_file()),
+        );
     }
     for name in names {
         let prepared =

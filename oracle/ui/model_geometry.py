@@ -1,5 +1,10 @@
 """Compare real raw kit/item/NPC/player head assembly with the pinned client."""
 import argparse,hashlib,importlib.util,json,pathlib,random,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 ROOT=pathlib.Path(__file__).resolve().parents[2];RUN=ROOT/'runs/ui-model-geometry-oracle';FIX=ROOT/'fixtures/ui/model-geometry.json'
 spec=importlib.util.spec_from_file_location('v',ROOT/'oracle/visual/generate.py');v=importlib.util.module_from_spec(spec);spec.loader.exec_module(v)
 spec=importlib.util.spec_from_file_location('f',ROOT/'tools/port_client_items.py');f=importlib.util.module_from_spec(spec);spec.loader.exec_module(f)
@@ -24,7 +29,7 @@ def generate(check=False):
     (RUN/'PlayerHead.java').write_text('class PlayerHead{int[]identikit,colors;boolean gender;static short[]sourceBodyColors=AppearanceOracle.GAME0_SOURCE_BODY_COLORS,sourceSkinColors=AppearanceOracle.GAME0_SOURCE_SKIN_COLORS;static short[][]destinationBodyColors=AppearanceOracle.GAME0_DESTINATION_BODY_COLORS,destinationSkinColors=AppearanceOracle.GAME0_DESTINATION_SKIN_COLORS;RawModel head(){int slotId;'+head+'return combined;}RawModel partial(int jawId,int beardId,int hairId){'+partial+'return rawModel;}}',encoding='utf-8')
     (RUN/'HeadOracle.java').write_text(SUPPORT,encoding='utf-8')
     subprocess.run(['javac','-encoding','UTF-8','-d',str(RUN),*[str(p)for p in RUN.glob('*.java')]],check=True)
-    ui_path=ROOT/'assets/visual/ui-models.pack';world_path=ROOT/'assets/visual/live/lumbridge-minimap.pack';ui=pack(ui_path);world=pack(world_path);data=RUN/'data';data.mkdir(exist_ok=True)
+    ui_path=_recorded(ROOT,'ui-models.pack');world_path=ROOT/'assets/visual/live/lumbridge-minimap.pack';ui=pack(ui_path);world=pack(world_path);data=RUN/'data';data.mkdir(exist_ok=True)
     for name,raw in ui.items():
         if name.startswith('model/'):(data/('model_'+name[6:]+'.bin')).write_bytes(raw)
     cases=[];requests=[];kit_ids=[];item_ids=[]

@@ -25,7 +25,14 @@
 //!
 //! Every pack gets a `NAME.provenance.json` beside it: the pins, the hashes
 //! of its inputs, its size and hash, and the builder's counts.
+//!
+//! Nothing is replaced until every pack of the command is built: each pack
+//! and sidecar is written beside its destination first and all of them are
+//! moved into place at the end. As the scripts did, the layered packs refuse
+//! a cache whose files differ from the pinned server's Git LFS objects, and
+//! an output that is one of their inputs.
 use sha2::{Digest, Sha256};
+use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
 type Failure = Box<dyn std::error::Error>;
@@ -39,7 +46,47 @@ struct Tool {
     cache: PathBuf,
     lock: serde_json::Value,
     commit: String,
+    /// Written files waiting to be moved into place: (staged, destination).
+    staged: RefCell<Vec<(PathBuf, PathBuf)>>,
 }
+
+/// `path` with `.partial` appended to its file name.
+fn partial(path: &Path) -> PathBuf {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(".partial");
+    path.with_file_name(name)
+}
+
+/// The absolute form of a path that may not exist yet.
+fn resolved(path: &Path) -> PathBuf {
+    let absolute = std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf());
+    match (absolute.parent(), absolute.file_name()) {
+        (Some(parent), Some(name)) => parent
+            .canonicalize()
+            .map(|parent| parent.join(name))
+            .unwrap_or(absolute),
+        _ => absolute,
+    }
+}
+
+/// Refuses an output pack, or its sidecar, that is one of the inputs.
+fn separate(output: &Path, inputs: &[&str]) -> Result<(), Failure> {
+    let targets = [
+        resolved(output),
+        resolved(&output.with_extension("provenance.json")),
+    ];
+    for input in inputs {
+        if targets.contains(&resolved(Path::new(input))) {
+            return Err(format!(
+                "{} would replace its input {input}; use a separate output pack",
+                output.display()
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
 impl Tool {
     fn option(&self, key: &str) -> Option<String> {
         self.args
@@ -75,6 +122,49 @@ impl Tool {
             (None, None) => Ok(None),
         }
     }
+    /// The scripts' check: each cache file the builders read must be the
+    /// pinned server's Git LFS object.
+    fn verify_cache(&self) -> Result<(), Failure> {
+        let names = ["main_file_cache.dat2"]
+            .into_iter()
+            .map(String::from)
+            .chain([0, 1, 2, 7, 20].map(|i| format!("main_file_cache.idx{i}")));
+        for name in names {
+            let pointer = self.server_file(&format!("Server/data/cache/{name}"))?;
+            let expected = String::from_utf8_lossy(&pointer)
+                .lines()
+                .find_map(|line| line.strip_prefix("oid sha256:").map(str::to_owned))
+                .ok_or_else(|| format!("{name}: the pinned file is not a Git LFS pointer"))?;
+            let actual = sha(&std::fs::read(self.cache.join(&name))
+                .map_err(|e| format!("{}: {e}", self.cache.join(&name).display()))?);
+            if actual != expected {
+                return Err(format!("{name} differs from pin").into());
+            }
+        }
+        Ok(())
+    }
+    /// Moves every staged file into place.
+    fn publish(&self) -> Result<(), Failure> {
+        for (staged, destination) in self.staged.borrow_mut().drain(..) {
+            std::fs::rename(&staged, &destination)
+                .map_err(|e| format!("{}: {e}", destination.display()))?;
+        }
+        Ok(())
+    }
+    /// Removes the staged files of a command that failed.
+    fn discard(&self) {
+        for (staged, _) in self.staged.borrow_mut().drain(..) {
+            let _ = std::fs::remove_file(staged);
+        }
+    }
+    fn stage(&self, destination: &Path, bytes: &[u8]) -> Result<(), Failure> {
+        let staged = partial(destination);
+        std::fs::write(&staged, bytes).map_err(|e| format!("{}: {e}", staged.display()))?;
+        self.staged
+            .borrow_mut()
+            .push((staged, destination.to_path_buf()));
+        Ok(())
+    }
     fn write(
         &self,
         output: &Path,
@@ -84,16 +174,16 @@ impl Tool {
         if let Some(parent) = output.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        std::fs::write(output, bytes)?;
+        self.stage(output, bytes)?;
         let fields = record.as_object_mut().expect("a record is an object");
         fields.insert("builder".into(), "rs09-client build_packs".into());
         fields.insert("server".into(), self.lock["server"].clone());
         fields.insert("client".into(), self.lock["client"].clone());
         fields.insert("bytes".into(), bytes.len().into());
         fields.insert("sha256".into(), sha(bytes).into());
-        std::fs::write(
-            output.with_extension("provenance.json"),
-            serde_json::to_string_pretty(&record)? + "\n",
+        self.stage(
+            &output.with_extension("provenance.json"),
+            (serde_json::to_string_pretty(&record)? + "\n").as_bytes(),
         )?;
         println!(
             "{} bytes, sha256 {} -> {}",
@@ -238,6 +328,7 @@ fn main() -> Result<(), Failure> {
         args,
         lock,
         commit,
+        staged: RefCell::new(Vec::new()),
     };
     tool.cache = PathBuf::from(
         tool.option("--cache")
@@ -253,11 +344,26 @@ fn main() -> Result<(), Failure> {
                 .unwrap_or_else(|| default.into()),
         )
     };
-    let read = |key: &str, default: &str| {
-        let path = tool.option(key).unwrap_or_else(|| default.into());
-        std::fs::read(&path).map_err(|e| format!("{path}: {e}"))
-    };
-    match kind.as_str() {
+    let path = |key: &str, default: &str| tool.option(key).unwrap_or_else(|| default.into());
+    let read = |path: &str| std::fs::read(path).map_err(|e| format!("{path}: {e}"));
+    let result = build(&tool, &kind, &output, &path, &read);
+    match result {
+        Ok(()) => tool.publish(),
+        Err(error) => {
+            tool.discard();
+            Err(error)
+        }
+    }
+}
+
+fn build(
+    tool: &Tool,
+    kind: &str,
+    output: &dyn Fn(&str) -> PathBuf,
+    path: &dyn Fn(&str, &str) -> String,
+    read: &dyn Fn(&str) -> Result<Vec<u8>, String>,
+) -> Result<(), Failure> {
+    match kind {
         "ui" => {
             tool.ui(&output("assets/visual/ui.pack"))?;
         }
@@ -265,15 +371,24 @@ fn main() -> Result<(), Failure> {
             tool.world(&output("runs/visual/world.pack"), false)?;
         }
         "ui-models" => {
-            let ui = read("--ui", "assets/visual/ui.pack")?;
-            let world = read("--world", "assets/visual/demo.pack")?;
-            tool.ui_models(&output("assets/visual/ui-models.pack"), &ui, &world)?;
+            let target = output("assets/visual/ui-models.pack");
+            let (ui, world) = (
+                path("--ui", "assets/visual/ui.pack"),
+                path("--world", "assets/visual/demo.pack"),
+            );
+            separate(&target, &[&ui, &world])?;
+            tool.verify_cache()?;
+            tool.ui_models(&target, &read(&ui)?, &read(&world)?)?;
         }
         "ui-players" => {
-            let ui = read("--ui", "assets/visual/ui-models.pack")?;
-            tool.ui_players(&output("assets/visual/ui-players.pack"), &ui)?;
+            let target = output("assets/visual/ui-players.pack");
+            let ui = path("--ui", "assets/visual/ui-models.pack");
+            separate(&target, &[&ui])?;
+            tool.verify_cache()?;
+            tool.ui_players(&target, &read(&ui)?)?;
         }
         "all" => {
+            tool.verify_cache()?;
             let directory = output("assets/visual");
             let world = tool.world(&directory.join("demo.pack"), true)?;
             let ui = tool.ui(&directory.join("ui.pack"))?;
