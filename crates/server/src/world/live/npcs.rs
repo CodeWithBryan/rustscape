@@ -154,14 +154,15 @@ impl npc_walk::Services for WalkHost<'_> {
             npc::Event::Inactivity => super::npc_life::on_region_inactivity(state, self, node),
             npc::Event::Restore => {
                 // Entity.fullRestore(): skills.restore() (every level back to
-                // its static level, lifepoints to the maximum), then the
-                // poison timers' removal (NPC timers are not installed: an
-                // NPC has none).
+                // its static level, lifepoints to the maximum), then
+                // timers.removeTimer("poison") and ("poison:immunity"), run
+                // right after the walking call returns (they need the whole
+                // world: super::timers).
                 let row = self.npcs.rows.get_mut(&node).ok_or(npc::Error::Null)?;
                 row.levels = row.static_levels;
                 row.lifepoints = row.static_levels[3];
-                self.not_ported
-                    .default_answer("NPC timer queries (none: no NPC timer is registered)");
+                self.deferred
+                    .push(super::walk::Deferred::NpcRestoreTimers(node));
                 Ok(())
             }
             npc::Event::BehaviorRespawn | npc::Event::Respawn | npc::Event::PauseAggression(_) => {
@@ -299,7 +300,15 @@ impl Live {
                 .is_some_and(|row| row.brain.fields.read().respawn_tick > self.inner.ticks);
             active && !waiting
         };
+        self.npc_timers_due.retain(|n| *n != node);
         let result = self.with_walk_host(|state, host| npc_walk::tick(state, host, node));
+        // timers.processTimers(), the last step of Entity.tick before
+        // updateMasks.prepare, when the walking call reached it.
+        if result.is_ok() && self.npc_timers_due.contains(&node) {
+            self.npc_timers_due.retain(|n| *n != node);
+            self.process_npc_timers(p)
+                .map_err(|e| npc::Error::Binding(format!("NPC timers: {e:?}")))?;
+        }
         if result.is_ok() && reaches_entity_tick {
             self.npc_prepare_masks(node).map_err(nerror)?;
         }

@@ -449,7 +449,7 @@ impl zones::Host for Live {
     }
     fn has_timer(&mut self, entity: &NodeHandle, identifier: &str) -> zones::Result<bool> {
         // hasTimerActive(entity, identifier) over the player's timers
-        // (super::timers); NPC timers are not installed.
+        // or the NPC's timer manager (super::timers).
         self.has_timer_of(entity.node, identifier).map_err(zerror)
     }
     fn teleport_locked(&mut self, entity: &NodeHandle) -> zones::Result<bool> {
