@@ -154,7 +154,8 @@ pub trait Host<E> {
 
     // Calls into the player and its systems.
     /// `player.clear()`, a virtual call. For a plain `Player` it is
-    /// [`disconnection::player_clear`]; `AIPlayer.clear` is not ported.
+    /// [`disconnection::player_clear`]; for an `AIPlayer` it is
+    /// `bots::AiPlayer::clear`. `bots::ai_player::virtual_clear` is both.
     fn player_clear(&mut self, repository: &Repository<E>, player: &E) -> Result<()>;
     /// `UpdateSequence.renderablePlayers.remove(player)`.
     fn renderable_players_remove(&mut self, player: &E) -> Result<bool>;

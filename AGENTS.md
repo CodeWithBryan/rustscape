@@ -304,6 +304,45 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   every outside call are required Host services with no default; nothing
   installs the library in `--world`. See docs/familiars.md.
 
+- For the artificial player engine (world/bots: AIPlayer with
+  ArtificialSession and the Scanner its name files are read with,
+  AIRepository, Script, ScriptAPI, GeneralBotCreator with BotScriptPulse,
+  TransitionPulse and GBCTick, AIPBuilder, CombatBot, PvMBots,
+  PvMBotsBuilder, CombatBotAssembler, SkillingBotAssembler, PlayerScripts),
+  run `cargo test -p rs09-server --test bots` and `cargo xtask bots-oracle
+  --check` with Python/JDK 11, plus the repository, canonical_player, social,
+  trade, pulses, variables, world_login, world_trace, content_api and
+  combat_pulse suites. Preserve the 1,343 cases. Keep the constructor's
+  order (details name from currentUID + 1, location, artificial, session,
+  NodeList.add with no uid or name map entry, display name, currentUID++, the
+  virtual updateRandomValues, init) and what a failure leaves behind, the
+  name taken out of botNames, the static OSRScopyLine with its draw per line
+  the Scanner still has a token for, AIPlayer.clear as the botMapping removal
+  and then Player.clear (disconnection::player_clear), deregister finding
+  nothing after a clear, clearAllBots' cast after the clear, addItem's
+  failure without a dropper, the four object lookups per tile and the
+  truncated best distance of the searches, both draws before a missing
+  location fails, BotScriptPulse's order (delay, a movement pulse stuck for
+  more than five ticks with the wrapping difference, the dialogue close, the
+  stopped script, the 75 per tick, the roll before the Idler test), stop's
+  extra pulse, PulseRepository filled only by the AIPlayer constructor and
+  TransitionPulse, Script.init's HashMap order, ScriptAPI's Scenery cast,
+  viability test, last listed object, exact target names, plane-0 walk
+  target, wrapping news product, the six log ids left in the bank and the
+  Food fallbacks, Item's 16-bit id with the definition of the id as written,
+  CombatBot's zero-filled Food, the crossbow flag that never chooses,
+  equipHighest's integer averages and random pick among the best, and
+  equipSet's inventory slot test. Kotlin Location parameters are not
+  nullable. The statics are one value per world, pulses are bots::Pulse
+  values the host runs, and no lock spans a service. Stand-ins declared in
+  the engine's package make `Random()` and `.random()` recorded draws;
+  kotlin.random.Random.nextInt's two draws are read off the result. The bot
+  scripts, ImmerseWorld, the pest control bots and every outside call are
+  required Host services with no default; the replay's bots are canonical
+  players for name, artificial and playing only. Nothing installs the
+  library in `--world`; world_login and world_trace keep their stand-ins.
+  See docs/bots.md.
+
 - For Prayer/PrayerType/PrayerCategory, the prayer tab handler, Player
   commenceDeath/fullRestore or the combat prayer reads (world/prayer), run
   `cargo test -p rs09-server --test prayer` and `cargo xtask prayer-oracle

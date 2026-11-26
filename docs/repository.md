@@ -143,13 +143,14 @@ and must not answer them from native state that is not the real system.
   `SaveTask` and runs it later, off the tick. Real coroutine dispatch and
   threads are not part of this corpus.
 - `Player.clear` is a host call because it is virtual; the plain `Player`
-  body is `player_clear`. `AIPlayer.clear` is not ported.
+  body is `player_clear`. `AIPlayer.clear` is `world::bots` (docs/bots.md): a
+  binding answers the call with `bots::ai_player::virtual_clear`.
 - A failure of a service is `Io`, `Exception` or `Throwable`, so that each
   `catch` stops what it stops in the original. Stack traces are a host call.
 
 ## Not ported
 
-`AIPlayer.clear`; `checkForWealthUpdate`'s body; `PlayerSaver` as a save hand-off
+`checkForWealthUpdate`'s body; `PlayerSaver` as a save hand-off
 target (it is the player-save port's); `LoginParser`, `LoginConfiguration` and
 the lobby; `MajorUpdateWorker`'s call site (the tick driver in the corpus is
 "update, then increment the counter"); `SystemTermination`; real sockets,

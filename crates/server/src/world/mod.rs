@@ -7,6 +7,7 @@ pub mod api_utils;
 pub mod appearance;
 pub mod bank_interface;
 pub mod books;
+pub mod bots;
 pub mod chunk;
 pub mod chunk_sync;
 pub mod clipping;
