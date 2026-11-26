@@ -31,49 +31,70 @@ impl Staging {
     /// first set aside (as `NAME.previous`); if any move fails, the files
     /// already moved are removed, the set-aside files are put back and the
     /// staged files are discarded, so the destinations end as they began.
-    pub fn publish(mut self) -> Result<(), String> {
+    /// If that rollback fails too, the error says so and names each
+    /// set-aside file left for recovery.
+    pub fn publish(self) -> Result<(), String> {
+        self.publish_with(|from, to| std::fs::rename(from, to))
+    }
+
+    fn publish_with(
+        mut self,
+        mut rename: impl FnMut(&Path, &Path) -> std::io::Result<()>,
+    ) -> Result<(), String> {
         let files = std::mem::take(&mut self.files);
         let mut kept: Vec<(PathBuf, PathBuf)> = Vec::new();
         let mut placed: Vec<PathBuf> = Vec::new();
-        let mut result = Ok(());
+        let mut failure = None;
         for (_, destination) in &files {
             if destination.exists() {
                 let previous = with_suffix(destination, ".previous");
-                if let Err(e) = std::fs::rename(destination, &previous) {
-                    result = Err(format!("{}: {e}", destination.display()));
+                if let Err(e) = rename(destination, &previous) {
+                    failure = Some(format!("{}: {e}", destination.display()));
                     break;
                 }
                 kept.push((previous, destination.clone()));
             }
         }
-        if result.is_ok() {
+        if failure.is_none() {
             for (staged, destination) in &files {
-                if let Err(e) = std::fs::rename(staged, destination) {
-                    result = Err(format!("{}: {e}", destination.display()));
+                if let Err(e) = rename(staged, destination) {
+                    failure = Some(format!("{}: {e}", destination.display()));
                     break;
                 }
                 placed.push(destination.clone());
             }
         }
-        match result {
-            Ok(()) => {
-                for (previous, _) in kept {
-                    let _ = std::fs::remove_file(previous);
-                }
-                Ok(())
+        let Some(error) = failure else {
+            for (previous, _) in kept {
+                let _ = std::fs::remove_file(previous);
             }
-            Err(error) => {
-                for destination in placed {
-                    let _ = std::fs::remove_file(destination);
-                }
-                for (previous, destination) in kept {
-                    let _ = std::fs::rename(previous, destination);
-                }
-                for (staged, _) in files {
-                    let _ = std::fs::remove_file(staged);
-                }
-                Err(error)
+            return Ok(());
+        };
+        let mut unrestored = Vec::new();
+        for destination in placed {
+            if let Err(e) = std::fs::remove_file(&destination) {
+                unrestored.push(format!("{} (not removed: {e})", destination.display()));
             }
+        }
+        for (previous, destination) in kept {
+            if let Err(e) = rename(&previous, &destination) {
+                unrestored.push(format!(
+                    "{} is kept as {} ({e})",
+                    destination.display(),
+                    previous.display()
+                ));
+            }
+        }
+        for (staged, _) in files {
+            let _ = std::fs::remove_file(staged);
+        }
+        if unrestored.is_empty() {
+            Err(error)
+        } else {
+            Err(format!(
+                "{error}; the previous files could not all be put back: {}",
+                unrestored.join("; ")
+            ))
         }
     }
 }
@@ -157,6 +178,36 @@ mod tests {
         }
         assert_eq!(std::fs::read(dir.join("a.pack")).unwrap(), b"old a");
         assert!(!dir.join("a.pack.partial").exists());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_failed_rollback_is_reported_and_keeps_the_set_aside_file() {
+        let dir = directory("rollback");
+        std::fs::write(dir.join("a.pack"), b"old a").unwrap();
+        let mut staging = Staging::default();
+        staging.stage(&dir.join("a.pack"), b"new a").unwrap();
+        staging.stage(&dir.join("b.pack"), b"new b").unwrap();
+        // Set aside a.pack, place a.pack, then fail placing b.pack and fail
+        // putting the set-aside a.pack back.
+        let mut calls = 0;
+        let error = staging
+            .publish_with(|from, to| {
+                calls += 1;
+                match calls {
+                    3 | 4 => Err(std::io::Error::other("injected")),
+                    _ => std::fs::rename(from, to),
+                }
+            })
+            .unwrap_err();
+        assert!(error.contains("could not all be put back"), "{error}");
+        assert!(error.contains("a.pack.previous"), "{error}");
+        assert_eq!(
+            std::fs::read(dir.join("a.pack.previous")).unwrap(),
+            b"old a"
+        );
+        assert!(!dir.join("a.pack").exists());
+        assert!(!dir.join("b.pack.partial").exists());
         std::fs::remove_dir_all(dir).unwrap();
     }
 }
