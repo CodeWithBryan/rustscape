@@ -340,10 +340,10 @@ pub fn run_force_move<H: Host + ?Sized>(h: &mut H, m: &mut ForceMove<H::Node>) -
         }
         return state::keep_running(h, &p);
     }
-    if let Some(callback) = m.callback.clone() {
-        if let Err(e) = h.call(M::Callback, vec![nd(&callback)]) {
-            h.print_stack_trace(&e)?;
-        }
+    if let Some(callback) = m.callback.clone()
+        && let Err(e) = h.call(M::Callback, vec![nd(&callback)])
+    {
+        h.print_stack_trace(&e)?;
     }
     unit(h, M::SetTeleportLocation, vec![nd(&p), Arg::Loc(m.dest)])?;
     state::stop_executing(h, &p)

@@ -212,11 +212,10 @@ impl Service {
                         service.metrics.active.fetch_add(1, Ordering::Relaxed);
                         let active = Active {metrics: Arc::clone(&service.metrics), _slot: slot};
                         if let Ok(Ok((reader, writer))) = timeout(Duration::from_secs(10),
-                            rs09_net::accept(socket, websocket, service.config.max_ingress)).await {
-                            if service.connection(reader, writer, peer).await.is_err() {
+                            rs09_net::accept(socket, websocket, service.config.max_ingress)).await
+                            && service.connection(reader, writer, peer).await.is_err() {
                                 service.metrics.failed.fetch_add(1, Ordering::Relaxed);
                             }
-                        }
                         drop(active);
                     });
                 }

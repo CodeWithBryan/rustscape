@@ -1,5 +1,10 @@
 """Original synthesized PCM for every prepared location ambient effect."""
 import argparse,hashlib,importlib.util,json,pathlib,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 def generate(check=False,*,ids=None,name='synthesis',bindings=None):
     spec=importlib.util.spec_from_file_location('v',ROOT/'oracle/visual/generate.py');v=importlib.util.module_from_spec(spec);spec.loader.exec_module(v)
@@ -13,7 +18,7 @@ public class Probe{static String hash(byte[]b)throws Exception{return HexFormat.
         metadata=json.loads((ROOT/'fixtures/audio/metadata.json').read_text());ids=set()
         for c in metadata['cases']:
             n=c['expected'];ids.update(v for v in [n[0]]+(n[4]or[])if v>=0)
-    pack=(ROOT/'assets/visual/ui.pack').read_bytes();n=struct.unpack_from('<I',pack,8)[0];manifest=json.loads(pack[12:12+n]);blob=pack[12+n:];cases=[];missing=[]
+    pack=_recorded(ROOT,'ui.pack').read_bytes();n=struct.unpack_from('<I',pack,8)[0];manifest=json.loads(pack[12:12+n]);blob=pack[12+n:];cases=[];missing=[]
     for id in sorted(ids):
         key=f'sound/{id}'
         if key not in manifest['files']:missing.append(id);continue

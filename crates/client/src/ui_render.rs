@@ -285,10 +285,10 @@ impl BitmapFont {
                 continue;
             };
             let id = usize::from(glyph);
-            if previous != 0 {
-                if let Some(kerning) = &self.metrics.kerning {
-                    x += f32::from(kerning[previous * 256 + id]);
-                }
+            if previous != 0
+                && let Some(kerning) = &self.metrics.kerning
+            {
+                x += f32::from(kerning[previous * 256 + id]);
             }
             let (src, offset) = self.glyphs[id];
             let delta = offsets.get(glyph_index).copied().unwrap_or([0, 0]);
@@ -568,14 +568,15 @@ impl Renderer {
             .frames
             .len() as i32;
         for a in actors {
-            if let Some(n) = a.npc {
-                if n.hitbar >= 0 && visual.get(&format!("sprite/{}", n.hitbar)).is_ok() {
-                    let s = self.overhead_sheet(visual, n.hitbar)?;
-                    if s.frames.len() == 2 {
-                        config
-                            .custom_bars
-                            .insert(n.hitbar, s.frames[0].size.map(|n| n as i32));
-                    }
+            if let Some(n) = a.npc
+                && n.hitbar >= 0
+                && visual.get(&format!("sprite/{}", n.hitbar)).is_ok()
+            {
+                let s = self.overhead_sheet(visual, n.hitbar)?;
+                if s.frames.len() == 2 {
+                    config
+                        .custom_bars
+                        .insert(n.hitbar, s.frames[0].size.map(|n| n as i32));
                 }
             }
         }
@@ -951,14 +952,14 @@ impl Renderer {
                 continue;
             }
             // Cs1ScriptRunner.renderComponent 315-317.
-            if let Some(component) = state.components.get_mut(&node.key) {
-                if component.client_code > 0 {
-                    rs09_client::ui::client_code::apply(
-                        component,
-                        &mut self.gender_sprites,
-                        &self.client_codes,
-                    );
-                }
+            if let Some(component) = state.components.get_mut(&node.key)
+                && component.client_code > 0
+            {
+                rs09_client::ui::client_code::apply(
+                    component,
+                    &mut self.gender_sprites,
+                    &self.client_codes,
+                );
             }
             if self.excluded == Some(node.key) {
                 continue;
@@ -1047,10 +1048,10 @@ impl Renderer {
                 // Cs1ScriptRunner.java:486-533: the debug component draws
                 // nothing of its own or below it, only the `::fpson` lines.
                 skip_until = node.subtree_end;
-                if let Some(fps) = self.display_fps {
-                    if let Err(e) = self.debug_overlay(state, visual, node, fps) {
-                        state.diagnostic(format!("Frame rate display: {e}"));
-                    }
+                if let Some(fps) = self.display_fps
+                    && let Err(e) = self.debug_overlay(state, visual, node, fps)
+                {
+                    state.diagnostic(format!("Frame rate display: {e}"));
                 }
                 continue;
             }
@@ -1146,12 +1147,10 @@ impl Renderer {
                         Request::Background { slot, at } => {
                             if let Some(&sprite) =
                                 c.inv_sprite.as_ref().and_then(|a| a.get(slot as usize))
+                                && sprite >= 0
+                                && let Ok(sprite) = self.sprite(visual, sprite)
                             {
-                                if sprite >= 0 {
-                                    if let Ok(sprite) = self.sprite(visual, sprite) {
-                                        sprite.natural(vec2(at[0] as f32, at[1] as f32));
-                                    }
-                                }
+                                sprite.natural(vec2(at[0] as f32, at[1] as f32));
                             }
                         }
                     });

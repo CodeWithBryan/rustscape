@@ -199,14 +199,12 @@ impl GlTile {
         depth: f32,
     ) -> u32 {
         let shared = x & 0x7f == 0 || z & 0x7f == 0;
-        if shared {
-            if let Some(&index) = self.dedup.get(&(x, z, color)) {
-                let stored = &mut self.y[index as usize];
-                if y < *stored {
-                    *stored = y;
-                }
-                return index;
+        if shared && let Some(&index) = self.dedup.get(&(x, z, color)) {
+            let stored = &mut self.y[index as usize];
+            if y < *stored {
+                *stored = y;
             }
+            return index;
         }
         let index = self.x.len() as u32;
         self.x.push(x);

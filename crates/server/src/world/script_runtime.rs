@@ -57,10 +57,10 @@ pub(crate) fn validate_captures(state: &State, captures: Captures) -> Result<()>
             node(state, &n)?;
         }
         for pin in c.pins {
-            if visited.insert((0, pin.ownership().0)) {
-                if let Some(n) = pin.player() {
-                    node(state, &n)?;
-                }
+            if visited.insert((0, pin.ownership().0))
+                && let Some(n) = pin.player()
+            {
+                node(state, &n)?;
             }
         }
         for container in c.containers {

@@ -1321,10 +1321,10 @@ impl<H: Host> Monitor<H> {
             Some(target) => host.target_entity(target)?,
             None => None,
         };
-        if let Some(other) = &target_entity {
-            if !host.entity_continue_attack(entity, other, style, message)? {
-                return Ok(false);
-            }
+        if let Some(other) = &target_entity
+            && !host.entity_continue_attack(entity, other, style, message)?
+        {
+            return Ok(false);
         }
         if each(&self.0.zones, |z| {
             Ok((!z

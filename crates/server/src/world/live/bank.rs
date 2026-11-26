@@ -252,7 +252,7 @@ impl bank::Context for BankUi<'_> {
         self.manager_call(&manager, |inner, m| interfaces::remove_tabs(inner, m, tabs))
     }
     fn open_default_tabs(&mut self, manager: interfaces::Manager) -> inv::Result<()> {
-        self.manager_call(&manager, |inner, m| interfaces::open_default_tabs(inner, m))
+        self.manager_call(&manager, interfaces::open_default_tabs)
     }
     fn open_single_tab(
         &mut self,

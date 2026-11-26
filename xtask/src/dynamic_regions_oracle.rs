@@ -92,10 +92,10 @@ fn export_region(assets: &CacheAssets, id: i32, objects: &mut BTreeSet<i32>) -> 
     };
     let land = if l >= 0 {
         let bytes = assets.landscape(l, assets.keys(id)?)?;
-        if let Some(bytes) = &bytes {
-            if bytes.len() >= 4 {
-                landscape_ids(bytes, objects)?;
-            }
+        if let Some(bytes) = &bytes
+            && bytes.len() >= 4
+        {
+            landscape_ids(bytes, objects)?;
         }
         bytes.map(|b| hex(&b))
     } else {
@@ -196,10 +196,10 @@ pub fn generate(root: &Path, args: &[String]) -> Result<()> {
             {
                 definitions.insert(id.to_string(), hex(&data));
             }
-            if let Some(h) = registry.definitions.get(&id) {
-                if let Some(children) = h.read().children_ids.clone() {
-                    pending.extend(children.read().iter().copied());
-                }
+            if let Some(h) = registry.definitions.get(&id)
+                && let Some(children) = h.read().children_ids.clone()
+            {
+                pending.extend(children.read().iter().copied());
             }
         }
         Ok(serde_json::to_vec(

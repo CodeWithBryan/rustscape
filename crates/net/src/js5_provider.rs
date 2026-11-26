@@ -804,10 +804,11 @@ impl ResourceProvider {
                 if !crc_matches {
                     net.rekey();
                     self.requests.remove(&group);
-                    if request.urgent() && !net.is_urgent_request_queue_full() {
-                        if let Some(retry) = self.request_group(group, true, net) {
-                            self.track(group, retry);
-                        }
+                    if request.urgent()
+                        && !net.is_urgent_request_queue_full()
+                        && let Some(retry) = self.request_group(group, true, net)
+                    {
+                        self.track(group, retry);
                     }
                     return Ok(None);
                 }
@@ -826,10 +827,11 @@ impl ResourceProvider {
                 if !(crc_matches && trailer_matches) {
                     self.group_status[slot] = -1;
                     self.requests.remove(&group);
-                    if request.urgent() && !net.is_urgent_request_queue_full() {
-                        if let Some(retry) = self.request_group(group, true, net) {
-                            self.track(group, retry);
-                        }
+                    if request.urgent()
+                        && !net.is_urgent_request_queue_full()
+                        && let Some(retry) = self.request_group(group, true, net)
+                    {
+                        self.track(group, retry);
                     }
                     return Ok(None);
                 }

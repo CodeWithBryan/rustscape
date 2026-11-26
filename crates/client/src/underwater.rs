@@ -468,10 +468,10 @@ impl Scene {
         )
         .entries;
         for (entry, &[_, x, y, _, shape, _]) in entries.iter_mut().zip(&rows) {
-            if let Some(planned) = entry {
-                if !self.place(x, y, shape, planned.placement.size) {
-                    *entry = None;
-                }
+            if let Some(planned) = entry
+                && !self.place(x, y, shape, planned.placement.size)
+            {
+                *entry = None;
             }
         }
         entries

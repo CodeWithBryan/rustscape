@@ -205,10 +205,10 @@ fn original_location_ambient_bounds_morph_lifetimes_rng_and_distance_gain_match(
             if let Some(finish) = s.get("finish") {
                 let finish = finish.as_u64().unwrap();
                 for (bit, id) in [(1, emitter.primary), (2, emitter.secondary)] {
-                    if finish & bit != 0 {
-                        if let Some(id) = id {
-                            host.streams.get_mut(&id).unwrap()[4] = 0;
-                        }
+                    if finish & bit != 0
+                        && let Some(id) = id
+                    {
+                        host.streams.get_mut(&id).unwrap()[4] = 0;
                     }
                 }
             }

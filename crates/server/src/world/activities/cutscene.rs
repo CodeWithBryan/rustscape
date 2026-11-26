@@ -688,15 +688,15 @@ pub(crate) fn end_stop<H: Host>(
     host.remove_logout_listener(&player, ATTRIBUTE_CUTSCENE)?;
     host.anti_macro_unpause(&player)?;
     host.minimap_state(&player, 0)?;
-    if let Some(EndActions(c, id)) = actions {
-        if let Err(error) = c.script().callback(host, c, *id) {
-            host.log(
-                class,
-                Level::Err,
-                "There's some bad nasty code in  end actions!",
-            )?;
-            host.print_stack_trace(&error)?;
-        }
+    if let Some(EndActions(c, id)) = actions
+        && let Err(error) = c.script().callback(host, c, *id)
+    {
+        host.log(
+            class,
+            Level::Err,
+            "There's some bad nasty code in  end actions!",
+        )?;
+        host.print_stack_trace(&error)?;
     }
     Ok(())
 }

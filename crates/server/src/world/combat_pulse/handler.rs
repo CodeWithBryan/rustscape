@@ -530,10 +530,10 @@ fn range_can_swing<H: Host>(
     }
     if h.kind(entity).is_player() {
         let weapon = h.equipment_new(entity, slot::WEAPON)?;
-        if let Some(rw) = h.range_weapon(h.item_id(&weapon)) {
-            if rw.kind()? == WeaponType::DoubleShot || rw.kind()? == WeaponType::Degrading {
-                distance = 10;
-            }
+        if let Some(rw) = h.range_weapon(h.item_id(&weapon))
+            && (rw.kind()? == WeaponType::DoubleShot || rw.kind()? == WeaponType::Degrading)
+        {
+            distance = 10;
         }
     }
     let mut good_range = in_range(h, r, entity, victim, distance)?;
@@ -967,14 +967,12 @@ pub fn add_experience<H: Host>(
     if let Some(member) = h.overrides(r).and_then(|o| o.add_experience) {
         return member(h, r, entity, victim, state);
     }
-    if kind_of(h, r) == HandlerKind::Magic {
-        if let (Some(state), Some(entity)) = (state, entity) {
-            if let Some(spell) = state.spell.clone() {
-                if h.kind(entity).is_player() {
-                    return h.spell_add_experience(&spell, entity, state.total_damage());
-                }
-            }
-        }
+    if kind_of(h, r) == HandlerKind::Magic
+        && let (Some(state), Some(entity)) = (state, entity)
+        && let Some(spell) = state.spell.clone()
+        && h.kind(entity).is_player()
+    {
+        return h.spell_add_experience(&spell, entity, state.total_damage());
     }
     base_add_experience(h, entity, victim, state)
 }
@@ -1056,16 +1054,15 @@ pub fn use_ammo<H: Host>(
         drop_location = None;
     }
     let range_weapon = state.range_weapon.clone();
-    if let Some(at) = drop_location {
-        if range_weapon.as_ref().ok_or(Error::Null)?.drop_ammo {
-            let chance = 5.0 * (1.0 + f64::from(h.level(e, skill::RANGE)?) * 0.01) * rate;
-            if random(h, chance as i32)? != 0 {
-                if let Some(drop) = h.ground_item_increase(id, amount, at, e)? {
-                    if h.duel_ammo(e)? {
-                        h.duel_ammo_add(e, drop)?;
-                    }
-                }
-            }
+    if let Some(at) = drop_location
+        && range_weapon.as_ref().ok_or(Error::Null)?.drop_ammo
+    {
+        let chance = 5.0 * (1.0 + f64::from(h.level(e, skill::RANGE)?) * 0.01) * rate;
+        if random(h, chance as i32)? != 0
+            && let Some(drop) = h.ground_item_increase(id, amount, at, e)?
+            && h.duel_ammo(e)?
+        {
+            h.duel_ammo_add(e, drop)?;
         }
     }
     let quiver = range_weapon.ok_or(Error::Null)?.ammunition_slot;
@@ -1203,11 +1200,11 @@ pub fn visualize_super<H: Host>(
             let weapon = state.weapon.as_ref().and_then(|w| h.range_weapon(w.id));
             let current = h.attack_animation(entity)?.ok_or(Error::Null)?;
             let id = h.animation_id(&current);
-            if let Some(weapon) = weapon {
-                if id == 422 || id == 423 {
-                    let animation = h.range_weapon_animation(weapon.item_id);
-                    return h.visualize_entity(entity, animation.as_ref(), start);
-                }
+            if let Some(weapon) = weapon
+                && (id == 422 || id == 423)
+            {
+                let animation = h.range_weapon_animation(weapon.item_id);
+                return h.visualize_entity(entity, animation.as_ref(), start);
             }
             let animation = h.attack_animation(entity)?;
             h.visualize_entity(entity, animation.as_ref(), start)
@@ -1310,11 +1307,11 @@ pub fn visualize_audio<H: Host>(
             let at = h.location(entity)?;
             h.play_global_audio(at.ok_or(Error::Null)?, 2564)?;
         }
-    } else if h.kind(entity).is_npc() {
-        if let Some(id) = h.npc_audio(entity, 0)? {
-            let at = h.location(entity)?;
-            h.play_global_audio(at.ok_or(Error::Null)?, id)?;
-        }
+    } else if h.kind(entity).is_npc()
+        && let Some(id) = h.npc_audio(entity, 0)?
+    {
+        let at = h.location(entity)?;
+        h.play_global_audio(at.ok_or(Error::Null)?, id)?;
     }
     Ok(())
 }
@@ -1386,10 +1383,11 @@ pub fn impact_super<H: Host>(
             Ok(())
         }
         HandlerKind::Range => {
-            if let Some(effect) = state.ammunition.as_ref().and_then(|a| a.effect) {
-                if effect != BoltEffect::Diamond && h.bolt_can_fire(effect, state)? {
-                    h.bolt_impact(effect, state)?;
-                }
+            if let Some(effect) = state.ammunition.as_ref().and_then(|a| a.effect)
+                && effect != BoltEffect::Diamond
+                && h.bolt_can_fire(effect, state)?
+            {
+                h.bolt_impact(effect, state)?;
             }
             let hit = state.estimated_hit;
             let victim = victim.ok_or(Error::Null)?;
@@ -1453,10 +1451,10 @@ pub fn on_impact<H: Host>(
     victim: Option<&H::Entity>,
     state: Option<&mut BattleState<H>>,
 ) -> Result<()> {
-    if let (Some(e), Some(v)) = (entity, victim) {
-        if h.kind(e).is_player() {
-            h.degrade(e, v, true)?;
-        }
+    if let (Some(e), Some(v)) = (entity, victim)
+        && h.kind(e).is_player()
+    {
+        h.degrade(e, v, true)?;
     }
     let Some(state) = state else {
         return Ok(());

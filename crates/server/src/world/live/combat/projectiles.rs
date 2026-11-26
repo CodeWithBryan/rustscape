@@ -226,7 +226,7 @@ impl Live {
                     .inner
                     .state
                     .actor(node)
-                    .map(|a| a.wire_index as i32)
+                    .map(|a| a.wire_index)
                     .unwrap_or(-1)
                     .wrapping_add(1),
             },

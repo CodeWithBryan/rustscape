@@ -355,6 +355,7 @@ impl Script {
     /// the locked camera's targets move back by as much so that they stay
     /// where they are in the world. The camera's type is kept.
     pub fn rebase(&mut self, delta: [i32; 2]) {
+        #[allow(clippy::needless_range_loop)]
         for axis in 0..2 {
             self.render[axis] = self.render[axis].wrapping_sub(delta[axis].wrapping_mul(128));
             self.target[axis] = self.target[axis].wrapping_sub(delta[axis]);

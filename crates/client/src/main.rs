@@ -1,3 +1,6 @@
+// The game loop is shared by the native and browser builds; some locals are
+// used, or written through, only in the browser build.
+#![cfg_attr(not(target_arch = "wasm32"), allow(unused_variables, unused_mut))]
 mod actor_scene;
 #[cfg(any(target_os = "windows", target_arch = "wasm32"))]
 mod ambient_audio;
@@ -1168,23 +1171,23 @@ impl Geometry {
                                 }
                                 // The shadow is projected before the terrain alignment.
                                 let mut shadow_index = None;
-                                if d.cast_shadow {
-                                    if let Some(sprite) = rs09_client::shadow::project(
+                                if d.cast_shadow
+                                    && let Some(sprite) = rs09_client::shadow::project(
                                         &model,
                                         &textures.materials,
                                         shadows.light,
-                                    ) {
-                                        let position =
-                                            shadows.position(piece.shadow, piece.site.elevation);
-                                        shadows.map.stamp(&sprite, position, false);
-                                        shadow_index = Some(static_shadows.len());
-                                        static_shadows.push(ShadowCaster {
-                                            sprite,
-                                            position,
-                                            plane: display_plane,
-                                            active: true,
-                                        });
-                                    }
+                                    )
+                                {
+                                    let position =
+                                        shadows.position(piece.shadow, piece.site.elevation);
+                                    shadows.map.stamp(&sprite, position, false);
+                                    shadow_index = Some(static_shadows.len());
+                                    static_shadows.push(ShadowCaster {
+                                        sprite,
+                                        position,
+                                        plane: display_plane,
+                                        active: true,
+                                    });
                                 }
                                 // getStaticEntity cast the shadow before
                                 // addEntity turned the entity away.
@@ -2571,10 +2574,10 @@ impl Workbench {
         self.ensure_npc_bas(definition.bas)?;
         if let Some(cache) = &self.world_cache {
             for &id in &definition.models {
-                if let std::collections::btree_map::Entry::Vacant(entry) = self.models.entry(id) {
-                    if let Some(model) = cache.model(id)? {
-                        entry.insert(model);
-                    }
+                if let std::collections::btree_map::Entry::Vacant(entry) = self.models.entry(id)
+                    && let Some(model) = cache.model(id)?
+                {
+                    entry.insert(model);
                 }
             }
         }
@@ -2590,11 +2593,11 @@ impl Workbench {
     }
     fn ensure_npc_bas(&mut self, id: i32) -> Result<(), String> {
         if let std::collections::btree_map::Entry::Vacant(entry) = self.npc_bases.entry(id) {
-            if let Some(cache) = &self.world_cache {
-                if let Some(bas) = cache.bas(id)? {
-                    entry.insert(bas);
-                    return Ok(());
-                }
+            if let Some(cache) = &self.world_cache
+                && let Some(bas) = cache.bas(id)?
+            {
+                entry.insert(bas);
+                return Ok(());
             }
             entry.insert(
                 rs09_client::npc::Bas::decode(if id == -1 {
@@ -3194,14 +3197,12 @@ impl Workbench {
                 None => return Err(format!("Spot{} metadata unavailable", track.id)),
             };
             // The model on demand from an open cache, as for NPC bodies.
-            if let Some(cache) = self.world_cache.as_ref() {
-                if let std::collections::btree_map::Entry::Vacant(slot) =
+            if let Some(cache) = self.world_cache.as_ref()
+                && let std::collections::btree_map::Entry::Vacant(slot) =
                     self.models.entry(definition.model)
-                {
-                    if let Some(model) = cache.model(definition.model)? {
-                        slot.insert(model);
-                    }
-                }
+                && let Some(model) = cache.model(definition.model)?
+            {
+                slot.insert(model);
             }
             let mut model = definition.assemble(&self.models)?;
             model.draw_order = rs09_client::surface::face_order(&model, &self.textures.materials);
@@ -3923,14 +3924,12 @@ async fn main() {
             if let Some(id) = name
                 .strip_prefix("seq/")
                 .and_then(|s| s.parse::<u32>().ok())
+                && let std::collections::btree_map::Entry::Vacant(e) = workbench.sequences.entry(id)
             {
-                if let std::collections::btree_map::Entry::Vacant(e) = workbench.sequences.entry(id)
-                {
-                    e.insert(
-                        Sequence::decode(pack.get(name).expect("sequence catalog entry"))
-                            .expect("sequence catalog decode"),
-                    );
-                }
+                e.insert(
+                    Sequence::decode(pack.get(name).expect("sequence catalog entry"))
+                        .expect("sequence catalog decode"),
+                );
             }
         }
     }
@@ -4137,24 +4136,24 @@ async fn main() {
     ui_vm.location = [workbench.start[0], workbench.start[1], 0];
     let show_ui =
         live_mode || option("--ui").is_some() || (cfg!(target_arch = "wasm32") && ui.is_some());
-    if let Some(ui) = &mut ui {
-        if !live_mode {
-            // `--root 548` previews the fixed game frame, whose scene viewport
-            // is a component smaller than the window.
-            if fixed_root {
-                ui.open_root(548).expect("fixed game frame");
-            } else {
-                ui.open_root(746).expect("game frame");
-                ui.open_sub(746 << 16 | 96, 149, 1).expect("inventory");
-            }
-            if let Some(group) = option("--ui").and_then(|s| s.parse::<i32>().ok()) {
-                ui.open_sub(746 << 16 | 6, group, 0)
-                    .expect("preview interface");
-            }
-            ui.layout(screen_width() as i32, screen_height() as i32)
-                .expect("initial interface layout");
-            ui_vm.drain(ui);
+    if let Some(ui) = &mut ui
+        && !live_mode
+    {
+        // `--root 548` previews the fixed game frame, whose scene viewport
+        // is a component smaller than the window.
+        if fixed_root {
+            ui.open_root(548).expect("fixed game frame");
+        } else {
+            ui.open_root(746).expect("game frame");
+            ui.open_sub(746 << 16 | 96, 149, 1).expect("inventory");
         }
+        if let Some(group) = option("--ui").and_then(|s| s.parse::<i32>().ok()) {
+            ui.open_sub(746 << 16 | 6, group, 0)
+                .expect("preview interface");
+        }
+        ui.layout(screen_width() as i32, screen_height() as i32)
+            .expect("initial interface layout");
+        ui_vm.drain(ui);
     }
     let default_gameframe = cfg!(target_arch = "wasm32")
         && !live_mode
@@ -4480,10 +4479,10 @@ async fn main() {
         .and_then(|s| s.parse::<i32>().ok())
         .or(portrait.then_some(863))
     {
-        if let Some(ui) = &ui {
-            if let Err(e) = workbench.player_sequence(&ui.pack, id) {
-                eprintln!("Preview animation assets: {e}");
-            }
+        if let Some(ui) = &ui
+            && let Err(e) = workbench.player_sequence(&ui.pack, id)
+        {
+            eprintln!("Preview animation assets: {e}");
         }
         match actor_states
             .entry(rs09_protocol::game::players::SELF)

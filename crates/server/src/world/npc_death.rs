@@ -296,10 +296,10 @@ pub fn most_damage_entity<H: Host>(
     if host.is_player(entity) {
         return Ok(killer.cloned());
     }
-    if let Some(killer) = killer {
-        if host.is_ai_player(killer) {
-            return Ok(Some(killer.clone()));
-        }
+    if let Some(killer) = killer
+        && host.is_ai_player(killer)
+    {
+        return Ok(Some(killer.clone()));
     }
     let log = host.impact_log(entity)?;
     let players = log.read().players();
@@ -547,10 +547,11 @@ pub fn handle_drops<H: Host>(
     if host.attribute_bool(npc, DISABLE_DROP, false)? {
         return Ok(());
     }
-    if let Some(player) = player {
-        if host.ironman(player)? && host.impact_log(npc)?.read().player_count() > 1 {
-            return Ok(());
-        }
+    if let Some(player) = player
+        && host.ironman(player)?
+        && host.impact_log(npc)?.read().player_count() > 1
+    {
+        return Ok(());
     }
     let Some(definition) = host.npc_definition(npc)? else {
         return Ok(());

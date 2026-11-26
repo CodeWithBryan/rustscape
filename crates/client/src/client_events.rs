@@ -447,10 +447,11 @@ impl ClientEvents {
     /// `all_levels_visible` is `SceneGraph.allLevelsAreVisible()`: always
     /// true with the hardware renderer, otherwise the preference.
     pub fn rebuild_packet(&mut self, zone: [i32; 2], plane: i32, all_levels_visible: bool) -> bool {
-        if let Some((central_zone, central_plane)) = self.central {
-            if central_zone == zone && (central_plane == plane || all_levels_visible) {
-                return false;
-            }
+        if let Some((central_zone, central_plane)) = self.central
+            && central_zone == zone
+            && (central_plane == plane || all_levels_visible)
+        {
+            return false;
         }
         self.central = Some((zone, if all_levels_visible { 0 } else { plane }));
         self.rebuilding = true;

@@ -139,7 +139,7 @@ struct Bits {
 impl Bits {
     fn put(&mut self, count: u32, value: u32) {
         for bit in (0..count).rev() {
-            if self.at % 8 == 0 {
+            if self.at.is_multiple_of(8) {
                 self.bytes.push(0);
             }
             if value >> bit & 1 != 0 {

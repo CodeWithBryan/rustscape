@@ -571,10 +571,10 @@ impl npc_death::Host for Live {
             .manager
             .clone();
         for (kind, pulse) in manager.entries() {
-            if let Some(pulse) = pulse {
-                if !pulse.read().running {
-                    manager.put(kind, None);
-                }
+            if let Some(pulse) = pulse
+                && !pulse.read().running
+            {
+                manager.put(kind, None);
             }
         }
         if manager

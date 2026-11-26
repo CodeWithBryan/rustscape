@@ -501,10 +501,10 @@ pub fn activity_enter<H: Host>(
     entity: &NodeHandle,
 ) -> Result<bool> {
     let core = core(plugin)?;
-    if is_player(host, entity)? {
-        if let Some(l) = core.content.spawn_location(host, &core)? {
-            host.set_spawn_location(entity, Some(&l))?;
-        }
+    if is_player(host, entity)?
+        && let Some(l) = core.content.spawn_location(host, &core)?
+    {
+        host.set_spawn_location(entity, Some(&l))?;
     }
     host.set_safe_zone(entity, core.is_safe())?;
     host.set_safe_respawn(entity, core.safe_respawn().as_ref())?;
@@ -533,10 +533,11 @@ pub fn activity_leave<H: Host>(
         let home = host.home_location()?;
         host.set_spawn_location(entity, home.as_ref())?;
     }
-    if core.is_instanced() && logout {
-        if let Some(l) = core.content.spawn_location(host, &core)? {
-            host.set_location(entity, &l)?;
-        }
+    if core.is_instanced()
+        && logout
+        && let Some(l) = core.content.spawn_location(host, &core)?
+    {
+        host.set_location(entity, &l)?;
     }
     host.set_safe_zone(entity, false)?;
     let home = host.home_location()?;

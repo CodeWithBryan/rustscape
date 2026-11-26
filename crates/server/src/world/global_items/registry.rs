@@ -472,10 +472,10 @@ impl<C: interactions::Casing> Registrar for Native<'_, C> {
     type HandlerRef = option_handler::Handle;
     type DialogueRef = DialoguePlugin;
     fn function(&mut self, f: Interaction) -> interactions::Function {
-        if f.shared() {
-            if let Some((_, existing)) = self.shared.iter().find(|(k, _)| *k == f) {
-                return existing.clone();
-            }
+        if f.shared()
+            && let Some((_, existing)) = self.shared.iter().find(|(k, _)| *k == f)
+        {
+            return existing.clone();
         }
         let function = interactions::Function::new(f.kind(), f.class(), f);
         if f.shared() {

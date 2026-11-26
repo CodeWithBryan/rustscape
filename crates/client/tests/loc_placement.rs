@@ -631,13 +631,15 @@ fn sweep_of_placements_the_rules_change() {
                     kind.children
                 );
             }
-            if let Some(a) = &area {
-                if (a[0]..=a[2]).contains(&tx) && (a[1]..=a[3]).contains(&tz) && plane == a[4] {
-                    eprintln!(
-                        "  {tx},{tz} shape {shape} rotation {rotation}: {id} {:?} size {}x{} {:?} children {:?} -> {:?}",
-                        kind.name, d.width, d.length, p, kind.children, plan.entries[index]
-                    );
-                }
+            if let Some(a) = &area
+                && (a[0]..=a[2]).contains(&tx)
+                && (a[1]..=a[3]).contains(&tz)
+                && plane == a[4]
+            {
+                eprintln!(
+                    "  {tx},{tz} shape {shape} rotation {rotation}: {id} {:?} size {}x{} {:?} children {:?} -> {:?}",
+                    kind.name, d.width, d.length, p, kind.children, plan.entries[index]
+                );
             }
         }
         eprintln!("{name} ({x},{z}): {counts:?}");

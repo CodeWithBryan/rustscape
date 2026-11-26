@@ -704,10 +704,10 @@ impl Picker {
             None,
             &mut answers,
             |draw| {
-                if let Draw::Model(part) = draw {
-                    if let Some(Part::Static(index)) = fixed.get(part as usize) {
-                        order.push(*index);
-                    }
+                if let Draw::Model(part) = draw
+                    && let Some(Part::Static(index)) = fixed.get(part as usize)
+                {
+                    order.push(*index);
                 }
             },
         );

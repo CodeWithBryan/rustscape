@@ -260,10 +260,10 @@ impl MapList {
 
     /// `MapList.toggleMapVisibility`.
     pub fn toggle_map_visibility(&mut self, index: i32) {
-        if index >= 0 {
-            if let Some(hidden) = self.visibility.get_mut(index as usize) {
-                *hidden = !*hidden;
-            }
+        if index >= 0
+            && let Some(hidden) = self.visibility.get_mut(index as usize)
+        {
+            *hidden = !*hidden;
         }
     }
 }
