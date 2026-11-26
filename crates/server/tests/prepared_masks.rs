@@ -126,8 +126,9 @@ fn late_appearance_encoder_replaces_the_prepared_data_only_where_the_flag_is_wri
     expected.extend([0x83, 1, 2, 3]);
     expected.extend(&prepared[at + field.len()..]);
     assert_eq!(late, expected);
-    // Without the appearance (a viewer whose stamp is current) the encoder
-    // is not run.
+    // After the cycle's reset the flag is only a synced one: without the
+    // appearance (a viewer whose stamp is current) the encoder is not run.
+    masks.reset();
     let mut none = vec![];
     masks
         .write_late(masks.owner(), &mut none, false, true, &mut |_| {
