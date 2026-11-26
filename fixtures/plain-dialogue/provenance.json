@@ -24,7 +24,7 @@
     "oracle/plain-dialogue/Bridge.kt": "d818ed5ba782f57ddcf58dbc4195c4211d076b899c56b08594ab30f27c40f809",
     "oracle/plain-dialogue/Interpreter.java": "1d32bc78730750e04656937bad99dff8e69d3bfaef48877e45bc6142f9154860",
     "oracle/plain-dialogue/Oracle.java": "ce6836149778d615640e45b2e9ace2138125fcef1b658b544fa97981956326e1",
-    "oracle/plain-dialogue/generate.py": "99617588a0c5478ed9e8583522ab7d5af7153b3c0bfcdeadaf0f8bcbcef9271b",
+    "oracle/plain-dialogue/generate.py": "edd92e0091c0965e01bf97b097902b44c481ae16c487f6de420c497e9fd4a298",
     "oracle/plain-dialogue/initial.lock.json": "4b83a6e540327b7de8810a350ae50482bc3756fbfa272686b735d67e9f1dae91",
     "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
     "reference/server/Server/src/main/core/api/DialUtils.kt": "b13320cd1dd18e265de5f68dd96051820ebf8c2d01c6eff518cbfddfaae67f23",

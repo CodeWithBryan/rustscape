@@ -30,7 +30,7 @@
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/input-prompt/reflect.lock.json": "63ea166452c4d1e52e6b8d81fc3e2a35b1f236141b58138a346e64a242a4ac7c",
     "oracle/interaction-listeners/Oracle.kt": "739fa111f3b624b7690a5808e993edcd73329d180d7f4d0e4c8cf911dd97c2db",
-    "oracle/interaction-listeners/generate.py": "6b8c136e3cd31c4fff8ac953e7795c9b34328c8887257e1764d8b75e32d5fa65",
+    "oracle/interaction-listeners/generate.py": "d7d7aec86fdf7767bd45f0f8ce00793fb31d5a9a46c782004ef948df8c90297b",
     "oracle/interaction-listeners/initial.lock.json": "4baa8ff3c96c2a7cd21a91bde148e61d7ab61a373c2bbe22d63383a7cabcae94",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/pom.xml": "2b252137565127c0d93399c85e7fad291639f8f5549677c4e9596420c684b9c4",
