@@ -40,6 +40,7 @@ pub mod destination;
 pub mod dragons;
 pub mod eating;
 pub mod equipment;
+pub mod faults;
 pub mod follow;
 pub mod global;
 pub mod graves;

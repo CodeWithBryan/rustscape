@@ -118,6 +118,14 @@ pub struct Live {
     /// The install round after the dragons: dialogue, input prompts, the
     /// bank, shops, trade, follow ([super::round]).
     pub round: super::round::Round,
+    /// NPCs whose tick is failing ([`super::faults`]).
+    pub npc_faults: super::faults::EntityFaults,
+    /// NPCs whose reset is failing, tracked apart from their ticks so that a
+    /// reset that succeeds does not end a tick's run of failures.
+    pub npc_reset_faults: super::faults::EntityFaults,
+    /// NPCs whose `Entity.tick` reached `timers.processTimers()` in the
+    /// walking call that just returned ([`super::timers`]).
+    pub npc_timers_due: Vec<Node>,
 }
 
 pub fn fail(e: impl std::fmt::Debug) -> driver::Error {
@@ -242,6 +250,15 @@ impl Live {
                         .map(|_| ())
                         .map_err(|e| interfaces::Error::Binding(format!("{e:?}")))
                 }),
+                Deferred::NpcRestoreTimers(node) => self.combat_entity(node).map(|npc| {
+                    self.remove_npc_timer(&npc, "poison")
+                        .and_then(|_| self.remove_npc_timer(&npc, "poison:immunity"))
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}")))
+                }),
+                Deferred::NpcTimers(node) => {
+                    self.npc_timers_due.push(node);
+                    None
+                }
                 Deferred::CombatStop(node) => Some(
                     self.combat_stop_of(node)
                         .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
@@ -252,6 +269,52 @@ impl Live {
                     .log_line(format!("deferred walk service failed: {error:?}"));
             }
         }
+    }
+    /// `NPC.tick()` with a subclass's override, as the original runs it.
+    pub fn npc_tick_unisolated(&mut self, npc: &P) -> driver::Result<()> {
+        // A subclass whose tick replaces NPC.tick (the grave's Grave.tick).
+        if let Some(result) = self.grave_npc_tick(npc) {
+            return result.map_err(fail);
+        }
+        // NPC.tick() with a subclass's override (super::subclasses).
+        self.npc_class_tick(npc).map_err(fail)
+    }
+    /// Records an NPC step's outcome against the NPC and logs a failure
+    /// (rate limited, super::faults); the failure is not passed on.
+    fn isolate_npc(&mut self, npc: &P, step: &str, result: driver::Result<()>) {
+        let node = npc.node();
+        let tick = self.inner.ticks;
+        let id = self.inner.npcs.rows.get(&node).map(|row| row.id);
+        let location = self.inner.state.node_location(node).ok().flatten();
+        let Self {
+            inner,
+            npc_faults,
+            npc_reset_faults,
+            ..
+        } = self;
+        let faults = if step == "reset" {
+            npc_reset_faults
+        } else {
+            npc_faults
+        };
+        super::faults::isolate(
+            faults,
+            node,
+            tick,
+            || {
+                let id = id.map_or_else(|| "?".to_owned(), |id| id.to_string());
+                let at = location.map_or_else(
+                    || "nowhere".to_owned(),
+                    |l| format!("{:?}", l.coordinates()),
+                );
+                format!("NPC {id} (node {node}) at {at}: {step}")
+            },
+            result,
+            |line| {
+                eprintln!("[live] {line}");
+                inner.log_line(line);
+            },
+        );
     }
     pub fn player_of(&self, node: Node) -> Option<P> {
         self.inner
@@ -1569,15 +1632,16 @@ impl driver::Host<P> for Live {
         })
     }
     fn npc_tick(&mut self, npc: &P) -> driver::Result<()> {
-        // A subclass whose tick replaces NPC.tick (the grave's Grave.tick).
-        if let Some(result) = self.grave_npc_tick(npc) {
-            return result.map_err(fail);
-        }
-        // NPC.tick() with a subclass's override (super::subclasses).
-        self.npc_class_tick(npc).map_err(fail)
+        // One NPC's failure is isolated (super::faults): the sequence goes
+        // on with the next NPC instead of ending the tick for everyone.
+        let result = self.npc_tick_unisolated(npc);
+        self.isolate_npc(npc, "tick", result);
+        Ok(())
     }
     fn npc_reset(&mut self, npc: &P) -> driver::Result<()> {
-        self.npc_reset_of(npc).map_err(fail)
+        let result = self.npc_reset_of(npc).map_err(fail);
+        self.isolate_npc(npc, "reset", result);
+        Ok(())
     }
     fn player_tick(&mut self, p: &P) -> driver::Result<()> {
         // DropListener's soft queued scripts that are due (super::items).

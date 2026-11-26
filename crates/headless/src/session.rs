@@ -105,6 +105,10 @@ impl Session {
     pub async fn scenery(&mut self, action: SceneryAction) -> io::Result<Vec<u8>> {
         self.send_frame(&action.frame()?).await
     }
+    /// An agent action (NPC options, use-with, dialogue) as its original packet.
+    pub async fn act(&mut self, action: &crate::agent::Action) -> io::Result<Vec<u8>> {
+        self.send_frame(&action.frame()?).await
+    }
     pub async fn close(&mut self) -> io::Result<()> {
         self.writer.close(1000, "observations complete").await
     }

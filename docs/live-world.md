@@ -31,7 +31,9 @@ player's death (`world::player_death`: `Player.commenceDeath`/`finalizeDeath`,
 kept items, the death screen; `combat/player_death.rs`), projectiles
 (`Projectile.send` as the chunk's `ProjectileUpdateFlag`, so ranged swings
 complete; `combat/projectiles.rs`), `useAmmo`'s `equipment.replace`, poison
-applied by a swing (the Poison timer of `timers::content` on a player), the
+applied by a swing (the Poison timer of `timers::content` on a player or an
+NPC), NPC timers (`timers.rs`: each NPC's own timer manager, processed at the
+end of its `Entity.tick`, with `SkillRestore` healing and restoring NPCs), the
 weapon special attacks (`world::special_attacks`: the 34 handlers registered
 at boot, `Player.getSwingHandler`, the overriding members, the combat tab's
 special bar and instant specials; `combat/specials.rs`), the lobby
@@ -118,7 +120,7 @@ modes of `rs09-server` are unchanged.
 | item, NPC, player, examine, track-finished packets | `processItemAction`, `InteractPlugin.handleItemOption` and `InteractPlugin$1`, `processNpcAction`, `processPlayerAction`, the examine branches, `TrackFinished` | `items.rs`: `world::packet_handlers` over the live world; an inventory item's InteractPlugin is a table made the first time it is asked for (`setDefault` over its definition's actions and `OPTION_HANDLERS`), an NPC's over its definition's options, a player's the one login set up; the item pulse on `GameWorld.Pulser`; `InteractPlugin.handle`/`handleInvalidInteraction` through the legacy runtime (walk, arrival, "Nothing interesting happens." with no content handler); `InteractionListeners` is the native registry (`world::interaction_listeners`) with `DropListener` and `EquipHandler` registered at boot (generic ITEM options) |
 | drop, equip | `DropListener`, `EquipHandler`, `EquipmentContainer` | the drop's soft queued script (due a tick later), `Item.getDropItem`, `GroundItemManager.create`, `droppedItem:ID`, the save task; `EquipHandler.handleEquip` with `EquipmentContainer.add` (`inventory::equipment::add_at` over the live equipment context: `ItemDefinition.hasRequirement` (`items::has_requirement`, JDK HashMap key order), the EquipmentListener and the InventoryListener of the canonical containers); the canonical equipment container is an `EquipmentContainer` bound to its player with its listener |
 | appearance | `Appearance.sync`, `Appearance.setAnimations`, `PlayerFlags530.Appearance` | `Inner::appearance_sync` registers the mask (`player.updateAppearance()`) at login and from the EquipmentListener; `live/appearance.rs` runs `player::appearance_writer` when the update phase writes the mask, over the live receivers (the canonical Appearance, equipment, render info and attributes, the profile's Properties and Skills, the SkullManager, the node's size, the configuration's `pvp` and `wild_pvp_enabled`); `prepareBodyData` runs inside the writer; `setAnimations` from the EquipmentListener sets the weapon's animations and render animation |
-| engine timers | `TimerRegistry` (the class scan's timers), `addAutoTimers`, `TimerManager.processTimers`, `saveTimers`/`parseTimers`, `Entity.hook`/`unhook`/`dispatch`, `hasTimerActive` | `timers.rs`: the fourteen `timers::content` prototypes in the world's registry (registered at the first timer operation, in scan order); `addAutoTimers` at `Entity.init` (AntiMacro, SkillRestore); `processTimers` for every player at the end of `Entity.tick`, the timer manager of the canonical profile (its three lists aliased); `timers::content::Natives` over `timers::Host` (the live world: native Skills through the live skills and settings contexts, the shared generator, messages, audio, equipment, rights, uids, the zone monitor's random-event restriction, the SkullManager, the per-entity hook lists) and over `timers::Saving` while a save is written or parsed (uids, ticks, the generator, the log; the messages and skull calls of a timer the parse registers are made right after the parse); `hasTimerActive` answers the walking queue (`frozen`), the zones (`teleblock`) and `isPoisonImmune`; the SkullManager's `removeTimer`, `spawnTimer` and `registerTimer` go through the registry |
+| engine timers | `TimerRegistry` (the class scan's timers), `addAutoTimers`, `TimerManager.processTimers`, `saveTimers`/`parseTimers`, `Entity.hook`/`unhook`/`dispatch`, `hasTimerActive` | `timers.rs`: the fourteen `timers::content` prototypes in the world's registry (registered at the first timer operation, in scan order); `addAutoTimers` at `Entity.init` (AntiMacro, SkillRestore); `processTimers` for every player at the end of `Entity.tick`, the timer manager of the canonical profile (its three lists aliased); `timers::content::Natives` over `timers::Host` (the live world: native Skills through the live skills and settings contexts, the shared generator, messages, audio, equipment, rights, uids, the zone monitor's random-event restriction, the SkullManager, the per-entity hook lists) and over `timers::Saving` while a save is written or parsed (uids, ticks, the generator, the log; the messages and skull calls of a timer the parse registers are made right after the parse); `hasTimerActive` answers the walking queue (`frozen`), the zones (`teleblock`), the dragons (`dragonfire:immunity`), combat (`miasmic`) and `isPoisonImmune`; the SkullManager's `removeTimer`, `spawnTimer` and `registerTimer` go through the registry. NPCs: `processTimers` at the end of an NPC's `Entity.tick` over its own manager (the start-up's), `SkillRestore` joined at its first timer operation, `GrandExchangeTimer`'s NPC branch, NPC skills from the NPC row, NPC names from the definition, `NPC.task` from `world::slayer_tasks`, `applyPoison`, the specials' timers, `onEntityDeath`, `fullRestore`'s removals and the NPC behaviours' `removeTimer`; `Entity.scripts.removeWeakScripts` from a timer is the canonical script processor's |
 | global handlers | `ClassScanner` of the global handler classes, `InterfaceListeners`, `ComponentDefinition` plugins, OptionHandlers, `ClimbActionHandler` | `global.rs`: `registry::register_scanned` over the live InterfaceListeners, the interface definitions' plugins, the native InteractionListeners and the scenery option defaults at boot; the per-definition scenery handlers bound into the scenery definitions; buttons, open and close listeners and component plugins dispatched through `run_button`, `run_open` and `run_plugin` (`buttons.rs`); scenery OptionHandlers through `run_handler` and `handler_destination` (`destination.rs`, over the scene); the bodies' `Task`s submitted to `GameWorld.Pulser` and run with `run_task`; `GHost` is the handlers' `Host` (attributes, messages, interface text, the weapon, emote and music tabs, settings toggles, locks, the animator, the teleport location, scenery geometry, SpecialLadders) |
 | scenery options | `processSceneryAction`, scenery `InteractPlugin` | `scenery.rs`: `world::scenery_runtime` (the legacy walk and arrival, `world::scenery_action`) over the cache scene's objects, `scenery_options::Registry` (the scenery tables and handler arena with the global handlers' defaults), `Scenery.getChild` over the scene's definitions, the InteractionListeners lookup for scenery |
 | use-with, slot switch | `processUseWith`, `processSlotSwitch` | `items/use_with.rs`, `items/slots.rs`: `world::packet_handlers::use_with` (zone monitor, `InteractionListeners.run_use`, PluginInteractionManager, `UseWithHandler.HANDLERS`, `runUnhandledAction`) and `slot_switch` over the canonical inventory |
@@ -253,8 +255,33 @@ modes of `rs09-server` are unchanged.
   movement over the scene only.
 - `PulseManager.runUnhandledAction` of an unhandled use-with is a world pulse
   (the canonical pulse manager does not take content bodies).
-- NPC timers are not installed: an NPC's walking-queue timer query answers
-  none and its `processTimers` is a named skip.
+- An NPC's `timers.processTimers()` runs right after the walking call of its
+  `Entity.tick` returns (when the call reached it), before its masks are
+  prepared, as a player's does. `Entity.fullRestore()`'s removal of the
+  `poison` and `poison:immunity` timers of an NPC runs right after the same
+  walking call returns.
+- NPC timers run on the start-up's per-NPC timer manager. The start-up's
+  `Entity.init` registered three of the four automatic timers (no port of
+  `SkillRestore`'s hooks there); `SkillRestore` is registered on an NPC at
+  its first timer operation in the live world (before that operation, so its
+  place in the lists and its first run, one interval after the NPC's first
+  `processTimers`, are the original's). The start-up's `GrandExchangeTimer`
+  on an NPC is answered by its NPC branch: no hooks, its constructor's
+  interval as the initial delay, `run` false (removed at its first run).
+- NPC skills in the timers are the NPC row's levels and lifepoints, copied
+  for one timer operation and written back when it ends; a hit from a timer
+  (`manualHit`) first writes back the skills a timer holds of the entity it
+  hits (a player's too), so the hit and the timer's heals act on the same
+  lifepoints. `Skills.lifepointsUpdate` of an NPC is not kept.
+- An NPC's tick or reset that fails is isolated (`faults.rs`): the failure
+  is recorded against that NPC and logged (the first failure, the 10th,
+  100th, ... in a row, and whenever the error changes; one line when it
+  recovers), and the update sequence goes on with the next entity. The
+  original has no catch there: an exception from one NPC ends the rest of
+  that tick's sequence (`handleTickActions`' catch), which in this world,
+  where most failures are refusals of services without a port, stalled the
+  whole world whenever one NPC's refusal recurred every tick. A player's
+  tick still fails as the original's does.
 - The settings calls of a special attack (`drainSpecial`, `toggleSpecialBar`,
   `setSpecialEnergy`: varps 300/301 and the energy message) are recorded
   while the special runs and made when the combat call returns
@@ -355,7 +382,7 @@ than GraveController and Shops,
 `HouseManager.leave`, `InterfaceListeners.runOpen`, `PlayerMonitor` drop-trade
 log and DUPE_ALERT (logged only),
 LoginConfiguration's per-item equipment hooks, `Managers.tick`, NPC attributes (return-to-spawn,
-lastForceTalk), NPC timers' `processTimers`, `Player.tick`'s potion timers,
+lastForceTalk), `Player.tick`'s potion timers,
 wealth and off-map check, `PlayerMonitor.log`/`logChat`/`logPrivateChat`/
 `logXpGains`, `XPGainPlugins.run`, `XPGainEvent`, `PrayerActivatedEvent`/
 `PrayerDeactivatedEvent`, `SelfDeathEvent` and `NPCKillEvent` dispatch,
@@ -375,8 +402,9 @@ is registered), `DialogueInterpreter.close` after an equip or a drop (true),
 event content), `hasAwaitingGrandExchangeCollections` (false: no offer
 records without the Grand Exchange), `AIRepository.PulseRepository` (no
 bot), `FamiliarManager.familiar` for a consumable (null),
-`SlayerManager.getTask` (no task), `NPC.getTask` (null: `Tasks.forId` is not
-ported), `DegradableEquipment.checkWeaponDegrades`/`checkArmourDegrades`/
+`SlayerManager.getTask` (no task), `NPC.getTask` outside the timers (null;
+Poison's `onRegister` reads `Tasks.forId(id).levelReq` from
+`world::slayer_tasks`), `DegradableEquipment.checkWeaponDegrades`/`checkArmourDegrades`/
 `degrade` (nothing: no degradable equipment registered),
 `ClueScrollPlugin.ORGANIZED` in a drop roll (none registered),
 `Entity.isTeleporting` (false: no teleport pulse runs),
@@ -385,9 +413,7 @@ death (nothing), `InterfaceListeners.runClose` (true),
 the Marathon perk (false), `Player.logoutListeners` (empty),
 `QuestRequirements.hasRequirement` (false), ServerStore `daily-accounts`
 (empty: the account limit counts nothing across logins) and `flagged-ips`
-(empty), skillcape perks (false, `skillcape_perks` off), NPC timer queries
-(none: no NPC timer is registered here; also the dragonfire immunity and
-`timer_active` of an NPC),
+(empty), skillcape perks (false, `skillcape_perks` off),
 `ZoneMonitor.move` (no installed region zone overrides move: true),
 `ZoneMonitor.interact` for ground items (false), `ZoneMonitor.useWith` with no
 zone (false), `ItemDefinition.getItemPlugin`
@@ -424,8 +450,7 @@ removal, teleports from zones, `restoreTabs`, NPC walk/stacking, familiars
 (hasPet, getFamiliar, transform), `NPC.reTransform`, `CombatPulse.attack`,
 wilderness loot and news, the player Attack option (wild PvP), the
 deep-wilderness listener and risk value; the timers' services without a
-port: NPC names, skills and settings in timers,
-`Entity.scripts.removeWeakScripts` from a timer, NPC slayer tasks,
+port: NPC settings and spell books in timers (only a player's are read),
 familiars, SpellbookSwap's logout listener, weapon interface, autocast,
 spell book tab and varbit (Lunar spells are not ported), the random event
 content of AntiMacro's run (`RandomEvents`), and while a save is written or
@@ -482,12 +507,11 @@ a switching attack; runtime NPC construction from a class body,
 `AbstractNPC` subclass `init` of a dragon or an unregistered class at
 runtime, a familiar's hp attribute; combat's services without a port:
 `Permadeath.permadeath`, equipment plugins' `fireEvent("unequip")`
-and item plugins' `getDeathItem` in a death, `applyPoison` on an NPC (NPC
-timers), spells (a selected or autocast spell, `selectAutoSpell`, the combat
+and item plugins' `getDeathItem` in a death, spells (a selected or autocast spell, `selectAutoSpell`, the combat
 spell members), the specials' services without a port (`Repository.findNPC`
 for Chainhit's door supports, the anonymous RSTimers of Hamstring and
 Phantom strike, `Clocks.STUN`, Shove's dumb path and `addPath`, a player's
-`sendChat`, prayer points of an NPC, a timer on an NPC), the chinchompa and
+`sendChat`, prayer points of an NPC), the chinchompa and
 salamander handlers, `BoltEffect` overrides other than DIAMOND, the duel
 arena's ammunition list,
 familiars (`Familiar.getOwner`, `getAttackStyle`, the pet test),
@@ -498,8 +522,8 @@ and `Player.fullRestore`, `sendDialogue` from prayer, `Player.sendChat`
 plugins' `createDrop`/`getItem`, loot share (clan, points,
 `Communication.isLootShare`), `GrandExchange.getRecommendedPrice` in a drop,
 `AIRepository.addItem`, `KillerwattBehavior.aggressUponKillerwatt`, NPC
-chunk moves, the return pulse, `removeRenderableNPC` and NPC timers outside
-the NPC tick.
+chunk moves, the return pulse and `removeRenderableNPC` outside the NPC
+tick.
 
 ## Verification
 
@@ -701,10 +725,8 @@ stand-ins); this test checks the production binding end to end.
   installed; `ZoneMonitor.interact`/`useWith` for items inside a zone,
   hint icons and warning messages, the DarkZone's overlay and light sources
   and the multiway overlay.
-- The rest of combat: spells (magic swings stop at the spell services), NPC
-  timers (poison or freezing an NPC: an NPC's timer manager would need the
-  NPC's Skills in the timers' host; `processTimers` for NPCs stays a named
-  skip), the specials' services listed as refused, teleports
+- The rest of combat: spells (magic swings stop at the spell services), the
+  specials' services listed as refused, teleports
   (`teleport::Manager`, the spell book teleports, the wilderness rule),
   graves in the server store, the equipment registers (chinchompa and salamander handlers, the
   degrader; docs/equipment-registers.md) and the creature behaviours.
@@ -752,9 +774,16 @@ stand-ins); this test checks the production binding end to end.
 - A transformed player's appearance (`transformNPC`), familiars behind the
   appearance flag's summoning fields; region unloading; the climb animation (828) was not seen in the player
   update by the test (the climb itself is).
-- An NPC tick that fails stops the rest of that tick's update sequence (the
-  original's `handleTickActions` catch): a refusal reached by every tick (as
-  the water paths were before they were bound) stalls the world.
+- NPC timers have no corpus of the live binding: `timers::content` is the
+  differentially tested port (content-timers-oracle); the join (the NPC
+  manager, NPC skills, `GrandExchangeTimer`'s NPC branch, the slayer table
+  generated from the pinned `Tasks.java`) is checked by
+  `tests/live_npc_timers.rs` over the booted world. A runtime NPC that is
+  cleared keeps its hook lists and its `SkillRestore` join mark (node ids
+  are not reused).
+- A failing player tick still ends the rest of that tick's sequence (the
+  original's `handleTickActions` catch); only NPC ticks and resets are
+  isolated.
 - Reconnect beyond one dropped connection (in combat, with open interfaces,
   the client's own state-40 flow against this world), the lobby, AFK logout's
   client side, many players (capacity is
