@@ -321,6 +321,8 @@ pub struct View {
     players: players::State,
     npcs: npcs::State,
     npc_health: BTreeMap<usize, i32>,
+    /// The last face-entity target each NPC's masks set (a mask is a delta).
+    npc_faces: BTreeMap<usize, i32>,
     updates: i32,
     skills: [Option<Skill>; 25],
     containers: BTreeMap<i32, Vec<Option<WireItem>>>,
@@ -344,6 +346,7 @@ impl View {
             players: players::State::new(0, 0),
             npcs: npcs::State::default(),
             npc_health: BTreeMap::new(),
+            npc_faces: BTreeMap::new(),
             updates: 0,
             skills: [None; 25],
             containers: BTreeMap::new(),
@@ -428,7 +431,7 @@ impl View {
                     type_id: n.type_id,
                     tile: [n.tile[0], n.tile[1], plane],
                     health: self.npc_health.get(&i).copied(),
-                    interacting: n.last_mask.face_entity.filter(|e| *e >= 0),
+                    interacting: self.npc_faces.get(&i).copied().filter(|e| *e >= 0),
                 })
             })
             .collect()
@@ -547,10 +550,14 @@ impl View {
                     if let Some(n) = self.npcs.actors.get_mut(&i) {
                         n.last_mask.primary = None;
                         n.last_mask.secondary = None;
+                        if let Some(face) = n.last_mask.face_entity.take() {
+                            self.npc_faces.insert(i, face);
+                        }
                     }
                 }
                 for (i, type_id) in before {
                     if !self.npcs.local_ids.contains(&i) {
+                        self.npc_faces.remove(&i);
                         let died = self.npc_health.remove(&i) == Some(0);
                         events.push(Event::NpcRemoved {
                             index: i as i32,

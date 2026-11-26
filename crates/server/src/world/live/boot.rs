@@ -94,6 +94,9 @@ fn portable(world: &Path, path: &Path) -> PathBuf {
     if cfg!(windows) {
         return path.to_path_buf();
     }
+    // Both sides by their real ancestry, so `..` and symlinks cannot make the
+    // count of ascents wrong.
+    let (world, path) = (real(world), real(path));
     let from: Vec<_> = world.components().collect();
     let to: Vec<_> = path.components().collect();
     let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
@@ -105,6 +108,17 @@ fn portable(world: &Path, path: &Path) -> PathBuf {
         relative.push(part);
     }
     relative
+}
+
+/// The canonical path of the nearest existing ancestor, with the rest appended.
+fn real(path: &Path) -> PathBuf {
+    if let Ok(found) = path.canonicalize() {
+        return found;
+    }
+    match (path.parent(), path.file_name()) {
+        (Some(parent), Some(name)) => real(parent).join(name),
+        _ => path.to_path_buf(),
+    }
 }
 
 /// `worldprops/default.conf` of the data directory with the four paths this
@@ -516,4 +530,26 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             npcs,
         },
     })
+}
+
+#[cfg(all(test, unix))]
+mod portable_tests {
+    use super::portable;
+    #[test]
+    fn relative_paths_survive_parent_components() {
+        let root = std::env::temp_dir().join(format!("rs09-portable-{}", std::process::id()));
+        let saves = root.join("runs/tmp/../saves");
+        let cache = root.join("assets/cache");
+        std::fs::create_dir_all(root.join("runs/tmp")).unwrap();
+        std::fs::create_dir_all(saves.join("world")).unwrap();
+        std::fs::create_dir_all(&cache).unwrap();
+        let world = saves.join("world");
+        let relative = portable(&world, &cache);
+        assert!(relative.is_relative());
+        assert_eq!(
+            world.join(&relative).canonicalize().unwrap(),
+            cache.canonicalize().unwrap()
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }
