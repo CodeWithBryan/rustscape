@@ -4,7 +4,6 @@ use crate::{
     npc::Definition,
     ui::actions::SelectedItem,
 };
-use rs09_protocol::game::Frame;
 pub fn level_color(other: i32, local: i32) -> u32 {
     match local.wrapping_sub(other) {
         n if n < -9 => 0xff0000,
