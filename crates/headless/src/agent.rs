@@ -651,10 +651,11 @@ impl View {
                 Some(ServerUpdate::OpenInterface {
                     pointer, interface, ..
                 }) => {
-                    if let Some(old) = self.open.insert(pointer, interface) {
-                        if layout(old).is_some() && old != interface {
-                            self.push(Event::DialogueClosed(old));
-                        }
+                    if let Some(old) = self.open.insert(pointer, interface)
+                        && layout(old).is_some()
+                        && old != interface
+                    {
+                        self.push(Event::DialogueClosed(old));
                     }
                     self.push(if layout(interface).is_some() {
                         Event::DialogueOpened(interface)
@@ -663,10 +664,10 @@ impl View {
                     });
                 }
                 Some(ServerUpdate::CloseInterface { pointer, .. }) => {
-                    if let Some(old) = self.open.remove(&pointer) {
-                        if layout(old).is_some() {
-                            self.push(Event::DialogueClosed(old));
-                        }
+                    if let Some(old) = self.open.remove(&pointer)
+                        && layout(old).is_some()
+                    {
+                        self.push(Event::DialogueClosed(old));
                     }
                 }
                 Some(ServerUpdate::InterfaceText {
