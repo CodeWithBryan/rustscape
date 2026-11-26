@@ -1486,6 +1486,15 @@ impl driver::Host<P> for Live {
             .manager()
             .packet_count(increment))
     }
+    fn pulse_stop(&mut self, pulse: &pulses::Handle) -> driver::Result<()> {
+        // TeleportPulse.stop (super::magic); every other world pulse here
+        // keeps the base stop.
+        if let Some(result) = self.magic_pulse_stop(pulse) {
+            return result.map_err(fail);
+        }
+        pulses::stop_base(pulse);
+        Ok(())
+    }
     fn pulse_body(&mut self, pulse: &pulses::Handle) -> driver::Result<bool> {
         // Combat pulses, impact pulses and death tasks (super::combat).
         if let Some(result) = self.combat_pulse_body(pulse) {
@@ -1493,6 +1502,10 @@ impl driver::Host<P> for Live {
         }
         // The global handlers' submitted bodies (super::global).
         if let Some(result) = self.global_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
+        // Teleport pulses (super::magic).
+        if let Some(result) = self.magic_pulse_body(pulse) {
             return result.map_err(fail);
         }
         // The pulses of the install round after the dragons (super::round).

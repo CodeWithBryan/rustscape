@@ -41,6 +41,7 @@ use rs09_game_core::java_lower::lowercase_root;
 use rs09_protocol::game::{ClientAction, Frame, updates};
 use std::collections::HashMap;
 
+mod component_use;
 mod slots;
 pub mod use_with;
 
