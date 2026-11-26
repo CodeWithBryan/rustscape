@@ -68,6 +68,21 @@ jobs:
           java-version: '11'
       - name: Reproduce original Java and Kotlin login cases
         run: cargo xtask login-oracle --check
+      # Later oracles reuse the classes and pinned jars these runs leave in runs/,
+      # so they go first.
+      - name: Reproduce original item instances, containers, events and callbacks
+        run: cargo xtask inventory-oracle --check
+      - name: Reproduce original inventory listener, container packet bytes and pouch keys
+        run: |
+          cargo xtask inventory-listener-oracle --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/port_summoning_pouch_ids.py --check
+      - name: Reproduce original interaction dispatch and captured arrival bodies
+        run: cargo xtask legacy-interaction-oracle --check
+      - name: Reproduce original interface metadata and gameframe orchestration
+        run: cargo xtask interfaces-oracle --check
+      - name: Reproduce complete server animation records, definitions and controller
+        run: cargo xtask animator-oracle --check
       - name: Verify original and Rust login codecs over real sockets
         run: cargo xtask login-interop
       - name: Reproduce original account and password rules
@@ -103,8 +118,6 @@ jobs:
           cargo xtask item-oracle --check
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/port_jdk_case.py --check
-      - name: Reproduce original item instances, containers, events and callbacks
-        run: cargo xtask inventory-oracle --check
       - name: Reproduce shared container receivers and exposed listener references
         run: cargo xtask container-ownership-oracle --check
       - name: Reproduce distinct native listener objects, aliases and callback rebinding
@@ -117,11 +130,6 @@ jobs:
         run: cargo xtask player-appearance-oracle --check
       - name: Reproduce late appearance receivers, shared output and failed byte prefixes
         run: cargo xtask appearance-writer-oracle --check
-      - name: Reproduce original inventory listener, container packet bytes and pouch keys
-        run: |
-          cargo xtask inventory-listener-oracle --check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python tools/port_summoning_pouch_ids.py --check
       - name: Reproduce joined player inventory, weight and packet effects
         run: cargo xtask player-inventory-oracle --check
       - name: Reproduce complete original item configuration loader and typed values
@@ -180,8 +188,6 @@ jobs:
         run: cargo xtask walk-request-oracle --check
       - name: Reproduce original scenery click dispatch and retained interactions
         run: cargo xtask scenery-action-oracle --check
-      - name: Reproduce original interaction dispatch and captured arrival bodies
-        run: cargo xtask legacy-interaction-oracle --check
       - name: Reproduce original option tables, defaults and retained aliases
         run: cargo xtask interaction-options-oracle --check
       - name: Reproduce ground click lookup and ordered interaction dispatch
@@ -236,16 +242,12 @@ jobs:
         run: cargo xtask npc-init-oracle --check
       - name: Reproduce entity chunk membership and ordered local queries
         run: cargo xtask entity-regions-oracle --check
-      - name: Reproduce original interface metadata and gameframe orchestration
-        run: cargo xtask interfaces-oracle --check
       - name: Reproduce original player settings and captured service ordering
         run: cargo xtask settings-oracle --check
       - name: Reproduce original update-mask lifecycle and live encoder traversal
         run: cargo xtask update-masks-oracle --check
       - name: Reproduce joined entity facing and prepared player mask bytes
         run: cargo xtask prepared-masks-oracle --check
-      - name: Reproduce complete server animation records, definitions and controller
-        run: cargo xtask animator-oracle --check
       - name: Compare every pinned server animation definition with the original JVM
         if: github.event_name == 'workflow_dispatch'
         run: cargo run --release -p xtask -- animator-audit
