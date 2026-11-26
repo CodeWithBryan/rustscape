@@ -563,18 +563,17 @@ pub(super) fn tick(p: &mut Probe, player: Node) -> Result<(), String> {
         .retaliation
         .get_mut(&engagement.npc)
         .filter(|r| r.victim == player)
+        && let Some((_, damage)) = retaliation.impact.filter(|(due, _)| ready(now, *due))
     {
-        if let Some((_, damage)) = retaliation.impact.filter(|(due, _)| ready(now, *due)) {
-            retaliation.impact = None;
-            if receive_hit(
-                p,
-                player,
-                damage,
-                hp,
-                weapons::defence_animation(&equipment),
-            )? {
-                return Ok(());
-            }
+        retaliation.impact = None;
+        if receive_hit(
+            p,
+            player,
+            damage,
+            hp,
+            weapons::defence_animation(&equipment),
+        )? {
+            return Ok(());
         }
     }
     let mut impacts = Vec::new();

@@ -87,14 +87,13 @@ pub(super) fn poison_on_register<S, H: Host>(
         }
     }
     let from = source(ctx, timer)?;
-    if ctx.host.kind(&from) == super::EntityKind::Familiar {
-        if let Some(owner) = ctx.host.familiar_owner(&from)? {
-            if below_task(ctx, &owner)? {
-                let message = removed_message(ctx)?;
-                ctx.host.debug(&owner, &message)?;
-                manager.remove(Some(timer), state, ctx)?;
-            }
-        }
+    if ctx.host.kind(&from) == super::EntityKind::Familiar
+        && let Some(owner) = ctx.host.familiar_owner(&from)?
+        && below_task(ctx, &owner)?
+    {
+        let message = removed_message(ctx)?;
+        ctx.host.debug(&owner, &message)?;
+        manager.remove(Some(timer), state, ctx)?;
     }
     Ok(())
 }

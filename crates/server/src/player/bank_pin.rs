@@ -259,11 +259,9 @@ impl Program {
                 61 | 64 => manager.ok_or(Error::Null)?.switch_recovery(ctx)?,
                 _ => {}
             },
-            13 => {
-                if button != 30 {
-                    let manager = ctx.player_manager(player)?.ok_or(Error::Null)?;
-                    manager.update_temp(ctx, button.wrapping_sub(1))?;
-                }
+            13 if button != 30 => {
+                let manager = ctx.player_manager(player)?.ok_or(Error::Null)?;
+                manager.update_temp(ctx, button.wrapping_sub(1))?;
             }
             _ => {}
         }

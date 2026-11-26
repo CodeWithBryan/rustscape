@@ -1,5 +1,10 @@
 """Original JagString collation and Font wrapping, with byte-string/metrics bindings."""
 import hashlib,json,pathlib,random,re,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 def generate(root,clean,method,check=False):
     src=root/'reference/client/client/src/main/java/rt4';run=root/'runs/ui-oracle/text';run.mkdir(parents=True,exist_ok=True);hashes={}
     def source(name):
@@ -14,7 +19,7 @@ class JagString {String s;byte[] chars;int length;JagString(String s){this.s=s;s
     (run/'Probe.java').write_text('''import java.io.*;import java.util.*;import java.nio.charset.StandardCharsets;
 public class Probe{static JagString text(String hex){return new JagString(new String(HexFormat.of().parseHex(hex),StandardCharsets.ISO_8859_1));}public static void main(String[]args)throws Exception{BufferedReader r=new BufferedReader(new InputStreamReader(System.in));String line;while((line=r.readLine())!=null){String[] x=line.split(";",-1);if(x[0].equals("C")){System.out.println(text(x[1]).compare(text(x[2])));continue;}Font f=new Font();byte[] raw=HexFormat.of().parseHex(x[1]);f.glyphWidths=new int[256];for(int i=0;i<256;i++)f.glyphWidths[i]=raw[i]&255;if(x.length>4&&!x[4].isEmpty()){String[] icons=x[4].split(",");f.nameIcons=new Sprite[icons.length];for(int i=0;i<icons.length;i++){f.nameIcons[i]=new Sprite();f.nameIcons[i].innerWidth=Integer.parseInt(icons[i]);}}JagString input=text(x[3]);JagString[] lines=new JagString[1000];int n=f.splitParagraph(input,new int[]{Integer.parseInt(x[2])},lines);String out=""+f.getStringWidth(input);for(int i=0;i<n;i++)out+=";"+HexFormat.of().formatHex(lines[i].chars);int[] layout=Arrays.stream(x[5].split(",")).mapToInt(Integer::parseInt).toArray();f.lineHeight=raw[256]&255;f.paragraphTopPadding=layout[7];f.paragraphBottomPadding=layout[8];f.renderParagraphAlpha(input,layout[0],layout[1],layout[2],layout[3],0,-1,layout[4],layout[5],layout[6]);System.out.println(out+"|"+String.join(",",f.records));}}}''',encoding='utf-8')
     subprocess.run(['javac','-encoding','UTF-8','-d',str(run),*[str(p)for p in run.glob('*.java')]],check=True)
-    rng=random.Random(530);data=(root/'assets/visual/ui.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);start=12+n;fonts={k:data[start+o:start+o+s]for k,(o,s)in manifest['files'].items()if k.startswith('font/')}
+    rng=random.Random(530);data=_recorded(root,'ui.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);start=12+n;fonts={k:data[start+o:start+o+s]for k,(o,s)in manifest['files'].items()if k.startswith('font/')}
     cases=[];inputs=[]
     for _ in range(4096):
         a=bytes(rng.randrange(256)for _ in range(rng.randrange(25)));b=bytes(rng.randrange(256)for _ in range(rng.randrange(25)))if rng.randrange(2)else a

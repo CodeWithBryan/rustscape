@@ -85,15 +85,14 @@ fn code_at(units: &[u16], at: usize) -> (u32, usize) {
     let Some(&first) = units.get(at) else {
         return (DONE, 1);
     };
-    if (0xd800..=0xdbff).contains(&first) {
-        if let Some(&second) = units.get(at + 1) {
-            if (0xdc00..=0xdfff).contains(&second) {
-                return (
-                    0x10000 + ((u32::from(first) - 0xd800) << 10) + u32::from(second) - 0xdc00,
-                    2,
-                );
-            }
-        }
+    if (0xd800..=0xdbff).contains(&first)
+        && let Some(&second) = units.get(at + 1)
+        && (0xdc00..=0xdfff).contains(&second)
+    {
+        return (
+            0x10000 + ((u32::from(first) - 0xd800) << 10) + u32::from(second) - 0xdc00,
+            2,
+        );
     }
     (u32::from(first), 1)
 }

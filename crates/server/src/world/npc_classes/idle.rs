@@ -57,15 +57,15 @@ pub fn is_attackable<H: Host + ?Sized>(
     if h.is_invisible(npc)? {
         return Ok(false);
     }
-    if h.task_level(npc)?.is_some() {
-        if let Some(e) = entity.filter(|e| h.kind(e) == Kind::Player) {
-            let required = h.task_level(npc)?.ok_or(Error::Null)?;
-            if required > h.level(e, SLAYER)? && message {
-                h.packet_message(
-                    e,
-                    "You need a higher slayer level to know how to wound this monster.",
-                )?;
-            }
+    if h.task_level(npc)?.is_some()
+        && let Some(e) = entity.filter(|e| h.kind(e) == Kind::Player)
+    {
+        let required = h.task_level(npc)?.ok_or(Error::Null)?;
+        if required > h.level(e, SLAYER)? && message {
+            h.packet_message(
+                e,
+                "You need a higher slayer level to know how to wound this monster.",
+            )?;
         }
     }
     if h.is_dead(npc)? {

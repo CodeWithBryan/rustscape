@@ -440,14 +440,14 @@ impl<'a> content::Host for Host<'a> {
     fn spell_book(&mut self, player: &P) -> &mut i32 {
         let held = self.book.as_ref().is_some_and(|(p, _)| p == player);
         if !held {
-            if let Some((p, book)) = self.book.take() {
-                if self.is_player(&p) {
-                    let _ = self
-                        .ctx
-                        .live
-                        .inner
-                        .with_profile(&p, |profile| profile.spell_book = book);
-                }
+            if let Some((p, book)) = self.book.take()
+                && self.is_player(&p)
+            {
+                let _ = self
+                    .ctx
+                    .live
+                    .inner
+                    .with_profile(&p, |profile| profile.spell_book = book);
             }
             let book = if self.is_player(player) {
                 self.ctx

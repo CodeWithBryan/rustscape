@@ -117,4 +117,4 @@ abstract class MovementPulse(val player:Player,val target:Node,val flag:Destinat
  (O/'runtime.json').write_text(json.dumps(dict(java=str(exe),classpath=cp),indent=2)+'\n',encoding='utf-8')
  print(len(rows),'original interaction listener cases reproduced'if check else'original interaction listener cases generated',flush=True)
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('--check',action='store_true');p.add_argument('--java-home',type=pathlib.Path);v=p.parse_args();c.JAVA_HOME=v.java_home;generate(v.check)
+ p=argparse.ArgumentParser();p.add_argument('--check',action='store_true');p.add_argument('--java-home',type=pathlib.Path);v=p.parse_args();c.JAVA_HOME=v.java_home or(pathlib.Path(os.environ['RS09_ORACLE_JAVA_HOME'])if'RS09_ORACLE_JAVA_HOME'in os.environ else None);generate(v.check)

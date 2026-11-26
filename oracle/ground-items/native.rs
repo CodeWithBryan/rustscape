@@ -29,13 +29,13 @@ impl Services {
         self.items.extend(found.into_values());
     }
     fn fire(&mut self, state: &mut State, stage: &str) -> Result<()> {
-        if let Some((selected, remaining, _)) = &mut self.hook {
-            if stage == selected {
-                *remaining -= 1;
-                if *remaining == 0 {
-                    let (_, _, command) = self.hook.take().unwrap();
-                    self.command(state, &command)?;
-                }
+        if let Some((selected, remaining, _)) = &mut self.hook
+            && stage == selected
+        {
+            *remaining -= 1;
+            if *remaining == 0 {
+                let (_, _, command) = self.hook.take().unwrap();
+                self.command(state, &command)?;
             }
         }
         Ok(())

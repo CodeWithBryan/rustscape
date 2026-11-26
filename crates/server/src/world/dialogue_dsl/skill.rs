@@ -354,13 +354,13 @@ impl SkillDialogue {
                 index
             }
             Self::TwoOption => match button {
-                6 | 5 | 4 | 3 => 0,
+                3..=6 => 0,
                 _ => 1,
             },
             Self::ThreeOption => match button {
-                7 | 6 | 5 | 4 => 0,
-                11 | 10 | 9 | 8 => 1,
-                15 | 14 | 13 | 12 => 2,
+                4..=7 => 0,
+                8..=11 => 1,
+                12..=15 => 2,
                 _ => 1,
             },
             Self::FourOption => match button {

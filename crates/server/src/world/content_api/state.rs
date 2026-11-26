@@ -125,10 +125,10 @@ pub fn get_timer_of<H: Host + ?Sized>(
     class: &str,
 ) -> Result<Option<H::Node>> {
     let timer = n(h, M::TimerGet, vec![nd(e), Arg::text(class)])?;
-    if let Some(t) = &timer {
-        if h.timer_class(t) != class {
-            return Err(Error::Cast);
-        }
+    if let Some(t) = &timer
+        && h.timer_class(t) != class
+    {
+        return Err(Error::Cast);
     }
     Ok(timer)
 }

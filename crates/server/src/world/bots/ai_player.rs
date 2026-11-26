@@ -523,10 +523,10 @@ impl<H: Host> AiPlayer<H> {
     pub fn get_item_by_id(&self, host: &mut H, id: i32) -> Result<Option<Item>> {
         let node = self.node();
         for i in 0..28 {
-            if let Some(item) = host.container_get(&node, Which::Inventory, i)? {
-                if item.id == id {
-                    return Ok(Some(item));
-                }
+            if let Some(item) = host.container_get(&node, Which::Inventory, i)?
+                && item.id == id
+            {
+                return Ok(Some(item));
             }
         }
         Ok(None)
@@ -566,10 +566,10 @@ impl<H: Host> AiPlayer<H> {
                 for (ox, oy) in [(x, y), (x, -y), (-x, y), (-x, -y)] {
                     let found =
                         host.region_object(me_x.wrapping_add(ox), me_y.wrapping_add(oy), 0)?;
-                    if let Some(object) = found {
-                        if wanted(host.id(&object)) {
-                            nodes.push(object);
-                        }
+                    if let Some(object) = found
+                        && wanted(host.id(&object))
+                    {
+                        nodes.push(object);
                     }
                 }
                 y += 1;

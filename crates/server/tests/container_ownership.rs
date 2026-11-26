@@ -27,12 +27,12 @@ fn difference(a: &Value, b: &Value, path: String) -> Option<String> {
             }
         }
     }
-    if let (Some(a), Some(b)) = (a.as_array(), b.as_array()) {
-        if a.len() == b.len() {
-            for (i, (a, b)) in a.iter().zip(b).enumerate() {
-                if let Some(d) = difference(a, b, format!("{path}/{i}")) {
-                    return Some(d);
-                }
+    if let (Some(a), Some(b)) = (a.as_array(), b.as_array())
+        && a.len() == b.len()
+    {
+        for (i, (a, b)) in a.iter().zip(b).enumerate() {
+            if let Some(d) = difference(a, b, format!("{path}/{i}")) {
+                return Some(d);
             }
         }
     }

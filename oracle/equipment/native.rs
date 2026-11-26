@@ -467,7 +467,7 @@ pub fn evaluate(row: &Value) -> Value {
                 .add_many(&Shared::new(vec![item.clone()]), &defs, &mut ctx)
                 .map(|v| json!(v)),
             "list" => c
-                .add_list(&[item.clone()], &defs, &mut ctx)
+                .add_list(std::slice::from_ref(&item), &defs, &mut ctx)
                 .map(|_| Value::Null),
             "all" => c
                 .add_many(&Shared::new(vec![item.clone()]), &defs, &mut ctx)

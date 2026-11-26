@@ -490,17 +490,17 @@ impl<P: Clone + Eq + Hash> Social<P> {
         let mut index = 0;
         while index < self.clans[clan.0].players.len() {
             let entry = &self.clans[clan.0].players[index];
-            if entry.world_id == host.world_id() {
-                if let Some(player) = entry.player.clone() {
-                    self.send_packet(
-                        host,
-                        Queued::Clan {
-                            player,
-                            clan,
-                            leave: false,
-                        },
-                    );
-                }
+            if entry.world_id == host.world_id()
+                && let Some(player) = entry.player.clone()
+            {
+                self.send_packet(
+                    host,
+                    Queued::Clan {
+                        player,
+                        clan,
+                        leave: false,
+                    },
+                );
             }
             index += 1;
         }

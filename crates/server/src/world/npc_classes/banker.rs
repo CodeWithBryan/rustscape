@@ -137,10 +137,10 @@ pub fn destination<H: Host + ?Sized>(h: &mut H, node: Option<&H::Npc>) -> Result
             transform_direction(l, direction, 1)
         }
         _ => {
-            if h.class(npc) == Some(Class::Banker) {
-                if let Some((_, tile)) = find_adjacent_bank_booth(h, npc)? {
-                    return Ok(Some(tile));
-                }
+            if h.class(npc) == Some(Class::Banker)
+                && let Some((_, tile)) = find_adjacent_bank_booth(h, npc)?
+            {
+                return Ok(Some(tile));
             }
             return h.location(npc);
         }

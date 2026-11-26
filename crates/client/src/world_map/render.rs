@@ -24,21 +24,21 @@ pub fn split_label(name: &[u8]) -> Vec<Vec<u8>> {
             tag_start = Some(i);
             continue;
         }
-        if ch == b'>' {
-            if let Some(start) = tag_start.take() {
-                let tag = &name[start + 1..i];
-                buffer.push(b'<');
-                buffer.extend_from_slice(tag);
-                buffer.push(b'>');
-                if tag == b"br" {
-                    if lines.len() == 5 {
-                        return lines;
-                    }
-                    lines.push(buffer[line_start..].to_vec());
-                    line_start = buffer.len();
+        if ch == b'>'
+            && let Some(start) = tag_start.take()
+        {
+            let tag = &name[start + 1..i];
+            buffer.push(b'<');
+            buffer.extend_from_slice(tag);
+            buffer.push(b'>');
+            if tag == b"br" {
+                if lines.len() == 5 {
+                    return lines;
                 }
-                ch = 0;
+                lines.push(buffer[line_start..].to_vec());
+                line_start = buffer.len();
             }
+            ch = 0;
         }
         if tag_start.is_none() && ch != 0 {
             buffer.push(ch);

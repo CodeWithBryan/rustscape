@@ -125,11 +125,11 @@ impl<P: Clone + Eq + Hash> Social<P> {
             if let Some(clan) = self.clan_get(host, &name, false)? {
                 self.clan_rank(host, clan, contact, Some(ClanRank::None))?;
             }
-            if host.private_chat_setting(player) == 1 {
-                if let Some(target) = host.player_by_name(contact) {
-                    let name = host.name(player);
-                    self.friend_packet(host, target, name, 0);
-                }
+            if host.private_chat_setting(player) == 1
+                && let Some(target) = host.player_by_name(contact)
+            {
+                let name = host.name(player);
+                self.friend_packet(host, target, name, 0);
             }
         }
         Ok(())

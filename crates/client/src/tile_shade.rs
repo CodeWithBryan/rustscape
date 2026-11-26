@@ -92,10 +92,10 @@ impl ShadowMap {
         };
         for sx in 0..=size[0] {
             for sy in 0..=size[1] {
-                if let Some(cell) = self.cell(level, x + sx, y + sy) {
-                    if i32::from(*cell) < strength {
-                        *cell = strength as i8;
-                    }
+                if let Some(cell) = self.cell(level, x + sx, y + sy)
+                    && i32::from(*cell) < strength
+                {
+                    *cell = strength as i8;
                 }
             }
         }
@@ -106,10 +106,13 @@ impl ShadowMap {
         for cx in x..=x + width {
             for cy in y..=y + depth {
                 // The original bounds this fill by the 104 tiles of the scene.
-                if cx >= 0 && cy >= 0 && (cx as usize) < self.width && (cy as usize) < self.depth {
-                    if let Some(cell) = self.cell(level, cx, cy) {
-                        *cell = 127;
-                    }
+                if cx >= 0
+                    && cy >= 0
+                    && (cx as usize) < self.width
+                    && (cy as usize) < self.depth
+                    && let Some(cell) = self.cell(level, cx, cy)
+                {
+                    *cell = 127;
                 }
             }
         }

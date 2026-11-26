@@ -1,5 +1,10 @@
 """Differential corpus for unchanged RT4 Component decoders and layout methods."""
 import argparse,hashlib,importlib.util,json,pathlib,random,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 ROOT=pathlib.Path(__file__).resolve().parents[2];SRC=ROOT/'reference/client/client/src/main/java/rt4';RUN=ROOT/'runs/ui-oracle';FIX=ROOT/'fixtures/ui'
 spec=importlib.util.spec_from_file_location('visual',ROOT/'oracle/visual/generate.py');v=importlib.util.module_from_spec(spec);spec.loader.exec_module(v)
 spec=importlib.util.spec_from_file_location('fields',ROOT/'tools/port_component_fields.py');f=importlib.util.module_from_spec(spec);spec.loader.exec_module(f)
@@ -39,7 +44,7 @@ def main(check):
     operation_specs=vm_probe.emit(RUN,source,v.method)
     (RUN/'Support.java').write_text(SUPPORT,encoding='utf-8')
     subprocess.run(['javac','-encoding','UTF-8','-d',str(RUN),*[str(p) for p in RUN.glob('*.java')]],check=True)
-    data=(ROOT/'assets/visual/ui.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);start=12+n
+    data=_recorded(ROOT,'ui.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);start=12+n
     inputs=[];cases=[];blob=bytearray()
     for name,(offset,size) in manifest['files'].items():
         if not name.startswith('interface/'):continue

@@ -170,10 +170,10 @@ pub fn process<C: Context>(
         };
         input = C::Value::from_text(expanded);
     }
-    if matches!(kind, InputType::Numeric | InputType::Amount) {
-        if let Some(value) = number(&ctx.string(&input)?) {
-            input = C::Value::from_integer(value);
-        }
+    if matches!(kind, InputType::Numeric | InputType::Amount)
+        && let Some(value) = number(&ctx.string(&input)?)
+    {
+        input = C::Value::from_integer(value);
     }
     let outcome = match ctx.invoke(script, input) {
         Err(Error::Number) => ctx.dialogue(p, text("That number's a bit large, don't you think?")),

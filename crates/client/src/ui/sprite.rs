@@ -46,6 +46,7 @@ impl Sheet {
         }
         r.seek(0)?;
         let mut frames = Vec::new();
+        #[allow(clippy::needless_range_loop)]
         for i in 0..count {
             let offset = [arrays[0][i], arrays[1][i]];
             let dims = [arrays[2][i], arrays[3][i]];

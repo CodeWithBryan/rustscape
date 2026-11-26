@@ -271,10 +271,10 @@ impl Movement {
         for i in 0..size {
             let checks = self.base().read().checks.clone().ok_or(Error::Null)?;
             let n = *checks.read().get(i).ok_or(Error::Index)?;
-            if let Some(n) = n {
-                if !ctx.active(self, n)? {
-                    return Ok(true);
-                }
+            if let Some(n) = n
+                && !ctx.active(self, n)?
+            {
+                return Ok(true);
             }
         }
         Ok(false)
@@ -441,20 +441,20 @@ impl Movement {
                 .flag()
                 .unwrap()
                 .destination(ctx, self.mover(), self.destination())?;
-        } else if loc.is_none() {
-            if let Some(method) = self.override_method() {
-                loc = ctx.destination(
-                    self.mover(),
-                    self.destination(),
-                    DestinationService::Override(method),
-                )?;
-                let target = node(ctx, self.destination())?.location;
-                if same(&loc, &target) {
-                    if let Some(flag) = self.flag() {
-                        loc = flag.destination(ctx, self.mover(), self.destination())?;
-                    } else {
-                        loc = None;
-                    }
+        } else if loc.is_none()
+            && let Some(method) = self.override_method()
+        {
+            loc = ctx.destination(
+                self.mover(),
+                self.destination(),
+                DestinationService::Override(method),
+            )?;
+            let target = node(ctx, self.destination())?.location;
+            if same(&loc, &target) {
+                if let Some(flag) = self.flag() {
+                    loc = flag.destination(ctx, self.mover(), self.destination())?;
+                } else {
+                    loc = None;
                 }
             }
         }
@@ -563,53 +563,54 @@ impl Movement {
     fn interrupt(&self, ctx: &mut impl Context, loc: Option<Location>) -> Result<Option<Location>> {
         let ml = location(ctx, self.mover())?;
         let _dl = location(ctx, self.destination())?;
-        if let Some(l) = loc.as_ref() {
-            if self.target_entity(ctx)? && node(ctx, self.destination())?.walking.has_path {
-                let points = node(ctx, self.destination())?
-                    .walking
-                    .points
-                    .read()
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>();
-                if !points.is_empty() {
-                    let mut point = points[0].clone();
-                    let mut predictive = None;
-                    for (i, p) in points.iter().enumerate() {
-                        let close = self.closest_border(ctx, p, l.coordinates()[2])?;
-                        if !ctx.teleport_permitted(&close)? {
-                            continue;
-                        }
-                        let [x, y, _] = ml.coordinates();
-                        let [cx, cy, _] = close.coordinates();
-                        let dist = x
-                            .wrapping_sub(cx)
-                            .wrapping_abs()
-                            .max(y.wrapping_sub(cy).wrapping_abs());
-                        let denominator = (i as i32 + 1)
-                            / if node(ctx, self.mover())?.walking.running {
-                                2
-                            } else {
-                                1
-                            };
-                        let ratio = dist as f32 / denominator as f32;
-                        if predictive.is_none() && ratio <= 1.0 {
-                            predictive = Some(p.clone());
-                            break;
-                        }
-                        if dist <= 2 {
-                            point = p.clone();
-                        }
+        if let Some(l) = loc.as_ref()
+            && self.target_entity(ctx)?
+            && node(ctx, self.destination())?.walking.has_path
+        {
+            let points = node(ctx, self.destination())?
+                .walking
+                .points
+                .read()
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>();
+            if !points.is_empty() {
+                let mut point = points[0].clone();
+                let mut predictive = None;
+                for (i, p) in points.iter().enumerate() {
+                    let close = self.closest_border(ctx, p, l.coordinates()[2])?;
+                    if !ctx.teleport_permitted(&close)? {
+                        continue;
                     }
-                    if let Some(p) = predictive {
-                        point = p;
+                    let [x, y, _] = ml.coordinates();
+                    let [cx, cy, _] = close.coordinates();
+                    let dist = x
+                        .wrapping_sub(cx)
+                        .wrapping_abs()
+                        .max(y.wrapping_sub(cy).wrapping_abs());
+                    let denominator = (i as i32 + 1)
+                        / if node(ctx, self.mover())?.walking.running {
+                            2
+                        } else {
+                            1
+                        };
+                    let ratio = dist as f32 / denominator as f32;
+                    if predictive.is_none() && ratio <= 1.0 {
+                        predictive = Some(p.clone());
+                        break;
                     }
-                    let end = self.closest_border(ctx, &point, l.coordinates()[2])?;
-                    if !ctx.teleport_permitted(&end)? {
-                        return Ok(loc);
+                    if dist <= 2 {
+                        point = p.clone();
                     }
-                    return Ok(Some(end));
                 }
+                if let Some(p) = predictive {
+                    point = p;
+                }
+                let end = self.closest_border(ctx, &point, l.coordinates()[2])?;
+                if !ctx.teleport_permitted(&end)? {
+                    return Ok(loc);
+                }
+                return Ok(Some(end));
             }
         }
         Ok(loc)
