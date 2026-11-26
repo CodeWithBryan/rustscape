@@ -926,10 +926,48 @@ impl login::Host<P> for Live {
         });
         result.map_err(native)?.map_err(native)
     }
-    fn init_reconnect(&mut self, _: &P) -> login::Result<()> {
-        Err(login::Error::Exception(
-            "not ported: reconnect (opcode 18) in the live world".into(),
-        ))
+    fn init_reconnect(&mut self, p: &P) -> login::Result<()> {
+        // Player.initReconnect(), in its order.
+        let node = p.node();
+        // getInterfaceManager().setChatbox(null)
+        self.inner
+            .canonical(p)
+            .player
+            .manager()
+            .fields
+            .write()
+            .chatbox = None;
+        // getPulseManager().clear()
+        self.with_walk(|world| world.clear_pulses(node))
+            .map_err(native)?;
+        // getZoneMonitor().getZones().clear(): the list, no zone callback.
+        self.monitor(&p.0).zones().clear();
+        // playerFlags: lastSceneGraph, updateSceneGraph, lastViewport.
+        let render = self.render(p);
+        {
+            let mut view = render.write();
+            view.last_scene = None;
+            view.update_scene = false;
+        }
+        {
+            let actor = self.inner.state.actor(node).map_err(native)?;
+            let mut state = actor.queue.state.write();
+            state.entity.last_scene = None;
+            state.entity.update_scene = false;
+        }
+        self.regions
+            .viewports
+            .insert(node, crate::world::map_chunk_render::empty_viewport());
+        // renderInfo: the local lists, lastLocation, onFirstCycle and the
+        // appearance stamps.
+        let info = render.read().info.clone();
+        let mut info = info.write();
+        info.local_npcs.write().clear();
+        info.local_players.write().clear();
+        info.last_location = None;
+        info.on_first_cycle = true;
+        info.appearance_stamps.write().fill(0);
+        Ok(())
     }
     fn set_active(&mut self, p: &P, active: bool) {
         let node = p.node();
@@ -1313,6 +1351,8 @@ impl login::Host<P> for Live {
 /// masks are the canonical players' prepared masks.
 struct Render<'a> {
     inner: &'a Inner,
+    /// The SkullManagers and `wild_pvp_enabled` the Appearance flag reads.
+    zones: &'a super::region_zones::RegionZones,
     candidates: Vec<Option<player_render::Handle>>,
     frames: Vec<Frame>,
 }
@@ -1338,11 +1378,20 @@ impl player_render::Context for Render<'_> {
             .ok_or(player_render::Error::Binding(
                 "a mask of an unknown player".into(),
             ))?;
+        // PlayerFlags530.Appearance runs here, at the write, over the live
+        // receivers (super::appearance).
+        let mut receivers = super::appearance::Receivers {
+            inner: self.inner,
+            skulls: &self.zones.skulls,
+            wild_pvp: self.zones.wild_pvp,
+        };
         self.inner
             .canonical(&p)
             .player
             .masks()
-            .write(local.clone(), output, appearance, sync)
+            .write_late(local.clone(), output, appearance, sync, &mut |buffer| {
+                receivers.encode(&p.0, buffer)
+            })
             .map_err(|e| player_render::Error::Binding(e.to_string()))
     }
     fn send(&mut self, _: &player_render::Handle, frame: Frame) -> player_render::Result<()> {
@@ -1592,6 +1641,7 @@ impl driver::Host<P> for Live {
         }
         let mut ctx = Render {
             inner: &self.inner,
+            zones: &self.zones,
             candidates,
             frames: Vec::new(),
         };

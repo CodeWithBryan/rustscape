@@ -120,6 +120,15 @@ impl ground::Context for NoMeta {
 
 impl Client {
     async fn login(address: std::net::SocketAddr, name: &str) -> (i32, Option<Client>) {
+        Self::login_as(address, name, false).await
+    }
+
+    /// A login with the reconnect operation (18) when `reconnect` is set.
+    async fn login_as(
+        address: std::net::SocketAddr,
+        name: &str,
+        reconnect: bool,
+    ) -> (i32, Option<Client>) {
         let mut peer = LoginPeer::connect(address, false, name.as_bytes())
             .await
             .expect("login handshake");
@@ -131,6 +140,7 @@ impl Client {
                     window_mode: 2,
                     screen_width: 765,
                     screen_height: 503,
+                    reconnect,
                     ..LoginRequest::default()
                 },
                 RS09_REVISION_530,
@@ -378,6 +388,20 @@ impl Client {
             .write(Direction::ClientToServer, None, &mut wire)
             .unwrap();
         self.writer.write(bytes::Bytes::from(wire)).await.unwrap();
+    }
+
+    /// The last appearance block received for the player at `index`.
+    fn appearance_of(&self, index: i32) -> Option<&players::RawAppearance> {
+        self.updates
+            .iter()
+            .flat_map(|(_, u)| &u.extended)
+            .filter(|e| e.index == index as usize)
+            .flat_map(|e| &e.fields)
+            .filter_map(|f| match f {
+                players::Field::Appearance { appearance, .. } => Some(appearance),
+                _ => None,
+            })
+            .next_back()
     }
 
     /// The local tile the client's own player stands on, as the absolute
@@ -913,6 +937,8 @@ async fn drive(
                 "trade" => trade_scenario(address, saves).await,
                 "follow" => follow_scenario(address, saves).await,
                 "eat" => eat_scenario(address, saves).await,
+                "appearance" => appearance_scenario(address, saves).await,
+                "reconnect" => reconnect_scenario(address, saves).await,
                 other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
             }
         }
@@ -961,6 +987,8 @@ async fn drive(
     trade_scenario(address, saves).await;
     follow_scenario(address, saves).await;
     eat_scenario(address, saves).await;
+    appearance_scenario(address, saves).await;
+    reconnect_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
 }
 
@@ -2705,5 +2733,226 @@ async fn eat_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
         one.skills[&2].0
     );
     one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// `StringUtils.stringToLong` for a lower-case name.
+fn name37(name: &str) -> i64 {
+    name.bytes().fold(0i64, |value, c| {
+        value * 37
+            + match c {
+                b'a'..=b'z' => i64::from(c - b'a') + 1,
+                b'0'..=b'9' => i64::from(c - b'0') + 27,
+                _ => 0,
+            }
+    })
+}
+
+/// The Appearance flag written by the original's flag writer over the live
+/// receivers (world::live::appearance): `lookone` is saved as a female
+/// character with body colours and 40 Attack, Strength and Defence, holding
+/// a bronze two-handed sword (1307). A second character reads its block:
+/// gender, the saved looks and colours, the name, the combat level of the
+/// saved skills and the default render animation; after `lookone` wields
+/// the sword, the weapon slot and the sword's render animation (124, from
+/// `Appearance.setAnimations`).
+async fn appearance_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let looks = [45, 1000, 56, 61, 68, 70, 79];
+    let colours = [5, 0, 3, 0, 4, 7, 2];
+    write_save_with(
+        &players,
+        "traceone",
+        "lookone",
+        [3230, 3230, 0],
+        &[(0, 1307, 1)],
+        |save| {
+            save["appearance"]["gender"] = Value::String("1".into());
+            save["appearance"]["appearance_cache"] = Value::Array(
+                looks
+                    .iter()
+                    .zip(colours)
+                    .map(|(look, colour)| {
+                        serde_json::json!({"look": look.to_string(), "color": colour.to_string()})
+                    })
+                    .collect(),
+            );
+            for row in save["skills"].as_array_mut().expect("skill rows") {
+                if matches!(row["id"].as_str(), Some("0" | "1" | "2")) {
+                    row["static"] = Value::String("40".into());
+                    row["dynamic"] = Value::String("40".into());
+                    row["experience"] = Value::String("37224.0".into());
+                }
+            }
+        },
+    );
+    write_save(&players, "traceone", "looktwo", [3231, 3230, 0], &[]);
+    let mut one = enter(address, "lookone").await;
+    let mut two = enter(address, "looktwo").await;
+    let index_one = one.index;
+    two.until(Duration::from_secs(10), "lookone's appearance", |c| {
+        c.appearance_of(index_one).is_some()
+    })
+    .await;
+    let seen = two.appearance_of(index_one).unwrap().clone();
+    assert_eq!(seen.flags & 1, 1, "lookone is female: {seen:?}");
+    assert_eq!(
+        seen.flags & !1,
+        0,
+        "size 1 outside the wilderness: {seen:?}"
+    );
+    assert_eq!((seen.skull_icon, seen.prayer_icon), (-1, -1), "{seen:?}");
+    // prepareBodyData of a naked character: chest, arms, legs, hair, hands,
+    // feet and the beard part from the saved looks (0x100 + look).
+    assert_eq!(
+        seen.slots,
+        [
+            0,
+            0,
+            0,
+            0,
+            looks[2] + 0x100,
+            0,
+            looks[3] + 0x100,
+            looks[5] + 0x100,
+            looks[0] + 0x100,
+            looks[4] + 0x100,
+            looks[6] + 0x100,
+            looks[1] + 0x100
+        ],
+        "{seen:?}"
+    );
+    // Hair, torso, legs, feet and skin colours.
+    assert_eq!(seen.colors, [5, 3, 7, 2, 4], "{seen:?}");
+    assert_eq!(seen.bas, 1426, "the default render animation: {seen:?}");
+    assert_eq!(seen.name37, name37("lookone"), "{seen:?}");
+    // 0.25 * (40 Defence + 10 Hitpoints) + 0.325 * (40 Attack + 40 Strength).
+    assert_eq!(
+        (seen.combat, seen.combat_with_summoning, seen.combat_range),
+        (38, 38, -1),
+        "{seen:?}"
+    );
+    // lookone's own block is the same field.
+    one.until(Duration::from_secs(10), "its own appearance", |c| {
+        c.appearance_of(players::SELF as i32).is_some()
+    })
+    .await;
+    assert_eq!(one.appearance_of(players::SELF as i32), Some(&seen));
+    eprintln!("looktwo reads lookone's saved gender, looks, colours, name and combat level 38");
+
+    one.send(item_option2(1307, 0)).await;
+    two.until(
+        Duration::from_secs(10),
+        "lookone's appearance with the two-handed sword",
+        |c| {
+            c.appearance_of(index_one)
+                .is_some_and(|a| a.slots[3] >= 0x8000)
+        },
+    )
+    .await;
+    let armed = two.appearance_of(index_one).unwrap().clone();
+    assert_eq!(armed.bas, 124, "the sword's render animation: {armed:?}");
+    // A two-handed weapon leaves the shield slot empty; the body is unchanged.
+    assert_eq!(armed.slots[5], 0, "{armed:?}");
+    assert_eq!(armed.slots[4], seen.slots[4], "{armed:?}");
+    assert_eq!(armed.colors, seen.colors, "{armed:?}");
+    eprintln!("looktwo sees lookone wield 1307: weapon slot worn, render animation 124");
+    one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Reconnect (login operation 18): `reconone` walks, then its connection
+/// drops. The original answers a reconnect AlreadyOnline while the old
+/// player is still in the repository (`Login.kt` reads
+/// `Repository.getPlayerByName`), so the client retries; once the
+/// disconnection queue has saved and removed the old player the reconnect
+/// is admitted: `LoginParser.reconnect` with `Player.initReconnect` runs in
+/// place of `Player.init`, and the character is back where it stood, sees
+/// itself and walks. `recontwo` stays online and sees `reconone` return.
+async fn reconnect_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(&players, "traceone", "reconone", [3236, 3222, 0], &[]);
+    write_save(&players, "traceone", "recontwo", [3236, 3224, 0], &[]);
+    let mut one = enter(address, "reconone").await;
+    let mut two = enter(address, "recontwo").await;
+    let old_index = one.index;
+    two.until(Duration::from_secs(10), "reconone in view", |c| {
+        c.players.players[old_index as usize].is_some()
+    })
+    .await;
+    let stood = [3238, 3222, 0];
+    one.send(actions::worldspace_walk(stood[0], stood[1], false))
+        .await;
+    one.until(Duration::from_secs(10), "reconone's walk", |c| {
+        c.position() == stood
+    })
+    .await;
+    // The connection is lost: no logout, the socket just goes.
+    drop(one);
+    let started = Instant::now();
+    let mut refused = 0;
+    let mut one = loop {
+        let (code, client) = Client::login_as(address, "reconone", true).await;
+        match (code, client) {
+            (2, Some(client)) => break client,
+            // AlreadyOnline: the old player has not left the repository yet.
+            (5, None) => refused += 1,
+            (other, _) => panic!("reconone's reconnect was answered {other}"),
+        }
+        assert!(
+            started.elapsed() < Duration::from_secs(30),
+            "reconone's reconnect was refused {refused} times"
+        );
+        two.pump(Duration::from_millis(300)).await;
+    };
+    eprintln!(
+        "reconone's reconnect was admitted after {} ms ({refused} AlreadyOnline replies)",
+        started.elapsed().as_millis()
+    );
+    one.until(Duration::from_secs(10), "the reconnect's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    assert_eq!(one.position(), stood, "reconone is back where it stood");
+    let index = one.index;
+    one.until(Duration::from_secs(10), "its own appearance", |c| {
+        c.appearance_of(players::SELF as i32).is_some()
+    })
+    .await;
+    assert_eq!(
+        one.appearance_of(players::SELF as i32).unwrap().name37,
+        name37("reconone"),
+        "reconone's own appearance block"
+    );
+    // The player who stayed sees reconone again, with its appearance, after
+    // the reconnect (updates received before it do not count).
+    let from = two.updates.len();
+    two.until(Duration::from_secs(10), "reconone back in view", |c| {
+        c.players.players[index as usize].is_some()
+            && c.updates[from.min(c.updates.len())..].iter().any(|(_, u)| {
+                u.extended.iter().any(|e| {
+                    e.index == index as usize
+                        && e.fields.iter().any(|f| {
+                            matches!(f, players::Field::Appearance { appearance, .. }
+                                if appearance.name37 == name37("reconone"))
+                        })
+                })
+            })
+    })
+    .await;
+    // The reconnected character plays on: it walks and both see it.
+    let target = [3238, 3225, 0];
+    one.send(actions::worldspace_walk(target[0], target[1], false))
+        .await;
+    one.until(
+        Duration::from_secs(10),
+        "reconone's walk after reconnect",
+        |c| c.position() == target,
+    )
+    .await;
+    eprintln!("reconone reconnected at {stood:?}, saw itself and walked to {target:?}");
+    one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }

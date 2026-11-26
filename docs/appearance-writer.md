@@ -45,9 +45,16 @@ affected appearance/mask/render/Animator and example gates in AGENTS.md. Source
 and observation pins are checked independently. The native recorder shares the
 existing Appearance setup without changing its 448 original observations.
 
-The transport publisher remains the explicitly prepared-data development path.
-Full native Properties, skull/familiar/skills/profile/player services and provider
-registry bindings must precede replacing that path and enabling accepted Equip.
+The live world (`world/live/appearance.rs`) runs this writer at the mask write
+over its receivers: the canonical Appearance, equipment, render info and
+attributes, the profile's Properties and Skills, the SkullManager, the node's
+size and the configuration's `pvp`/`wild_pvp_enabled`. Its familiar receiver is
+the pouch flag and the profile's summoning combat level (familiars are not
+installed), and `transformNPC`'s services are refused. That join is covered by
+the live-world test's appearance scenario (cache-backed, not run in CI) and the
+login-tick comparison, not by a JVM fixture of its own. The examples' transport
+publisher remains the explicitly prepared-data development path
+(`PreparedMasks::write`); `write_late` takes the flag's encoder.
 This kernel is not full Player initialization, accepted gameplay, full IoBuffer,
 parallel simulation or a performance/capacity result. All 4,042 source-inventory
 rows remain not_replaced; the complete Rust replacement objective stays active.

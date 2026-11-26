@@ -117,7 +117,7 @@ modes of `rs09-server` are unchanged.
 | ground item packet, pickup | `processGroundItemAction`, `PickupPlugin`, `PickupHandler.take` | `world::ground_runtime` with the walk host as `legacy_runtime::Bindings` (`InteractPlugin.handle` over the canonical legacy scheduler: movement, then `interaction_arrival`), `world::pickup` at arrival over the canonical inventory, attributes, Ironman, pickup types, animator (535) and sound (2582) |
 | item, NPC, player, examine, track-finished packets | `processItemAction`, `InteractPlugin.handleItemOption` and `InteractPlugin$1`, `processNpcAction`, `processPlayerAction`, the examine branches, `TrackFinished` | `items.rs`: `world::packet_handlers` over the live world; an inventory item's InteractPlugin is a table made the first time it is asked for (`setDefault` over its definition's actions and `OPTION_HANDLERS`), an NPC's over its definition's options, a player's the one login set up; the item pulse on `GameWorld.Pulser`; `InteractPlugin.handle`/`handleInvalidInteraction` through the legacy runtime (walk, arrival, "Nothing interesting happens." with no content handler); `InteractionListeners` is the native registry (`world::interaction_listeners`) with `DropListener` and `EquipHandler` registered at boot (generic ITEM options) |
 | drop, equip | `DropListener`, `EquipHandler`, `EquipmentContainer` | the drop's soft queued script (due a tick later), `Item.getDropItem`, `GroundItemManager.create`, `droppedItem:ID`, the save task; `EquipHandler.handleEquip` with `EquipmentContainer.add` (`inventory::equipment::add_at` over the live equipment context: `ItemDefinition.hasRequirement` (`items::has_requirement`, JDK HashMap key order), the EquipmentListener and the InventoryListener of the canonical containers); the canonical equipment container is an `EquipmentContainer` bound to its player with its listener |
-| appearance | `Appearance.sync`, `prepareBodyData` | `Inner::appearance_sync`: the canonical appearance's `prepareBodyData` over the worn equipment, the prepared body copied into the appearance block's data, then the mask; at login and from the EquipmentListener |
+| appearance | `Appearance.sync`, `Appearance.setAnimations`, `PlayerFlags530.Appearance` | `Inner::appearance_sync` registers the mask (`player.updateAppearance()`) at login and from the EquipmentListener; `live/appearance.rs` runs `player::appearance_writer` when the update phase writes the mask, over the live receivers (the canonical Appearance, equipment, render info and attributes, the profile's Properties and Skills, the SkullManager, the node's size, the configuration's `pvp` and `wild_pvp_enabled`); `prepareBodyData` runs inside the writer; `setAnimations` from the EquipmentListener sets the weapon's animations and render animation |
 | engine timers | `TimerRegistry` (the class scan's timers), `addAutoTimers`, `TimerManager.processTimers`, `saveTimers`/`parseTimers`, `Entity.hook`/`unhook`/`dispatch`, `hasTimerActive` | `timers.rs`: the fourteen `timers::content` prototypes in the world's registry (registered at the first timer operation, in scan order); `addAutoTimers` at `Entity.init` (AntiMacro, SkillRestore); `processTimers` for every player at the end of `Entity.tick`, the timer manager of the canonical profile (its three lists aliased); `timers::content::Natives` over `timers::Host` (the live world: native Skills through the live skills and settings contexts, the shared generator, messages, audio, equipment, rights, uids, the zone monitor's random-event restriction, the SkullManager, the per-entity hook lists) and over `timers::Saving` while a save is written or parsed (uids, ticks, the generator, the log; the messages and skull calls of a timer the parse registers are made right after the parse); `hasTimerActive` answers the walking queue (`frozen`), the zones (`teleblock`) and `isPoisonImmune`; the SkullManager's `removeTimer`, `spawnTimer` and `registerTimer` go through the registry |
 | global handlers | `ClassScanner` of the global handler classes, `InterfaceListeners`, `ComponentDefinition` plugins, OptionHandlers, `ClimbActionHandler` | `global.rs`: `registry::register_scanned` over the live InterfaceListeners, the interface definitions' plugins, the native InteractionListeners and the scenery option defaults at boot; the per-definition scenery handlers bound into the scenery definitions; buttons, open and close listeners and component plugins dispatched through `run_button`, `run_open` and `run_plugin` (`buttons.rs`); scenery OptionHandlers through `run_handler` and `handler_destination` (`destination.rs`, over the scene); the bodies' `Task`s submitted to `GameWorld.Pulser` and run with `run_task`; `GHost` is the handlers' `Host` (attributes, messages, interface text, the weapon, emote and music tabs, settings toggles, locks, the animator, the teleport location, scenery geometry, SpecialLadders) |
 | scenery options | `processSceneryAction`, scenery `InteractPlugin` | `scenery.rs`: `world::scenery_runtime` (the legacy walk and arrival, `world::scenery_action`) over the cache scene's objects, `scenery_options::Registry` (the scenery tables and handler arena with the global handlers' defaults), `Scenery.getChild` over the scene's definitions, the InteractionListeners lookup for scenery |
@@ -166,11 +166,26 @@ modes of `rs09-server` are unchanged.
   an activated region stays active.
 - The start-up's NPCs are copied into the scene's chunks by location (the
   start-up ran `RegionManager.move` against its own chunk store).
-- The appearance block is the prepared publisher's (`appearance::Data`): its
-  twelve body slots are copied from the canonical appearance after
-  `prepareBodyData` (worn equipment included); the other fields stay the
-  prepared data's (the original's full flag writer, `player::appearance_writer`,
-  is not joined to the prepared masks).
+- The appearance block is written by the original's flag writer
+  (`player::appearance_writer` through `live/appearance.rs`) when the mask is
+  written, into a buffer of its own that is appended to the mask block (the
+  original writes into the block's buffer; the bytes are the same). Its
+  `FamiliarManager` receiver is answered without familiars:
+  `isUsingSummoning` is the pouch flag and the summoning combat level is the
+  profile's. A player with no SkullManager entry yet is read as a new one's
+  fields. `transformNPC` is not joined: the services only it reaches
+  (`NPCDefinition.forId`, `setSize`, the combat animations) are refused, so a
+  transformed player's block is not written. The live join has no JVM
+  differential fixture of its own; the writer's has (docs/appearance-writer.md),
+  and the new-character login tick is compared with the world trace.
+- A reconnect (login operation 18) runs `LoginParser.reconnect` with
+  `Player.initReconnect` (`Live::init_reconnect`) in place of `Player.init`,
+  as the original does: a new player object from the save, no
+  `Entity.init` (so no `addAutoTimers`: AntiMacro and SkillRestore are not
+  registered for a reconnected player, as in the original), no lobby and no
+  `logged-in-fully` attribute. While the old player is still in the
+  repository the reply is AlreadyOnline (`Login.kt`). No world-trace scenario
+  covers it; the live test covers one dropped connection.
 - `DropListener`'s soft queued script is kept by the live world, not in the
   player's canonical script queue: it runs at the start of the player's
   `Player.tick` once its tick (the next one) is due.
@@ -323,7 +338,7 @@ sent or changed; the first call of each is logged with `--verbose`):
 dispatch (entity event hooks), `GlobalStats.incrementDeathCount`,
 `SlayerEquipmentFlags.updateFlags` after a death, `PlayerMonitor.log` PK
 (logged only), `Repository.sendNews` (permadeath),
-`Appearance.setAnimations`, `ButtonClickEvent` dispatch, `checkForWealthUpdate`,
+`ButtonClickEvent` dispatch, `checkForWealthUpdate`,
 BankerNPC's prototype construction, `DialogueOpenEvent` and
 `DialogueOptionSelectionEvent` dispatch, `ItemShopPurchaseEvent`/
 `ItemShopSellEvent` dispatch, `PlayerMonitor.logTrade` (logged only),
@@ -445,7 +460,7 @@ ground items) and item-on-item Pulse with handlers, `UseWithHandler.handle`;
 the slot switch's bank calls; content NPC clipping suppliers;
 special attack handlers (`instant_spec`), `DialogueInterpreter.sendDialogue`
 from the tab libraries and prayer (a locked emote), the SALUTE, GOBLIN_BOW and GIVE_THANKS emotes,
-`AchievementDiary.updateTask`, tutorial content, reconnect (opcode 18), `sendLastLoginInfo` of a host name, ContentAPI `runTask` with more than one repetition, a
+`AchievementDiary.updateTask`, tutorial content, `sendLastLoginInfo` of a host name, ContentAPI `runTask` with more than one repetition, a
 saved spawn location or `login_type` attribute, the loot-share pulse, the
 management-server session, account creation from social, familiars, region
 NPC queries (`Repository.findNPC(location)`), the deferred login world
@@ -642,6 +657,18 @@ the client-side player and NPC update decoders):
   health.", hitpoints 7, animation 829; it drinks the potion: "You drink
   some of your strength potion.", a three-dose potion (115) in the slot,
   Strength raised, and two ticks later "You have 3 doses of potion left.".
+- `lookone` (saved female, body colours 5/3/7/2/4, 40 Attack, Strength and
+  Defence, a bronze two-handed sword 1307) and `looktwo`: `looktwo` reads
+  `lookone`'s appearance block with the gender bit, the body slots of the
+  saved looks, the colours, the name, combat level 38 twice and no
+  wilderness level, render animation 1426; `lookone` receives the same
+  block for itself. `lookone` wields the sword: the weapon slot is worn and
+  the render animation is 124 (`Appearance.setAnimations`).
+- `reconone` walks two tiles and its socket is dropped; it logs in again
+  with the reconnect operation (18) until admitted (AlreadyOnline while the
+  old player is in the repository; 4 such replies and 1.8 s in the measured
+  run), is rebuilt where it stood, receives its own appearance block, and
+  walks; `recontwo`, online throughout, sees it return with its appearance.
 - `RS09_LIVE_COMBAT_ONLY` runs only the combat scenarios (fight, aggression,
   death, grave, subclass, dragon, ranged, special) after the first
   character's save (a shortcut while working on combat);
@@ -722,11 +749,13 @@ stand-ins); this test checks the production binding end to end.
 - The per-player or per-world libraries behind other buttons and options:
   gathering listeners, quests and diaries, clans; content listeners and
   doors.
-- The full appearance flag writer (`appearance_writer`) instead of the
-  prepared data; region unloading; the climb animation (828) was not seen in the player
+- A transformed player's appearance (`transformNPC`), familiars behind the
+  appearance flag's summoning fields; region unloading; the climb animation (828) was not seen in the player
   update by the test (the climb itself is).
 - An NPC tick that fails stops the rest of that tick's update sequence (the
   original's `handleTickActions` catch): a refusal reached by every tick (as
   the water paths were before they were bound) stalls the world.
-- Reconnect, the lobby, AFK logout's client side, many players (capacity is
+- Reconnect beyond one dropped connection (in combat, with open interfaces,
+  the client's own state-40 flow against this world), the lobby, AFK logout's
+  client side, many players (capacity is
   not measured), concurrent saves of one character.

@@ -168,9 +168,16 @@ impl PreparedMasks {
         sync: bool,
         clock: impl FnMut() -> i64,
     ) -> masks::Result<bool> {
-        let result = self
-            .core
-            .register(&mut Context { state: self, clock }, flag, payload, sync);
+        let result = self.core.register(
+            &mut Context {
+                state: self,
+                clock,
+                late: None,
+            },
+            flag,
+            payload,
+            sync,
+        );
         self.publish();
         result
     }
@@ -273,6 +280,7 @@ impl PreparedMasks {
             &mut Context {
                 state: self,
                 clock: || 0,
+                late: None,
             },
             self.owner(),
         );
@@ -290,9 +298,34 @@ impl PreparedMasks {
         appearance: bool,
         synced: bool,
     ) -> masks::Result<()> {
+        self.write_with(viewer, buffer, appearance, synced, None)
+    }
+    /// [`Self::write`] with the Appearance flag's encoder supplied by the
+    /// caller: `late` appends the whole field (length byte included) where the
+    /// original's flag writer runs, at write time. Without it the prepared
+    /// data is encoded.
+    pub fn write_late(
+        &self,
+        viewer: Handle,
+        buffer: &mut Vec<u8>,
+        appearance: bool,
+        synced: bool,
+        late: &mut LateAppearance<'_>,
+    ) -> masks::Result<()> {
+        self.write_with(viewer, buffer, appearance, synced, Some(late))
+    }
+    fn write_with(
+        &self,
+        viewer: Handle,
+        buffer: &mut Vec<u8>,
+        appearance: bool,
+        synced: bool,
+        late: Option<&mut LateAppearance<'_>>,
+    ) -> masks::Result<()> {
         let mut context = Context {
             state: self,
             clock: || 0,
+            late,
         };
         let owner = self.owner();
         if synced {
@@ -304,11 +337,14 @@ impl PreparedMasks {
         }
     }
 }
-struct Context<'a, F> {
+/// The Appearance flag's late encoder: appends the field to the mask block.
+pub type LateAppearance<'a> = dyn FnMut(&mut Vec<u8>) -> masks::Result<()> + 'a;
+struct Context<'a, 'b, F> {
     state: &'a PreparedMasks,
     clock: F,
+    late: Option<&'a mut LateAppearance<'b>>,
 }
-impl<F: FnMut() -> i64> masks::Registry<Handle, Payload> for Context<'_, F> {
+impl<F: FnMut() -> i64> masks::Registry<Handle, Payload> for Context<'_, '_, F> {
     fn provider(
         &mut self,
         _: &Core,
@@ -329,7 +365,7 @@ impl<F: FnMut() -> i64> masks::Registry<Handle, Payload> for Context<'_, F> {
         Ok((self.clock)())
     }
 }
-impl<F: FnMut() -> i64> masks::Writer<Handle, Payload> for Context<'_, F> {
+impl<F: FnMut() -> i64> masks::Writer<Handle, Payload> for Context<'_, '_, F> {
     fn is_player(&self, entity: Option<&Handle>) -> bool {
         entity.is_some()
     }
@@ -357,9 +393,10 @@ impl<F: FnMut() -> i64> masks::Writer<Handle, Payload> for Context<'_, F> {
                 buffer.extend([rights, bytes.len() as u8]);
                 buffer.extend(bytes.iter().rev().copied());
             }
-            (Flag::Appearance, Some(Payload::Appearance(body))) => {
-                buffer.extend(body.read().encode())
-            }
+            (Flag::Appearance, Some(Payload::Appearance(body))) => match self.late.as_mut() {
+                Some(late) => late(buffer)?,
+                None => buffer.extend(body.read().encode()),
+            },
             (Flag::Animate, Some(Payload::Animation(animation))) => {
                 buffer.extend(appearance::animation(animation.id(), animation.delay()))
             }
@@ -431,7 +468,7 @@ impl<F: FnMut() -> i64> masks::Writer<Handle, Payload> for Context<'_, F> {
         Ok(())
     }
 }
-impl<F: FnMut() -> i64> masks::Impacts<Handle, Payload> for Context<'_, F> {
+impl<F: FnMut() -> i64> masks::Impacts<Handle, Payload> for Context<'_, '_, F> {
     type Handler = Shared<VecDeque<Impact>>;
     type Impact = Impact;
     fn handler(&mut self, _: &Core, _: &Handle) -> masks::Result<Self::Handler> {

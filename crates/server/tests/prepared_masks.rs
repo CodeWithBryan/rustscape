@@ -94,6 +94,58 @@ fn retained_mask_capture_uses_the_same_body_after_wire_index_reuse() {
     assert!(weak.upgrade().is_none());
 }
 #[test]
+fn late_appearance_encoder_replaces_the_prepared_data_only_where_the_flag_is_written() {
+    let masks = masks();
+    masks.sync_appearance(|| 9).unwrap();
+    masks
+        .face_location(Some(Location::new(3208, 3216, 0)))
+        .unwrap();
+    masks.prepare().unwrap();
+    let mut prepared = vec![];
+    masks
+        .write(masks.owner(), &mut prepared, true, true)
+        .unwrap();
+    // The late encoder's bytes stand where the prepared field stood; the
+    // header and the other synced flag are the same.
+    let field = masks.body().read().encode();
+    let at = prepared
+        .windows(field.len())
+        .position(|w| w == field)
+        .expect("the prepared appearance field");
+    let mut calls = 0;
+    let mut late = vec![];
+    masks
+        .write_late(masks.owner(), &mut late, true, true, &mut |buffer| {
+            calls += 1;
+            buffer.extend([0x83, 1, 2, 3]);
+            Ok(())
+        })
+        .unwrap();
+    assert_eq!(calls, 1);
+    let mut expected = prepared[..at].to_vec();
+    expected.extend([0x83, 1, 2, 3]);
+    expected.extend(&prepared[at + field.len()..]);
+    assert_eq!(late, expected);
+    // Without the appearance (a viewer whose stamp is current) the encoder
+    // is not run.
+    let mut none = vec![];
+    masks
+        .write_late(masks.owner(), &mut none, false, true, &mut |_| {
+            panic!("the appearance flag is not written")
+        })
+        .unwrap();
+    let mut plain = vec![];
+    masks.write(masks.owner(), &mut plain, false, true).unwrap();
+    assert_eq!(none, plain);
+    // The encoder's failure is the write's.
+    let failed = masks.write_late(masks.owner(), &mut vec![], true, true, &mut |_| {
+        Err(rs09_server::world::update_masks::Error::Binding(
+            "late".into(),
+        ))
+    });
+    assert!(failed.is_err());
+}
+#[test]
 fn face_target_keeps_the_actual_canonical_node_until_current_and_synced_slots_release_it() {
     let masks = masks();
     let mut world = State::default();
