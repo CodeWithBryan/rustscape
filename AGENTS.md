@@ -2192,6 +2192,14 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   rendering-height placeholder as measured terrain or infer live drops/Take
   behavior from an empty old-server smoke. Keep original self teleport queue
   behavior during rebuilds, including the non-discard near-distance branch.
+- Headless agent actions (`headless/agent.rs`) build packets only through the
+  shared writers in protocol/game/menu.rs (the visual client re-exports them;
+  keep one implementation). The View reads authoritative frames only; never
+  infer outcomes from a sent action. Changes require the protocol menu tests
+  (decoded by the server's ClientAction::decode), the headless agent tests,
+  client lib tests and `live_agent` against the in-process live world. Do not
+  claim use-with on NPCs/scenery/players works live until the server's
+  use-with walk exists. See docs/headless-agent.md.
 - For GroundItemManager/chunk item mutation or tradeability, run ground_manager,
   chunk_sync, map_chunk_render, scene, world_pulses, player_walk, entity_regions,
   chunk, region_load, world_update, player_render/rebuild, inventory/attributes,
