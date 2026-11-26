@@ -96,7 +96,20 @@ impl Entries {
             lookup: HashMap::new(),
             source: manifest.source,
         };
-        for (name, [start, size]) in manifest.files.0 {
+        // A name met again keeps its first place and takes its last span,
+        // as the scripts' dictionaries did; only the spans kept are read.
+        let mut spans: Vec<(String, [usize; 2])> = Vec::new();
+        let mut at: HashMap<String, usize> = HashMap::new();
+        for (name, span) in manifest.files.0 {
+            match at.get(&name) {
+                Some(&slot) => spans[slot].1 = span,
+                None => {
+                    at.insert(name.clone(), spans.len());
+                    spans.push((name, span));
+                }
+            }
+        }
+        for (name, [start, size]) in spans {
             let data = start
                 .checked_add(size)
                 .and_then(|end| blob.get(start..end))
@@ -540,5 +553,46 @@ mod tests {
         assert_eq!(rebuilt.manifest.files["a"], [3, 1]);
         assert_eq!(rebuilt.manifest.files["c"], [4, 0]);
         assert!(Entries::from_pack(b"RS09VIS1").is_err());
+    }
+}
+
+#[cfg(test)]
+mod manifest_tests {
+    use super::Entries;
+
+    fn pack(manifest: &str, blob: &[u8]) -> Vec<u8> {
+        let mut bytes = b"RS09VIS1".to_vec();
+        bytes.extend((manifest.len() as u32).to_le_bytes());
+        bytes.extend(manifest.as_bytes());
+        bytes.extend(blob);
+        bytes
+    }
+
+    #[test]
+    fn a_repeated_name_keeps_its_first_place_and_only_its_last_span_is_read() {
+        let bytes = pack(
+            r#"{"source": "s", "files": {"x": [99, 1], "y": [1, 1], "x": [0, 1]}}"#,
+            b"ab",
+        );
+        let entries = Entries::from_pack(&bytes).unwrap();
+        assert_eq!(entries.names, ["x", "y"]);
+        assert_eq!(entries.data, [b"a".to_vec(), b"b".to_vec()]);
+    }
+
+    #[test]
+    fn whitespace_and_a_nested_files_key_are_read_as_json() {
+        let bytes = pack(
+            r#"{ "meta": {"files": {"z": [0, 1]}}, "source": "s",
+                 "files": { "y": [1, 1], "x": [0, 1] } }"#,
+            b"ab",
+        );
+        let entries = Entries::from_pack(&bytes).unwrap();
+        assert_eq!(entries.names, ["y", "x"]);
+    }
+
+    #[test]
+    fn a_kept_span_outside_the_blob_is_refused() {
+        let bytes = pack(r#"{"source": "s", "files": {"x": [1, 5]}}"#, b"ab");
+        assert!(Entries::from_pack(&bytes).is_err());
     }
 }

@@ -28,9 +28,11 @@
 //!
 //! Nothing is replaced until every pack of the command is built: each pack
 //! and sidecar is written beside its destination first and all of them are
-//! moved into place at the end. As the scripts did, the layered packs refuse
+//! moved into place at the end (`rs09_client::staging`), which puts the
+//! previous files back if a move fails. As the scripts did, the layered packs refuse
 //! a cache whose files differ from the pinned server's Git LFS objects, and
 //! an output that is one of their inputs.
+use rs09_client::staging::Staging;
 use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
@@ -46,19 +48,15 @@ struct Tool {
     cache: PathBuf,
     lock: serde_json::Value,
     commit: String,
-    /// Written files waiting to be moved into place: (staged, destination).
-    staged: RefCell<Vec<(PathBuf, PathBuf)>>,
+    /// Written files waiting to be moved into place together.
+    staged: RefCell<Staging>,
 }
 
-/// `path` with `.partial` appended to its file name.
-fn partial(path: &Path) -> PathBuf {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(".partial");
-    path.with_file_name(name)
-}
-
-/// The absolute form of a path that may not exist yet.
+/// The absolute form of a path, following links where it exists.
 fn resolved(path: &Path) -> PathBuf {
+    if let Ok(canonical) = path.canonicalize() {
+        return canonical;
+    }
     let absolute = std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf());
     match (absolute.parent(), absolute.file_name()) {
         (Some(parent), Some(name)) => parent
@@ -143,27 +141,8 @@ impl Tool {
         }
         Ok(())
     }
-    /// Moves every staged file into place.
-    fn publish(&self) -> Result<(), Failure> {
-        for (staged, destination) in self.staged.borrow_mut().drain(..) {
-            std::fs::rename(&staged, &destination)
-                .map_err(|e| format!("{}: {e}", destination.display()))?;
-        }
-        Ok(())
-    }
-    /// Removes the staged files of a command that failed.
-    fn discard(&self) {
-        for (staged, _) in self.staged.borrow_mut().drain(..) {
-            let _ = std::fs::remove_file(staged);
-        }
-    }
     fn stage(&self, destination: &Path, bytes: &[u8]) -> Result<(), Failure> {
-        let staged = partial(destination);
-        std::fs::write(&staged, bytes).map_err(|e| format!("{}: {e}", staged.display()))?;
-        self.staged
-            .borrow_mut()
-            .push((staged, destination.to_path_buf()));
-        Ok(())
+        Ok(self.staged.borrow_mut().stage(destination, bytes)?)
     }
     fn write(
         &self,
@@ -328,7 +307,7 @@ fn main() -> Result<(), Failure> {
         args,
         lock,
         commit,
-        staged: RefCell::new(Vec::new()),
+        staged: RefCell::new(Staging::default()),
     };
     tool.cache = PathBuf::from(
         tool.option("--cache")
@@ -346,14 +325,10 @@ fn main() -> Result<(), Failure> {
     };
     let path = |key: &str, default: &str| tool.option(key).unwrap_or_else(|| default.into());
     let read = |path: &str| std::fs::read(path).map_err(|e| format!("{path}: {e}"));
-    let result = build(&tool, &kind, &output, &path, &read);
-    match result {
-        Ok(()) => tool.publish(),
-        Err(error) => {
-            tool.discard();
-            Err(error)
-        }
-    }
+    // A failed build drops the staging, which removes what it wrote; a
+    // failed publication puts back what it had replaced.
+    build(&tool, &kind, &output, &path, &read)?;
+    Ok(tool.staged.into_inner().publish()?)
 }
 
 fn build(

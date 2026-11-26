@@ -82,6 +82,7 @@ pub mod shadow_rules;
 pub mod slice;
 pub mod sound_queue;
 pub mod spot;
+pub mod staging;
 pub mod surface;
 pub mod terrain;
 pub mod texcoord;
