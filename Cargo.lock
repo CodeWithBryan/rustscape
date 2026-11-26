@@ -1262,9 +1262,11 @@ dependencies = [
 name = "rs09-headless"
 version = "0.1.0"
 dependencies = [
+ "rs09-cache",
  "rs09-client-data",
  "rs09-net",
  "rs09-protocol",
+ "rs09-server",
  "serde_json",
  "sha2",
  "tokio",

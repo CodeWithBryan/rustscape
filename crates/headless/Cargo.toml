@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Native 530 headless transport probes; gameplay agent migration pending"
+description = "Native 530 headless agent client: transport, actions and a world view"
 
 [dependencies]
 rs09-protocol.workspace = true
@@ -15,4 +15,6 @@ serde_json.workspace = true
 sha2.workspace = true
 
 [dev-dependencies]
+rs09-server = { path = "../server" }
+rs09-cache.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
