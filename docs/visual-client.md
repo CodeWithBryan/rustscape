@@ -165,7 +165,7 @@ Window and view:
 | `--plane N` | The level the workbench player stands on. |
 | `--roofs` | Start with roof removal off: every level drawn whole. |
 | `--no-shadows`, `--no-fog`, `--no-flicker` | Start with ground shadows off; ignore the fog preference; ignore the flicker preference. |
-| `--correct-lights` | Place point lights where their records say instead of where the pinned loader puts them (see "Local-light placement comparison"). |
+| `--pinned-lights` | Place point lights where the pinned loader puts them instead of where their records say, which is the default (see "Local-light placement comparison"). `--correct-lights`, the old switch for what is now the default, is accepted and does nothing. |
 | `--sd-lighting` | Start with high detail lighting off whatever the saved preference says: baked vertex colours, no light meshes, no point lights. |
 | `--low-detail-textures` | Start with high detail textures off: every texture generated at 64 by 64. |
 | `--brightness N` | Start at brightness 1 to 4 (the `B` key cycles it). |
@@ -533,8 +533,9 @@ live session they need `--workbench-keys`, and then F9 first:
 | Escape | Exit |
 
 With the interface shown, Escape and the letter and number keys belong to the
-interface's scripts. Shift-click (a 2009scape addition) is ported but off
-until `::shiftclick` is typed.
+interface's scripts. Shift-click (a 2009scape addition) starts on, as in the
+pinned client: with shift held and more than two entries in the menu, a left
+click runs the entry below the top one. `::shiftclick` toggles it.
 
 Offline, local routes feed one validated tile at a time into the
 default-player movement controller, ticking every 20 ms; the ground-click
@@ -1017,7 +1018,7 @@ cargo run --release -p rs09-client -- --capture
 cargo run --release -p rs09-client -- --capture --portrait
 cargo run --release -p rs09-client -- --capture --capture-route
 cargo run --release -p rs09-client -- --capture --no-shadows
-cargo run --release -p rs09-client -- --capture --correct-lights
+cargo run --release -p rs09-client -- --capture --pinned-lights
 ```
 
 The program saves `runs/visual/lumbridge.png`, `runs/visual/wave.png` or
@@ -1030,17 +1031,17 @@ exercised; it is not an acoustic loopback measurement or a performance benchmark
 
 The pinned `SceneGraph.java:5293` assigns terrain height minus horizontal Y back
 to `lightObj.y`. `LightingManager` subsequently uses that Y as a horizontal grid
-coordinate and uses Z as height. The normal default retains this assignment in
-the workbench's initial 104-tile window at origin 3168/3168. It can displace lights
-outside their intended footprints. This is a reference behavior, not a decoder
-failure. The extended four-region scene and moving navigation window are already
-workbench adapters, not a full original map-load/streaming implementation.
+coordinate and uses Z as height. It can displace lights outside their intended
+footprints. This is a reference behavior, not a decoder failure.
 
-Press **P**, or launch with `--correct-lights`, to inspect the intentional corrected
-variant: the record's first two coordinates remain horizontal and its third
-coordinate becomes height above the terrain. All 78 prepared lights are available
-in this mode. The HUD identifies the active placement. This option changes the
-pinned loader's behavior and must not be counted as 1:1 parity. With the
+The client's default is the corrected placement (the owner's decision of
+2026-11-26): the record's first two coordinates remain horizontal and its third
+coordinate becomes height above the terrain. All 78 prepared Lumbridge lights
+are available in it. This default changes the pinned loader's behavior and must
+not be counted as 1:1 parity. Launch with `--pinned-lights`, or press **P** in
+the workbench, for the pinned loader's placement; every frame comparison with
+the original client uses it (`oracle/refcompare/launch.ps1` passes the option).
+The HUD identifies the active placement. With the
 pinned placement 2 of 68 Lumbridge lights get a terrain light mesh; with the
 corrected one, 78 of 78. Per-object and wall light selection and the light
 meshes have since been ported (status document, "Scene"); `Light.onBridge`

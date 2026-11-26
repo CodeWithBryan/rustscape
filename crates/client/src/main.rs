@@ -4357,7 +4357,11 @@ async fn main() {
     // `Preferences.characterShadowsOn`; `shadows_enabled` is the scenery's.
     let character_shadows = shadows_enabled;
     let brightness = detail.brightness().unwrap_or(3);
-    let corrected_lights = std::env::args().any(|arg| arg == "--correct-lights");
+    // Point lights stand where their records say (the owner's decision of
+    // 2026-11-26). `--pinned-lights` keeps the pinned loader's placement
+    // (`SceneGraph.java:5293`), which a comparison with the original needs;
+    // `--correct-lights`, the old switch for the default, is still accepted.
+    let corrected_lights = !std::env::args().any(|arg| arg == "--pinned-lights");
     workbench
         .point_lights
         .place(&workbench.regions, corrected_lights);

@@ -678,7 +678,7 @@ Known differences:
   `cursor_view.rs`).
 - Dispatch: multiloc children in menu and Examine, the morphed NPC id for
   Examine, ground-item option 2 (packet 109), spell-on-tile from the world
-  and the minimap, shift-click as one rule (off by default).
+  and the minimap, shift-click as one rule (on by default, as in the pinned client).
 
 Verified by `picking-oracle` (hover test, walk test, frustum map, draw order,
 keys) and `menus-oracle` (hover text layout, `CursorType.decode`). Not
@@ -808,8 +808,11 @@ levels, deferred animated-scenery shadows, the sun direction re-read at each
 scene, fog and flicker preferences, instant fades. Verified by
 `lighting-oracle` for the selection state machine, the meshes and the floor
 shadows. The shader carries a hand copy of the selection rule, checked only
-by captures. With the pinned light placement (the default) 2 of 68 Lumbridge
-lights get a terrain mesh; `--correct-lights` gives 78 of 78.
+by captures. Lights stand where their records say by default (the owner's
+decision of 2026-11-26, a departure from the pinned loader): 78 of 78
+Lumbridge lights get a terrain mesh. `--pinned-lights` restores the pinned
+loader's placement, in which 2 of 68 do; `lighting-oracle` and the frame
+comparisons with the original use that placement.
 
 **Standard-detail lighting.** With the high detail lighting preference off
 (`sd_light.rs`, `scene_detail.rs`) the renderer lights nothing: no sun or
@@ -1717,8 +1720,9 @@ real cull, a diagonal decoration on the camera's own tile, is reproduced.
 
 ### Scene
 
-- (a)(d) With the pinned light placement, the default, almost nothing is lit
-  by point lights: 2 of 68 Lumbridge lights get a terrain mesh.
+- (d) Point lights stand where their records say, by the owner's decision,
+  not where the pinned loader puts them (where 2 of 68 Lumbridge lights get
+  a terrain mesh): lit ground here differs from the original's by design.
 - (a)(d) The recorded prepared packs lack the later entries: no floor
   shadows, no underwater scene, no minimap label lists, and multiloc children
   without models (not drawn in the browser or from a pack alone).
@@ -1922,18 +1926,20 @@ What was run, and how, is under "The browser build as run".
 
 ### Decisions for the owner
 
-Collected from every stream. None blocks the others.
+Collected from every stream. None blocks the others. An entry marked
+**Decided** records the owner's answer and the date; the rest are open.
 
-1. **Shift-click** (a 2009scape addition; ported, off by default). Keep off;
-   turn on by default as the pinned client has it; or remove.
+1. **Shift-click.** **Decided 2026-11-26: on by default**, as the pinned
+   client has it (a 2009scape addition; `::shiftclick` toggles it).
 2. **Wheel zoom in live play.** Leave it to the workbench (the reference core
    has none), or adopt the plugin's `UpdateCameraZoom` step.
 3. **Offline workbench camera.** Keep the fixed starting view without login
    randomisation or drift, so captures repeat; or give it the camera drift,
    which shifts every offline capture.
-4. **Light placement default.** Keep the pinned loader's placement (2 of 68
-   Lumbridge lights reach the terrain) or make `--correct-lights` the default
-   (78 of 78, departing from the pinned loader).
+4. **Light placement default.** **Decided 2026-11-26: the corrected
+   placement** (78 of 78 Lumbridge lights reach the terrain), a departure
+   from the pinned loader. `--pinned-lights` gives the loader's placement (2
+   of 68), which comparisons with the original use.
 5. **Opcode-82 collision.** Keep flagging collision for types hidden in HD,
    or skip them as the original's HD path does.
 6. **Opcode-96 key quirk.** Keep "never pickable" as verified against the
@@ -1984,7 +1990,10 @@ Collected from every stream. None blocks the others.
 21. **Roofs.** Keep upper-level shadows always on (as the Java) or restore
     the earlier level-0-only default. Let the workbench's free camera drive
     the camera-line rule or not. Load the full 104 x 104 region set offline
-    or keep 2 x 2 regions.
+    or keep 2 x 2 regions. In game: **decided 2026-11-26, keep whole
+    regions**: a live scene is built from every region the 104-tile window
+    touches and is not cut to the window as the original's is, so scenery
+    past the original's edge stays visible.
 22. **Minimap captures.** Keep the seed-0 drift in captures or pin it to
     zero.
 23. **Prepared packs.** Rebuild `demo.pack` and the web packs to carry floor

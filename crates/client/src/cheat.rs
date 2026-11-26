@@ -353,9 +353,9 @@ pub struct State {
     pub mode_where: i32,
     /// `Cheat.displayFps`.
     pub display_fps: bool,
-    /// `Cheat.shiftClick`. The pinned client starts with it on
-    /// (`GlobalConfig.USE_SHIFT_CLICK`, a 2009scape addition); here it starts
-    /// off until the project owner decides, and `::shiftclick` turns it on.
+    /// `Cheat.shiftClick`, a 2009scape addition. It starts on, as in the
+    /// pinned client (`GlobalConfig.USE_SHIFT_CLICK`; the owner's decision of
+    /// 2026-11-26), and `::shiftclick` toggles it.
     pub shift_click: bool,
     /// `Cheat.rectDebug`.
     pub rect_debug: i32,
@@ -373,7 +373,7 @@ impl Default for State {
         Self {
             mode_where: 2,
             display_fps: false,
-            shift_click: false,
+            shift_click: true,
             rect_debug: 0,
             qa_op_test: false,
             tweening: true,
@@ -696,12 +696,9 @@ mod tests {
 
     #[test]
     fn state_applies_switches_and_queues_everything() {
-        // The pinned client's starting switches: shift-click is on there.
-        let mut state = State {
-            shift_click: true,
-            ..State::default()
-        };
-        assert!(!State::default().shift_click);
+        // The pinned client's starting switches, shift-click on among them.
+        let mut state = State::default();
+        assert!(state.shift_click);
         let mut preferences = Preferences::default();
         assert_eq!(state.context(true), HD);
         for command in ["::fpson", "::tween", "::shiftclick", "::qa_op_test"] {

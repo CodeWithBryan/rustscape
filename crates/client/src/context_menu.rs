@@ -32,8 +32,8 @@ pub fn op_text(entry: &MenuEntry) -> String {
 /// than two entries. None for an empty menu.
 ///
 /// `shift_click` is `Cheat.shiftClick && Keyboard.pressedKeys[KEY_SHIFT]`:
-/// the 2009scape switch (`::shiftclick`, off unless turned on) with shift
-/// held. The original tests it, with `size > 2`, in the three places that
+/// the 2009scape switch (on from the start, toggled by `::shiftclick`) with
+/// shift held. The original tests it, with `size > 2`, in the three places that
 /// all go through this function: `MiniMenu.processClick`
 /// (MiniMenu.java:1673-1685), `MiniMenu.getTooltipText` (1387-1391) and
 /// `LoginManager.getActiveCursorId` (LoginManager.java:1497).

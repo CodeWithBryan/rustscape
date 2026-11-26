@@ -65,7 +65,7 @@ function Start-RcRust([string]$Name, [int]$Port, [int]$Mode = 1, [switch]$Login,
     [byte[]]$b = @(11, $Brightness, 1, 1, 1, 1, 1, 1, 1, 1, 2, $HdLighting, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, $Mode, 0, 0, 0, 0, 1)
     [System.IO.File]::WriteAllBytes($prefs, $b)
     $a = @('--connect', "127.0.0.1:$Port", '--cache', 'assets/cache', '--world-keys', 'runs/player-session/xteas.json',
-        '--preferences', $prefs) + $Extra
+        '--preferences', $prefs, '--pinned-lights') + $Extra
     if ($Login) { $a += @('--username', 'visual') }
     $env:RS09_FRAME_DUMP = $dump
     $env:RS09_CLIENT_PASSWORD = 'testing'

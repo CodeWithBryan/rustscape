@@ -2229,6 +2229,5 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   of real cache data: a pass without `assets/cache` establishes nothing there.
   See docs/client-protocol-and-cache.md for what each client area rests on,
   its known differences and the "Still missing" list.
-  Shift-click (`Cheat.shiftClick`, a 2009scape addition) is ported but starts
-  off; the pinned client starts with it on. Do not change the default without
-  the owner's decision.
+  Shift-click (`Cheat.shiftClick`, a 2009scape addition) is ported and starts
+  on, as in the pinned client (the owner's decision of 2026-11-26).
