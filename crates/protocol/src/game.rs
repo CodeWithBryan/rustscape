@@ -8,6 +8,7 @@ pub mod actions;
 pub mod chat;
 pub mod events;
 pub mod ground;
+pub mod menu;
 pub mod npcs;
 pub mod outgoing;
 pub mod players;

@@ -4,7 +4,7 @@ use crate::{
     npc::Definition,
     ui::actions::SelectedItem,
 };
-use rs09_protocol::{buffer::Writer, game::Frame};
+use rs09_protocol::game::Frame;
 pub fn level_color(other: i32, local: i32) -> u32 {
     match local.wrapping_sub(other) {
         n if n < -9 => 0xff0000,
@@ -99,42 +99,4 @@ pub fn entries(
         cursor: -1,
     });
 }
-pub fn packet(action: i32, index: i32, definition: i32) -> Option<Frame> {
-    let mut w = Writer::new();
-    let action = if action >= 2000 {
-        action - 2000
-    } else {
-        action
-    };
-    let opcode = match action {
-        17 => {
-            w.ip2(index);
-            78
-        }
-        16 => {
-            w.ip2add(index);
-            3
-        }
-        4 => {
-            w.p2add(index);
-            148
-        }
-        19 => {
-            w.p2(index);
-            30
-        }
-        2 => {
-            w.ip2(index);
-            218
-        }
-        1007 => {
-            w.p2(definition);
-            72
-        }
-        _ => return None,
-    };
-    Some(Frame {
-        opcode,
-        payload: w.into_vec(),
-    })
-}
+pub use rs09_protocol::game::menu::npc_packet as packet;
