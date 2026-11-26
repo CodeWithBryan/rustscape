@@ -500,6 +500,7 @@ fn collect(live: &mut Live) {
             live.inner.frames.remove(&node);
             live.regions.monitors.remove(&node);
             live.regions.viewports.remove(&node);
+            live.round_logout(node);
             live.inner.log_line(format!("{} left the world", slot.name));
         }
     }
@@ -648,6 +649,49 @@ pub fn handle(
             },
         ),
         (Handler::CloseIface, dispatch::Packet::Action { player, .. }) => live.close_iface(player),
+        (
+            Handler::ContinueOption,
+            dispatch::Packet::Action {
+                player,
+                action:
+                    rs09_protocol::game::ClientAction::ContinueOption {
+                        iface,
+                        child,
+                        slot,
+                        opcode,
+                    },
+                ..
+            },
+        ) => live
+            .continue_option(
+                player,
+                crate::world::interface_packets::Action {
+                    iface: *iface,
+                    child: *child,
+                    slot: *slot,
+                    item: -1,
+                    opcode: *opcode,
+                    opt_index: -1,
+                },
+            )
+            .map_err(super::host::fail),
+        (Handler::InputPrompt, dispatch::Packet::Action { player, action, .. }) => {
+            let value = match action {
+                rs09_protocol::game::ClientAction::InputIntResponse { response } => {
+                    crate::world::input_prompt::Response::Int(*response)
+                }
+                rs09_protocol::game::ClientAction::InputStringResponse { response } => {
+                    crate::world::input_prompt::Response::Text(response.encode_utf16().collect())
+                }
+                _ => {
+                    return Err(super::host::fail(
+                        "an input response without its decoded form",
+                    ));
+                }
+            };
+            live.input_response(player, value)
+                .map_err(super::host::fail)
+        }
         (
             Handler::GroundItemAction,
             dispatch::Packet::Action {

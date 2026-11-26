@@ -184,13 +184,14 @@ message calls and `ServerConstants.SECOND_BANK`. None has a default.
 
 ## Remaining work
 
-Nothing installs these libraries in `rs09-server --world`. The banker
-conversation replaces npc_classes' `banker_conversation` service: a live
-binding answers `npc_classes::Host::banker_conversation(player, npc)` with
-`dialogue_dsl::banker::talk_to(host, player, npc)` once the world host
-implements `dialogue::Host`, `dialogue_dsl::Host` and `banker::BankHost`
-over the canonical player, interfaces, packets, attributes, events and
-bank. The input op of the corpus invokes the stored runscript directly, not
+`rs09-server --world` installs these libraries (`world/live/talk.rs`,
+[the live world](live-world.md)): the live world implements
+`dialogue::Host`, `dialogue_dsl::Host` and `banker::BankHost` over the
+canonical player, interfaces, packets, attributes, the dialogue-close hooks
+and the bank, and answers `npc_classes::Host::banker_conversation(player,
+npc)` with `dialogue_dsl::banker::talk_to(host, player, npc)`. The
+secondary bank purchase, the PIN settings, the Grand Exchange collection
+box, `new NPC(id)`, quest stages and the slayer gem are refused there. The input op of the corpus invokes the stored runscript directly, not
 through RunScript.processInput (`input_prompt`); no other content dialogue
 is ported. The activity and cutscene framework (ActivityManager,
 ActivityPlugin, CutscenePlugin, Cutscene) is `world/activities`

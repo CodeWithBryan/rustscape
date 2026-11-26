@@ -80,6 +80,8 @@ acceptance; it preserves this checkpoint as historical evidence. No whole-game r
 gain or player capacity is established here. All4042 whole-source rows remain
 `not_replaced`.
 
+`rs09-server --world` installs the program (`world/live/bank.rs`, [the live world](live-world.md)): the 762 open listener from `InterfaceListeners.runOpen`, the 762/763/767 buttons from IfAction, the canonical bank opened by a banker (`BankerNPC`'s listeners and the banker conversation) and the captured BankClose. Booths, chests, deposit boxes, the PIN and the help/deposit dialogues are refused there.
+
 ```powershell
 cargo test -p rs09-server --test bank_interface --test bank --test owned_player --test interfaces
 cargo test -p rs09-server --example movement_session --example npc_session --example player_session

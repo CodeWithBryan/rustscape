@@ -145,7 +145,23 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
             || registry.get_generic(&casing, &text, kind).is_some()
         {
             return Err(Error::Binding(
-                "not ported in the live world: InteractionListeners for scenery (the bank booth, chest and deposit box listeners need the bank)".into(),
+                "not ported in the live world: InteractionListeners on listeners for scenery (the bank chest and deposit box listeners: the walk to scenery for a content listener)".into(),
+            ));
+        }
+        // defineInteraction's metadata (the bank booths): an interaction
+        // script in the player's script queue, which is content script
+        // invocation (not ported here).
+        if registry
+            .metadata(
+                &casing,
+                id,
+                crate::world::interaction_listeners::Kind::Scenery,
+                &text,
+            )
+            .is_some()
+        {
+            return Err(Error::Binding(
+                "not ported in the live world: InteractionListeners' defineInteraction scripts for scenery (the bank booths' interaction scripts)".into(),
             ));
         }
         self.not_ported.default_answer(

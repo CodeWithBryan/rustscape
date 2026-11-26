@@ -147,24 +147,24 @@ pub struct ItemActions {
     pub use_pulses: Vec<(pulses::Handle, use_with::UsePulse)>,
 }
 
-/// The keys of `Pets`' babyPets, grownPets and overgrownPets maps (every
-/// constant's baby, grown and overgrown item id; -1 for an absent stage),
-/// extracted from the pinned Pets.java, sorted.
+/// The item ids `Pets.forId` answers (every constant's baby, grown and
+/// overgrown item id), extracted from the pinned Pets.java, sorted. An absent
+/// stage's -1 is not among them: `Pets.forId(-1)` is null.
 const PET_ITEMS: &[i32] = &[
-    -1, 1555, 1556, 1557, 1558, 1559, 1560, 1561, 1562, 1563, 1564, 1565, 1566, 1567, 1568, 1569,
-    1570, 1571, 1572, 7581, 7582, 7583, 7771, 7772, 12469, 12470, 12471, 12472, 12473, 12474,
-    12475, 12476, 12481, 12482, 12484, 12485, 12486, 12487, 12488, 12489, 12490, 12491, 12492,
-    12493, 12496, 12497, 12498, 12499, 12500, 12501, 12503, 12504, 12505, 12506, 12507, 12508,
-    12509, 12510, 12511, 12512, 12513, 12514, 12515, 12516, 12517, 12518, 12519, 12520, 12521,
-    12522, 12523, 12548, 12549, 12550, 12551, 12552, 12553, 12682, 12683, 12684, 12685, 12686,
-    12687, 12688, 12689, 12690, 12691, 12692, 12693, 12694, 12695, 12696, 12697, 12698, 12699,
-    12700, 12701, 12702, 12703, 12704, 12705, 12706, 12707, 12708, 12709, 12710, 12711, 12712,
-    12713, 12714, 12715, 12716, 12717, 12718, 12719, 12720, 12721, 12722, 12723, 12724, 12725,
-    12726, 12727, 12728, 12729, 12730, 12731, 12732, 12733, 12734, 12735, 12736, 12737, 12738,
-    12739, 12740, 12741, 12742, 12743, 12744, 12745, 12746, 12747, 12748, 12749, 12750, 12751,
-    12752, 12753, 12754, 12755, 12756, 12757, 12758, 12759, 12760, 12761, 12762, 12763, 12764,
-    12765, 12766, 12767, 12768, 12769, 12770, 12771, 12772, 12773, 12774, 12775, 13335, 14089,
-    14090, 14533, 14626, 14627, 15092,
+    1555, 1556, 1557, 1558, 1559, 1560, 1561, 1562, 1563, 1564, 1565, 1566, 1567, 1568, 1569, 1570,
+    1571, 1572, 7581, 7582, 7583, 7771, 7772, 12469, 12470, 12471, 12472, 12473, 12474, 12475,
+    12476, 12481, 12482, 12484, 12485, 12486, 12487, 12488, 12489, 12490, 12491, 12492, 12493,
+    12496, 12497, 12498, 12499, 12500, 12501, 12503, 12504, 12505, 12506, 12507, 12508, 12509,
+    12510, 12511, 12512, 12513, 12514, 12515, 12516, 12517, 12518, 12519, 12520, 12521, 12522,
+    12523, 12548, 12549, 12550, 12551, 12552, 12553, 12682, 12683, 12684, 12685, 12686, 12687,
+    12688, 12689, 12690, 12691, 12692, 12693, 12694, 12695, 12696, 12697, 12698, 12699, 12700,
+    12701, 12702, 12703, 12704, 12705, 12706, 12707, 12708, 12709, 12710, 12711, 12712, 12713,
+    12714, 12715, 12716, 12717, 12718, 12719, 12720, 12721, 12722, 12723, 12724, 12725, 12726,
+    12727, 12728, 12729, 12730, 12731, 12732, 12733, 12734, 12735, 12736, 12737, 12738, 12739,
+    12740, 12741, 12742, 12743, 12744, 12745, 12746, 12747, 12748, 12749, 12750, 12751, 12752,
+    12753, 12754, 12755, 12756, 12757, 12758, 12759, 12760, 12761, 12762, 12763, 12764, 12765,
+    12766, 12767, 12768, 12769, 12770, 12771, 12772, 12773, 12774, 12775, 13335, 14089, 14090,
+    14533, 14626, 14627, 15092,
 ];
 
 /// The handlers' world over the live world.
@@ -647,9 +647,16 @@ impl Base for Ctx<'_> {
         };
         let p = self.player_of(player)?;
         let option = option.clone();
+        // A player's InteractPlugin: its option handlers are the player
+        // handler arena's (super::follow).
+        let of_player = matches!(&interaction.owner, Node::Player(_));
         self.0
             .with_walk_host(|state, host| {
-                legacy_runtime::handle(state, host, Some(target), Some(p.node()), Some(option))
+                host.walk.player_dispatch = of_player;
+                let result =
+                    legacy_runtime::handle(state, host, Some(target), Some(p.node()), Some(option));
+                host.walk.player_dispatch = false;
+                result
             })
             .map_err(err)
     }
@@ -1038,14 +1045,10 @@ impl equip::Context for Ctx<'_> {
     fn register_glove(&mut self, _: &Node, _: i32) -> Result<()> {
         refused("BrawlingGlovesManager.registerGlove")
     }
-    fn dialogue_close(&mut self, _: &Node) -> Result<()> {
-        // DialogueInterpreter.close with no dialogue open (dialogue content
-        // is not ported, so none is): true, discarded.
-        self.0
-            .inner
-            .not_ported
-            .default_answer("DialogueInterpreter.close (no dialogue content: true)");
-        Ok(())
+    fn dialogue_close(&mut self, player: &Node) -> Result<()> {
+        // player.getDialogueInterpreter().close() (super::talk).
+        let p = self.player_of(player)?;
+        self.0.close_dialogue_of(&p).map(|_| ()).map_err(err)
     }
     fn has_autocast(&mut self, player: &Node) -> Result<bool> {
         let p = self.player_of(player)?;
@@ -1192,9 +1195,9 @@ impl listeners::Context for Ctx<'_> {
     type Locks = Node;
     type Script = ();
     type Manager = ();
-    type Pulse = ();
-    type Zone = ();
-    type Location = ();
+    type Pulse = crate::world::movement::Movement;
+    type Zone = Node;
+    type Location = Option<crate::world::doors::Location>;
     fn scripts(&mut self, _: &Node) -> listeners::Result<()> {
         Ok(())
     }
@@ -1245,21 +1248,61 @@ impl listeners::Context for Ctx<'_> {
     fn install(&mut self, _: (), _: &Node, _: ()) -> listeners::Result<()> {
         lrefused("content interaction scripts")
     }
-    fn manager(&mut self, _: &Node) -> listeners::Result<()> {
-        lrefused("the movement pulse of a content listener")
+    fn manager(&mut self, p: &Node) -> listeners::Result<()> {
+        // player.pulseManager: the canonical actor's (super::talk).
+        self.player_of(p).map_err(lerr)?;
+        Ok(())
     }
     fn movement(
         &mut self,
-        _: listeners::Arrival<Node, Node>,
-        _: Option<listeners::Flag>,
-        _: Option<Function>,
-    ) -> listeners::Result<()> {
-        lrefused("the movement pulse of a content listener")
+        a: listeners::Arrival<Node, Node>,
+        flag: Option<listeners::Flag>,
+        dest: Option<Function>,
+    ) -> listeners::Result<crate::world::movement::Movement> {
+        self.0.listener_movement(a, flag, dest)
     }
-    fn run(&mut self, _: (), _: ()) -> listeners::Result<()> {
-        lrefused("the movement pulse of a content listener")
+    fn run(&mut self, _: (), pulse: crate::world::movement::Movement) -> listeners::Result<()> {
+        self.0.run_listener_movement(pulse)
     }
     fn invoke_on(&mut self, f: Function, p: &Node, n: &Node) -> listeners::Result<bool> {
+        if let Some(interaction) = f.value::<crate::world::npc_classes::listeners::Interaction>() {
+            return self.0.npc_listener(*interaction, p, n);
+        }
+        // The global handlers' RequestOption listeners ("trade with", "req
+        // assist") and their other on listeners (super::global).
+        if let Some(interaction) = f.value::<crate::world::global_handlers::registry::Interaction>()
+        {
+            let entity = |n: &Node| match n {
+                Node::Player(h) | Node::Npc(h) => Ok(super::global::GNode::Entity(P(h.clone()))),
+                _ => Err(listeners::Error::Type),
+            };
+            let (player, node) = (entity(p)?, entity(n)?);
+            return crate::world::global_handlers::registry::run_interaction(
+                &mut super::global::GHost { live: self.0 },
+                *interaction,
+                &player,
+                Some(&node),
+                None,
+            )
+            .map_err(lerr);
+        }
+        // ConsumableListener's "eat" and "drink" (super::eating).
+        if f.value::<super::eating::ConsumableListener>().is_some() {
+            let player = self.player_of(p).map_err(lerr)?;
+            let Node::Item(item) = n else {
+                return Err(listeners::Error::Type);
+            };
+            return self.0.consume(&player, item).map_err(lerr);
+        }
+        if let Some(shop) = f.value::<super::shopping::ShopListener>() {
+            let (Node::Player(player), Node::Npc(npc)) = (p, n) else {
+                return Err(listeners::Error::Type);
+            };
+            return self
+                .0
+                .shop_listener(shop.0, &P(player.clone()), &P(npc.clone()))
+                .map_err(lerr);
+        }
         if f.value::<AttackListener>().is_some() {
             return attack_listener(self, p, n).map_err(lerr);
         }
@@ -1290,11 +1333,22 @@ impl listeners::Context for Ctx<'_> {
     fn is_player(&self, n: &Node) -> bool {
         matches!(n, Node::Player(_))
     }
-    fn zone(&mut self, _: &Node) -> listeners::Result<()> {
-        lrefused("ZoneMonitor in use-with listeners")
+    fn zone(&mut self, p: &Node) -> listeners::Result<Node> {
+        Ok(p.clone())
     }
-    fn zone_on(&mut self, _: (), _: &Node, _: Text, _: i32) -> listeners::Result<bool> {
-        lrefused("ZoneMonitor in use-with listeners")
+    fn zone_on(&mut self, z: Node, n: &Node, _: Text, _: i32) -> listeners::Result<bool> {
+        // player.zoneMonitor.interact(node, option): the region zones the
+        // player is in (none of the installed zones takes an entity option
+        // but the wilderness' and the multiway zone's own checks).
+        let p = self.player_of(&z).map_err(lerr)?;
+        let target = match n {
+            Node::Npc(h) | Node::Player(h) => h.clone(),
+            _ => return lrefused("ZoneMonitor.interact for an item from a listener"),
+        };
+        let monitor = self.0.monitor(&p.0);
+        monitor
+            .interact(self.0, Some(&target), Some(&()))
+            .map_err(lerr)
     }
     fn as_item(&mut self, n: &Node) -> listeners::Result<Node> {
         match n {
@@ -1302,14 +1356,27 @@ impl listeners::Context for Ctx<'_> {
             _ => Err(listeners::Error::Type),
         }
     }
-    fn zone_use(&mut self, _: (), _: &Node, _: &Node) -> listeners::Result<bool> {
+    fn zone_use(&mut self, _: Node, _: &Node, _: &Node) -> listeners::Result<bool> {
         lrefused("ZoneMonitor in use-with listeners")
     }
-    fn location(&mut self, _: &Node) -> listeners::Result<()> {
-        lrefused("node locations in listeners")
+    fn location(&mut self, n: &Node) -> listeners::Result<Option<crate::world::doors::Location>> {
+        match n {
+            Node::Npc(h) | Node::Player(h) => {
+                self.0.inner.state.node_location(h.node).map_err(lerr)
+            }
+            _ => lrefused("the location of an item in listeners"),
+        }
     }
-    fn face(&mut self, _: &Node, _: ()) -> listeners::Result<()> {
-        lrefused("facing in listeners")
+    fn face(
+        &mut self,
+        p: &Node,
+        l: Option<crate::world::doors::Location>,
+    ) -> listeners::Result<()> {
+        // player.faceLocation(node.location).
+        let p = self.player_of(p).map_err(lerr)?;
+        let masks = self.0.inner.canonical(&p).player.masks();
+        masks.face_location(l).map_err(lerr)?;
+        Ok(())
     }
 }
 

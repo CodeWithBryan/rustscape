@@ -222,17 +222,16 @@ impl npc_walk::Services for WalkHost<'_> {
             ))),
         }
     }
-    fn dialogue_active(&mut self, _: &mut State, _: usize) -> npc::Result<bool> {
-        Err(npc::Error::Binding(
-            "not ported in the live world: an NPC's dialogue player (dialogues not installed)"
-                .into(),
-        ))
+    fn dialogue_active(&mut self, _: &mut State, player: usize) -> npc::Result<bool> {
+        // dialoguePlayer.isActive() (the dialogue interpreter sets the
+        // NPC's dialogue player, super::talk).
+        Ok(self.players.get(&player).is_some_and(|slot| slot.active))
     }
-    fn dialogue_chatbox(&mut self, _: &mut State, _: usize) -> npc::Result<bool> {
-        Err(npc::Error::Binding(
-            "not ported in the live world: an NPC's dialogue player (dialogues not installed)"
-                .into(),
-        ))
+    fn dialogue_chatbox(&mut self, _: &mut State, player: usize) -> npc::Result<bool> {
+        // dialoguePlayer.getInterfaceManager().hasChatbox().
+        Ok(self.players.get(&player).is_some_and(|slot| {
+            crate::world::interfaces::has_chatbox(&slot.canonical.player.manager())
+        }))
     }
     fn random_bool(&mut self) -> npc::Result<bool> {
         // RandomFunction.nextBool(): RANDOM.nextBoolean().

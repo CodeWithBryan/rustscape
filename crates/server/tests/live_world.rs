@@ -94,6 +94,8 @@ struct Client {
     projectiles: Vec<(usize, updates::Projectile)>,
     /// Interfaces opened (server opcode 155): (frame number, interface id).
     opened: Vec<(usize, i32)>,
+    /// Interface texts (171): (frame number, component pointer, text).
+    texts: Vec<(usize, i32, String)>,
 }
 
 /// Item metadata for the ground reducer: the test reads lists, not piles.
@@ -166,6 +168,7 @@ impl Client {
                 npc_hits: Vec::new(),
                 projectiles: Vec::new(),
                 opened: Vec::new(),
+                texts: Vec::new(),
             }),
         )
     }
@@ -293,6 +296,15 @@ impl Client {
                         })) => {
                             self.skills.insert(skill, (boosted, experience));
                             self.skill_log.push((n, skill, boosted));
+                        }
+                        Ok(Some(updates::ServerUpdate::InterfaceText {
+                            pointer, text, ..
+                        })) => {
+                            self.texts.push((
+                                n,
+                                pointer,
+                                String::from_utf8_lossy(&text).into_owned(),
+                            ));
                         }
                         Ok(Some(updates::ServerUpdate::GameMessage(text))) => {
                             self.messages
@@ -710,9 +722,14 @@ async fn drive(
         one.npcs.local_ids.len(),
         &near[..near.len().min(8)]
     );
-    // An NPC's first option (processNpcAction): the NPC's InteractPlugin
-    // over its definition's options, the walk to it and the legacy
-    // arrival; no content handler answers, so "Nothing interesting happens.".
+    // An NPC's first option (processNpcAction). "Talk-to" goes through the
+    // native InteractionListeners (NPCTalkListener's catch-all): the
+    // movement pulse to the NPC, the arrival, and
+    // dialogueInterpreter.open(npc.id, npc), which finds no content dialogue
+    // registered for the NPC (dialogue content is not ported) after stopping
+    // it; the player ends beside the NPC. Any other first option is the
+    // NPC's InteractPlugin with the legacy arrival: no content handler
+    // answers, so "Nothing interesting happens.".
     let base = one.base.unwrap();
     let here = one.position();
     let (index, id) = one
@@ -727,12 +744,30 @@ async fn drive(
     let from = one.messages.len();
     one.send(npc_option1(index as i32)).await;
     one.until(Duration::from_secs(20), "the NPC option's answer", |c| {
-        c.messages[from..]
+        let nothing = c.messages[from..]
             .iter()
-            .any(|(_, m)| m.contains("Nothing interesting happens."))
+            .any(|(_, m)| m.contains("Nothing interesting happens."));
+        let talk = c.messages[from..]
+            .iter()
+            .any(|(_, m)| m.contains("Option: Talk-To"));
+        let beside = c.npcs.actors.get(&index).is_some_and(|n| {
+            let (base, here) = (c.base.unwrap(), c.position());
+            (base[0] + n.tile[0] - here[0]).abs() <= 1 && (base[1] + n.tile[1] - here[1]).abs() <= 1
+        });
+        nothing || (talk && beside)
     })
     .await;
-    eprintln!("traceone: NPC option 1 on NPC {index} ({id}): Nothing interesting happens.");
+    let nothing = one.messages[from..]
+        .iter()
+        .any(|(_, m)| m.contains("Nothing interesting happens."));
+    eprintln!(
+        "traceone: NPC option 1 on NPC {index} ({id}): {}",
+        if nothing {
+            "Nothing interesting happens."
+        } else {
+            "Talk-to walked to it (no content dialogue registered)"
+        }
+    );
 
     // The tabs' buttons (IfAction, opcode 155: hash, slot).
     let button = |iface: i32, child: i32| {
@@ -873,6 +908,11 @@ async fn drive(
                 "dragon" => dragon_scenario(address, saves).await,
                 "ranged" => ranged_scenario(address, saves).await,
                 "special" => special_scenario(address, saves).await,
+                "bank" => bank_scenario(address, saves).await,
+                "shop" => shop_scenario(address, saves).await,
+                "trade" => trade_scenario(address, saves).await,
+                "follow" => follow_scenario(address, saves).await,
+                "eat" => eat_scenario(address, saves).await,
                 other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
             }
         }
@@ -916,6 +956,11 @@ async fn drive(
     dragon_scenario(address, saves).await;
     ranged_scenario(address, saves).await;
     special_scenario(address, saves).await;
+    bank_scenario(address, saves).await;
+    shop_scenario(address, saves).await;
+    trade_scenario(address, saves).await;
+    follow_scenario(address, saves).await;
+    eat_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
 }
 
@@ -1870,6 +1915,173 @@ fn scenery_option1(id: i32, x: i32, y: i32) -> Frame {
 fn npc_option1(index: i32) -> Frame {
     frame(78, &[&le16(index)])
 }
+/// NPC_ACTION_3 (148): an NPC's third option.
+fn npc_option3(index: i32) -> Frame {
+    frame(148, &[&sa16(index)])
+}
+/// IF_ACTION with a menu opcode (155 first option, 196 second ...), a
+/// component and a slot.
+fn if_button(opcode: u8, interface: i32, child: i32, slot: i32) -> Frame {
+    frame(
+        opcode,
+        &[&((interface << 16) | child).to_be_bytes(), &be16(slot)],
+    )
+}
+/// RESUME_PAUSEBUTTON (132): Continue, or a dialogue option's component.
+fn continue_option(interface: i32, child: i32) -> Frame {
+    frame(132, &[&ia32((interface << 16) | child), &le16(-1)])
+}
+/// CLOSE_MODAL (184).
+fn close_interface() -> Frame {
+    frame(184, &[])
+}
+
+/// Talking and the bank: `bankone` stands in front of Draynor bank's
+/// middle booth (3092,3243; the banker 494 is behind it at 3090,3243) with a
+/// bronze dagger. Talk-to (NPC option 1) goes through the native
+/// InteractionListeners (BankerNPC's "talk-to", its destination override,
+/// the walk and the arrival), `DialogueLabeller.open` and the banker
+/// conversation: the NPC's line in chatbox 241, Continue (132), the options,
+/// the chosen "access" option spoken by the player, Continue, and the bank
+/// (762) opens. A deposit (763:0 slot 0) moves the dagger to the bank
+/// container (95), a withdraw (762:73 slot 0) brings it back, Close (184)
+/// runs the captured BankClose. The banker's Bank option (3) then opens the
+/// bank directly (`BankerNPC.attemptBank`).
+async fn bank_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3092, 3243, 0];
+    write_save(&players, "traceone", "bankone", at, &[(0, 1205, 1)]);
+    let (code, one) = Client::login(address, "bankone").await;
+    assert_eq!(code, 2, "bankone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "bankone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let banker = |c: &Client| {
+        let base = c.base?;
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| {
+                n.type_id == 494 && [base[0] + n.tile[0], base[1] + n.tile[1]] == [3090, 3243]
+            })
+            .map(|(i, _)| *i as i32)
+    };
+    one.until(
+        Duration::from_secs(15),
+        "the banker behind the booth",
+        |c| banker(c).is_some(),
+    )
+    .await;
+    let index = banker(&one).unwrap();
+    let said = |c: &Client, from: usize, what: &str| {
+        c.texts[from..].iter().any(|(_, _, t)| t.contains(what))
+    };
+
+    // Talk-to: the banker's greeting.
+    let from = one.texts.len();
+    one.send(npc_option1(index)).await;
+    one.until(Duration::from_secs(15), "the banker's greeting", |c| {
+        said(
+            c,
+            from,
+            "Good day, would you like to access your bank account?",
+        )
+    })
+    .await;
+    let greeting = one.texts[from..]
+        .iter()
+        .find(|(_, _, t)| t.contains("Good day"))
+        .map(|(_, p, _)| *p)
+        .unwrap();
+    assert_eq!(
+        greeting >> 16,
+        241,
+        "a one-line NPC dialogue is chatbox 241"
+    );
+    // Continue: the options.
+    let from = one.texts.len();
+    one.send(continue_option(241, 5)).await;
+    one.until(Duration::from_secs(10), "the banker's options", |c| {
+        said(c, from, "I'd like to access my bank account please.")
+    })
+    .await;
+    let access = one.texts[from..]
+        .iter()
+        .find(|(_, _, t)| t.contains("I'd like to access my bank account please."))
+        .map(|(_, p, _)| *p)
+        .unwrap();
+    let options: Vec<&str> = one.texts[from..]
+        .iter()
+        .map(|(_, _, t)| t.as_str())
+        .collect();
+    eprintln!(
+        "bankone: banker options {options:?} (access at {}:{})",
+        access >> 16,
+        access & 0xffff
+    );
+    // The chosen option: the player speaks it.
+    let from = one.texts.len();
+    one.send(continue_option(access >> 16, access & 0xffff))
+        .await;
+    one.until(Duration::from_secs(10), "the player's spoken option", |c| {
+        said(c, from, "I'd like to access my bank account please.")
+    })
+    .await;
+    // Continue: the bank opens.
+    let opened = one.opened.len();
+    one.send(continue_option(64, 5)).await;
+    one.until(Duration::from_secs(10), "the bank interface", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 762)
+    })
+    .await;
+    eprintln!("bankone: talked to the banker, the conversation opened the bank");
+
+    // Deposit one dagger (the side inventory 763:0, slot 0).
+    one.send(if_button(155, 763, 0, 0)).await;
+    one.until(Duration::from_secs(10), "the dagger in the bank", |c| {
+        c.slot_of(95, 1205).is_some() && c.slot_of(93, 1205).is_none()
+    })
+    .await;
+    // Withdraw it (the bank's items 762:73).
+    let slot = one.slot_of(95, 1205).unwrap();
+    one.send(if_button(155, 762, 73, slot)).await;
+    one.until(
+        Duration::from_secs(10),
+        "the dagger back in the inventory",
+        |c| c.slot_of(93, 1205).is_some() && c.slot_of(95, 1205).is_none(),
+    )
+    .await;
+    // Close: BankClose (the side tab closed, script 571), then the bank.
+    let from = one.frames.len();
+    one.send(close_interface()).await;
+    one.until(Duration::from_secs(10), "the bank closed", |c| {
+        c.frames[from..].iter().any(|f| {
+            matches!(
+                updates::ServerUpdate::decode(f),
+                Ok(Some(updates::ServerUpdate::RunClientScript { id: 571, .. }))
+            )
+        })
+    })
+    .await;
+    eprintln!("bankone: deposited and withdrew the dagger, closed the bank");
+
+    // The banker's Bank option: BankerNPC.attemptBank opens the bank.
+    let opened = one.opened.len();
+    one.send(npc_option3(index)).await;
+    one.until(
+        Duration::from_secs(15),
+        "the bank from the Bank option",
+        |c| c.opened[opened..].iter().any(|(_, id)| *id == 762),
+    )
+    .await;
+    one.send(close_interface()).await;
+    one.pump(Duration::from_secs(1)).await;
+    eprintln!("bankone: the banker's Bank option opened the bank");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
 
 /// A saved character made from another's save: its location and inventory
 /// replaced (the native parser loads it at login like any returning one).
@@ -2128,6 +2340,370 @@ async fn wilderness_scenario(address: std::net::SocketAddr, saves: &std::path::P
     .await;
     assert_eq!(one.position(), at, "wildone's saved location");
     eprintln!("wildone entered WildernessZone at {at:?}: overlay 381, \"Level: 1\"");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Shops: `shopone` stands in Lumbridge's general store with 100 coins and
+/// a bronze dagger. Trade (NPC option 3) on the shop keeper (520, a ShopNPC of
+/// the start-up) goes through the native InteractionListeners (Shops'
+/// "trade" listener and destination override, the walk and the arrival) and
+/// `Shop.openFor`: the stock interface (620) with its side tab (621).
+/// Buy-1 (196 on 620:23, slot 0) takes the price and gives a pot (1931);
+/// Value (155 on 621:0) answers with the dagger's price; Sell-1 (196) puts
+/// the dagger in the store's player stock and pays for it; Buy-X (234) asks
+/// for an amount (script 108/109) and the answer (INPUT_INT 23) buys two more
+/// pots through `RunScript.processInput` and `shop::run_amount`; Close
+/// (184) runs the shop's onClose(620).
+async fn shop_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(
+        &players,
+        "traceone",
+        "shopone",
+        [3214, 3241, 0],
+        &[(0, 995, 100), (1, 1205, 1)],
+    );
+    let (code, one) = Client::login(address, "shopone").await;
+    assert_eq!(code, 2, "shopone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "shopone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let keeper = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 520)
+            .map(|(i, _)| *i as i32)
+    };
+    one.until(Duration::from_secs(15), "the shop keeper", |c| {
+        keeper(c).is_some()
+    })
+    .await;
+    let index = keeper(&one).unwrap();
+    let coins = |c: &Client| {
+        c.containers
+            .get(&93)
+            .and_then(|i| i.values().find(|(id, _)| *id == 995).map(|(_, n)| *n))
+            .unwrap_or(0)
+    };
+    let pots = |c: &Client| {
+        c.containers
+            .get(&93)
+            .map(|i| i.values().filter(|(id, _)| *id == 1931).count())
+            .unwrap_or(0)
+    };
+    let opened = one.opened.len();
+    one.send(npc_option3(index)).await;
+    one.until(Duration::from_secs(20), "the shop interface", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 620)
+            && c.opened[opened..].iter().any(|(_, id)| *id == 621)
+    })
+    .await;
+    assert!(
+        one.texts
+            .iter()
+            .any(|(_, _, t)| t == "Lumbridge General Store"),
+        "the shop's title"
+    );
+    // Buy one pot.
+    let before = coins(&one);
+    one.send(if_button(196, 620, 23, 0)).await;
+    one.until(Duration::from_secs(10), "a bought pot", |c| {
+        pots(c) == 1 && coins(c) < before
+    })
+    .await;
+    let paid = before - coins(&one);
+    // The dagger's value, then its sale.
+    let from = one.messages.len();
+    one.send(if_button(155, 621, 0, 1)).await;
+    one.until(Duration::from_secs(10), "the dagger's value", |c| {
+        c.messages[from..]
+            .iter()
+            .any(|(_, m)| m.contains("This shop will buy this item for"))
+    })
+    .await;
+    let before = coins(&one);
+    one.send(if_button(196, 621, 0, 1)).await;
+    one.until(Duration::from_secs(10), "the dagger sold", |c| {
+        c.slot_of(93, 1205).is_none() && coins(c) > before
+    })
+    .await;
+    let earned = coins(&one) - before;
+    // The sale switched the shown tab to the store's player stock: back to
+    // the main stock (620:25), then Buy-X: the amount prompt and two more pots.
+    one.send(if_button(155, 620, 25, -1)).await;
+    one.pump(Duration::from_millis(700)).await;
+    let from = one.frames.len();
+    one.send(if_button(234, 620, 23, 0)).await;
+    one.until(Duration::from_secs(10), "the amount prompt", |c| {
+        c.frames[from..].iter().any(|f| {
+            matches!(
+                updates::ServerUpdate::decode(f),
+                Ok(Some(updates::ServerUpdate::RunClientScript {
+                    id: 108 | 109,
+                    ..
+                }))
+            )
+        })
+    })
+    .await;
+    one.send(frame(23, &[&2i32.to_be_bytes()])).await;
+    one.until(Duration::from_secs(10), "two more pots", |c| pots(c) == 3)
+        .await;
+    one.send(close_interface()).await;
+    one.pump(Duration::from_secs(1)).await;
+    eprintln!(
+        "shopone: bought a pot for {paid} coins, sold the dagger for {earned}, bought two more through Buy-X"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+/// PLAYER_ACTION: Follow (71, option index 2) and Trade with (180, index 3).
+fn player_follow(index: i32) -> Frame {
+    frame(71, &[&la16(index)])
+}
+fn player_trade(index: i32) -> Frame {
+    frame(180, &[&la16(index)])
+}
+
+/// Logs a saved character in and waits for its rebuild.
+async fn enter(address: std::net::SocketAddr, name: &str) -> Client {
+    let (code, client) = Client::login(address, name).await;
+    assert_eq!(code, 2, "{name}'s login");
+    let mut client = client.unwrap();
+    client
+        .until(Duration::from_secs(10), "the rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    client
+}
+
+/// Requests and a trade between two players: `tradeone` (a bronze dagger)
+/// uses Trade with on `tradetwo` (the global handlers' RequestOption
+/// listener through the native InteractionListeners, the walk to the player,
+/// `RequestManager.request`): "Sending a trade offer..." and the other's
+/// ":tradereq:" line. `tradetwo` answers with Trade with: the request is
+/// accepted and both get the trade screen (335 with the side tab 336).
+/// `tradeone` offers the dagger (155 on 336:0, slot 0), both accept
+/// (335:16), the second screen (334) opens, both accept (334:20):
+/// `TradeContainer` gives the dagger to `tradetwo`.
+async fn trade_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(
+        &players,
+        "traceone",
+        "tradeone",
+        [3210, 3222, 0],
+        &[(0, 1205, 1)],
+    );
+    write_save(&players, "traceone", "tradetwo", [3211, 3222, 0], &[]);
+    let mut one = enter(address, "tradeone").await;
+    let mut two = enter(address, "tradetwo").await;
+    let (index_one, index_two) = (one.index, two.index);
+    one.until(Duration::from_secs(10), "tradetwo in view", |c| {
+        c.players.players[index_two as usize].is_some()
+    })
+    .await;
+    two.until(Duration::from_secs(10), "tradeone in view", |c| {
+        c.players.players[index_one as usize].is_some()
+    })
+    .await;
+    let (from_one, from_two) = (one.messages.len(), two.messages.len());
+    one.send(player_trade(index_two)).await;
+    one.until(Duration::from_secs(15), "the trade offer's message", |c| {
+        c.messages[from_one..]
+            .iter()
+            .any(|(_, m)| m.contains("Sending a trade offer..."))
+    })
+    .await;
+    two.until(Duration::from_secs(15), "the trade request", |c| {
+        c.messages[from_two..]
+            .iter()
+            .any(|(_, m)| m.contains("tradeone:tradereq:"))
+    })
+    .await;
+    let (opened_one, opened_two) = (one.opened.len(), two.opened.len());
+    two.send(player_trade(index_one)).await;
+    two.until(Duration::from_secs(15), "tradetwo's trade screen", |c| {
+        c.opened[opened_two..].iter().any(|(_, id)| *id == 335)
+    })
+    .await;
+    one.until(Duration::from_secs(15), "tradeone's trade screen", |c| {
+        c.opened[opened_one..].iter().any(|(_, id)| *id == 335)
+            && c.opened[opened_one..].iter().any(|(_, id)| *id == 336)
+    })
+    .await;
+    // The offer, then both accept the first screen.
+    one.send(if_button(155, 336, 0, 0)).await;
+    one.until(Duration::from_secs(10), "the dagger offered", |c| {
+        c.slot_of(93, 1205).is_none()
+    })
+    .await;
+    let (opened_one, opened_two) = (one.opened.len(), two.opened.len());
+    one.send(if_button(155, 335, 16, -1)).await;
+    one.pump(Duration::from_millis(900)).await;
+    two.send(if_button(155, 335, 16, -1)).await;
+    one.until(Duration::from_secs(10), "tradeone's second screen", |c| {
+        c.opened[opened_one..].iter().any(|(_, id)| *id == 334)
+    })
+    .await;
+    two.until(Duration::from_secs(10), "tradetwo's second screen", |c| {
+        c.opened[opened_two..].iter().any(|(_, id)| *id == 334)
+    })
+    .await;
+    one.send(if_button(155, 334, 20, -1)).await;
+    one.pump(Duration::from_millis(900)).await;
+    two.send(if_button(155, 334, 20, -1)).await;
+    two.until(Duration::from_secs(10), "the dagger traded", |c| {
+        c.slot_of(93, 1205).is_some()
+    })
+    .await;
+    one.pump(Duration::from_secs(1)).await;
+    assert!(
+        one.slot_of(93, 1205).is_none(),
+        "tradeone gave the dagger away"
+    );
+    eprintln!("tradeone and tradetwo: request, acceptance, both screens, the dagger changed hands");
+    one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Following: `followone` uses Follow on `followtwo` (the player option's
+/// InteractPlugin with the bound FollowOptionPlugin: the walk to the
+/// player, then its `MovementPulse(player, target, FOLLOW_ENTITY)`), and
+/// when `followtwo` walks six tiles west `followone` ends on a tile
+/// next to it.
+async fn follow_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(&players, "traceone", "followone", [3222, 3222, 0], &[]);
+    write_save(&players, "traceone", "followtwo", [3219, 3222, 0], &[]);
+    let mut one = enter(address, "followone").await;
+    let mut two = enter(address, "followtwo").await;
+    let index_two = two.index;
+    one.until(Duration::from_secs(10), "followtwo in view", |c| {
+        c.players.players[index_two as usize].is_some()
+    })
+    .await;
+    one.send(player_follow(index_two)).await;
+    one.until(Duration::from_secs(15), "followone beside followtwo", |c| {
+        let here = c.position();
+        (here[0] - 3219).abs() <= 1 && (here[1] - 3222).abs() <= 1
+    })
+    .await;
+    let target = [3213, 3222, 0];
+    two.send(actions::worldspace_walk(target[0], target[1], false))
+        .await;
+    two.until(Duration::from_secs(15), "followtwo's walk", |c| {
+        c.position() == target
+    })
+    .await;
+    let mut ping = Instant::now();
+    let end = Instant::now() + Duration::from_secs(20);
+    loop {
+        let here = one.position();
+        if (here[0] - target[0]).abs() <= 1 && (here[1] - target[1]).abs() <= 1 {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "followone did not follow: at {here:?}"
+        );
+        if ping.elapsed() > Duration::from_secs(5) {
+            one.send(frame(93, &[])).await;
+            two.send(frame(93, &[])).await;
+            ping = Instant::now();
+        }
+        one.pump(Duration::from_millis(200)).await;
+        two.pump(Duration::from_millis(50)).await;
+    }
+    eprintln!(
+        "followone followed followtwo to {:?} (followtwo at {target:?})",
+        one.position()
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+/// ITEM_ACTION_1 (156): an inventory item's first option (Eat, Drink).
+fn item_option1(id: i32, slot: i32) -> Frame {
+    frame(156, &[&la16(slot), &sa16(id), &li32(149 << 16)])
+}
+
+/// Eating and drinking: `eatone` (4 of its 10 hitpoints, shrimps 315, a
+/// strength potion (4) 113) eats the shrimps (ITEM option "eat" through the
+/// native InteractionListeners to ConsumableListener and `Food.consume`):
+/// "You eat the shrimps.", the shrimps leave the inventory, hitpoints go
+/// from 4 to 7 with "It heals some health.", animation 829 and sound 2393.
+/// Drinking the potion (`Potion.consume`) leaves a three-dose potion (115),
+/// raises Strength above 1 and, two ticks later, the SOFT dose script says
+/// "You have 3 doses of potion left.".
+async fn eat_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save_with(
+        &players,
+        "traceone",
+        "eatone",
+        [3220, 3225, 0],
+        &[(0, 315, 1), (1, 113, 1)],
+        |save| {
+            save["skills"][3]["lifepoints"] = Value::String("4".into());
+        },
+    );
+    let mut one = enter(address, "eatone").await;
+    one.until(Duration::from_secs(10), "eatone's hitpoints", |c| {
+        c.skills.get(&3).map(|s| s.0) == Some(4)
+    })
+    .await;
+    let (from, updates_from) = (one.messages.len(), one.updates.len());
+    one.send(item_option1(315, 0)).await;
+    one.until(Duration::from_secs(10), "the shrimps eaten", |c| {
+        c.slot_of(93, 315).is_none() && c.skills.get(&3).map(|s| s.0) == Some(7)
+    })
+    .await;
+    let said =
+        |c: &Client, from: usize, what: &str| c.messages[from..].iter().any(|(_, m)| m == what);
+    assert!(
+        said(&one, from, "You eat the shrimps."),
+        "the eating message"
+    );
+    assert!(
+        said(&one, from, "It heals some health."),
+        "the healing message"
+    );
+    one.until(Duration::from_secs(5), "the eating animation", |c| {
+        c.updates[updates_from..].iter().any(|(_, u)| {
+            u.extended.iter().any(|e| {
+                e.fields
+                    .iter()
+                    .any(|f| matches!(f, players::Field::Animation { id: 829, .. }))
+            })
+        })
+    })
+    .await;
+    // The potion, after the eat clock (NEXT_CONSUME is not set by plain food).
+    let from = one.messages.len();
+    one.send(item_option1(113, 1)).await;
+    one.until(Duration::from_secs(10), "the potion drunk", |c| {
+        c.slot_of(93, 115) == Some(1) && c.skills.get(&2).is_some_and(|s| s.0 > 1)
+    })
+    .await;
+    one.until(Duration::from_secs(10), "the dose message", |c| {
+        said(c, from, "You have 3 doses of potion left.")
+    })
+    .await;
+    assert!(
+        said(&one, from, "You drink some of your strength potion."),
+        "the drinking message"
+    );
+    eprintln!(
+        "eatone: ate the shrimps (hitpoints 4 -> 7), drank a dose (Strength {} of 1, three doses left)",
+        one.skills[&2].0
+    );
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }

@@ -631,6 +631,20 @@ impl WalkHost<'_> {
     }
 }
 
+impl WalkHost<'_> {
+    /// The player option handler a handler id of the player arena holds.
+    fn player_handler(
+        &self,
+        id: usize,
+    ) -> legacy::Result<crate::world::global_handlers::registry::OptionPlugin> {
+        self.walk.player_handlers.get(id).copied().ok_or_else(|| {
+            legacy::Error::Binding(Some(format!(
+                "a player option handler {id} this world did not bind"
+            )))
+        })
+    }
+}
+
 impl legacy_runtime::Bindings for WalkHost<'_> {
     fn interaction_locked(&mut self, state: &mut State, p: Option<Node>) -> legacy::Result<bool> {
         let owner = state
@@ -647,6 +661,9 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
             .map_err(lerror)
     }
     fn handler_walk(&mut self, _: &mut State, id: usize) -> legacy::Result<bool> {
+        if self.walk.player_dispatch {
+            return self.player_handler(id).map(|h| h.is_walk());
+        }
         if self.walk.scenery_dispatch {
             // A global handler's OptionHandler (super::scenery).
             return self.scenery_handler(id).map(|h| h.is_walk());
@@ -661,6 +678,9 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
         _: Option<Node>,
         _: Option<Node>,
     ) -> legacy::Result<bool> {
+        if self.walk.player_dispatch {
+            return self.player_handler(id).map(|h| h.is_walk_for());
+        }
         if self.walk.scenery_dispatch {
             return self.scenery_handler(id).map(|h| h.is_walk_for());
         }
@@ -672,12 +692,18 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
         id: usize,
         _: Option<Node>,
     ) -> legacy::Result<bool> {
+        if self.walk.player_dispatch {
+            return self.player_handler(id).map(|h| h.is_delayed());
+        }
         if self.walk.scenery_dispatch {
             return self.scenery_handler(id).map(|h| h.is_delayed());
         }
         self.pickup_program(id).map(|_| true)
     }
     fn handler_name(&mut self, _: &mut State, id: usize) -> legacy::Result<String> {
+        if self.walk.player_dispatch {
+            return self.player_handler(id).map(|h| h.class().into());
+        }
         if self.walk.scenery_dispatch {
             return self.scenery_handler(id).map(|h| h.class().into());
         }
@@ -692,6 +718,24 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
         option: &str,
     ) -> legacy::Result<bool> {
         let target_node = target.ok_or(legacy::Error::Null)?;
+        if self.players.contains_key(&target_node) {
+            // A player option handler (Attack, Follow), run with the whole
+            // world right after this walking call returns (super::follow).
+            let plugin = self.player_handler(id)?;
+            let player = state
+                .retain_node(p.ok_or(legacy::Error::Null)?)
+                .map_err(lerror)?;
+            let target = state.retain_node(target_node).map_err(lerror)?;
+            self.deferred.push(super::walk::Deferred::PlayerHandler(
+                super::follow::PlayerHandlerCall {
+                    plugin,
+                    player,
+                    target,
+                    option: option.to_owned(),
+                },
+            ));
+            return Ok(true);
+        }
         if state.ground(target_node).is_err() {
             // Scenery: a global handler's OptionHandler, run with the whole
             // world right after this walking call returns (super::global).

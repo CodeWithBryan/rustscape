@@ -52,6 +52,17 @@ pub struct Walk {
     /// `InteractionListeners` (the item packets' registry), for the scenery
     /// listener lookup.
     pub interactions: Option<crate::world::interaction_listeners::Registry>,
+    /// The content listeners' movement pulses and destination overrides
+    /// (super::round::Approaches, super::talk).
+    pub approaches: super::round::Approaches,
+    /// The player option handlers (`Option._P_ATTACK`/`_P_FOLLOW`'s),
+    /// by handler id (super::follow).
+    pub player_handlers: Vec<crate::world::global_handlers::registry::OptionPlugin>,
+    /// A player InteractPlugin is being handled or has arrived (the legacy
+    /// runtime's handler ids are the player handler arena's).
+    pub player_dispatch: bool,
+    /// The follow pulses' option handles with their mover (super::follow).
+    pub follows: Vec<(crate::world::interaction::OptionHandle, Node)>,
 }
 
 /// `scene::Services` for collision queries. The scenery services (doors,
@@ -149,6 +160,15 @@ pub enum Deferred {
     ImpactDisabled(Node, i32),
     /// `CombatPulse.stop()` from a pulse manager or an NPC's tick.
     CombatStop(Node),
+    /// A content listener's movement pulse arrived (`InteractionListeners`'
+    /// arrival body), run with the whole world (super::talk).
+    Listener(crate::world::interaction::OptionHandle),
+    /// `DialogueInterpreter.close()` asked by a walk request.
+    CloseDialogue(Node),
+    /// A player option handler reached by the legacy arrival (super::follow).
+    PlayerHandler(super::follow::PlayerHandlerCall),
+    /// A follow pulse's `pulse()` (super::follow).
+    Follow(crate::world::interaction::OptionHandle),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -278,11 +298,11 @@ impl player_walk::Services for WalkHost<'_> {
                     .default_answer("Marathon perk query (perks not ported: false)");
                 false
             }
-            Query::CloseDialogue(_) => {
-                // DialogueInterpreter.close with no dialogue open answers true;
-                // dialogue content is not ported, so none is open.
-                self.not_ported
-                    .default_answer("DialogueInterpreter.close (no dialogue content: true)");
+            Query::CloseDialogue(n) => {
+                // DialogueInterpreter.close() runs right after the walk
+                // request returns (it needs the whole world), answered true
+                // meanwhile (super::talk).
+                self.deferred.push(Deferred::CloseDialogue(n));
                 true
             }
             Query::ZoneMove(_, _, _) => {
@@ -496,6 +516,35 @@ impl player_walk::Services for WalkHost<'_> {
         state: &mut State,
         approach: &crate::world::interaction::Approach,
     ) -> player_walk::Result<bool> {
+        // A content listener's movement pulse (InteractionListeners.run):
+        // its arrival runs with the whole world right after this call.
+        if let Some(option) = approach.option.as_ref() {
+            if self
+                .walk
+                .approaches
+                .arrivals
+                .iter()
+                .any(|(o, _, _)| o.same(option))
+            {
+                self.deferred.push(Deferred::Listener(option.clone()));
+                return Ok(true);
+            }
+            // FollowOptionPlugin's pulse: face the target, never finish.
+            if self.walk.follows.iter().any(|(o, _)| o.same(option)) {
+                self.deferred.push(Deferred::Follow(option.clone()));
+                return Ok(false);
+            }
+        }
+        // A player option's InteractPlugin arrival (super::follow).
+        if approach
+            .target
+            .is_some_and(|t| self.players.contains_key(&t))
+        {
+            self.walk.player_dispatch = true;
+            let result = super::ground_items::arrival(state, self, approach);
+            self.walk.player_dispatch = false;
+            return result;
+        }
         // InteractPlugin's movement pulse arrived: the legacy arrival body
         // (the only installed option handler is PickupPlugin).
         super::ground_items::arrival(state, self, approach)
@@ -505,8 +554,16 @@ impl player_walk::Services for WalkHost<'_> {
         state: &mut State,
         task: &crate::world::legacy_interaction::Task,
     ) -> player_walk::Result<bool> {
-        crate::world::legacy_runtime::arrival(state, self, task)
-            .map_err(|e| player_walk::Error::Binding(e.to_string()))
+        let player_target = task.target.is_some_and(|t| self.players.contains_key(&t));
+        if player_target {
+            self.walk.player_dispatch = true;
+        }
+        let result = crate::world::legacy_runtime::arrival(state, self, task)
+            .map_err(|e| player_walk::Error::Binding(e.to_string()));
+        if player_target {
+            self.walk.player_dispatch = false;
+        }
+        result
     }
     fn destination(
         &mut self,
@@ -542,6 +599,21 @@ impl player_walk::Services for WalkHost<'_> {
                     )));
                 }
                 return Ok(at.map(|[x, y, z]| Location::new(x, y, z)));
+            }
+        }
+        // A content listener's destination override (setDest), evaluated
+        // when its movement pulse was made (super::talk).
+        if let crate::world::movement::DestinationService::Override(token) = &service {
+            if let Some((_, at)) = self.walk.approaches.destinations.get(token) {
+                return Ok(at.clone());
+            }
+        }
+        // A player option handler's getDestination: OptionHandler's null.
+        if let (crate::world::movement::DestinationService::Option(_), Some(target)) =
+            (&service, target)
+        {
+            if self.players.contains_key(&target) {
+                return Ok(None);
             }
         }
         // OptionHandler.getDestination: PickupPlugin's is null (the default

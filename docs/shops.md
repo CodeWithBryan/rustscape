@@ -5,8 +5,11 @@ each shop's stock and the player's view of it, the two shop interfaces (620
 stock, 621 inventory side), buying and selling with the original price
 formulas, the general stores' shared player stock, restocking and decay over
 ticks and the periodic clear of the general player stock. It is a library.
-Nothing installs it in a live world yet: no packet handler, tick driver or
-start-up step calls it. Java is a test oracle; nothing here runs it.
+`rs09-server --world` installs it (`world/live/shopping.rs`,
+[the live world](live-world.md)): the start-up at boot, the tick listener,
+the NPC listeners and the destination override in the native
+InteractionListeners, the 620/621 listeners and the amount prompts. Java is
+a test oracle; nothing here runs it.
 
 | Original | Rust | Scope |
 | --- | --- | --- |

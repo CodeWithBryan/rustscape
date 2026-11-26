@@ -15,8 +15,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   gameplay callbacks. Private sorted views do not establish HashMap iteration.
   Array identity hashes are explicit platform inputs. Canonical shared processor
   ownership/native objects and a real actor-clock/tick phase bridge exist;
-  remaining close/dialogue and modern context services, movement arrivals,
-  events/locks/zones and natural banker/booth content are
+  `rs09-server --world` runs `run` with the listener movement and arrival
+  for NPC and player targets (world/live/talk.rs); defineInteraction
+  scripts, use-with arrivals, scenery targets, events and booth content are
   still required runtime joins. See docs/interaction-listeners.md.
 
 - For ActionLocks/Lock/LockElapse changes, run action_locks/owned_player and all
@@ -444,8 +445,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   walk-flag shifts and at most three turns. Every outside call is a required
   Host service with no default; the classes' names are metadata only.
   QuestTabUtils.showRequirementsInterface is not ported (NPCTalkListener,
-  BankerNPC and ShopNPC are world/npc_classes, next bullet); nothing installs
-  the libraries in `--world` (the binding is described in
+  BankerNPC and ShopNPC are world/npc_classes, next bullet); `rs09-server
+  --world` installs the handlers (world/live/global.rs; since the eighth
+  round also the Attack and Follow player options, the RequestOption
+  listeners, face, the lock queries and openBankAccount; the dialogue
+  senders, deposit boxes and the other services listed in
+  docs/live-world.md stay refused) (the binding is described in
   docs/global-handlers.md).
 - For the NPC subclass framework or the global NPC handlers
   (world/npc_classes: AbstractNPC's registry, newInstance, forId, construct
@@ -482,9 +487,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   start-up through creatures::classes::WorldClass); Sheep, Chinchompa,
   stray dogs, cow milking and decanting are world/creatures; QuestTabUtils
   is not ported. See docs/npc-classes.md.
-  QuestTabUtils.showRequirementsInterface, NPCTalkListener, BankerNPC and
-  ShopNPC are not ported; nothing installs the libraries in `--world` (the
-  binding is described in docs/global-handlers.md).
+  QuestTabUtils.showRequirementsInterface is not ported. `rs09-server --world`
+  installs the class overrides and, since the eighth round, NPCTalkListener's
+  and BankerNPC's listeners with the banker conversation
+  (world/live/subclasses.rs, talk.rs; docs/live-world.md).
 - For the global item handlers (world/global_items: EnchantedJewellery and
   EnchantedJewelleryListener with its dialogue file, EnchantJewelleryTab,
   TeleTabs, HouseTeleTabOption, TeleportCrystalPlugin with its dialogue,
@@ -607,8 +613,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   drinks' name stripping with Java trim, and each effect's int truncation,
   draw order and messages. Skills and run energy are native; every other
   call is a required Host service with no default; consumables::join answers
-  the timer services from timers::content. Nothing installs the handler in
-  `--world` yet. See docs/consumables.md.
+  the timer services from timers::content. `rs09-server --world` installs
+  the handler (world/live/eating.rs: ConsumableListener in the native
+  InteractionListeners, the dose script kept by the world); the Trouble
+  Brewing rum, sendChat and diary tasks stay refused there. See
+  docs/consumables.md.
 - For ForceMovement (world/force_movement), run `cargo test -p rs09-server
   --test force_movement` and `cargo xtask force-movement-oracle --check`
   with Python/JDK 11, plus the pulses, update_masks and prepared_masks
@@ -701,8 +710,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   transfer after bank Close: original addItem/takeItem have no bank-open guard;
   late packets lose the current script and preserve stale parseamount. Keep fresh
   fresh action queue/content dialogue boundaries explicit; actual lock queries
-  use canonical actor state. No natural banker/
-  PIN/profile/capacity claim. See docs/input-prompt.md and docs/plain-dialogue.md.
+  use canonical actor state. `rs09-server --world` installs receive/send and
+  transferX (world/live/talk.rs: the bank's transfer, the shops' and the
+  trade's amount scripts, the DSLs' callbacks). No PIN/profile/capacity claim.
+  See docs/input-prompt.md and docs/plain-dialogue.md.
 
 - For DialogueInterpreter/DialoguePlugin/DialogueFile/EmptyPlugin/Topic changes,
   reproduce dialogue-oracle and plain-dialogue-oracle with Python/JDK11; run
@@ -722,8 +733,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   services have no defaults and must not fabricate success; labels never select
   behaviour and no guard spans a host or content call. Plugin/file/interpreter
   back-references are strong and not yet traced by the canonical capture graph.
-  Packet bytes, real UI/definition/NPC bindings, Continue and modern-context
-  joins and all content remain required. See docs/dialogue.md.
+  `rs09-server --world` binds Host to the live world with one interpreter
+  per player and the Continue packet (world/live/talk.rs); the registry holds
+  no content plugin there, and the capture graph join and all content other
+  than the banker conversation remain required. See docs/dialogue.md.
 - For the dialogue DSLs (world/dialogue_dsl: DialogueLabeller with
   DialogueOption and DialogueLabeller.open, DialogueBuilder/DialogueBuilderFile
   and every node, SkillDialogueHandler/SkillDialogue/SkillDialoguePlugin,
@@ -753,10 +766,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   iron man and Odovacar's Item built before the removal. Everything outside
   the dialogue package is a required dialogue_dsl::Host or banker::BankHost
   service with no default; scripted content calls only original DSL members.
-  Nothing installs the library in `--world`; the npc_classes
-  `banker_conversation` service is answered by `banker::talk_to` once a host
-  binds these traits. The activity/cutscene framework is world/activities
-  (docs/activities.md). See docs/dialogue-dsl.md.
+  `rs09-server --world` binds these traits to the live world
+  (world/live/talk.rs) and answers the npc_classes `banker_conversation`
+  service with `banker::talk_to`; no other DSL content is installed. The
+  activity/cutscene framework is world/activities (docs/activities.md). See
+  docs/dialogue-dsl.md.
 - For plain dialogue or Continue changes, reproduce plain-dialogue-oracle and the
   affected input/interface/bank corpora; run plain_dialogue, input_prompt, interfaces,
   bank_interface and all three controlled examples. Preserve the initial424 cases
@@ -781,7 +795,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   not span callbacks with guards. CloseIface must ignore close's boolean and use
   non-null attribute presence, including false/zero. Fresh fixture empty dialogue,
   locks/zones/events and one-shot --bank-probe admission remain explicit test
-  boundaries. Banker/booth admission, PIN, help/deposit dialogue,
+  boundaries. `rs09-server --world` installs the program with the canonical
+  bank at a banker (world/live/bank.rs); booth, chest and deposit box
+  admission, PIN, help/deposit dialogue and
   full login/map/profile/content still need real bindings. Browser pointer and
   native protocol-driven rendering proofs must be labelled separately; neither
   proves native pointer input. See docs/bank-interface.md.
@@ -1721,10 +1737,33 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   the persisted state, quest content refused); dragon and MonkNPC handler
   instances are handler slots whose subclass answers Host::overrides
   (dragons.rs). LoginValidationPlugin runs as the login plugin. Content, NPC
-  timers, spells, teleports, the dialogue interpreter, component use-with
-  (spells), continue and input handlers, the bank, shops, trade,
-  consumables, ForceMovement, commands, the Grand Exchange and region
-  unloading remain open. See docs/live-world.md.
+  timers, spells, teleports, component use-with (spells), ForceMovement,
+  commands, quick chat, the Grand Exchange and region unloading remain open.
+  The eighth round (world/live/round.rs holds its state): one dialogue
+  interpreter per player made when first asked for, the live world itself
+  as dialogue::Host/dialogue_dsl::Host/BankHost (talk.rs), Continue through
+  interface_packets::continue_option, the NPC talk and banker listeners
+  dispatched by identity (a start-up banker becomes a BankerNPC when first
+  interacted with), a content listener's walk as
+  player_walk::World::listener_motion whose arrival is found by the
+  approach's option handle and run right after the walking call, input
+  prompts (the runscript attribute holds the transfer object or a mark for
+  a callback the world keeps), the bank over the interface context
+  (bank.rs: BankUi, also from InterfaceManager.close and runOpen), shops
+  over the interface context too (shopping.rs; Shops.tick is a tick
+  listener), requests and trade over the whole world (trading.rs: its
+  trade::ui::Ui is the interface context of the Close packet and of a
+  walk's close; a TradeCloseEvent reached through the plain context is
+  refused), the player option handlers in an arena the legacy runtime
+  resolves for a player target and the follow pulse as a canonical
+  movement (follow.rs), and eating and drinking (eating.rs: skills taken
+  out of the profile for the call, put back around calls into systems that
+  read them). Also run dialogue, dialogue_dsl, input_prompt, bank,
+  bank_interface, interfaces, shops, trade, consumables,
+  consumables_timers, legacy_interaction and movement. Bank booths
+  (defineInteraction scripts), chests, deposit boxes, the bank PIN,
+  AssistSession and the global handlers' dialogue senders remain refused.
+  See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh
   npc-init-oracle --check with Python/JDK11. Preserve prototype/null fallback,
@@ -1926,8 +1965,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   stage 0, update's re-read stage, the in-place clamp at the exchange with
   amount-0 ground items, stack overflow lost, the unconditional bot lookups,
   Offer-X without m. The alert pulse body is ported; its scheduling, the
-  real InventoryListener and every content service are not. Nothing installs
-  the library in a session. See docs/trade.md.
+  real InventoryListener and every content service are not in the corpus.
+  `rs09-server --world` installs the library (world/live/trading.rs:
+  requests from the Trade with option, the plugin on 334/335/336, the close
+  event, the alert pulse by identity); AssistSession and the bots stay
+  refused there. See docs/trade.md.
 - For shops (world/shops: Shop, ShopItem, ShopListener, Shops' start-up,
   tick, NPC, destination and 620/621 interface listeners), run
   `cargo test -p rs09-server --test shops` and `cargo xtask shops-oracle
@@ -1945,9 +1987,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   4067 sellable but refused by the value message, the shared general stock's
   "too full" check for every shop, wrapping and clamping amounts, tick 0
   clearing the player stock and an interval of 0 failing every tick. Item
-  definitions in the corpus are authored inputs. Nothing installs the
-  library; ShoppingPlugin.java is commented out in the pinned source. See
-  docs/shops.md.
+  definitions in the corpus are authored inputs. `rs09-server --world`
+  installs the library (world/live/shopping.rs: start-up at boot, the tick
+  listener, the NPC listeners with the destination override, 620/621, the
+  amount prompts); the Grand Exchange recirculation, tanning, item views
+  and the quest-gated listeners stay refused there. ShoppingPlugin.java is
+  commented out in the pinned source. See docs/shops.md.
 - For the Grand Exchange (world/grand_exchange: GEDB over SQLite, GrandExchange,
   GrandExchangeOffer, GrandExchangeRecords, GrandExchangeTimer.run, PriceIndex,
   GEGuidePrice, GEItemSet, BotPrices, GEAutoStock, StockMarket,

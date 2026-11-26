@@ -240,6 +240,8 @@ impl nc::Host for Classes<'_, '_> {
             Kind::Player
         } else if self.live.inner.is_npc_node(node.node()) {
             Kind::Npc
+        } else if self.live.inner.state.scenery(node.node()).is_ok() {
+            Kind::Scenery
         } else {
             Kind::Item
         }
@@ -253,6 +255,9 @@ impl nc::Host for Classes<'_, '_> {
     fn id(&mut self, node: &P) -> nc::Result<i32> {
         if self.live.inner.is_player_node(node.node()) {
             return Ok(-1);
+        }
+        if let Ok(object) = self.live.inner.state.scenery(node.node()) {
+            return Ok(object.read().id);
         }
         Ok(self.row(node)?.id)
     }
@@ -350,8 +355,19 @@ impl nc::Host for Classes<'_, '_> {
             .entity()
             .direction)
     }
-    fn set_direction(&mut self, _: &P, _: Option<Direction>) -> nc::Result<()> {
-        refuse("Entity.setDirection from an NPC class body (banker content)")
+    fn set_direction(&mut self, entity: &P, direction: Option<Direction>) -> nc::Result<()> {
+        // Entity.setDirection: the walking entity's direction field.
+        self.live
+            .inner
+            .state
+            .actor(entity.node())
+            .map_err(bind)?
+            .queue
+            .state
+            .write()
+            .entity
+            .direction = direction;
+        Ok(())
     }
     fn face_location(&mut self, entity: &P, location: Option<[i32; 3]>) -> nc::Result<()> {
         if self.live.inner.is_npc_node(entity.node()) {
@@ -552,8 +568,24 @@ impl nc::Host for Classes<'_, '_> {
             .map(|_| ())
             .map_err(bind)
     }
-    fn get_scenery(&mut self, _: [i32; 3]) -> nc::Result<Option<P>> {
-        refuse("ContentAPI.getScenery from BankerNPC (not registered)")
+    fn get_scenery(&mut self, [x, y, z]: [i32; 3]) -> nc::Result<Option<P>> {
+        // ContentAPI.getScenery(location): RegionManager.getObject over the
+        // scene, as a scenery node of the canonical state.
+        let walk = &mut self.live.walk;
+        let object = walk
+            .scene
+            .context(&mut walk.maps)
+            .object(Location::new(x, y, z), -1, -1)
+            .map_err(|e| nc::Error::Binding(Some(e.0)))?;
+        match object {
+            None => Ok(None),
+            Some(object) => Ok(Some(P(self
+                .live
+                .inner
+                .state
+                .scenery_target(object)
+                .map_err(bind)?))),
+        }
     }
 
     fn api_message(&mut self, player: &P, text: &str) -> nc::Result<()> {
@@ -565,14 +597,34 @@ impl nc::Host for Classes<'_, '_> {
     fn packet_message(&mut self, player: &P, text: &str) -> nc::Result<()> {
         self.live.inner.message(player, text).map_err(bind)
     }
-    fn open_dialogue_id(&mut self, _: &P, _: i32, _: &[Arg<P>]) -> nc::Result<bool> {
-        refuse("dialogueInterpreter.open from an NPC class body (talk content)")
+    fn open_dialogue_id(&mut self, player: &P, id: i32, args: &[Arg<P>]) -> nc::Result<bool> {
+        // player.getDialogueInterpreter().open(id, args...): no content
+        // dialogue plugin is registered, so an NPC's key answers false after
+        // the NPC is stopped (super::talk).
+        let args = dialogue_args(args)?;
+        let interpreter = self.live.interpreter_of(player);
+        let opened = interpreter.open(self.live, id, &args).map_err(bind)?;
+        if !opened {
+            self.live.inner.not_ported.default_answer(
+                "DialogueInterpreter.open of an NPC key (no content dialogue plugin registered: false)",
+            );
+        }
+        Ok(opened)
     }
-    fn open_dialogue_name(&mut self, _: &P, _: &str, _: &[Arg<P>]) -> nc::Result<bool> {
-        refuse("dialogueInterpreter.open from an NPC class body (talk content)")
+    fn open_dialogue_name(&mut self, player: &P, name: &str, args: &[Arg<P>]) -> nc::Result<bool> {
+        let args = dialogue_args(args)?;
+        let interpreter = self.live.interpreter_of(player);
+        let key: Vec<u16> = name.encode_utf16().collect();
+        interpreter
+            .open_named(self.live, Some(&key), &args)
+            .map_err(bind)
     }
-    fn send_dialogue(&mut self, _: &P, _: &[&str]) -> nc::Result<()> {
-        refuse("dialogueInterpreter.sendDialogue from an NPC class body")
+    fn send_dialogue(&mut self, player: &P, lines: &[&str]) -> nc::Result<()> {
+        let interpreter = self.live.interpreter_of(player);
+        interpreter
+            .send_dialogue(self.live, Some(&super::talk::lines(lines)))
+            .map(|_| ())
+            .map_err(bind)
     }
     fn gnome_completion_dialogue(&mut self, _: &'static str) -> nc::Result<()> {
         refuse("GCCompletionDialogue (gnome cooking content)")
@@ -580,31 +632,51 @@ impl nc::Host for Classes<'_, '_> {
     fn open_file(&mut self, _: &P, _: ()) -> nc::Result<()> {
         refuse("dialogueInterpreter.open(file) (gnome cooking content)")
     }
-    fn banker_conversation(&mut self, _: &P, _: &P) -> nc::Result<()> {
-        refuse(
-            "BankerDialogueLabellerFile from the class bodies (the talk listener is not dispatched here)",
+    fn banker_conversation(&mut self, player: &P, npc: &P) -> nc::Result<()> {
+        // DialogueLabeller.open(player, BankerDialogueLabellerFile(), npc).
+        crate::world::dialogue_dsl::banker::talk_to(self.live, &player.0, npc)
+            .map(|_| ())
+            .map_err(bind)
+    }
+    fn api_open_dialogue(&mut self, player: &P, id: i32, npc: &P) -> nc::Result<()> {
+        crate::world::dialogue_dsl::api::open_dialogue(
+            self.live,
+            &player.0,
+            &crate::world::dialogue_dsl::Dialogue::Key(id),
+            &[crate::world::dialogue::Arg::Npc(npc.clone())],
         )
+        .map_err(bind)
     }
-    fn api_open_dialogue(&mut self, _: &P, _: i32, _: &P) -> nc::Result<()> {
-        refuse("ContentAPI.openDialogue from an NPC class body")
+    fn remove_item(&mut self, player: &P, id: i32, amount: i32) -> nc::Result<bool> {
+        // removeItem(player, Item(id, amount)) from the inventory.
+        let item = crate::definitions::item::Shared::new(Item::new(
+            id,
+            amount,
+            1000,
+            &self.live.inner.items,
+        ));
+        self.live.remove_from_inventory(player, &item).map_err(bind)
     }
-    fn remove_item(&mut self, _: &P, _: i32, _: i32) -> nc::Result<bool> {
-        refuse("removeItem from BankerNPC (not registered)")
+    fn open_bank_account(&mut self, player: &P) -> nc::Result<()> {
+        self.live.open_bank_account(player).map_err(bind)
     }
-    fn open_bank_account(&mut self, _: &P) -> nc::Result<()> {
-        refuse("openBankAccount from BankerNPC (not registered)")
-    }
-    fn open_collection_box(&mut self, _: &P) -> nc::Result<()> {
-        refuse("openGrandExchangeCollectionBox from BankerNPC (not registered)")
+    fn open_collection_box(&mut self, player: &P) -> nc::Result<()> {
+        self.live.ge_open_collection_box(player).map_err(bind)
     }
     fn has_seal_of_passage(&mut self, _: &P) -> nc::Result<bool> {
         refuse("hasSealOfPassage (Lunar Isle content)")
     }
     fn random_event_ids(&mut self) -> nc::Result<Vec<i32>> {
-        refuse("RandomEvents.randomIDs (random event content)")
+        Ok(super::talk::RANDOM_EVENT_IDS.to_vec())
     }
     fn anti_macro_event_npc(&mut self, _: &P) -> nc::Result<Option<P>> {
-        refuse("AntiMacro.getEventNpc (random event content)")
+        // No random event NPC is ever spawned for a player here (the
+        // events are content): AntiMacro.getEventNpc answers null.
+        self.live
+            .inner
+            .not_ported
+            .default_answer("AntiMacro.getEventNpc (random event content not ported: null)");
+        Ok(None)
     }
     fn finalized(&mut self, _: &P) -> nc::Result<bool> {
         refuse("RandomEventNPC.finalized (random event content)")
@@ -613,10 +685,14 @@ impl nc::Host for Classes<'_, '_> {
         refuse("RandomEventNPC.talkTo (random event content)")
     }
     fn holiday_random_ids(&mut self) -> nc::Result<Vec<i32>> {
-        refuse("HolidayRandomEvents.holidayRandomIDs (holiday content)")
+        Ok(super::talk::HOLIDAY_RANDOM_IDS.to_vec())
     }
     fn holiday_event_npc(&mut self, _: &P) -> nc::Result<Option<P>> {
-        refuse("HolidayRandoms.getEventNpc (holiday content)")
+        self.live
+            .inner
+            .not_ported
+            .default_answer("HolidayRandoms.getEventNpc (holiday content not ported: null)");
+        Ok(None)
     }
     fn barcrawl_instance(&mut self, _: &P) -> nc::Result<()> {
         refuse("BarcrawlManager (quest content)")
@@ -770,4 +846,20 @@ impl Live {
         let name = definition.read().name.clone();
         Ok(name)
     }
+}
+
+/// The Object... args of a dialogue open from an NPC class body.
+fn dialogue_args(args: &[Arg<P>]) -> nc::Result<Vec<crate::world::dialogue::Arg<Live>>> {
+    use crate::world::dialogue::Arg as D;
+    args.iter()
+        .map(|a| {
+            Ok(match a {
+                Arg::Node(None) => D::Null,
+                Arg::Node(Some(n)) => D::Npc(n.clone()),
+                Arg::Int(i) => D::Int(*i),
+                Arg::Bool(b) => D::Bool(*b),
+                Arg::Barcrawl(_) => D::Other("BarcrawlType"),
+            })
+        })
+        .collect()
 }

@@ -30,13 +30,16 @@
 //! This is a playable engine slice, not a complete server: content (login
 //! listeners, plugins, quests, music, emotes, NPC behaviour, tutorial) is not
 //! ported and is answered by name. See docs/live-world.md.
+pub mod bank;
 pub mod boot;
 pub mod buttons;
 pub mod combat;
 pub mod content;
 pub mod destination;
 pub mod dragons;
+pub mod eating;
 pub mod equipment;
+pub mod follow;
 pub mod global;
 pub mod graves;
 pub mod ground;
@@ -49,12 +52,16 @@ pub mod npc_life;
 pub mod npcs;
 pub mod region_zones;
 pub mod regions;
+pub mod round;
 pub mod runtime_npcs;
 pub mod scenery;
 pub mod server;
+pub mod shopping;
 pub mod subclasses;
 pub mod tabs;
+pub mod talk;
 pub mod timers;
+pub mod trading;
 pub mod walk;
 
 use super::player_walk::NodeHandle;

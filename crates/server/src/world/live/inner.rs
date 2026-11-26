@@ -177,6 +177,12 @@ pub struct Inner {
     pub timers: super::timers::TimerWorld,
     /// Combat, deaths, NPC masks and prayer ([`super::combat`]).
     pub combat: super::combat::CombatWorld,
+    /// The live InterfaceListeners registry (the world's `listeners`, shared),
+    /// for `InterfaceListeners.runOpen` of the installed bank listener.
+    pub interface_listeners: crate::world::interface_listeners::Registry,
+    /// The shops' tables, configuration and open-shop attributes
+    /// (super::shopping).
+    pub shops: super::shopping::ShopState,
 }
 
 pub fn native<E: std::fmt::Debug>(e: E) -> crate::world::login::Error {
@@ -460,12 +466,30 @@ impl interfaces::Context for Inner {
         self.log_line(format!("InterfaceManager {message}"));
         Ok(())
     }
-    fn listener_open(&mut self, _: &interfaces::Handle) -> interfaces::Result<()> {
+    fn listener_open(&mut self, component: &interfaces::Handle) -> interfaces::Result<()> {
+        // InterfaceListeners.runOpen: BankInterface's onOpen(762) runs
+        // (super::bank); the global handlers' open listeners stay skipped.
+        let id = component.read().id;
+        if let Some(callback) = self.interface_listeners.get_open(id)? {
+            if let Some(result) = self.bank_open_listener(&callback, component) {
+                return result.map(|_| ());
+            }
+            if let Some(result) = self.shop_open_listener(&callback) {
+                return result.map(|_| ());
+            }
+        }
         self.not_ported
             .skip("InterfaceListeners.runOpen (content interface listeners)");
         Ok(())
     }
-    fn listener_close(&mut self, _: &interfaces::Handle) -> interfaces::Result<bool> {
+    fn listener_close(&mut self, component: &interfaces::Handle) -> interfaces::Result<bool> {
+        // The shop's onClose(620) (super::shopping).
+        let id = component.read().id;
+        if let Some(callback) = self.interface_listeners.get_close(id)? {
+            if let Some(result) = self.shop_open_listener(&callback) {
+                return result;
+            }
+        }
         // InterfaceListeners.runClose answers true when no listener is
         // registered for the interface; none is (content).
         self.not_ported
@@ -490,9 +514,27 @@ impl interfaces::Context for Inner {
     }
     fn close_event(
         &mut self,
-        _: interfaces::CloseEvent,
+        event: interfaces::CloseEvent,
         _: &interfaces::Handle,
     ) -> interfaces::Result<bool> {
+        // The bank's captured BankClose (super::bank) and
+        // Component.setUnclosable's event (!close_c_).
+        if let Some(result) = self.bank_close_event(&event) {
+            return result;
+        }
+        if event
+            .value::<crate::world::component_objects::Unclosable>()
+            .is_some()
+        {
+            let p = self.current()?;
+            let unclosable = self
+                .canonical(&p)
+                .player
+                .attributes()
+                .boolean("close_c_", false)
+                .map_err(|_| interfaces::Error::Binding("close_c_ of another type".into()))?;
+            return Ok(!unclosable);
+        }
         Err(interfaces::Error::Binding(
             "not ported: CloseEvent.close of content in the live world".into(),
         ))

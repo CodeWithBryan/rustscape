@@ -1017,6 +1017,27 @@ impl<S: Services> World<'_, S> {
             Arrival::Interaction(approach),
         )
     }
+    /// InteractionListeners' `MovementPulse(player, node, flag, destOverride)`
+    /// whose arrival is the approach's (the owning world dispatches it by the
+    /// approach's option identity).
+    pub fn listener_motion(
+        &mut self,
+        approach: Approach,
+        flag: Option<movement::Flag>,
+        override_method: Option<usize>,
+    ) -> Result<Movement> {
+        self.construct_target(
+            approach.player,
+            approach.target,
+            false,
+            None,
+            movement::Constructor::Destination {
+                flag,
+                override_method,
+            },
+            Arrival::Interaction(approach),
+        )
+    }
     pub fn run_motion(&mut self, node: Node, motion: Movement) -> Result<()> {
         let manager = self.state.actor(node)?.manager.clone();
         self.run_motion_captured(node, manager, motion)

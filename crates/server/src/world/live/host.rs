@@ -115,6 +115,9 @@ pub struct Live {
     /// Runtime NPCs, graves, hint icons and the systems installed after
     /// combat ([`super::content`]).
     pub content: super::content::ContentWorld,
+    /// The install round after the dragons: dialogue, input prompts, the
+    /// bank, shops, trade, follow ([super::round]).
+    pub round: super::round::Round,
 }
 
 pub fn fail(e: impl std::fmt::Debug) -> driver::Error {
@@ -176,10 +179,17 @@ impl Live {
     fn run_deferred(&mut self) {
         for deferred in std::mem::take(&mut self.deferred) {
             let result = match deferred {
-                Deferred::CloseInterfaces(node) => self.player_of(node).map(|p| {
-                    let (ui, manager) = self.ui_of(&p);
-                    interfaces::close(ui, &manager).map(|_| ())
-                }),
+                Deferred::CloseInterfaces(node) => self
+                    .player_of(node)
+                    .map(|p| self.close_interfaces_of(&p).map(|_| ())),
+                Deferred::PlayerHandler(call) => {
+                    self.run_player_handler(call);
+                    None
+                }
+                Deferred::Follow(option) => {
+                    self.follow_arrival(&option);
+                    None
+                }
                 Deferred::CloseChatbox(node) => self.player_of(node).map(|p| {
                     let (ui, manager) = self.ui_of(&p);
                     interfaces::close_chatbox(ui, &manager)
@@ -222,6 +232,15 @@ impl Live {
                             .map_err(|e| interfaces::Error::Binding(format!("{e:?}")));
                     self.sync_combat();
                     result
+                }),
+                Deferred::Listener(option) => Some(
+                    self.listener_arrival(&option)
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
+                ),
+                Deferred::CloseDialogue(node) => self.player_of(node).map(|p| {
+                    self.close_dialogue_of(&p)
+                        .map(|_| ())
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}")))
                 }),
                 Deferred::CombatStop(node) => Some(
                     self.combat_stop_of(node)
@@ -1413,6 +1432,10 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.global_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // The pulses of the install round after the dragons (super::round).
+        if let Some(result) = self.round_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // PulseManager.runUnhandledAction's pulse of a use-with.
         if let Some(result) = self.use_pulse(pulse) {
             return result.map_err(fail);
@@ -1466,6 +1489,8 @@ impl driver::Host<P> for Live {
         self.with_walk(|world| world.pulses()).map_err(fail)?;
         // GameWorld.tickListeners: the installed ones (super::content).
         self.content_tick_listeners().map_err(fail)?;
+        // Shops.tick() (after GraveController in the scan's order).
+        self.shops_tick().map_err(fail)?;
         self.inner.not_ported.skip(
             "GameWorld.tickListeners (the content tick listeners other than those installed)",
         );
@@ -1508,6 +1533,8 @@ impl driver::Host<P> for Live {
     fn player_tick(&mut self, p: &P) -> driver::Result<()> {
         // DropListener's soft queued scripts that are due (super::items).
         self.run_drop_scripts(p).map_err(fail)?;
+        // The potions' dose messages that are due (super::eating).
+        self.run_dose_scripts(p).map_err(fail)?;
         let node = p.node();
         // Entity.tick: scripts, skills.pulse(), the walking queue (and the
         // region move it asks for), then timers.processTimers() (its event

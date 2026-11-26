@@ -369,6 +369,17 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         generators,
         timers: Default::default(),
         combat: Default::default(),
+        interface_listeners: Default::default(),
+        shops: super::shopping::ShopState {
+            personalized: values.get("personalized_shops").and_then(|v| v.as_bool()),
+            config_path: Some(config_path.clone()),
+            clear_interval: configuration.constants()["PLAYER_STOCK_CLEAR_INTERVAL"]
+                .as_i64()
+                .ok_or("configuration has no PLAYER_STOCK_CLEAR_INTERVAL")?
+                as i32,
+            recirculate: constant_bool(&configuration, "PLAYER_STOCK_RECIRCULATE")?,
+            ..Default::default()
+        },
     };
     let names = |section: &str| -> Vec<String> {
         startup::scan::section(section)
@@ -403,6 +414,10 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             scenery: Default::default(),
             scenery_dispatch: false,
             interactions: None,
+            approaches: Default::default(),
+            player_handlers: Vec::new(),
+            player_dispatch: false,
+            follows: Vec::new(),
         },
         login_listeners: names("listeners.login"),
         logout_listeners: names("listeners.logout"),
@@ -427,6 +442,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             ..Default::default()
         },
         content: super::content::ContentWorld::new(spawning),
+        round: Default::default(),
     };
     // The start-up's NPCs in the live repository and the scene's chunks;
     // the tab content's component plugins and interface listeners.
@@ -455,6 +471,10 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_specials()?;
     // DragonfireSwingHandler's ServerConstants.BETTER_DFS (super::dragons).
     live.content.dragons.better_dfs = constant_bool(&configuration, "BETTER_DFS")?;
+    // The install round after the dragons (super::round): dialogue, the
+    // NPC talk listeners, input prompts, the bank, shops, trade, follow.
+    live.round.second_bank = constant_bool(&configuration, "SECOND_BANK")?;
+    live.install_round()?;
     Ok(Booted {
         live,
         configuration,

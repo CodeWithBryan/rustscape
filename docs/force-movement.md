@@ -3,7 +3,10 @@
 `world::force_movement` ports core/game/node/entity/impl/ForceMovement: the
 pulse that moves an entity from a start tile to a destination with the
 ForceMove update mask, used by agility obstacles, doors and shortcuts. It is
-a library: nothing in a session or the live world installs it yet.
+a library: nothing in a session or the live world installs it yet (the
+live world's eighth install round stopped before it: nothing installed
+there calls a force movement, and the ForceMove mask's encoder is not
+ported).
 
 ## What is ported
 

@@ -5,8 +5,10 @@
 `FakeConsumable`, `ConsumableEffect`), the `Consumables` table of
 content/data/consumables, every class of content/data/consumables/effects
 and `ConsumableListener`, the handler the "eat" and "drink" item options
-run. It is a library: nothing in a session, the tick driver or the live
-world installs it yet (see Joins).
+run. It is a library; `rs09-server --world` installs it
+(`world/live/eating.rs`, docs/live-world.md) with the joins below, except
+the Trouble Brewing rum's pulses, `sendChat` and the diary tasks, which
+are refused there.
 
 ## What is ported
 

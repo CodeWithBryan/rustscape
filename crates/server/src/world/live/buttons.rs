@@ -31,8 +31,8 @@ fn ui<E: std::fmt::Debug>(e: E) -> interfaces::Error {
     interfaces::Error::Binding(format!("{e:?}"))
 }
 
-struct Buttons<'a> {
-    live: &'a mut Live,
+pub(super) struct Buttons<'a> {
+    pub(super) live: &'a mut Live,
 }
 
 impl Buttons<'_> {
@@ -68,9 +68,17 @@ impl interface_listeners::Context for Buttons<'_> {
         &mut self,
         callback: Callback,
         player: &NodeHandle,
-        _: &Handle,
+        component: &Handle,
         button: Button,
     ) -> interfaces::Result<bool> {
+        // BankInterface's buttons (super::bank).
+        if crate::world::bank_interface::Program::kind(&callback).is_some() {
+            return self.live.bank_button(callback, player, component, button);
+        }
+        // The shop's on(620) and on(621) (super::shopping).
+        if let Some(result) = self.live.shop_button(&callback, player, button) {
+            return result;
+        }
         let Some(listener) = callback.value::<registry::Listener>().map(|l| *l) else {
             return Err(interfaces::Error::Binding(
                 "a button listener this world did not register".into(),
@@ -82,7 +90,7 @@ impl interface_listeners::Context for Buttons<'_> {
     }
 }
 impl interface_packets::Context for Buttons<'_> {
-    type Dialogue = ();
+    type Dialogue = P;
     type Locks = ActionLocks;
     type Zone = Monitor<Live>;
     type Manager = interfaces::Manager;
@@ -90,22 +98,15 @@ impl interface_packets::Context for Buttons<'_> {
     fn debug(&mut self, p: &NodeHandle, text: String) -> interfaces::Result<()> {
         tab_emotes::Host::debug(&mut self.tabs(p), &text).map_err(ui)
     }
-    fn dialogue(&mut self, _: &NodeHandle) -> interfaces::Result<()> {
-        Ok(())
+    fn dialogue(&mut self, p: &NodeHandle) -> interfaces::Result<P> {
+        Ok(Self::p(p))
     }
-    fn has_dialogue(&mut self, _: ()) -> interfaces::Result<bool> {
-        // DialogueInterpreter.getDialogue(): nothing opens a dialogue in
-        // this world (the interpreter and its content are not installed).
-        self.live
-            .inner
-            .not_ported
-            .default_answer("DialogueInterpreter.getDialogue (no dialogue content: null)");
-        Ok(false)
+    fn has_dialogue(&mut self, p: P) -> interfaces::Result<bool> {
+        // player.getDialogueInterpreter().getDialogue() != null (super::talk).
+        Ok(self.live.has_dialogue(&p))
     }
-    fn close_dialogue(&mut self, _: ()) -> interfaces::Result<()> {
-        Err(interfaces::Error::Binding(
-            "not ported in the live world: DialogueInterpreter.close".into(),
-        ))
+    fn close_dialogue(&mut self, p: P) -> interfaces::Result<()> {
+        self.live.close_dialogue_of(&p).map(|_| ()).map_err(ui)
     }
     fn locks(&mut self, p: &NodeHandle) -> interfaces::Result<ActionLocks> {
         self.live.inner.state.locks(p).map_err(ui)
@@ -156,9 +157,13 @@ impl interface_packets::Context for Buttons<'_> {
         &mut self,
         plugin: Plugin,
         p: &NodeHandle,
-        _: &Handle,
+        c: &Handle,
         b: Button,
     ) -> interfaces::Result<bool> {
+        // TradeInterfacePlugin on 334, 335 and 336 (super::trading).
+        if plugin.value::<crate::world::trade::TradePlugin>().is_some() {
+            return self.live.trade_button(p, c, b).map_err(ui);
+        }
         let Some(plugin) = plugin.value::<registry::ComponentPlugin>().map(|p| *p) else {
             return Err(interfaces::Error::Binding(
                 "a component plugin this world did not register".into(),
@@ -167,7 +172,9 @@ impl interface_packets::Context for Buttons<'_> {
         self.live.global_plugin(plugin, p, b).map_err(ui)
     }
     fn close(&mut self, m: interfaces::Manager) -> interfaces::Result<bool> {
-        interfaces::close(&mut self.live.inner, &m)
+        // InterfaceManager.close() with the world (a trade's close event).
+        let owner = m.player().ok_or(interfaces::Error::Null)?;
+        self.live.close_interfaces_of(&Self::p(&owner))
     }
     fn logging_present(&mut self, p: &NodeHandle) -> interfaces::Result<bool> {
         Ok(self
@@ -264,5 +271,34 @@ impl Live {
         interface_packets::close_iface(&mut Buttons { live: self }, &owner).map_err(fail)?;
         self.inner.drain(p);
         Ok(())
+    }
+}
+
+impl interface_packets::ContinueContext for Buttons<'_> {
+    type DialogueAction = crate::world::dialogue::Action<Live>;
+    fn close_chatbox(&mut self, m: interfaces::Manager) -> interfaces::Result<()> {
+        interfaces::close_chatbox(&mut self.live.inner, &m)
+    }
+    fn pop_action(&mut self, p: P) -> interfaces::Result<Option<Self::DialogueAction>> {
+        // getActions().pop(): the first queued action, if any.
+        let actions = self.live.interpreter_of(&p).actions();
+        let mut actions = actions.write();
+        if actions.is_empty() {
+            return Ok(None);
+        }
+        Ok(actions.remove(0))
+    }
+    fn handle_action(
+        &mut self,
+        a: Self::DialogueAction,
+        p: &NodeHandle,
+        child: i32,
+    ) -> interfaces::Result<()> {
+        a.handle(self.live, p, child).map_err(ui)
+    }
+    fn continue_dialogue(&mut self, p: P, iface: i32, child: i32) -> interfaces::Result<()> {
+        // player.getDialogueInterpreter().handle(iface, child).
+        let interpreter = self.live.interpreter_of(&p);
+        interpreter.handle(self.live, iface, child).map_err(ui)
     }
 }

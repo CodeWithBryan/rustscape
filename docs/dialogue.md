@@ -2,9 +2,11 @@
 
 `world/dialogue/` ports DialogueInterpreter, the DialoguePlugin and DialogueFile
 base classes, EmptyPlugin, Topic/IfTopic, SimpleDialoguePlugin, FacialExpression
-and the DialogueAction interface. It is a library. Nothing installs it in the
-controlled examples or the playable alpha yet, and no NPC, quest or skill
-dialogue content is ported here. DialogueBuilder, DialogueLabeller,
+and the DialogueAction interface. It is a library. `rs09-server --world`
+installs it (`world/live/talk.rs`: the live world is the `Host`, one
+interpreter per player, Continue through `interface_packets`; see
+[the live world](live-world.md)); the controlled examples do not, and no
+NPC, quest or skill dialogue content is ported here. DialogueBuilder, DialogueLabeller,
 SkillDialogueHandler, SkillDialoguePlugin, ActivateEnchantedGem and the banker
 conversation are ported in `world/dialogue_dsl` (see
 [dialogue DSLs](dialogue-dsl.md)). Whole-source parity rows remain `not_replaced`.

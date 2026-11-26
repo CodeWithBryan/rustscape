@@ -548,7 +548,8 @@ impl Registry {
             );
         }
     }
-    fn metadata(&self, c: &impl Casing, id: i32, kind: Kind, option: &[u16]) -> Option<Meta> {
+    /// `defineInteraction`'s metadata for an id and option, then the generic one.
+    pub fn metadata(&self, c: &impl Casing, id: i32, kind: Kind, option: &[u16]) -> Option<Meta> {
         let specific = key(
             format!("{}:{id}:", kind.ordinal()),
             &c.lowercase_root(option),

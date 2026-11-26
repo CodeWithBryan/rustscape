@@ -98,6 +98,8 @@ natural banker/booth/PIN admission, profiles and complete content remain require
 See [plain dialogue scope](plain-dialogue.md). No full replacement, measured speedup
 or capacity claim is made; all4042 whole-source rows remain not_replaced.
 
+`rs09-server --world` installs this kernel (`world/live/talk.rs`, [the live world](live-world.md)): the InputPromptResponse branch through `receive`, `sendInputDialogue` through `send` with the live dialogue interpreter, and `BankUtils.transferX` from the bank's buttons; the callbacks are the bank's transfer object, the shops' and the trade's amount scripts and the dialogue DSLs' closures. A transfer's after callback is refused there.
+
 ```powershell
 cargo test -p rs09-server --test input_prompt --test plain_dialogue --test owned_player
 cargo xtask input-prompt-oracle --check --java-home runs/jdk11/jdk-11.0.32.1+1

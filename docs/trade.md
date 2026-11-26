@@ -4,8 +4,7 @@
 request is accepted by asking back, both trade screens, offering and removing
 items, the acceptance reset and the "modified" warning, the space checks, the
 final exchange, and declining, closing or logging out at any stage. It is a
-library. Nothing installs it in a live world yet: no packet handler or tick
-driver calls it. Java is a test oracle; nothing here runs it.
+library. `rs09-server --world` installs it (`world/live/trading.rs`, see docs/live-world.md): requests from the Trade with option, the plugin on 334/335/336, the close event and the alert pulse; AssistSession and the bots are refused there. Java is a test oracle; nothing here runs it.
 
 | Original | Rust | Scope |
 | --- | --- | --- |

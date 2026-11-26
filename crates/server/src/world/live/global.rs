@@ -555,7 +555,11 @@ impl gh::Host for GHost<'_> {
         target: Option<&Self::Node>,
         body: Task<Self::Node, Self::Clan>,
     ) -> Result<Self::Pulse> {
-        refuse("movement_pulse")
+        // FollowOptionPlugin's MovementPulse(player, target, FOLLOW_ENTITY)
+        // (super::follow).
+        let mover = self.player(mover)?;
+        let target = self.player(target.ok_or(Error::Null)?)?;
+        self.live.follow_movement(&mover, &target, &body)
     }
     fn new_pulse(&mut self, body: Task<Self::Node, Self::Clan>) -> Result<Self::Pulse> {
         refuse("new_pulse")
@@ -566,13 +570,18 @@ impl gh::Host for GHost<'_> {
         pulse: &Self::Pulse,
         kind: Option<PulseType>,
     ) -> Result<()> {
-        refuse("run_pulse")
+        if kind != Some(PulseType::Standard) {
+            return refuse("run_pulse of a type other than STANDARD");
+        }
+        self.live.run_follow(pulse)
     }
     fn base_stop(&mut self, pulse: &Self::Pulse) -> Result<()> {
-        refuse("base_stop")
+        pulses::stop_base(pulse);
+        Ok(())
     }
     fn movement_stop(&mut self, pulse: &Self::Pulse) -> Result<()> {
-        refuse("movement_stop")
+        pulses::stop_base(pulse);
+        Ok(())
     }
     fn submit(
         &mut self,
@@ -641,10 +650,21 @@ impl gh::Host for GHost<'_> {
         refuse("input_dialogue")
     }
     fn attack(&mut self, player: &Self::Node, node: Option<&Self::Node>) -> Result<()> {
-        refuse("attack")
+        // player.attack(node): the combat pulse (super::combat).
+        let p = self.player(player)?;
+        let GNode::Entity(target) = node.ok_or(Error::Null)? else {
+            return Err(Error::Cast);
+        };
+        self.live.combat_attack(&p, target).map_err(bind)
     }
     fn face(&mut self, entity: &Self::Node, target: Option<&Self::Node>) -> Result<()> {
-        refuse("face")
+        let p = self.player(entity)?;
+        let target = match target {
+            None => None,
+            Some(GNode::Entity(t)) => Some(t.clone()),
+            Some(_) => return Err(Error::Cast),
+        };
+        self.live.face_entity(&p, target.as_ref()).map_err(bind)
     }
     fn face_location(&mut self, entity: &Self::Node, location: Option<[i32; 3]>) -> Result<()> {
         refuse("face_location")
@@ -718,10 +738,30 @@ impl gh::Host for GHost<'_> {
         crate::world::social::Host::is_locked(&mut self.live.inner, &p, key).map_err(bind)
     }
     fn interaction_locked(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("interaction_locked")
+        let p = self.player(player)?;
+        let state = &mut self.live.inner.state;
+        state
+            .locks(&p.0)
+            .map_err(bind)?
+            .is_kind_locked(
+                action_locks::Kind::Interaction,
+                state,
+                &mut action_locks::Clock,
+            )
+            .map_err(bind)
     }
     fn movement_locked(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("movement_locked")
+        let p = self.player(player)?;
+        let state = &mut self.live.inner.state;
+        state
+            .locks(&p.0)
+            .map_err(bind)?
+            .is_kind_locked(
+                action_locks::Kind::Movement,
+                state,
+                &mut action_locks::Clock,
+            )
+            .map_err(bind)
     }
     fn teleport(
         &mut self,
@@ -956,7 +996,10 @@ impl gh::Host for GHost<'_> {
         target: &Self::Node,
         kind: crate::world::trade::RequestType,
     ) -> Result<bool> {
-        refuse("request")
+        // player.requestManager.request(target, type) (super::trading).
+        let p = self.player(player)?;
+        let target = self.player(target)?;
+        self.live.trade_request(&p, &target, kind).map_err(bind)
     }
     fn bot_info(&mut self, player: &Self::Node, bot: &Self::Node) -> Result<()> {
         refuse("bot_info")
@@ -1094,7 +1137,9 @@ impl gh::Host for GHost<'_> {
         refuse("has_option")
     }
     fn open_bank(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("open_bank")
+        // ContentAPI openBankAccount (super::bank).
+        let p = self.player(player)?;
+        self.live.open_bank_account(&p).map_err(bind)
     }
     fn open_collection_box(&mut self, player: &Self::Node) -> Result<()> {
         refuse("open_collection_box")
@@ -1592,13 +1637,8 @@ impl Live {
                 crate::definitions::property::Property::OptionHandler(handler),
             );
         }
-        // Option._P_ATTACK/_P_FOLLOW.setHandler: the player option tables'
-        // handler arena is not joined to these handlers (named).
-        if !player_options.is_empty() {
-            self.inner.not_ported.skip(
-                "Attack and Follow player option handlers (registered; their binding to the player option table is not ported)",
-            );
-        }
+        // Option._P_ATTACK/_P_FOLLOW.setHandler (super::follow).
+        self.bind_player_options(&player_options);
         self.walk.interactions = Some(self.item_actions.listeners.clone());
         self.global.login_plugins = login_plugins;
         self.global.registered = classes;

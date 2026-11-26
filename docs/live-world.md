@@ -36,7 +36,14 @@ weapon special attacks (`world::special_attacks`: the 34 handlers registered
 at boot, `Player.getSwingHandler`, the overriding members, the combat tab's
 special bar and instant specials; `combat/specials.rs`), the lobby
 (`LoginConfiguration.sendLobbyScreen` with `LastLoginInfo`, the welcome
-screen's play button and `configureGameWorld`), NPCs made at runtime
+screen's play button and `configureGameWorld`), a dialogue interpreter per
+player (`world::dialogue` with the DSLs of `world::dialogue_dsl`, the
+Continue packet, the banker conversation), the NPC talk and banker
+listeners with the content listeners' walk to an NPC, input prompts
+(`world::input_prompt`), the bank at a banker (`inventory::bank` with
+`world::bank_interface`), shops (`world::shops`), requests and trading
+(`world::trade`), the Attack and Follow player options, eating and drinking
+(`world::consumables`), NPCs made at runtime
 (`new NPC`, `NPC.init`, `NPC.transform`, `NPC.clear`; `runtime_npcs.rs`),
 graves (`world::player_death`'s `Grave`/`GraveController` over a grave NPC
 made at runtime, `GraveController.tick` as a tick listener, `Grave.tick`
@@ -57,15 +64,19 @@ NPC, dies and respawns, dies as a regular player and leaves a grave with its
 lost items, kills a rat that is a `RatNPC` (its Witch's Potion rat tail),
 is breathed on by a green dragon, shoots an arrow (projectile, ammunition),
 uses a weapon's special attack, passes the lobby of a returning character,
+talks to a banker and continues the conversation, opens the bank, deposits
+and withdraws, buys from and sells to a shop (also by amount), trades with
+another player, follows another player, eats food and drinks a potion,
 logs out, and its character is saved and loaded again.
 
 This is a playable engine slice, **not a complete server**: content (login
 listeners, quests, tutorial, content item, NPC and scenery handlers other
-than the global handlers, dialogue, banking, shops, trade), NPC timers,
-spells, teleports, the dialogue interpreter, input prompts, component
-use-with (spells), consumables, ForceMovement, commands, quick chat, abuse
-reports, the Grand Exchange and every handler listed below as refused are
-not installed, and every such call is answered by name below.
+than the global handlers, content dialogues other than the banker's, the
+bank booths, chests and deposit boxes, the bank PIN, assist sessions), NPC
+timers, spells, teleports, component use-with (spells), ForceMovement,
+commands, quick chat, abuse reports, the Grand Exchange and every handler
+listed below as refused are not installed, and every such call is answered
+by name below.
 
 ```powershell
 cargo build --release -p rs09-server
@@ -126,6 +137,15 @@ modes of `rs09-server` are unchanged.
 | projectiles | `Projectile` (create, ranged, magic, copy), `Projectile.send`, `ProjectileUpdateFlag` | `combat/projectiles.rs`: the projectile fields (source centre, victim, end location, heights, delay, speed, angle, distance) kept per foreign chunk flag (`chunk_sync::Flag::Foreign`) on the source location's chunk; written by `RegionChunk.update` as opcode 16 inside the chunk update (230) with the target index and end location read at write time; dropped by `ChunkUpdateTracker.resetAll`. Ranged swings (`AmmunitionCopy`, the dark bow's `create`, NPC `ranged`), Retribution (location-based) and the specials send through it |
 | ammunition, poison | `RangeSwingHandler.useAmmo`, `applyPoison` from a swing | `equipment.replace(item, slot)` over the canonical equipment (`Container.replace` with its listeners); `applyPoison` is `timers::content::apply_poison` over the victim's timer manager (a player; an NPC victim refuses: NPC timers) |
 | special attacks | the 34 special handler classes' `newInstance` (`CombatSwingHandler.register`), `Player.getSwingHandler`, the subclass members, `CombatTabInterface`'s special bar and `handleInstantSpec` | `combat/specials.rs`: one handler instance per `Special` in the swing handler table (`HandlerSlot.special`), `register_all` at boot over the melee and range singletons; `combat_pulse::Host::overrides` answers `special_attacks::overrides`, `swing_handler` answers `player_swing_handler`; `special_attacks::Host` over the live world (settings recorded and made after the call, spawned timers through the timer registry, the specials' pulses on `GameWorld.Pulser` dispatched by identity, their projectiles); the global handlers' `special_handler`, `special_instant`, `combat_victim` and `special_swing` |
+| dialogue | `DialogueInterpreter` (one per player), `DialoguePlugin`/`DialogueFile`, DialogueLabeller/DialogueBuilder, the ContinueOption branch | `talk.rs`: `world::dialogue` and `world::dialogue_dsl` with the live world as `dialogue::Host`, `dialogue_dsl::Host` and `banker::BankHost` (interface packets through the player's packet counter, the chatbox through the native InterfaceManager, attributes, NPC id, `setDialoguePlayer`, the NPC's walking queue reset and pulse clear, definitions); an interpreter made the first time a player's is asked for; `interface_packets::continue_option` over it (`buttons.rs`); `DialogueInterpreter.close()` from IfAction, the walk request (right after the request returns) and the trade; `DialogueClosed` hooks run from the close event; `Component.setUnclosable`'s close event. The plugin registry holds no content plugin |
+| NPC talk, bankers | `NPCTalkListener`, `BankerNPC` (listeners, destination override, `init`'s booth search, companion), `BankerDialogueLabellerFile` | `talk.rs`, `subclasses.rs`: the listeners of `npc_classes::listeners` registered in the native InteractionListeners at boot (BankerNPC, then NPCTalkListener, as scanned), dispatched by `run_interaction` with the NPC class host; `banker_conversation` is `dialogue_dsl::banker::talk_to`; `RandomEvents.randomIDs` and `HolidayRandomEvents.holidayRandomIDs` are the pinned lists; a start-up banker becomes a `BankerNPC` the first time it is interacted with (class, direction, `isWalks = false`, `facing_booth` from `findAdjacentBankBoothLocation` over the scene) |
+| the walk to an NPC or player for a listener | `InteractionListeners.run`'s `MovementPulse(player, node, flag, destOverride)` and its arrival | `talk.rs`, `round.rs`: `player_walk::World::listener_motion` (the `Destination` constructor of `world::movement`) with an approach whose option handle identifies the arrival; the arrival (`interaction_listeners::arrival`: zone, face, the handler) runs with the whole world right after the walking call; a destination override is evaluated when the pulse is made |
+| input prompts | `RunScript.processInput`, the InputPromptResponse branch, `sendInputDialogue`, `BankUtils.transferX` | `talk.rs`: `world::input_prompt` with `Prompt` as its context; the `runscript` attribute holds the transfer object or a mark for a callback the world keeps (a DSL's, a shop's or a trade's amount script) |
+| bank | `BankContainer` (open, close, add, take, tabs, note/insert), the private BankListener, `BankInterface` (762/763/767), `BankCloseEvent` | `bank.rs`: `inventory::bank` on the canonical player's bank with `BankUi` (a `bank::Context` over the interface manager, variables, packets and the canonical inventory binding); `bank_interface::Program` registered in the live InterfaceListeners; its open listener from `InterfaceListeners.runOpen`, its buttons from IfAction, the captured `BankClose` from `InterfaceManager.close`; `openBankAccount` with `restrictForIronman` |
+| shops | `Shops` (start-up, `tick`, the NPC listeners, the destination override, the 620/621 listeners), `Shop`, `ShopListener` | `shopping.rs`: `shops::World` built by `controller::startup` at boot from `shops.json`; `ShopHost` (`shops::Host` over the interface context's state, so the shop's open and close listeners run wherever the interface manager is used); `Shops.tick` after `GraveController.tick` in the tick listeners; Buy-X/Sell-X through the input prompts |
+| requests, trade | `RequestManager`, `RequestType`, `TradeModule`, `TradeContainer`, `TradeCloseEvent`, `TradeInterfacePlugin` | `trading.rs`: `world::trade` with `TradeHost` over the whole world; the global handlers' RequestOption listeners ("trade with", "req assist") through the native InteractionListeners; TradeInterfacePlugin on 334/335/336 from IfAction; `trade::ui::Ui<TradeHost>` is the interface context of the Close packet and of a walk's interface close; the alert pulse on `GameWorld.Pulser`, dispatched by identity |
+| player options | `Option._P_ATTACK`/`_P_FOLLOW.setHandler`, `AttackOptionPlugin`, `FollowOptionPlugin` | `follow.rs`: the handlers bound into the option constants (ids of a player handler arena the legacy runtime resolves for a player target); the legacy walk and arrival, the handler run with the whole world right after; FollowOptionPlugin's `MovementPulse(player, target, FOLLOW_ENTITY)` is a movement of the canonical state whose body (`follow_pulse`: face the target, never finish) runs right after the walking call that reached it |
+| eating, drinking | `ConsumableListener`, `Consumable.consume` of every class, the effects, the potion's dose script | `eating.rs`: `world::consumables` with `Eating` as its `Host` for one player (native Skills taken out of the profile for the call, Settings, the player's clocks, the canonical inventory, the animator, `consumables::join` over the engine timers, the combat pulse's `delayNextAttack`, `manualHit`); the dose message is a SOFT script kept by the world and run at the player's tick once due |
 | lobby | `LoginConfiguration.sendLobbyScreen`, `LastLoginInfo`, `LoginInterface` (378), `configureGameWorld` | a returning character with `tutorial:complete`: the login library's lobby with `LastLoginInfo` (164: the IPv4 address, written at once); the welcome screen's play button (140) through the global handlers (`player.locks.lock("login", 2)`, `closeInterface`, `runTask(1, 0)`) and `configure_game_world` over the live world |
 
 ## Deviations from the original
@@ -262,6 +282,36 @@ modes of `rs09-server` are unchanged.
   diary call and put back after it.
 - `NPC.getSwingHandler(swing)` of a base NPC does not read `swing`; the live
   world passes true.
+- A player's `DialogueInterpreter` is made the first time it is asked for,
+  not in the Player constructor; `DialogueInterpreter.close()` asked by a
+  walk request runs right after the request returns, answered true
+  meanwhile.
+- A content listener's arrival (zone check, face, the handler) and a player
+  option handler's `handle` run right after the walking call that reached
+  them (they need the whole world). A destination override is evaluated
+  once, when the movement pulse is made, not at each path search.
+- The start-up constructs the NPCs of `BankerNPC.NPC_IDS` as plain NPCs: a
+  banker gets its class and the booth part of `BankerNPC.init` the first
+  time it is interacted with; `super.init()` is not repeated and BankerNPC's
+  prototype is not constructed at registration.
+- The follow pulse's `stop()` override (`mover.face(null)` after the
+  movement's stop) is not run when another pulse replaces it; the walk
+  request that replaces it clears the face itself.
+- A bank button's `BankUtils.transferX` (its last call) is made right after
+  the button's callback returns; a shop's or trade's `sendDialogue`,
+  `sendNPCDialogue` and `sendInputDialogue` of a shop call likewise right
+  after the shop call returns.
+- `Shops.startup` runs at the live boot, after the start-up (as the shared
+  drop tables do); its NPC listeners are registered after BankerNPC's and
+  NPCTalkListener's.
+- The `runscript` attribute of a prompt whose callback is not the bank's
+  transfer object holds a mark; the callback is kept by the world.
+- A potion's dose script is kept by the world, not in the canonical script
+  queue: it runs at the start of the player's `Player.tick` once due, and
+  `getActiveScript()` answers none for it.
+- `ShopHost` keeps the "shop", "shop-cont" and "shop-main" attributes, the
+  trade world the `lastRequest` attribute, the RequestManager target and the
+  TradeModule extension, by player (they hold objects).
 
 ## Answers by name (`world::live::not_ported`)
 
@@ -273,9 +323,12 @@ sent or changed; the first call of each is logged with `--verbose`):
 dispatch (entity event hooks), `GlobalStats.incrementDeathCount`,
 `SlayerEquipmentFlags.updateFlags` after a death, `PlayerMonitor.log` PK
 (logged only), `Repository.sendNews` (permadeath),
-`Appearance.setAnimations`, the Attack and Follow player option handlers
-(registered by the global handlers; their binding to the player option
-table is not ported), `ButtonClickEvent` dispatch, `checkForWealthUpdate`,
+`Appearance.setAnimations`, `ButtonClickEvent` dispatch, `checkForWealthUpdate`,
+BankerNPC's prototype construction, `DialogueOpenEvent` and
+`DialogueOptionSelectionEvent` dispatch, `ItemShopPurchaseEvent`/
+`ItemShopSellEvent` dispatch, `PlayerMonitor.logTrade` (logged only),
+`GrandExchange.addBotOffer` from the shops' player stock clear (the items
+are dropped without being offered),
 `CombatPulse.stop` before an interaction, `Commands.define`,
 `ComponentPlugin.open`, `Discord.postPlayerAlert`, entity tick event hooks,
 `Entity.hook(UsedWith)`/`unhook` of DarkZone, `Entity.scripts.removeWeakScripts`
@@ -283,7 +336,7 @@ in `InteractionListeners.run`, the equip listeners' `removeWeakScripts` and
 event, `InteractionEvent`, `PickUpEvent`, `UseWithEvent`, `ItemEquipEvent` and
 `ItemUnequipEvent` dispatch, `FamiliarManager.login`, `FriendsListInterface.open`,
 `GameWorld.loginListeners`, `GameWorld.logoutListeners`, `GameWorld.tickListeners` other
-than GraveController,
+than GraveController and Shops,
 `HouseManager.leave`, `InterfaceListeners.runOpen`, `PlayerMonitor` drop-trade
 log and DUPE_ALERT (logged only),
 LoginConfiguration's per-item equipment hooks, `Managers.tick`, NPC attributes (return-to-spawn,
@@ -301,7 +354,12 @@ persist-player content hooks.
 
 The original's answer with no content registered: `AssistSession` (none),
 `BrawlingGlovesManager.GloveCharges` (empty: the manager is not ported),
-`DialogueInterpreter.close` (true), `DialogueInterpreter.getDialogue` (null),
+`DialogueInterpreter.open` of an NPC key (false: no content dialogue plugin
+is registered), `DialogueInterpreter.close` after an equip or a drop (true),
+`AntiMacro.getEventNpc` and `HolidayRandoms.getEventNpc` (null: no random
+event content), `hasAwaitingGrandExchangeCollections` (false: no offer
+records without the Grand Exchange), `AIRepository.PulseRepository` (no
+bot), `FamiliarManager.familiar` for a consumable (null),
 `SlayerManager.getTask` (no task), `NPC.getTask` (null: `Tasks.forId` is not
 ported), `DegradableEquipment.checkWeaponDegrades`/`checkArmourDegrades`/
 `degrade` (nothing: no degradable equipment registered),
@@ -329,16 +387,18 @@ equipment registered),
 an equip (true).
 
 Refused (an error the caller logs; never a success): routed packets whose
-library is ported but not installed here (component actions (spells),
-`ContinueOption`, `InputPromptResponse`) and those the driver refuses
-(commands, quick chat, report abuse, GE); content item and NPC option
-handlers and listeners (`InteractionListeners` functions other than
-DropListener, EquipHandler and the global handlers', their movement and
-scripts), item plugins (`ItemPlugin.remove`, `canPickUp`), the guild items'
+library is ported but not installed here (component actions (spells)) and
+those the driver refuses (commands, quick chat, report abuse, GE); content
+item and NPC option handlers and listeners (`InteractionListeners`
+functions other than DropListener, EquipHandler, AttackListener,
+GraveController's, ConsumableListener, NPCTalkListener's, BankerNPC's,
+Shops' and the global handlers' RequestOption listeners; a listener's walk
+to an item; `defineInteraction` scripts; a destination override this
+world did not register), item plugins (`ItemPlugin.remove`, `canPickUp`), the guild items'
 dialogue, `EquipHandler.unequip`'s caller other than the global equipment
 tab, equipment plugins' `fireEvent`, brawling gloves, autocast clearing on a
 weapon change, `SlayerEquipmentFlags.updateFlags`, the destroy dialogue
-(`sendDestroyItem`, `addDialogueAction`), `FamiliarManager.summon` of a pet
+(`sendDestroyItem`, `addDialogueAction`: not bound to the interpreter), `FamiliarManager.summon` of a pet
 (`Pets.forId` is native: the enum's item ids), `NPC.getShownNPC` of a
 morphing NPC, `Lock.getMessage`, the scenery examine varbit lookup,
 `NPCDefinition.forId` of an id no spawned NPC uses, `ZoneMonitor.interact`
@@ -356,37 +416,48 @@ spell book tab and varbit (Lunar spells are not ported), the random event
 content of AntiMacro's run (`RandomEvents`), and while a save is written or
 parsed every service but uids, ticks, the generator and the log; the global
 handlers' services without a binding (each `GHost` method named "global
-handler service NAME": dialogues, banks and deposit boxes, quests and
-diaries, clans, assist, familiars, activities, spells and special
-attacks, interfaces the tabs open other than through the tab libraries,
-movement pulses (Follow), requests, the settings toggles other than
-retaliate and the special bar, item containers' other calls); scenery:
+handler service NAME": the dialogue senders, deposit boxes and the
+collection box, quests and diaries, clans, assist sessions, bot info,
+familiars, activities, spells and special attacks, interfaces the tabs
+open other than through the tab libraries, pulse bodies other than
+FollowOptionPlugin's, the settings toggles other than retaliate and the
+special bar, item containers' other calls); talking and banking: the bank
+PIN entry interface and PIN settings, the deposit box's item rendering,
+BankInterface's help and deposit dialogues, a transfer's after callback,
+buying the secondary bank account, the Grand Exchange collection box,
+`new NPC(id)`, quest stages and the slayer gem in a dialogue DSL, the
+Lunar Isle seal, a morphing NPC's shown NPC, random event and holiday NPC
+conversations, the barcrawl and gnome cooking dialogues, a
+TradeCloseEvent reached by an interface close without the world (deaths
+and the other interface paths that close through the plain context);
+shops: content item views, tanning, the quest
+reads of Siegfried Erkle's, the fur trader's and the candle maker's
+listeners; trade: `AssistSession.open`, the money-doubling bots;
+consumables: `Player.sendChat`, the Trouble Brewing rum's pulses and
+teleport, diary tasks, queued scripts other than the dose message; scenery:
 the hardcoded constructed scenery of `processSceneryAction`, varbit- and
-varp-configured scenery (morphs) and their debug lookup, the bank booth,
-chest and deposit box InteractionListeners (the bank is not installed),
-scenery option handlers that are not global handlers (doors and other
+varp-configured scenery (morphs) and their debug lookup, the bank booths'
+`defineInteraction` scripts (interaction scripts in the player's script
+queue) and the bank chest and deposit box listeners (the walk to scenery
+for a content listener), scenery option handlers that are not global handlers (doors and other
 content); use-with on scenery, the use-with MovementPulse (NPCs, players,
 ground items) and item-on-item Pulse with handlers, `UseWithHandler.handle`;
 the slot switch's bank calls; content NPC clipping suppliers;
 special attack handlers (`instant_spec`), `DialogueInterpreter.sendDialogue`
-(a locked emote), the SALUTE, GOBLIN_BOW and GIVE_THANKS emotes,
+from the tab libraries and prayer (a locked emote), the SALUTE, GOBLIN_BOW and GIVE_THANKS emotes,
 `AchievementDiary.updateTask`, tutorial content, reconnect (opcode 18), `sendLastLoginInfo` of a host name, ContentAPI `runTask` with more than one repetition, a
 saved spawn location or `login_type` attribute, the loot-share pulse, the
 management-server session, account creation from social, familiars, region
 NPC queries (`Repository.findNPC(location)`), the deferred login world
-configuration of CloseIface, an NPC's dialogue player, the zone services of
+configuration of CloseIface, the zone services of
 teleports, the scene's scenery services (doors, audio), content script
 invocation; graves' services without a port: the server store's grave
 archive (`ServerStore.getArchive`: graves are neither saved nor read back;
 `serializeToServerStore`/`deserializeFromServerStore` are not called),
-`GravePurchaseInterface`, `updateGraveType`, the `forcegravedeath` command,
-and the walk to a grave for its options (a content listener's movement
-pulse); the NPC class bodies' services without a port: BankerNPC and
-DarkWizardNPC (not registered: `getScenery`, the bank and collection box,
-the Lunar Isle seal, `SpellBook.MODERN`, `setAutocastSpell`,
-`combatPulse.setStyle`), `NPCTalkListener`'s content (dialogue open,
-random event and holiday NPCs, the barcrawl, gnome cooking, the banker
-conversation), `IdleAbstractNPC` (none registered), `reTransform`,
+`GravePurchaseInterface`, `updateGraveType` and the `forcegravedeath`
+command; the NPC class bodies' services without a port: DarkWizardNPC (not
+registered: `SpellBook.MODERN`, `setAutocastSpell`,
+`combatPulse.setStyle`), `IdleAbstractNPC` (none registered), `reTransform`,
 `setDirection`, a player's `sendChat`/`faceLocation` from a class body,
 the diary interface (`open`, its tab and script) and diary rewards
 (containers); the dragonfire shield's own handler and listener
@@ -456,9 +527,13 @@ the client-side player and NPC update decoders):
   `player::save::parser::parse_text`, and `traceone`'s location is where it
   walked; `traceone` logs in again from its save (the native parser) at
   that location.
-- `traceone` uses the first option of its nearest NPC (`processNpcAction`,
-  the NPC's InteractPlugin, the legacy walk and arrival) and receives
-  "Nothing interesting happens." (no content handler).
+- `traceone` uses the first option of its nearest NPC (`processNpcAction`).
+  A "Talk-to" goes through the native InteractionListeners (NPCTalkListener's
+  catch-all, the movement pulse and its arrival): the player walks to the
+  NPC and `dialogueInterpreter.open(npc.id, npc)` finds no content dialogue
+  registered. Any other first option is the NPC's InteractPlugin with the
+  legacy walk and arrival: "Nothing interesting happens." (no content
+  handler).
 - `groundone` (a save made from `traceone`'s, placed on the start-up's bowl
   spawn 1923 at 3208,3214 with a bronze dagger 1205 in slot 0) sees the
   spawn in its chunk synchronisation, takes it (opcode 66: the item enters
@@ -534,6 +609,39 @@ the client-side player and NPC update decoders):
   (the weapon tab's special bar button: varp 301 = 1) and attacks a chicken:
   Puncture (registered at boot) drains 25 energy (varp 300 = 750) and turns
   the bar off (varp 301 = 0).
+- `bankone` (in front of Draynor bank's middle booth, a bronze dagger)
+  talks to the banker behind it (494; NPC option 1): BankerNPC's "talk-to"
+  listener with its destination override (the tile beyond the booth), the
+  walk, the arrival, `DialogueLabeller.open` and the banker conversation:
+  "Good day, would you like to access your bank account?" in chatbox 241;
+  Continue (132) shows the options; the "access" option's component is
+  answered and the player speaks it; Continue opens the bank (762). A
+  deposit (155 on 763:0, slot 0) moves the dagger to the bank container
+  (95), a withdraw (155 on 762:73) brings it back, Close (184) runs the
+  captured BankClose (script 571). The banker's Bank option (3) then opens
+  the bank directly (`BankerNPC.attemptBank`).
+- `shopone` (Lumbridge's general store, 100 coins, a bronze dagger) uses
+  Trade on the shop keeper (520): Shops' NPC listener and destination
+  override, `Shop.openFor` (620 with the side tab 621, the title text).
+  Buy-1 (196 on 620:23) buys a pot (1931) for a coin; Value (155 on 621:0)
+  and Sell-1 (196) sell the dagger into the store's player stock for 4
+  coins; after switching back to the main stock (620:25), Buy-X (234)
+  sends the amount prompt and the answer (INPUT_INT 23: 2) buys two more
+  pots through `RunScript.processInput` and `shop::run_amount`.
+- `tradeone` (a bronze dagger) and `tradetwo`: Trade with (player option
+  3) from one sends "Sending a trade offer..." and the other reads
+  "tradeone:tradereq:"; the other's Trade with accepts and both get the
+  trade screen (335, side tab 336); the dagger is offered (155 on 336:0),
+  both accept (335:16), the second screen (334) opens, both accept
+  (334:20) and the dagger is in `tradetwo`'s inventory.
+- `followone` uses Follow (player option 2) on `followtwo`: the bound
+  FollowOptionPlugin, the walk to the player and the follow pulse; when
+  `followtwo` walks six tiles west, `followone` ends beside it.
+- `eatone` (4 of 10 hitpoints, shrimps 315, a strength potion (4) 113)
+  eats the shrimps (ITEM option 1): "You eat the shrimps.", "It heals some
+  health.", hitpoints 7, animation 829; it drinks the potion: "You drink
+  some of your strength potion.", a three-dose potion (115) in the slot,
+  Strength raised, and two ticks later "You have 3 doses of potion left.".
 - `RS09_LIVE_COMBAT_ONLY` runs only the combat scenarios (fight, aggression,
   death, grave, subclass, dragon, ranged, special) after the first
   character's save (a shortcut while working on combat);
@@ -543,35 +651,35 @@ the client-side player and NPC update decoders):
 `running_server_scenario` (ignored) drives the same client against a
 running `rs09-server --world` (`RS09_LIVE_ADDRESS`, `RS09_LIVE_SAVES`).
 
-Measured (2026-11-17, this machine, with runtime NPCs, graves, the NPC
-class overrides, the dragons and LoginValidationPlugin installed as well):
-in-process debug test 181 ticks, mean work 43.9 ms, maximum 1,700 ms (the
-first login: lazy definition loading in a debug build), mean interval
-606.8 ms, 24 saves written (117.7 s: the hitpoint restoration waits about
-a minute). Release binary (`rs09-server --world`, start-up 943 ms, 13,709
-NPCs joined), the ignored scenario against it (113.7 s, every step above
-but the grave, which needs the in-process account storage), then idle:
-399 ticks, mean work 8.07 ms, maximum 162.8 ms, mean interval 600.3 ms.
+Measured (2026-11-26, this machine, with the eighth round installed as
+well: dialogue, the banker, the bank, shops, trade, follow, eating):
+in-process debug test 300 ticks, mean work 32.69 ms, maximum 1,063.55 ms
+(the first login: lazy definition loading in a debug build), mean interval
+604.8 ms, 36 saves written (189.0 s). Release binary (`rs09-server
+--world`, start-up 892 ms, 13,709 NPCs joined), the ignored scenario
+against it (144.4 s, every step above but the grave, which needs the
+in-process account storage), then idle: 599 ticks, mean work 6.95 ms,
+maximum 147.86 ms, mean interval 600.3 ms (`Shops.tick` over the 245
+shops runs every tick).
 The world-login, tick-driver and world-trace comparisons of the libraries
 are unchanged (their tests bind the same libraries with replayed
 stand-ins); this test checks the production binding end to end.
 
 ## Not covered / still to do
 
-- The remaining routed handlers: component use-with (spells),
-  `input_prompt`, `continue_option` and close with a dialogue interpreter
-  per player (the global handlers' ClimbDialogue, `send_options` and every
-  dialogue service are refused), `ZoneMonitor.interact`/`useWith` for items
-  inside a zone, hint icons and warning messages, the DarkZone's overlay and
-  light sources and the multiway overlay.
+- The remaining routed handlers: component use-with (spells), the driver's
+  refused packets (commands, quick chat, abuse reports, the GE packet);
+  the global handlers' dialogue services (ClimbDialogue, `send_options`,
+  the dialogue senders) are still refused although the interpreter is
+  installed; `ZoneMonitor.interact`/`useWith` for items inside a zone,
+  hint icons and warning messages, the DarkZone's overlay and light sources
+  and the multiway overlay.
 - The rest of combat: spells (magic swings stop at the spell services), NPC
   timers (poison or freezing an NPC: an NPC's timer manager would need the
   NPC's Skills in the timers' host; `processTimers` for NPCs stays a named
   skip), the specials' services listed as refused, teleports
-  (`teleport::Manager`, the spell book teleports, the wilderness rule), the
-  Attack and Follow player options (their FOLLOW_ENTITY movement pulse), the
-  grave options' walk (content listeners' movement), graves in the server
-  store, the equipment registers (chinchompa and salamander handlers, the
+  (`teleport::Manager`, the spell book teleports, the wilderness rule),
+  graves in the server store, the equipment registers (chinchompa and salamander handlers, the
   degrader; docs/equipment-registers.md) and the creature behaviours.
 - The special attacks, the player's death, graves, the NPC class overrides
   and the dragons are installed without a corpus of the live binding
@@ -583,15 +691,35 @@ stand-ins); this test checks the production binding end to end.
   `GraveController.hasGraveAt`, ContentAPI `registerHintIcon`/
   `clearHintIcon`, `Player.toggleDebug`, `SystemConfig.validLogin` and
   `Projectile.copy` for the metal dragons' breath.
-- The rest of the install round (in order): the dialogue interpreter per
-  player with close/continue, `NPCTalkListener` and the banker
-  conversation, input prompts, the bank (booths, bankers, PIN), shops,
-  trade and requests; eating and drinking, ForceMovement; spells and
-  teleports, the teleport jewellery and tablets, the everyday item
-  handlers, zone overlays and `ZoneMonitor.interact`/`useWith` inside a
-  zone; commands, quick chat, abuse reports and the Grand Exchange.
+- Left of the install round's first two items: the bank booths
+  (`defineInteraction` scripts: the interaction script of the player's
+  script queue with its distance, line-of-sight and face services), bank
+  chests and deposit boxes (the walk to scenery for a content listener; the
+  deposit box's item rendering), the bank PIN (the entry interface and the
+  PIN settings; a character with a PIN cannot open its bank here), the
+  secondary bank purchase, assist sessions (`world::player_managers`'
+  AssistSession), the global handlers' dialogue services, and ForceMovement
+  (`world::force_movement`: its Host, its pulses by identity and the
+  ForceMove mask encoder, which is not ported; nothing installed calls it).
+- The rest of the install round (in order): spells and teleports, the
+  teleport jewellery and tablets, the everyday item handlers, zone overlays
+  and `ZoneMonitor.interact`/`useWith` inside a zone; commands, quick
+  chat, abuse reports and the Grand Exchange; the equipment registers and
+  the creatures.
+- This round's bindings have no corpus of their own: the libraries are the
+  differentially tested ports (dialogue-oracle, dialogue-dsl-oracle,
+  input-prompt-oracle, bank-oracle, bank-interface-oracle, shops-oracle,
+  trade-oracle, consumables-oracle, npc-classes-oracle,
+  interaction-listeners-oracle, global-handlers-oracle). Written here from
+  the pinned sources without a differential corpus: the booth part of
+  `BankerNPC.init` applied to a start-up banker, ContentAPI
+  `hasIronmanRestriction`, `openBankAccount`, `toggleBankAccount` and
+  `hasActivatedSecondaryBankAccount`, `RandomEvents.randomIDs` and
+  `HolidayRandomEvents.holidayRandomIDs` (id lists read from the pinned
+  classes), `player_walk::World::listener_motion` (a constructor wrapper),
+  ContentAPI `sendMessage`'s 86-unit split as used by shops, trade and
+  consumables, and `Entity.setDirection` for an NPC.
 - The per-player or per-world libraries behind other buttons and options:
-  the bank, trade and requests, shops (`shops::World`, its tick listener),
   gathering listeners, quests and diaries, clans; content listeners and
   doors.
 - The full appearance flag writer (`appearance_writer`) instead of the
