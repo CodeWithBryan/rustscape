@@ -86,6 +86,27 @@ fn slashes(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
+/// A path the configuration's `parsePath` keeps meaning the same file. It drops
+/// a leading separator, so on Unix an absolute path becomes one relative to the
+/// world directory (which the start-up resolves relative paths against).
+/// Windows drive paths survive `parsePath` and stay absolute.
+fn portable(world: &Path, path: &Path) -> PathBuf {
+    if cfg!(windows) {
+        return path.to_path_buf();
+    }
+    let from: Vec<_> = world.components().collect();
+    let to: Vec<_> = path.components().collect();
+    let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
+    let mut relative = PathBuf::new();
+    for _ in common..from.len() {
+        relative.push("..");
+    }
+    for part in &to[common..] {
+        relative.push(part);
+    }
+    relative
+}
+
 /// `worldprops/default.conf` of the data directory with the four paths this
 /// world owns replaced by absolute ones: the data, the cache, the server
 /// store and the player saves. Nothing else changes.
@@ -96,11 +117,13 @@ pub fn assemble_world(options: &Options) -> Result<PathBuf, String> {
     let source = data.join("worldprops").join("default.conf");
     let text =
         std::fs::read_to_string(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let world = saves.join("world");
+    let place = |path: &Path| slashes(&portable(&world, path));
     let replacements = [
-        ("data_path", slashes(&data.join("data"))),
-        ("cache_path", slashes(&cache)),
-        ("store_path", slashes(&saves.join("serverstore"))),
-        ("save_path", format!("{}/", slashes(&saves.join("players")))),
+        ("data_path", place(&data.join("data"))),
+        ("cache_path", place(&cache)),
+        ("store_path", place(&saves.join("serverstore"))),
+        ("save_path", format!("{}/", place(&saves.join("players")))),
     ];
     let mut seen = BTreeSet::new();
     let mut out = String::new();
@@ -119,7 +142,6 @@ pub fn assemble_world(options: &Options) -> Result<PathBuf, String> {
             return Err(format!("{} has no {name} line", source.display()));
         }
     }
-    let world = saves.join("world");
     std::fs::create_dir_all(world.join("worldprops")).map_err(|e| e.to_string())?;
     std::fs::create_dir_all(saves.join("players")).map_err(|e| e.to_string())?;
     std::fs::write(world.join("worldprops").join("default.conf"), out)
@@ -154,6 +176,7 @@ fn constant_bool(config: &Configuration, key: &str) -> Result<bool, String> {
 pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Result<Booted, String> {
     let started = Instant::now();
     let world_dir = assemble_world(options)?;
+    let world_root = world_dir.clone();
     let saves_dir = std::path::absolute(&options.saves).map_err(|e| e.to_string())?;
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -238,6 +261,12 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     let start = constant_location(&configuration, "START_LOCATION")?;
     let save_path = {
         let path = text_constant(&configuration, "PLAYER_SAVE_PATH")?.replace('\\', "/");
+        // A relative save path (Unix, see `portable`) is the world directory's.
+        let path = if Path::new(&path).is_absolute() {
+            path
+        } else {
+            format!("{}/{path}", slashes(&world_root))
+        };
         if path.ends_with('/') {
             path
         } else {
