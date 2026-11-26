@@ -118,8 +118,11 @@ pub struct Live {
     /// The install round after the dragons: dialogue, input prompts, the
     /// bank, shops, trade, follow ([super::round]).
     pub round: super::round::Round,
-    /// NPCs whose tick or reset is failing ([`super::faults`]).
+    /// NPCs whose tick is failing ([`super::faults`]).
     pub npc_faults: super::faults::EntityFaults,
+    /// NPCs whose reset is failing, tracked apart from their ticks so that a
+    /// reset that succeeds does not end a tick's run of failures.
+    pub npc_reset_faults: super::faults::EntityFaults,
     /// NPCs whose `Entity.tick` reached `timers.processTimers()` in the
     /// walking call that just returned ([`super::timers`]).
     pub npc_timers_due: Vec<Node>,
@@ -284,10 +287,18 @@ impl Live {
         let id = self.inner.npcs.rows.get(&node).map(|row| row.id);
         let location = self.inner.state.node_location(node).ok().flatten();
         let Self {
-            inner, npc_faults, ..
-        } = self;
-        super::faults::isolate(
+            inner,
             npc_faults,
+            npc_reset_faults,
+            ..
+        } = self;
+        let faults = if step == "reset" {
+            npc_reset_faults
+        } else {
+            npc_faults
+        };
+        super::faults::isolate(
+            faults,
             node,
             tick,
             || {

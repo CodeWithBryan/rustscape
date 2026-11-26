@@ -14,7 +14,9 @@
 //! that NPC, logged, and answered as done, so the sequence goes on with the
 //! next entity. This is a deviation from the original (docs/live-world.md).
 //!
-//! The log is rate limited per entity: the first failure, then the 10th,
+//! Each step (tick, reset) keeps its own [`EntityFaults`], so a step that
+//! succeeds never ends another step's run of failures. The log is rate
+//! limited per entity and step: the first failure, then the 10th,
 //! 100th, 1,000th... of a run of failures, and again whenever the error
 //! text changes. A success after a run of failures logs one recovery line
 //! and forgets the entity.

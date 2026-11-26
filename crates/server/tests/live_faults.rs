@@ -12,11 +12,14 @@ use rs09_server::world::{
     update::{self, Context, Initialization, List, Metric, Sequence},
 };
 
-/// Records the calls of one sequence; NPC 2 fails its tick and its reset.
+/// Records the calls of one sequence; NPC 2 fails its tick, and its reset
+/// unless `reset_fails` is off. The isolated faults are the live binding's:
+/// one record for ticks, one for resets.
 struct Recorder {
     calls: Vec<String>,
     failing: usize,
-    isolated: Option<EntityFaults>,
+    reset_fails: bool,
+    isolated: Option<(EntityFaults, EntityFaults)>,
     logged: Vec<String>,
     tick: i32,
     players: List<usize>,
@@ -35,7 +38,8 @@ impl Recorder {
         Self {
             calls: Vec::new(),
             failing: 2,
-            isolated: isolated.then(EntityFaults::default),
+            reset_fails: true,
+            isolated: isolated.then(Default::default),
             logged: Vec::new(),
             tick: 1,
             players,
@@ -44,14 +48,15 @@ impl Recorder {
     }
     fn step(&mut self, what: &str, node: usize) -> update::Result<()> {
         self.calls.push(format!("{what} {node}"));
-        let result = if node == self.failing {
+        let result = if node == self.failing && (what == "tick" || self.reset_fails) {
             Err(update::Error::Binding(format!("refused: {what} of {node}")))
         } else {
             Ok(())
         };
         match self.isolated.as_mut() {
             None => result,
-            Some(faults) => {
+            Some((ticks, resets)) => {
+                let faults = if what == "reset" { resets } else { ticks };
                 let logged = &mut self.logged;
                 isolate(
                     faults,
@@ -165,15 +170,31 @@ fn isolated_failing_npc_is_logged_and_the_tick_goes_on() {
         ctx.logged,
         [
             "NPC 2: tick failed at tick 1 (isolated; the tick goes on): Binding(\"refused: tick of 2\")",
-            // A different error is logged at once, as the same run.
-            "NPC 2: reset failed 2 times in a row since tick 1 (isolated): Binding(\"refused: reset of 2\")",
+            "NPC 2: reset failed at tick 1 (isolated; the tick goes on): Binding(\"refused: reset of 2\")",
         ]
     );
-    let faults = ctx.isolated.as_ref().unwrap();
-    // The tick and the reset of the same NPC are one run of failures.
-    assert_eq!(faults.failing(), 1);
-    assert_eq!(faults.total, 2);
-    assert_eq!(faults.fault(2).unwrap().count, 2);
+    let (ticks, resets) = ctx.isolated.as_ref().unwrap();
+    assert_eq!((ticks.failing(), resets.failing()), (1, 1));
+    assert_eq!(ticks.fault(2).unwrap().count, 1);
+    assert_eq!(resets.fault(2).unwrap().count, 1);
+}
+
+#[test]
+fn a_healthy_reset_does_not_end_a_failing_tick_run() {
+    // The tick fails every world tick, the reset succeeds: the tick's run
+    // goes on (logged at the 1st, 10th and 100th failure), and no recovery
+    // is logged.
+    let mut ctx = Recorder::new(true);
+    ctx.reset_fails = false;
+    for tick in 1..=250 {
+        ctx.tick = tick;
+        one_tick(&mut ctx).expect("the sequence completes");
+    }
+    assert_eq!(ctx.logged.len(), 3, "{:?}", ctx.logged);
+    assert!(ctx.logged[2].starts_with("NPC 2: tick failed 100 times in a row since tick 1"));
+    let (ticks, resets) = ctx.isolated.as_ref().unwrap();
+    assert_eq!(ticks.fault(2).unwrap().count, 250);
+    assert_eq!(resets.failing(), 0);
 }
 
 #[test]
