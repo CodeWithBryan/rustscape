@@ -58,7 +58,8 @@ connection sends original idle keepalives independently of observation consumpti
 and provides bounded queues and explicit close reasons. Raw Session still requires
 the caller to drive liveness. The earlier finite scenery proofs alone do not
 establish idle-session longevity. See docs/headless-lifecycle.md for the new driver
-and its separate bounded proof scope.
+and its separate bounded proof scope. For NPC, item, use-with and dialogue
+actions with a reduced world view, see docs/headless-agent.md.
 
 The runnable `scenery_agent` example demonstrates a data-driven loop: after its
 first player update it sends Open, waits for the actual replacement object,
