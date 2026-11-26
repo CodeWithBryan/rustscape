@@ -559,7 +559,25 @@ impl Base for Ctx<'_> {
                     s.rotation
                 )
             }
-            Some(Node::Player(_)) => return refused("Node.toString of a player"),
+            // Player.toString: "Player [name=" + name + ", getRights()=" +
+            // getRights() + "]" (the name is the details' username; the
+            // rights are the enum constant's name).
+            Some(Node::Player(h)) => {
+                let p = self.player_of(&Node::Player(h.clone()))?;
+                let rights = self
+                    .0
+                    .inner
+                    .with_profile(&p, |profile| profile.details.rights())
+                    .map_err(err)?
+                    .map_err(err)?;
+                let rights = match rights {
+                    crate::player::details::Rights::RegularPlayer => "REGULAR_PLAYER",
+                    crate::player::details::Rights::PlayerModerator => "PLAYER_MODERATOR",
+                    crate::player::details::Rights::Administrator => "ADMINISTRATOR",
+                };
+                let name = &self.0.inner.slot(&p).name;
+                format!("Player [name={name}, getRights()={rights}]")
+            }
         })
     }
     fn lowercase_default(&self, text: &str) -> String {

@@ -561,7 +561,8 @@ the client-side player and NPC update decoders):
   "Nothing interesting happens." a tick later (`runUnhandledAction`).
 - `useone` (a save south of Lumbridge's general store) uses a bronze dagger
   on the shop keeper (opcode 115) and `usetwo` (two tiles south of the ladder
-  36768) uses one on the ladder (opcode 134): `processUseWith` finds no
+  36768) uses one on the ladder (opcode 134), and `usethree` uses one on
+  `usefour` (opcode 248): `processUseWith` finds no
   listener, plugin or UseWithHandler, so `UseWithHandler.run`'s
   MovementPulse walks each next to the node and "Nothing interesting
   happens." arrives only then (the ladder is not climbed).

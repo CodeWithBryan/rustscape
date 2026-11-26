@@ -10,7 +10,8 @@
 //! object's canonical node for scenery) whose arrival sends "Nothing
 //! interesting happens." (super::super::talk's approaches). The movement to
 //! a ground item, a UseWithHandler's own pulses and morphing scenery
-//! (`getChild` through varbits/varps) are refused by name.
+//! (`getChild` through varbits/varps) are refused by name. The debug lines
+//! use the ported `NPC`, `Player` and `Scenery` `toString`.
 use super::{Ctx, Node, err, refused};
 use crate::{
     definitions::item::Shared,

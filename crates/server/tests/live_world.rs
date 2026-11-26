@@ -1844,6 +1844,52 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 
+    // On another player: usethree walks to usefour, three tiles east.
+    let start = [3222, 3219, 0];
+    write_save(&players, "traceone", "usethree", start, &[(0, 1205, 1)]);
+    write_save(&players, "traceone", "usefour", [3225, 3219, 0], &[]);
+    let (code, four) = Client::login(address, "usefour").await;
+    assert_eq!(code, 2, "usefour's login");
+    let mut four = four.unwrap();
+    four.until(Duration::from_secs(10), "usefour's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let (code, three) = Client::login(address, "usethree").await;
+    assert_eq!(code, 2, "usethree's login");
+    let mut three = three.unwrap();
+    three
+        .until(Duration::from_secs(10), "usethree's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = three.messages.len();
+    three.send(use_with_player(1205, 0, four.index)).await;
+    three
+        .until(
+            Duration::from_secs(20),
+            "nothing interesting (player)",
+            |c| c.messages[from..].iter().any(|(_, m)| m == nothing),
+        )
+        .await;
+    let at = three.position();
+    eprintln!("usethree used the dagger on usefour at [3225, 3219, 0]: walked {start:?} -> {at:?}");
+    assert_ne!(at, start, "usethree walked toward usefour");
+    assert!(
+        (at[0] - 3225).abs().max((at[1] - 3219).abs()) <= 1,
+        "usethree beside usefour"
+    );
+    assert!(
+        three.messages[from..]
+            .iter()
+            .any(|(_, m)| m == "With: Player [name=usefour, getRights()=ADMINISTRATOR]"),
+        "usethree's debug line for usefour: {:?}",
+        &three.messages[from..]
+    );
+    three.writer.close(1000, "logout").await.unwrap();
+    four.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
     // On scenery: the ladder 36768 east of the castle, from two tiles west
     // and one south (the walk goes round to the ladder's north side).
     let start = [3227, 3212, 0];
@@ -2030,6 +2076,18 @@ fn use_with_npc(item: i32, slot: i32, npc_index: i32) -> Frame {
     frame(
         115,
         &[&ib32(149 << 16), &le16(slot), &le16(npc_index), &la16(item)],
+    )
+}
+/// OPPLAYERU (248): an inventory item used on another player.
+fn use_with_player(item: i32, slot: i32, other_index: i32) -> Frame {
+    frame(
+        248,
+        &[
+            &la16(other_index),
+            &be16(item),
+            &be16(slot),
+            &ib32(149 << 16),
+        ],
     )
 }
 /// OPLOCU (134): an inventory item used on a scene object.
