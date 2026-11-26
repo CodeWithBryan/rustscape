@@ -210,4 +210,43 @@ mod tests {
         assert!(!dir.join("b.pack.partial").exists());
         std::fs::remove_dir_all(dir).unwrap();
     }
+
+    #[test]
+    fn a_failed_sidecar_move_puts_the_previous_pack_and_sidecar_back() {
+        let dir = directory("sidecar");
+        std::fs::write(dir.join("a.pack"), b"old a").unwrap();
+        std::fs::write(dir.join("a.provenance.json"), b"old sidecar").unwrap();
+        let mut staging = Staging::default();
+        staging.stage(&dir.join("a.pack"), b"new a").unwrap();
+        staging
+            .stage(&dir.join("a.provenance.json"), b"new sidecar")
+            .unwrap();
+        // Set aside both, place the pack, then fail placing the sidecar.
+        let mut calls = 0;
+        let error = staging
+            .publish_with(|from, to| {
+                calls += 1;
+                if calls == 4 {
+                    Err(std::io::Error::other("injected"))
+                } else {
+                    std::fs::rename(from, to)
+                }
+            })
+            .unwrap_err();
+        assert!(!error.contains("could not all be put back"), "{error}");
+        assert_eq!(std::fs::read(dir.join("a.pack")).unwrap(), b"old a");
+        assert_eq!(
+            std::fs::read(dir.join("a.provenance.json")).unwrap(),
+            b"old sidecar"
+        );
+        for leftover in [
+            "a.pack.partial",
+            "a.pack.previous",
+            "a.provenance.json.partial",
+            "a.provenance.json.previous",
+        ] {
+            assert!(!dir.join(leftover).exists(), "{leftover} was left behind");
+        }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 }
