@@ -2197,9 +2197,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   keep one implementation). The View reads authoritative frames only; never
   infer outcomes from a sent action. Changes require the protocol menu tests
   (decoded by the server's ClientAction::decode), the headless agent tests,
-  client lib tests and `live_agent` against the in-process live world. Do not
-  claim use-with on NPCs/scenery/players works live until the server's
-  use-with walk exists. See docs/headless-agent.md.
+  client lib tests and `live_agent` against the in-process live world. The
+  server's unhandled use-with walk to NPCs/scenery/players exists
+  (world/live/items/use_with.rs, checked by live_world's `usewith` scenario
+  with raw packets); `live_agent` does not drive it yet, so do not claim the
+  agent's use on those is checked live. See docs/headless-agent.md.
 - For GroundItemManager/chunk item mutation or tradeability, run ground_manager,
   chunk_sync, map_chunk_render, scene, world_pulses, player_walk, entity_regions,
   chunk, region_load, world_update, player_render/rebuild, inventory/attributes,

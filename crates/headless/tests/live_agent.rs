@@ -14,8 +14,9 @@
 //!   and an item option (Wield) moves the dagger to the weapon slot.
 //!
 //! Use on an NPC or scenery is checked byte for byte against the server's
-//! decoder in the unit tests only: the live world refuses the content
-//! use-with walk (`UseWithHandler`'s MovementPulse), so it shows no outcome.
+//! decoder in the unit tests only. The live world walks to the target and
+//! answers "Nothing interesting happens." (the server's `live_world` test
+//! checks that with raw packets); this test does not drive it yet.
 //!
 //! Needs the pinned cache (`assets/cache`, `cargo xtask cache-fetch`) and the
 //! world data (`runs/startup-loaders-oracle/template`, or `RS09_STARTUP_WORLD`);
