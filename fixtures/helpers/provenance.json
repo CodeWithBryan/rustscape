@@ -1,0 +1,81 @@
+{
+  "caseCount": 355,
+  "coverage": {
+    "cases": 355,
+    "errors": {
+      "Binding": 177,
+      "Cast": 241,
+      "Null": 59
+    },
+    "events": {
+      "ContentAPI.sendMessage": 18,
+      "Entity.attack": 122,
+      "Entity.getAttribute": 873,
+      "Entity.setAttribute": 242,
+      "InteractionListener.flagInstant": 206,
+      "InteractionListener.on": 181,
+      "KillerwattBehavior.aggressUponKillerwatt": 36,
+      "PacketDispatch.sendMessage": 349,
+      "Player.getSwingHandler": 36,
+      "PlayerDetails.getRights": 356
+    },
+    "failureCases": 177,
+    "operations": {
+      "attack": 210,
+      "attribute": 4,
+      "debug": 353,
+      "define": 206,
+      "grave": 152,
+      "graveGone": 1,
+      "hasGraveAt": 325,
+      "isDebug": 356,
+      "node": 195,
+      "rights": 2,
+      "style": 3,
+      "toggleDebug": 354
+    },
+    "recordedCalls": 2419,
+    "steps": 2161
+  },
+  "fixtureSha256": "5e73bc7eb094d464842cf6752fb354f543e016ec4c4694cbb975fe68d0efbe0a",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "scope": "AttackListener.kt, IntType.kt, Location.kt and Vector.kt compiled unchanged on JDK 11 with Kotlin 1.8.20 and the published ConstLib 1.4.28; Player.toggleDebug, Player.debug, Player.isDebug and GraveController.hasGraveAt inserted verbatim. InteractionListener.flagInstant/on, Player.getSwingHandler, ContentAPI sendMessage, KillerwattBehavior.aggressUponKillerwatt, Entity.attack, the attribute map, PacketDispatch.sendMessage and PlayerDetails.getRights are recording adapters. Every recorded call in order with its arguments, results, errors, the attribute map after each operation and injected failures of every recorded call. CombatPulse.attack is combat-pulse-oracle; ContentAPI sendMessage (splitLines) is content-api-oracle; the killerwatt behaviour is content.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
+    "oracle/helpers/Support.java": "dc28a8ffbbf2be773d592506d6ba6f45170b6ef9051423f4ec6860d0387f3b02",
+    "oracle/helpers/generate.py": "c9bd79447503e7c07a56eef3ce1a0e93a1007f0812e8a3a943985ef05f8a17d6",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/content/global/skill/AttackListener.kt": "fcdf89ca95f59f9b8d4b1327b3582e14570d34ac031076f191b1541b65054979",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/game/interaction/IntType.kt": "b3f4424d59503eea383dbdaf77b80434eb406bcf9d1c0c4fe99dfc50fe40ff63",
+    "reference/server/Server/src/main/core/game/node/entity/combat/graves/GraveController.kt": "725c9ddf6a8bcd3a513374f5b8dd57726ddfad1fad21f71e75ca9d9e6450c42b",
+    "reference/server/Server/src/main/core/game/node/entity/player/Player.java": "d3d00ccf27c0e914ae240e25bd836e7824eaa0939844a45e79aa03e7050bb8ed",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unchanged": [
+    "content/global/skill/AttackListener.kt",
+    "core/game/interaction/IntType.kt",
+    "core/game/world/map/Location.kt",
+    "core/api/utils/Vector.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

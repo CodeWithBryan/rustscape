@@ -1,0 +1,89 @@
+{
+  "caseCount": 787,
+  "coverage": {
+    "cases": 787,
+    "errors": {
+      "Binding": 212,
+      "Index": 572,
+      "Null": 428
+    },
+    "events": {
+      "Node.getIndex": 534,
+      "Node.getLocation": 1541,
+      "Node.size": 689,
+      "RegionChunk.flag": 685,
+      "RegionManager.getRegionChunk": 720
+    },
+    "failureCases": 212,
+    "operations": {
+      "compare": 2,
+      "copy": 216,
+      "create": 589,
+      "createLoc": 40,
+      "empty": 99,
+      "equals": 1,
+      "getLocation": 16,
+      "getSpeed": 32,
+      "index": 78,
+      "magic": 98,
+      "move": 115,
+      "ranged": 114,
+      "send": 418,
+      "sendAt": 102,
+      "sendStatic": 273,
+      "sendTo": 126,
+      "set": 101,
+      "setLoc": 4,
+      "size": 85,
+      "transform": 213,
+      "transform5": 116,
+      "transformLoc": 102,
+      "transformLoc5": 54,
+      "write": 1057
+    },
+    "recordedCalls": 4169,
+    "steps": 4051
+  },
+  "fixtureSha256": "b76dd193e83dfc1d109c50904cc8632da2cd6149c843dfa97c7deaa1cdaad54e",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "scope": "Projectile.java, ProjectileUpdateFlag.java, UpdateFlag.java, Location.kt and Vector.kt compiled unchanged on JDK 11 with Kotlin 1.8.20; Node.getCenterLocation and IoBuffer.put(int)/putShort(int) inserted verbatim. Node.size, Node.getLocation, Node.getIndex, RegionManager.getRegionChunk and RegionChunk.flag are recording adapters; field reads are not recorded. Every factory, transform, copy, send, setter and the flag write (bytes, failed prefixes, the target index and end location read at write time) with injected failures of every recorded call. Does not cover RegionChunk.update ordering (chunk-sync-oracle) or the client.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/projectiles/Support.java": "76b572b2419ec3c614b978b33f889c8ad183c36df7483c2a48f68d800f1bf993",
+    "oracle/projectiles/generate.py": "cb8c389e35db869da076c499996e21308e5ca8827eb4436f78368511cee636e9",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Projectile.java": "509a14795d71c07b849456ea5f0cc8368faee1c684081cf1f0b486a2bb155a05",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/update/flag/UpdateFlag.java": "75ce9e8785c0e3d1994bb35044a49c92c76b67cf56587aa13a66404c5665455b",
+    "reference/server/Server/src/main/core/game/world/update/flag/chunk/ProjectileUpdateFlag.java": "750e29b3233e9da0c341069849249d9534a36992ccd8e815933e0f79cfcc0d93",
+    "reference/server/Server/src/main/core/net/packet/IoBuffer.java": "57010a132e3d719141b407d7e6bdc887273402c2d84af0991056de5e1ad3a91d",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unchanged": [
+    "core/game/node/entity/impl/Projectile.java",
+    "core/game/world/update/flag/chunk/ProjectileUpdateFlag.java",
+    "core/game/world/update/flag/UpdateFlag.java",
+    "core/game/world/map/Location.kt",
+    "core/api/utils/Vector.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

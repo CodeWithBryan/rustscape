@@ -1,0 +1,38 @@
+{
+  "coverage": {
+    "actions": 3704,
+    "cases": 821,
+    "errors": {
+      "Binding": 19,
+      "Null": 32
+    },
+    "events": {
+      "active": 6,
+      "add": 1395,
+      "clip": 1026,
+      "face": 1451,
+      "find": 1383,
+      "hintAdd": 131,
+      "hintClear": 132,
+      "normal": 6,
+      "npcFinder": 248,
+      "permitted": 175,
+      "pulse": 6,
+      "region": 19,
+      "reset": 1407,
+      "weak": 6
+    },
+    "recordedCalls": 7391,
+    "statements": {
+      "new": 869,
+      "setVictim": 1002,
+      "updatePath": 1623
+    }
+  },
+  "fixtureSha256": "23c575d16634410ec254f4146db946a16345e255d5c1105fe7f0cabd9b42a020",
+  "format": 1,
+  "generatorSha256": "996f3449392064d96bf0559105c9a5fa45691f22a14be6e1752c37793523e66e",
+  "harness": "oracle/movement/generate.py and oracle/movement/Support.java (pinned in provenance.json)",
+  "scope": "The unchanged MovementPulse as CombatPulse configures it: MovementPulse(entity, null) (action `new` with a null target), setLast(null) and setDestination(victim) (action `set`), updatePath() (action `path`); the anonymous subclass answers pulse() with false (pulseResult). CombatPulse.attack, setVictim and the interaction check themselves are combat-pulse-oracle; the pathfinders and the walking queue are their own corpora.",
+  "sourceHashAlgorithm": "sha256, CR removed"
+}

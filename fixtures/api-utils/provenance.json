@@ -1,0 +1,81 @@
+{
+  "caseCount": 395,
+  "coverage": {
+    "cases": 395,
+    "errors": {
+      "Binding": 165,
+      "Index": 122,
+      "Null": 1
+    },
+    "events": {
+      "Collections.shuffle.nextInt": 4415,
+      "PacketRepository.send": 80,
+      "RandomFunction.RANDOM.nextDouble": 1539
+    },
+    "failureCases": 165,
+    "operations": {
+      "add": 573,
+      "addRaw": 164,
+      "camera": 25,
+      "cameraTypes": 1,
+      "clear": 64,
+      "create": 396,
+      "forget": 16,
+      "panTo": 10,
+      "remove": 340,
+      "removeAt": 227,
+      "reset": 13,
+      "roll": 1980,
+      "rotateBy": 75,
+      "rotateTo": 10,
+      "setPosition": 15,
+      "shake": 11,
+      "shakeTypes": 1,
+      "total": 4
+    },
+    "recordedCalls": 6034,
+    "steps": 3925
+  },
+  "fixtureSha256": "5152117e969b267b69a3de92c909e660b91908b2b68bef17ff78e04915cee621",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "scope": "WeightedTable.kt, PlayerCamera.kt, CameraUtils.kt, Context.java and CameraContext.java compiled unchanged on JDK 11 with Kotlin 1.8.20; RandomFunction.random(double, double) inserted verbatim. PacketRepository.send is a recording adapter; Collections.shuffle's shared generator and RandomFunction.RANDOM are java.util.Random objects seeded by the case that record nextInt(bound) and nextDouble(). Every recorded call in order, results, errors, the table entries and total weight (as bits) and the camera context after each operation, with injected failures of every recorded call. WeightBasedTable and WeightedItem are drop-tables-oracle; Vector is content-api-oracle; PlayerStatsCounter and Permadeath are not covered.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/api-utils/Calls.kt": "c0390dbdcfccf3c775a42072e72189fc944de118c0e8884e8007405befe0cb76",
+    "oracle/api-utils/Support.java": "4aeea8485ea784ec173e463c05dc11bf5e98e77b67212a93b0255d4df13e7a4a",
+    "oracle/api-utils/generate.py": "73e1ff64cada13ae1db5a1c506089e0ac39682d2b1f49dbb09818c1223dd852a",
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "reference/server/Server/src/main/core/api/utils/CameraUtils.kt": "bf35d1b3c09909058e06d5f05f2d10719856e9acb85040460ffa469630936522",
+    "reference/server/Server/src/main/core/api/utils/PlayerCamera.kt": "8eb95d7cec2176190c1bc3936b5f571aa1c27b18ccc903a3b9e6f148954fdae6",
+    "reference/server/Server/src/main/core/api/utils/WeightedTable.kt": "200c3665b4d5e893fbfe498d0c90bb72203ebe49143b1978787f52d81089347a",
+    "reference/server/Server/src/main/core/net/packet/Context.java": "0a1b6f5561f57f9717fbbaa25c60bbe21f8b781f9eafed8911c5c94ae559893c",
+    "reference/server/Server/src/main/core/net/packet/context/CameraContext.java": "961a17a0d4dc98121d26420a383ba985bd7aedea7e6ed9c68c7c3864be43922d",
+    "reference/server/Server/src/main/core/tools/RandomFunction.java": "054fb47b8718ce25da6fe35af85765f3cdea3b2056ef0e4d678435b230ad559e",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unchanged": [
+    "core/api/utils/WeightedTable.kt",
+    "core/api/utils/PlayerCamera.kt",
+    "core/api/utils/CameraUtils.kt",
+    "core/net/packet/Context.java",
+    "core/net/packet/context/CameraContext.java"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

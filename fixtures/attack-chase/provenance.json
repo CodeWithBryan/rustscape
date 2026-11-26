@@ -1,0 +1,42 @@
+{
+  "caseCount": 821,
+  "fixtureSha256": "23c575d16634410ec254f4146db946a16345e255d5c1105fe7f0cabd9b42a020",
+  "format": 1,
+  "scope": "Complete unchanged MovementPulse, DestinationFlag, Pulse, Point, Direction, Path and Vector; verbatim truncateLoc, Node centers and five reach predicates. Explicit mutable node/region/behavior/combat/script, queue/pathfinder, option/use/override, clipping, teleport, door, hint/packet and normalized exception services. Compares pulse fields, aliases, queue/path consumption, callbacks, failures and all destination geometry. Actual WalkingQueue/SmartPathfinder, entity/profile/content/world scheduling and live movement integration remain separate. Malformed native geometry loops are bounded.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/movement/Support.java": "389975e4bd5c064946ebd2c3ccfa455720a90d848ab38bd43407f7386aecc7b3",
+    "oracle/movement/generate.py": "02062e4a55e086efe916d39bf2398ea4a3abb6167328c5e847f45641b1b5f052",
+    "reference/server/Server/src/main/core/ServerConstants.kt": "fa28de7ee08f82432b2565044a9473a0ac4c57cc29d28dddc2f4d4454b85f0bd",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/game/interaction/DestinationFlag.java": "631dd647e6eb99c5771182c8bf295f076b8c1c790a05b14d51a6b0f8a235899c",
+    "reference/server/Server/src/main/core/game/interaction/MovementPulse.java": "5411d2040a8bc02a1b9dd2a85f259e4a9a9567c48490ed5ef90396e88f70bd91",
+    "reference/server/Server/src/main/core/game/node/Node.java": "75f0bb1bc50ea7ac35d70a32584542c147dacaae943ed66a9151f93cc1166ed6",
+    "reference/server/Server/src/main/core/game/system/task/Pulse.java": "f2c9520364843507678e2859478abf48fbabc9538a59569b64f96729a2c2bf52",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/Point.java": "97f4db2276053947fdcabd78ae1207ea7fa6a630b235458d0b579fa100b8314b",
+    "reference/server/Server/src/main/core/game/world/map/path/ClipMaskSupplier.java": "93eddf62306b1f5a373dac01d149abcf6727b1e4ccd17c72c07d60709e97fa1b",
+    "reference/server/Server/src/main/core/game/world/map/path/Path.java": "0d7fd30e97ec020b8dec9013cd5a1330131e98f64a03496fa50b5994de24a6d7",
+    "reference/server/Server/src/main/core/game/world/map/path/Pathfinder.java": "81a9f20cff3bd34381984d0888600bdeb3e670d3725cc4b3d1e92ed26d0c993e",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}

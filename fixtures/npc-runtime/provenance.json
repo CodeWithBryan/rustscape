@@ -1,0 +1,97 @@
+{
+  "caseCount": 912,
+  "coverage": {
+    "cases": 912,
+    "errors": {
+      "Binding": 550,
+      "Index": 239,
+      "Null": 255
+    },
+    "events": {
+      "Entity.<init>": 1795,
+      "EntityFlags.getOrdinal": 283,
+      "InteractPlugin.<init>": 2397,
+      "InteractPlugin.setDefault": 726,
+      "NPC.configure": 748,
+      "NPC.initConfig": 770,
+      "NPCBehavior.forId": 1553,
+      "NPCBehavior.onRemoval": 372,
+      "NPCDefinition.forId": 4455,
+      "PulseManager.clear": 483,
+      "Region.tolerances.remove": 9,
+      "RegionChunk.remove": 332,
+      "RegionChunk.removePlayer": 10,
+      "Repository.addRenderableNPC": 330,
+      "Repository.npcs.add": 491,
+      "Repository.npcs.remove": 438,
+      "Repository.removeRenderableNPC": 454,
+      "Skills.getLifepoints": 290,
+      "Skills.setLifepoints": 192,
+      "TimerRegistry.addAutoTimers": 237,
+      "UpdateMasks.register": 688,
+      "UpdateMasks.unregisterSynced": 275
+    },
+    "failureCases": 550,
+    "operations": {
+      "add": 529,
+      "behavior": 11,
+      "clear": 535,
+      "def": 286,
+      "entityInit": 250,
+      "lifepoints": 260,
+      "move": 226,
+      "new1": 323,
+      "new2": 1114,
+      "new3": 390,
+      "player": 79,
+      "reTransform": 427,
+      "renderable": 352,
+      "transform": 585,
+      "transformHp": 311
+    },
+    "recordedCalls": 17328,
+    "steps": 5678
+  },
+  "fixtureSha256": "c7f227699723aa5c07095bbaf98788d71eccf4e73cac61ad4bec377538125e28",
+  "format": 1,
+  "kotlinCompiler": "1.8.20",
+  "scope": "The NPC constructors, NPC.clear, NPC.transform, NPC.transformWithHpCarryover, NPC.reTransform, Entity.init and Entity.clear inserted verbatim into adapters, with NodeList.java, NodeListIterator.java, Location.kt, Vector.kt and EntityFlag.kt compiled unchanged on JDK 11 with Kotlin 1.8.20. NPCDefinition.forId, InteractPlugin, NPCBehavior, initConfig, configure, EntityFlags.getOrdinal, UpdateMasks, Skills lifepoints, TimerRegistry.addAutoTimers, RegionChunk.remove/removePlayer, the region tolerances, PulseManager.clear and the renderable NPC list are recording adapters. Every recorded call in order, every field after each operation, the repository slots, and injected failures of every recorded call. NPC.init and initConfig are npc-init-oracle; NodeList and the renderable list bodies are repository-oracle; RegionManager.move is entity-regions-oracle.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
+    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/npc-runtime/Support.java": "178a347e69c0fc44e97362f9ff7363b71763711c5c51bbe3e993db40d3f4e6f1",
+    "oracle/npc-runtime/generate.py": "9bf12af8fd446742dd4a9ded24c16857117f807dcf6025f32ed1c24da1731c91",
+    "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
+    "reference/server/Server/src/main/core/game/node/entity/Entity.java": "9daf5cc74de2bed9491e7422b9998371192c7f6649cb3302aee5a603328e0668",
+    "reference/server/Server/src/main/core/game/node/entity/npc/NPC.java": "94c42d1425150d5a231e9deb77ec247fc0ef6de03188a860f4b4cae48a73d3f5",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/repository/NodeList.java": "8b1acfeb299805f0662bff964bd2443e9bc9303a2bbf1010d8abaedaf43e01b2",
+    "reference/server/Server/src/main/core/game/world/repository/NodeListIterator.java": "01b3fdcc906c48698eef7c5d5c21bba423be3c4f3f75bc7cd9f1f9662d8acd30",
+    "reference/server/Server/src/main/core/game/world/update/flag/EntityFlag.kt": "10c523b9e816fbfc2a2318ca99d8122c8eb2d4ec10c33f8b45d8e4ced2251163",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "unchanged": [
+    "core/game/world/repository/NodeList.java",
+    "core/game/world/repository/NodeListIterator.java",
+    "core/game/world/map/Location.kt",
+    "core/api/utils/Vector.kt",
+    "core/game/world/update/flag/EntityFlag.kt"
+  ],
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}
