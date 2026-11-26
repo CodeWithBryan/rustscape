@@ -116,10 +116,10 @@ fn native_world_pack_reproduces_the_recorded_python_pack() {
                         // Morph children were added to the script later, and
                         // the placement fields by the native builder.
                         for added in ["children", "placement"] {
-                            if definition.get(added).is_none() {
-                                if let Some(object) = ours.as_object_mut() {
-                                    object.remove(added);
-                                }
+                            if definition.get(added).is_none()
+                                && let Some(object) = ours.as_object_mut()
+                            {
+                                object.remove(added);
                             }
                         }
                         if &ours != definition {

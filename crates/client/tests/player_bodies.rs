@@ -47,7 +47,6 @@ use packs::recorded;
 
 #[test]
 fn original_all_wearable_bodies_kit_arrays_bas_transforms_and_compositions_match() {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let fixture: Value =
         serde_json::from_str(include_str!("../../../fixtures/ui/player-bodies.json")).unwrap();
     let bytes = std::fs::read(recorded("ui-players.pack")).unwrap();

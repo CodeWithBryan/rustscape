@@ -178,10 +178,11 @@ impl<H: Host> ScriptApi<H> {
         if host.listeners_run_use(item, node, kind, bot)? {
             return Ok(());
         }
-        if let Some(child) = &child {
-            if host.id(child) != host.id(node) && host.listeners_run_use(item, child, kind, bot)? {
-                return Ok(());
-            }
+        if let Some(child) = &child
+            && host.id(child) != host.id(node)
+            && host.listeners_run_use(item, child, kind, bot)?
+        {
+            return Ok(());
         }
         let flipped = kind == IntType::Item && item.ok_or(Error::Null)?.id < host.id(node);
         let (used, with) = if flipped {
@@ -437,10 +438,10 @@ impl<H: Host> ScriptApi<H> {
         if !host.properties_is_multi_zone(target)? && host.in_combat(target)? {
             return Ok(false);
         }
-        if let Some(name) = name {
-            if host.name(target).as_deref() != Some(name) {
-                return Ok(false);
-            }
+        if let Some(name) = name
+            && host.name(target).as_deref() != Some(name)
+        {
+            return Ok(false);
         }
         host.npc_has_action(target, "attack")
     }
@@ -635,10 +636,10 @@ impl<H: Host> ScriptApi<H> {
     /// `getNearestNode(name, true) as Scenery?`.
     fn nearest_scenery(&self, host: &mut H, name: &str) -> Result<Option<H::Node>> {
         let node = self.get_nearest_node(host, name)?;
-        if let Some(node) = &node {
-            if host.kind(node) != NodeKind::Scenery {
-                return Err(Error::Cast);
-            }
+        if let Some(node) = &node
+            && host.kind(node) != NodeKind::Scenery
+        {
+            return Err(Error::Cast);
         }
         Ok(node)
     }

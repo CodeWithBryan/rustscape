@@ -95,13 +95,15 @@ pub fn npc_is_attackable<H: Host>(
         return Ok(false);
     }
     let task = ai(h, npc)?.task;
-    if let Some(task) = task {
-        if h.kind(attacker).is_player() && task.level_req > h.level(attacker, SLAYER)? && message {
-            h.send_message(
-                attacker,
-                "You need a higher slayer level to know how to wound this monster.",
-            )?;
-        }
+    if let Some(task) = task
+        && h.kind(attacker).is_player()
+        && task.level_req > h.level(attacker, SLAYER)?
+        && message
+    {
+        h.send_message(
+            attacker,
+            "You need a higher slayer level to know how to wound this monster.",
+        )?;
     }
     let behaviour = behaviour(h, npc)?;
     let hook_style = style.ok_or(Error::Null)?;
@@ -248,18 +250,19 @@ pub fn npc_check_impact<H: Host>(
     behaviour.before_damage_received(h, npc, attacker.as_ref().ok_or(Error::Null)?, state)?;
     let attacker = attacker.ok_or(Error::Null)?;
     let task = ai(h, npc)?.task;
-    if let Some(task) = task {
-        if h.kind(&attacker).is_player() && task.level_req > h.level(&attacker, SLAYER)? {
-            neutralize(state);
-        }
+    if let Some(task) = task
+        && h.kind(&attacker).is_player()
+        && task.level_req > h.level(&attacker, SLAYER)?
+    {
+        neutralize(state);
     }
     let task = ai(h, npc)?.task;
-    if let Some(task) = task {
-        if h.kind(&attacker) == Kind::Familiar {
-            let owner = h.familiar_owner(&attacker)?.ok_or(Error::Null)?;
-            if task.level_req > h.level(&owner, SLAYER)? {
-                neutralize(state);
-            }
+    if let Some(task) = task
+        && h.kind(&attacker) == Kind::Familiar
+    {
+        let owner = h.familiar_owner(&attacker)?.ok_or(Error::Null)?;
+        if task.level_req > h.level(&owner, SLAYER)? {
+            neutralize(state);
         }
     }
     Ok(())

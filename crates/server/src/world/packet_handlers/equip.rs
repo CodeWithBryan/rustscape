@@ -152,10 +152,10 @@ pub fn handle_equip<C: Context>(ctx: &mut C, player: &C::Node, node: &C::Node) -
         }
     }
     let definition = ctx.item_definition_of(&item)?;
-    if let Some(plugin) = config_plugin(&definition, "equipment")? {
-        if ctx.fire_event(&plugin, "equip", player, &item)? != Fired::Bool(true) {
-            return Ok(());
-        }
+    if let Some(plugin) = config_plugin(&definition, "equipment")?
+        && ctx.fire_event(&plugin, "equip", player, &item)? != Fired::Bool(true)
+    {
+        return Ok(());
     }
     let id = ctx.id(node)?;
     if !ctx.equip_listeners(id, player, &item, true)? {

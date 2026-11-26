@@ -149,15 +149,16 @@ impl Workbench {
         let known = |look: &RawAppearance| {
             u32::try_from(look.npc_id).map_or(true, |id| types.contains_key(&id))
         };
-        if previous.is_none_or(known) && known(raw) {
-            if let Err(error) = rs09_client::player_form::appearance_position(
+        if previous.is_none_or(known)
+            && known(raw)
+            && let Err(error) = rs09_client::player_form::appearance_position(
                 motion,
                 previous,
                 raw,
                 &self.npc_definitions,
-            ) {
-                note(diagnostics, error);
-            }
+            )
+        {
+            note(diagnostics, error);
         }
     }
 }

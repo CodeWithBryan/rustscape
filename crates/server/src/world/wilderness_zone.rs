@@ -393,14 +393,14 @@ impl<H: Host> Behavior<H> for WildernessZone {
         target: Option<&H::Target>,
         _option: Option<&H::Opaque>,
     ) -> Result<bool> {
-        if let Some(target) = target {
-            if let Some(npc) = host.target_entity(target)? {
-                if is_npc(host, &npc)? && contains(host.npc_name(&npc)?, "Revenant")? {
-                    require_player(host, entity)?;
-                    host.combat_pulse_attack(entity, target)?;
-                    return Ok(true);
-                }
-            }
+        if let Some(target) = target
+            && let Some(npc) = host.target_entity(target)?
+            && is_npc(host, &npc)?
+            && contains(host.npc_name(&npc)?, "Revenant")?
+        {
+            require_player(host, entity)?;
+            host.combat_pulse_attack(entity, target)?;
+            return Ok(true);
         }
         Ok(false)
     }
@@ -452,14 +452,14 @@ impl<H: Host> Behavior<H> for WildernessZone {
                 return Ok(true);
             }
             let mut level = 20;
-            if let Some(node) = node {
-                if host.is_item(node)? {
-                    let id = host.target_item_id(Some(node))?;
-                    if contains(host.item_name(id)?, "glory")?
-                        || contains(host.item_name(id)?, "slaying")?
-                    {
-                        level = 30;
-                    }
+            if let Some(node) = node
+                && host.is_item(node)?
+            {
+                let id = host.target_item_id(Some(node))?;
+                if contains(host.item_name(id)?, "glory")?
+                    || contains(host.item_name(id)?, "slaying")?
+                {
+                    level = 30;
                 }
             }
             if !check_teleport(host, entity, level)? {

@@ -74,15 +74,16 @@ pub fn background(
     for y in 1..103 {
         for x in 1..103 {
             let index = 4 * SIZE * (103 - y) + 24628 + (x - 1) * 4;
-            if flags(plane, x, y) & 0x18 == 0 {
-                if let Some(t) = tile(plane, x, y) {
-                    t.draw(&mut pixels, index);
-                }
+            if flags(plane, x, y) & 0x18 == 0
+                && let Some(t) = tile(plane, x, y)
+            {
+                t.draw(&mut pixels, index);
             }
-            if plane < 3 && flags(plane + 1, x, y) & 8 != 0 {
-                if let Some(t) = tile(plane + 1, x, y) {
-                    t.draw(&mut pixels, index);
-                }
+            if plane < 3
+                && flags(plane + 1, x, y) & 8 != 0
+                && let Some(t) = tile(plane + 1, x, y)
+            {
+                t.draw(&mut pixels, index);
             }
         }
     }

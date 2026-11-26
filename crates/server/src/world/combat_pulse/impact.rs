@@ -221,10 +221,8 @@ pub fn handle_impact<H: Host>(
     }
     let mut source = source.cloned();
     let fam = source.as_ref().is_some_and(|s| pulse::is_familiar(h, s));
-    if fam {
-        if let Some(familiar) = source.clone() {
-            source = h.familiar_owner(&familiar)?;
-        }
+    if fam && let Some(familiar) = source.clone() {
+        source = h.familiar_owner(&familiar)?;
     }
     let disabled = h.impact_handler(owner).disabled_ticks;
     if disabled > h.ticks()? {
@@ -290,13 +288,13 @@ pub fn handle_impact<H: Host>(
             }
         }
     }
-    if style.is_some() {
-        if let Some(player) = &source_player {
-            if fam && h.has_familiar(player)? && !h.familiar_is_pet(player)? {
-                h.set_fam_exp(player)?;
-            }
-            h.remove_attribute(player, "fam-exp")?;
+    if style.is_some()
+        && let Some(player) = &source_player
+    {
+        if fam && h.has_familiar(player)? && !h.familiar_is_pet(player)? {
+            h.set_fam_exp(player)?;
         }
+        h.remove_attribute(player, "fam-exp")?;
     }
     let mut dead = false;
     if h.lifepoints(owner)? < 1 {

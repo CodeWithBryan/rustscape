@@ -334,10 +334,10 @@ impl Game {
     /// The click a drag stood for, when the button is let go without one
     /// (Protocol.java:2727-2777).
     fn cycle_release(&mut self, inventory: bool) {
-        if let Some(entry) = self.cycle_drag(inventory) {
-            if !self.release_opens_menu(&entry) {
-                self.act(Some(entry));
-            }
+        if let Some(entry) = self.cycle_drag(inventory)
+            && !self.release_opens_menu(&entry)
+        {
+            self.act(Some(entry));
         }
     }
 
@@ -345,10 +345,8 @@ impl Game {
     /// scene draw found for a walk or a spell that was waiting for one.
     fn cycle_walk(&mut self) {
         let staff = self.staff_keys();
-        if staff {
-            if let Some(tile) = self.wheel_plane() {
-                self.staff_teleport(&[tile]);
-            }
+        if staff && let Some(tile) = self.wheel_plane() {
+            self.staff_teleport(&[tile]);
         }
         match self.walk.cycle(staff) {
             Arrived::Teleport(tile) => {

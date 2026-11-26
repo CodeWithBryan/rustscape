@@ -421,10 +421,10 @@ pub fn initialize<H: Host>(
     }
     host.npc_init(&npc)?;
     let owner = grave.read().owner_uid;
-    if controller.get(owner).is_some() {
-        if let Some(old) = controller.get(owner) {
-            collapse(host, controller, &old)?;
-        }
+    if controller.get(owner).is_some()
+        && let Some(old) = controller.get(owner)
+    {
+        collapse(host, controller, &old)?;
     }
     controller.put(owner, grave.clone());
     host.api_message(
@@ -638,11 +638,11 @@ pub fn on_bless<H: Host>(
         return Ok(true);
     }
     let owner = host.uid_map(uid)?;
-    if let Some(owner) = &owner {
-        if host.ironman(owner)? {
-            host.api_message(player, "This grave belongs to an Ironman.")?;
-            return Ok(true);
-        }
+    if let Some(owner) = &owner
+        && host.ironman(owner)?
+    {
+        host.api_message(player, "This grave belongs to an Ironman.")?;
+        return Ok(true);
     }
     if host.stat_level(player, PRAYER)? < 70 {
         host.api_message(player, "You need a Prayer level of 70 to bless a grave.")?;

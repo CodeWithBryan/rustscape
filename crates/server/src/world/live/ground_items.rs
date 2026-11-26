@@ -98,8 +98,8 @@ impl Grounds {
     /// `PickupPlugin` (the one natively registered item option handler).
     pub fn program(&self, id: usize) -> Option<pickup::Program> {
         let handler = self.options.handler(id).ok()?;
-        let program = handler.read().value::<pickup::Program>().copied();
-        program
+
+        handler.read().value::<pickup::Program>().copied()
     }
 }
 

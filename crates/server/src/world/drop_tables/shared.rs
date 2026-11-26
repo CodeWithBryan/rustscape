@@ -279,15 +279,15 @@ pub fn roll_rare(
     let table = &ctx.shared.rare;
     let mut items = table.guaranteed_items.clone();
     let mut effective_weight = table.total_weight;
-    if let Looter::Player(player) = &mut receiver {
-        if player.removes_nothings() {
-            let nothing_weight = table
-                .items
-                .iter()
-                .filter(|item| item.id == NOTHING)
-                .fold(0.0, |sum, item| sum + item.weight);
-            effective_weight -= nothing_weight;
-        }
+    if let Looter::Player(player) = &mut receiver
+        && player.removes_nothings()
+    {
+        let nothing_weight = table
+            .items
+            .iter()
+            .filter(|item| item.id == NOTHING)
+            .fold(0.0, |sum, item| sum + item.weight);
+        effective_weight -= nothing_weight;
     }
     if table.items.len() == 1 {
         items.push(table.items[0]);

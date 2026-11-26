@@ -19,8 +19,8 @@ jobs:
           java-version: '25'
       - name: Install pinned Rust toolchain
         run: |
-          rustup toolchain install 1.86.0 --profile minimal --component clippy --component rustfmt
-          rustup default 1.86.0
+          rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
+          rustup default 1.97.0
           rustup target add wasm32-unknown-unknown
       - name: Formatting
         run: cargo fmt --check

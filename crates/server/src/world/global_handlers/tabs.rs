@@ -313,10 +313,10 @@ fn operate_item<H: Host + ?Sized>(h: &mut H, p: &H::Node, slot: i32) -> Result<(
     if h.listeners(id, IntType::Item, "operate", p, &item)? {
         return Ok(());
     }
-    if let Some(handler) = h.operate_handler(&item)? {
-        if h.operate_handle(&handler, p, &item, "operate")? {
-            return Ok(());
-        }
+    if let Some(handler) = h.operate_handler(&item)?
+        && h.operate_handle(&handler, p, &item, "operate")?
+    {
+        return Ok(());
     }
     h.api_message(p, "You can't operate that.")
 }
@@ -379,12 +379,12 @@ pub fn special_bar_pulse<H: Host + ?Sized>(h: &mut H, p: &H::Node) -> Result<boo
     if h.special_toggled(p)? {
         let equipment = h.equipment(p)?;
         let id = h.get_new_id(&equipment, 3)?;
-        if let Some(handler) = h.special_handler(id)? {
-            if h.special_instant(&handler, p)? {
-                // handleInstantSpec: handler.swing(p, victim, null)
-                let victim = h.combat_victim(p)?;
-                h.special_swing(&handler, p, victim.as_ref())?;
-            }
+        if let Some(handler) = h.special_handler(id)?
+            && h.special_instant(&handler, p)?
+        {
+            // handleInstantSpec: handler.swing(p, victim, null)
+            let victim = h.combat_victim(p)?;
+            h.special_swing(&handler, p, victim.as_ref())?;
         }
     }
     Ok(true)

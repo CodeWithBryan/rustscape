@@ -462,12 +462,11 @@ impl Game {
                 } else {
                     false
                 };
-                if !ui_handled {
-                    if let Err(error) =
+                if !ui_handled
+                    && let Err(error) =
                         workbench.server_frame(&server_frame, ui.as_mut(), ui_time as i32)
-                    {
-                        route_status = error;
-                    }
+                {
+                    route_status = error;
                 }
                 if !zone_origin {
                     break;
@@ -749,13 +748,13 @@ impl Game {
                 (brightness, shadows_enabled, character_shadows) = shown;
             }
             // Wherever the original calls Preferences.write, mainLoad included.
-            if let Some(store) = &preferences_store {
-                if let Err(error) = store.save(&ui_vm.preferences) {
-                    eprintln!(
-                        "Preferences not saved to {}: {error}",
-                        store.binary.display()
-                    );
-                }
+            if let Some(store) = &preferences_store
+                && let Err(error) = store.save(&ui_vm.preferences)
+            {
+                eprintln!(
+                    "Preferences not saved to {}: {error}",
+                    store.binary.display()
+                );
             }
         }
         // High detail lighting, the brightness baked without it, and high
@@ -764,10 +763,10 @@ impl Game {
         // high detail lighting): by the map streaming where there is one,
         // else from the prepared pack.
         let detail_change = detail.apply(&ui_vm.preferences, brightness, Some(frame));
-        if detail_change.textures {
-            if let Err(error) = workbench.textures.regenerate(&workbench.pack) {
-                eprintln!("Textures not generated again: {error}");
-            }
+        if detail_change.textures
+            && let Err(error) = workbench.textures.regenerate(&workbench.pack)
+        {
+            eprintln!("Textures not generated again: {error}");
         }
         if detail_change.scene {
             if !capture {
@@ -784,10 +783,8 @@ impl Game {
             if let Some(map) = &mut world_map {
                 map.refresh();
             }
-            if !streamed {
-                if let Err(error) = workbench.rebuild_static(ui.as_mut()) {
-                    eprintln!("Scene not rebuilt for the lighting preference: {error}");
-                }
+            if !streamed && let Err(error) = workbench.rebuild_static(ui.as_mut()) {
+                eprintln!("Scene not rebuilt for the lighting preference: {error}");
             }
             // The light region says whether the shader lights anything, and
             // a rebuilt scene has a shadow map of its own.
@@ -996,16 +993,15 @@ impl Game {
             (&mut capture_travel, live_base, &connection)
         {
             let [x, y] = player_state.self_player().tile();
-            if capture_ready {
-                if let Some(packet) = travel
+            if capture_ready
+                && let Some(packet) = travel
                     .next(
                         [x + base[0], y + base[1]],
                         connection.frames.get(&225).copied().unwrap_or_default() as u64,
                     )
                     .expect("travel capture waypoint")
-                {
-                    queue_packet(&mut outbox, &packet);
-                }
+            {
+                queue_packet(&mut outbox, &packet);
             }
             travel.finished()
         } else {
@@ -1148,8 +1144,7 @@ impl Game {
             // In game the scene follows the player; the title screen's is
             // built around its own middle.
             if let Some(stream_tile) = title_world.stream_tile().or(live_base.map(|_| motion.head))
-            {
-                if let Err(error) = map.step(
+                && let Err(error) = map.step(
                     &mut workbench,
                     stream_tile,
                     f64::from(get_frame_time()),
@@ -1158,11 +1153,11 @@ impl Game {
                     corrected_lights,
                     ui.as_mut(),
                     &mut live_diagnostics,
-                ) {
-                    let error = format!("World map: {error}");
-                    if live_diagnostics.len() < 32 && !live_diagnostics.contains(&error) {
-                        live_diagnostics.push(error);
-                    }
+                )
+            {
+                let error = format!("World map: {error}");
+                if live_diagnostics.len() < 32 && !live_diagnostics.contains(&error) {
+                    live_diagnostics.push(error);
                 }
             }
         }
@@ -1746,10 +1741,8 @@ impl Game {
             None => ui_menu.entries.append(&mut hover_menu.entries),
         }
         let mut hover_menu = ui_menu;
-        if cancel_spell {
-            if let Some(ui) = &mut ui {
-                ui_vm.cancel_targeting(ui);
-            }
+        if cancel_spell && let Some(ui) = &mut ui {
+            ui_vm.cancel_targeting(ui);
         }
         hover_menu.sort();
         // CS2 5427's cursors for the Use and Examine entries built above.

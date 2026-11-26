@@ -112,16 +112,16 @@ impl State {
     ) -> Result<(), String> {
         self.legacy_hover = None;
         self.legacy_tooltip = None;
-        if let Some(input) = input.filter(|p| !p.suppressed) {
-            if self.root >= 0 {
-                self.legacy_group(
-                    self.root,
-                    [0, 0],
-                    [0, 0, self.viewport[0], self.viewport[1]],
-                    input,
-                    0,
-                )?;
-            }
+        if let Some(input) = input.filter(|p| !p.suppressed)
+            && self.root >= 0
+        {
+            self.legacy_group(
+                self.root,
+                [0, 0],
+                [0, 0, self.viewport[0], self.viewport[1]],
+                input,
+                0,
+            )?;
         }
         Ok(())
     }
@@ -264,10 +264,10 @@ impl State {
             for child in children {
                 self.legacy_node(child, child_origin, bounds, input, depth + 1)?;
             }
-            if key.child == -1 {
-                if let Some(&(group, _)) = self.subinterfaces.get(&key.id) {
-                    self.legacy_group(group, [x, y], bounds, input, depth + 1)?;
-                }
+            if key.child == -1
+                && let Some(&(group, _)) = self.subinterfaces.get(&key.id)
+            {
+                self.legacy_group(group, [x, y], bounds, input, depth + 1)?;
             }
         }
         Ok(())

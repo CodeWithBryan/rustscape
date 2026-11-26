@@ -1330,10 +1330,10 @@ fn scanned_registration_matches_the_scan_order_case() {
         let mut e = e.clone();
         if let Some(a) = e.as_array_mut() {
             for v in a.iter_mut() {
-                if let Some(s) = v.as_str() {
-                    if let Some((class, _)) = s.split_once('#') {
-                        *v = json!(class);
-                    }
+                if let Some(s) = v.as_str()
+                    && let Some((class, _)) = s.split_once('#')
+                {
+                    *v = json!(class);
                 }
             }
         }

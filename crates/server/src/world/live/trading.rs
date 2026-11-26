@@ -396,7 +396,7 @@ impl trade::Host for TradeHost<'_> {
         self.ui(p, |inner| interfaces::Context::component(inner, id))
     }
     fn ui_resizable(&mut self, p: &NodeHandle) -> Result<bool> {
-        self.ui(p, |inner| interfaces::Context::resizable(inner))
+        self.ui(p, interfaces::Context::resizable)
     }
     fn ui_log(&mut self, p: &NodeHandle, text: String) -> Result<()> {
         self.ui(p, |inner| interfaces::Context::log(inner, text))
@@ -422,25 +422,25 @@ impl trade::Host for TradeHost<'_> {
         self.ui(p, |inner| interfaces::Context::dispatch_close(inner, c))
     }
     fn ui_weapon_extension(&mut self, p: &NodeHandle) -> Result<Option<Component>> {
-        self.ui(p, |inner| interfaces::Context::weapon_extension(inner))
+        self.ui(p, interfaces::Context::weapon_extension)
     }
     fn ui_create_weapon(&mut self, p: &NodeHandle) -> Result<Component> {
-        self.ui(p, |inner| interfaces::Context::create_weapon(inner))
+        self.ui(p, interfaces::Context::create_weapon)
     }
     fn ui_add_weapon(&mut self, p: &NodeHandle, c: Component) -> Result<()> {
         self.ui(p, |inner| interfaces::Context::add_weapon(inner, c))
     }
     fn ui_spellbook(&mut self, p: &NodeHandle) -> Result<i32> {
-        self.ui(p, |inner| interfaces::Context::spellbook(inner))
+        self.ui(p, interfaces::Context::spellbook)
     }
     fn ui_has_familiar(&mut self, p: &NodeHandle) -> Result<bool> {
-        self.ui(p, |inner| interfaces::Context::has_familiar(inner))
+        self.ui(p, interfaces::Context::has_familiar)
     }
     fn ui_friends_component(&mut self, p: &NodeHandle) -> Result<Component> {
-        self.ui(p, |inner| interfaces::Context::friends_component(inner))
+        self.ui(p, interfaces::Context::friends_component)
     }
     fn ui_autocast(&mut self, p: &NodeHandle) -> Result<Option<usize>> {
-        self.ui(p, |inner| interfaces::Context::autocast(inner))
+        self.ui(p, interfaces::Context::autocast)
     }
     fn ui_auto_spell_id(
         &mut self,
@@ -458,22 +458,22 @@ impl trade::Host for TradeHost<'_> {
         })
     }
     fn ui_window_mode(&mut self, p: &NodeHandle) -> Result<i32> {
-        self.ui(p, |inner| interfaces::Context::window_mode(inner))
+        self.ui(p, interfaces::Context::window_mode)
     }
     fn ui_set_window_mode(&mut self, p: &NodeHandle, mode: i32) -> Result<()> {
         self.ui(p, |inner| interfaces::Context::set_window_mode(inner, mode))
     }
     fn ui_tutorial_complete(&mut self, p: &NodeHandle) -> Result<bool> {
-        self.ui(p, |inner| interfaces::Context::tutorial_complete(inner))
+        self.ui(p, interfaces::Context::tutorial_complete)
     }
     fn ui_tutorial_tabs(&mut self, p: &NodeHandle) -> Result<()> {
-        self.ui(p, |inner| interfaces::Context::tutorial_tabs(inner))
+        self.ui(p, interfaces::Context::tutorial_tabs)
     }
     fn ui_has_runscript(&mut self, p: &NodeHandle) -> Result<bool> {
-        self.ui(p, |inner| interfaces::Context::has_runscript(inner))
+        self.ui(p, interfaces::Context::has_runscript)
     }
     fn ui_remove_runscript(&mut self, p: &NodeHandle) -> Result<()> {
-        self.ui(p, |inner| interfaces::Context::remove_runscript(inner))
+        self.ui(p, interfaces::Context::remove_runscript)
     }
     fn ui_set_unclosable(&mut self, p: &NodeHandle, value: bool) -> Result<()> {
         self.ui(p, |inner| {
@@ -481,7 +481,7 @@ impl trade::Host for TradeHost<'_> {
         })
     }
     fn ui_unclosable(&mut self, p: &NodeHandle) -> Result<bool> {
-        self.ui(p, |inner| interfaces::Context::unclosable_attribute(inner))
+        self.ui(p, interfaces::Context::unclosable_attribute)
     }
 }
 

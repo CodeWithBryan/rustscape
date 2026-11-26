@@ -500,7 +500,6 @@ fn original_model_update_readers_delayed_overwrites_protection_and_partial_write
     use rs09_protocol::game::Frame;
     let corpus: Value =
         serde_json::from_str(include_str!("../../../fixtures/ui/model-updates.json")).unwrap();
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let bytes = std::fs::read(recorded("ui.pack")).unwrap();
     assert_eq!(hash(&bytes), corpus["uiSha256"]);
     let mut state = State::new(Pack::decode(bytes).unwrap());

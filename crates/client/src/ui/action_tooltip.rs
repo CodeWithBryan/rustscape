@@ -200,10 +200,10 @@ pub fn steps(text: &str, metrics: &Metrics, start: i32, offsets: &[i32]) -> Vec<
             continue;
         };
         let id = usize::from(glyph);
-        if previous != 0 {
-            if let Some(kerning) = &metrics.kerning {
-                pen = pen.wrapping_add(i32::from(kerning[previous * 256 + id]));
-            }
+        if previous != 0
+            && let Some(kerning) = &metrics.kerning
+        {
+            pen = pen.wrapping_add(i32::from(kerning[previous * 256 + id]));
         }
         let advance = metrics.advances[id];
         steps.push(Step::Glyph {

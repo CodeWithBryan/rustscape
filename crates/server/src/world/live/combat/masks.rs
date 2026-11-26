@@ -505,16 +505,16 @@ impl Live {
         if let Some(row) = self.inner.npcs.rows.get(&node) {
             return (row.lifepoints, row.static_levels[3]);
         }
-        if let Some(p) = self.player_of(node) {
-            if let Ok(pair) = self.inner.with_profile(&p, |profile| {
+        if let Some(p) = self.player_of(node)
+            && let Ok(pair) = self.inner.with_profile(&p, |profile| {
                 (
                     profile.skills.lifepoints,
                     profile.skills.static_levels[3]
                         .wrapping_add(profile.skills.lifepoints_increase),
                 )
-            }) {
-                return pair;
-            }
+            })
+        {
+            return pair;
         }
         (0, 1)
     }

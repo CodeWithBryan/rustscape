@@ -282,12 +282,13 @@ impl Skills {
         discard_assist: bool,
         context: &mut impl Context,
     ) -> Result<i32> {
-        if !discard_assist && context.kind() == EntityKind::Player {
-            if let Some(level) = context.assisted_level(slot)? {
-                let own = self.dynamic_levels[index(slot)?];
-                if level > own {
-                    return Ok(level);
-                }
+        if !discard_assist
+            && context.kind() == EntityKind::Player
+            && let Some(level) = context.assisted_level(slot)?
+        {
+            let own = self.dynamic_levels[index(slot)?];
+            if level > own {
+                return Ok(level);
             }
         }
         Ok(self.dynamic_levels[index(slot)?])
@@ -482,17 +483,17 @@ impl Skills {
             if gloves.is_none() && (slot == 1 || slot == 2) {
                 gloves = Some(context.brawling_for_skill(0)?.ok_or(Error::Null)?);
             }
-            if let Some(gloves) = gloves {
-                if context.equipment_contains(gloves)? {
-                    added += added * context.brawling_bonus()?;
-                    context.effect(
-                        self,
-                        Effect::ConsumeGloves {
-                            id: gloves,
-                            charges: 1,
-                        },
-                    )?;
-                }
+            if let Some(gloves) = gloves
+                && context.equipment_contains(gloves)?
+            {
+                added += added * context.brawling_bonus()?;
+                context.effect(
+                    self,
+                    Effect::ConsumeGloves {
+                        id: gloves,
+                        charges: 1,
+                    },
+                )?;
             }
         }
         if (context.equipment_contains(13660)? || context.equipment_contains(13659)?) && slot == 11

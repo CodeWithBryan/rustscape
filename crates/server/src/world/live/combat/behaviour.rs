@@ -99,8 +99,8 @@ impl Live {
     fn npc_config(&self, npc: &P, key: &str) -> Option<Property> {
         let row = self.inner.npcs.rows.get(&npc.node())?;
         let handlers = row.definition.read().handlers.clone();
-        let value = handlers.read().get(key).cloned();
-        value
+
+        handlers.read().get(key).cloned()
     }
 }
 

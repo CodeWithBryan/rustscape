@@ -383,13 +383,12 @@ impl player_walk::Services for Host {
         target: Option<Node>,
         service: rs09_server::world::movement::DestinationService,
     ) -> player_walk::Result<Option<Location>> {
-        if let rs09_server::world::movement::DestinationService::Option(id) = service {
-            if ground_services::program(self, id)
+        if let rs09_server::world::movement::DestinationService::Option(id) = service
+            && ground_services::program(self, id)
                 .map_err(|e| player_walk::Error::Binding(e.to_string()))?
                 .is_some()
-            {
-                return Ok(None);
-            }
+        {
+            return Ok(None);
         }
         scenery_services::destination(state, self, p, target, service)
     }
@@ -648,15 +647,14 @@ impl Probe {
         self.nodes.insert(index, node);
         self.order.push(index);
         self.renderables.add(node);
-        if self.host.ui.is_some() {
-            if let Err(e) =
+        if self.host.ui.is_some()
+            && let Err(e) =
                 ui_services::admit_with_profile(self, node, prepared.client, saved.as_ref())
-            {
-                eprintln!("gameframe initialization failed: {e}");
-                let _ = self.remove(index, node);
-                let _ = reply.send(Err(AuthResponse::ErrorLoadingProfile));
-                return;
-            }
+        {
+            eprintln!("gameframe initialization failed: {e}");
+            let _ = self.remove(index, node);
+            let _ = reply.send(Err(AuthResponse::ErrorLoadingProfile));
+            return;
         }
         if self.profiles.is_some() {
             self.profile_ready.insert(node);
@@ -1075,10 +1073,10 @@ impl tick::Context for Probe {
                 if self.nodes.get(&a.wire_index) != Some(&node) {
                     continue;
                 }
-                if let Some(actor) = self.actors.get(&a.wire_index) {
-                    if actor.output.try_send(frames).is_err() {
-                        dead.push((a.wire_index, node));
-                    }
+                if let Some(actor) = self.actors.get(&a.wire_index)
+                    && actor.output.try_send(frames).is_err()
+                {
+                    dead.push((a.wire_index, node));
                 }
             }
         }

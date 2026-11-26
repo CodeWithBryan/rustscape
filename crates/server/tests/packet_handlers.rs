@@ -557,20 +557,16 @@ impl World {
     fn remove_from(&mut self, c: Container, item: &N) -> Result<bool> {
         self.emit(json!(["remove", c.name(), item]))?;
         let removed = self.answer_bool(&format!("remove:{}", c.name()), true);
-        if removed {
-            if let Some(slot) = self.slots(c).iter_mut().find(|s| s.as_ref() == Some(item)) {
-                *slot = None;
-            }
+        if removed && let Some(slot) = self.slots(c).iter_mut().find(|s| s.as_ref() == Some(item)) {
+            *slot = None;
         }
         Ok(removed)
     }
     fn add_to(&mut self, c: Container, item: &N) -> Result<bool> {
         self.emit(json!(["add", c.name(), item]))?;
         let added = self.answer_bool(&format!("add:{}", c.name()), true);
-        if added {
-            if let Some(slot) = self.slots(c).iter_mut().find(|s| s.is_none()) {
-                *slot = Some(item.clone());
-            }
+        if added && let Some(slot) = self.slots(c).iter_mut().find(|s| s.is_none()) {
+            *slot = Some(item.clone());
         }
         Ok(added)
     }

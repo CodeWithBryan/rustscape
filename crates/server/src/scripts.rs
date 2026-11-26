@@ -827,10 +827,10 @@ impl<E: Clone, N: Clone> Processor<E, N> {
         if self.interacted() && !self.range_called() && !self.persistent() {
             self.reset(state, ctx)?
         }
-        if let Some(target) = self.target() {
-            if !ctx.node_active(target, self, state)? {
-                self.reset(state, ctx)?
-            }
+        if let Some(target) = self.target()
+            && !ctx.node_active(target, self, state)?
+        {
+            self.reset(state, ctx)?
         }
         Ok(())
     }
@@ -880,12 +880,12 @@ impl<E: Clone, N: Clone> Processor<E, N> {
         state: &mut S,
         ctx: &mut impl Context<S, E, N>,
     ) -> Result<bool> {
-        if let Some(script) = self.active() {
-            if script.read().persist {
-                let name = script.read().class_name.clone();
-                ctx.log(&name,Level::Error,"Tried to call stopExecuting() on a persistent script! To halt execution of a persistent script, you MUST call clearScripts()!".into(),self,state)?;
-                self.reset(state, ctx)?;
-            }
+        if let Some(script) = self.active()
+            && script.read().persist
+        {
+            let name = script.read().class_name.clone();
+            ctx.log(&name,Level::Error,"Tried to call stopExecuting() on a persistent script! To halt execution of a persistent script, you MUST call clearScripts()!".into(),self,state)?;
+            self.reset(state, ctx)?;
         }
         Ok(true)
     }
@@ -946,12 +946,12 @@ impl Runtime {
         if !domain.is_some_and(|d| d.same(&state.identity())) {
             return Err(Error::Binding("script belongs to another world".into()));
         }
-        if let Form::UseWith { used, with, .. } | Form::QueuedUseWith { used, with, .. } = form {
-            if !state.contains_handle(&used) || !state.contains_handle(&with) {
-                return Err(Error::Binding(
-                    "script captures a foreign use target".into(),
-                ));
-            }
+        if let Form::UseWith { used, with, .. } | Form::QueuedUseWith { used, with, .. } = form
+            && (!state.contains_handle(&used) || !state.contains_handle(&with))
+        {
+            return Err(Error::Binding(
+                "script captures a foreign use target".into(),
+            ));
         }
         Ok(())
     }

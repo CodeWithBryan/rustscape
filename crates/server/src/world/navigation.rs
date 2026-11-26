@@ -126,15 +126,15 @@ struct Dispatch<'a, C> {
 impl<C: Context> dispatch::Context for Dispatch<'_, C> {
     type Output = Path;
     fn node(&self, node: usize) -> Result<View> {
-        if let Some((id, l)) = &self.location {
-            if node == *id {
-                return Ok(View {
-                    kind: dispatch::Kind::Other,
-                    location: Some(l.clone()),
-                    size: 1,
-                    scenery: None,
-                });
-            }
+        if let Some((id, l)) = &self.location
+            && node == *id
+        {
+            return Ok(View {
+                kind: dispatch::Kind::Other,
+                location: Some(l.clone()),
+                size: 1,
+                scenery: None,
+            });
         }
         self.ctx.node(node)
     }

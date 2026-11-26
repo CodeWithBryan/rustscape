@@ -142,10 +142,10 @@ pub fn has_inactive_base<S, C: Context<S> + ?Sized>(
         // The original reloads the checks field on every loop iteration.
         let checks = pulse.read().checks.clone().ok_or(Error::Null)?;
         let node = checks.read().get(index).copied().ok_or(Error::Index)?;
-        if let Some(node) = node {
-            if !ctx.node_active(node, state)? {
-                return Ok(true);
-            }
+        if let Some(node) = node
+            && !ctx.node_active(node, state)?
+        {
+            return Ok(true);
         }
     }
     Ok(false)
@@ -370,10 +370,10 @@ impl Manager {
         ctx.remove_weak_scripts(state)?;
         ctx.remove_normal_scripts(state)?;
         self.for_each(|kind, pulse| {
-            if kind != Some(Kind::Strong) {
-                if let Some(pulse) = pulse {
-                    ctx.stop(&pulse, state)?
-                }
+            if kind != Some(Kind::Strong)
+                && let Some(pulse) = pulse
+            {
+                ctx.stop(&pulse, state)?
             }
             Ok(())
         })
@@ -402,10 +402,10 @@ impl Manager {
     ) -> Result<()> {
         let mut remove = Vec::new();
         self.for_each(|key, pulse| {
-            if let Some(pulse) = pulse {
-                if !ctx.is_running(&pulse, state)? {
-                    remove.push(key)
-                }
+            if let Some(pulse) = pulse
+                && !ctx.is_running(&pulse, state)?
+            {
+                remove.push(key)
             }
             Ok(())
         })?;

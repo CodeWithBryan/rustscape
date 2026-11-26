@@ -694,10 +694,10 @@ impl zones::Host for Model {
     }
     fn familiar_owner(&mut self, familiar: &NodeHandle) -> Result<Option<NodeHandle>> {
         let owner = self.handle(&self.attr(familiar, "owner"));
-        if let Some(owner) = &owner {
-            if self.nodes[&self.slot_of(owner)].kind != EntityKind::Player {
-                return Err(Error::ClassCast);
-            }
+        if let Some(owner) = &owner
+            && self.nodes[&self.slot_of(owner)].kind != EntityKind::Player
+        {
+            return Err(Error::ClassCast);
         }
         self.emit("owner", vec![self.slot(Some(familiar))])?;
         Ok(owner)
@@ -929,20 +929,20 @@ impl dark_zone::Overlays for Model {
             "openOverlay",
             vec![self.slot(Some(player)), component_label(Some(component))],
         )?;
-        if let Some(old) = self.row(player).overlay {
-            if !self.close_own(player, old)? {
-                return Ok(());
-            }
+        if let Some(old) = self.row(player).overlay
+            && !self.close_own(player, old)?
+        {
+            return Ok(());
         }
         self.row(player).overlay = Some(component);
         self.open_component(player, component)
     }
     fn close_overlay(&mut self, player: &NodeHandle) -> Result<()> {
         self.emit("closeOverlay", vec![self.slot(Some(player))])?;
-        if let Some(overlay) = self.row(player).overlay {
-            if dark_zone::Overlays::close_component(self, player, overlay)? {
-                self.row(player).overlay = None;
-            }
+        if let Some(overlay) = self.row(player).overlay
+            && dark_zone::Overlays::close_component(self, player, overlay)?
+        {
+            self.row(player).overlay = None;
         }
         Ok(())
     }
@@ -1187,10 +1187,10 @@ impl wilderness_zone::Host for Model {
     }
     fn familiar(&mut self, player: &NodeHandle) -> Result<Option<NodeHandle>> {
         let familiar = self.handle(&self.attr(player, "familiar"));
-        if let Some(familiar) = &familiar {
-            if self.nodes[&self.slot_of(familiar)].kind != EntityKind::Familiar {
-                return Err(Error::ClassCast);
-            }
+        if let Some(familiar) = &familiar
+            && self.nodes[&self.slot_of(familiar)].kind != EntityKind::Familiar
+        {
+            return Err(Error::ClassCast);
         }
         self.emit("getFamiliar", vec![self.slot(Some(player))])?;
         Ok(familiar)

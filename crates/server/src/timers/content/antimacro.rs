@@ -79,13 +79,13 @@ fn roll_event_pool<H: Host>(ctx: &mut Natives<'_, H>, timer: &Handle) -> Result<
     let skill_based = ctx.host.skill_random_event(skill)?;
     let normal = ctx.host.non_skill_random_event()?;
     let roll = random(ctx.host, 100)?;
-    if roll >= 65 {
-        if let Some(event) = skill_based {
-            let ticks = ctx.host.ticks()?;
-            let last = ctx.host.skills(&entity).0.last_xp_gain;
-            if ticks.wrapping_sub(last) < 250 {
-                return Ok(event);
-            }
+    if roll >= 65
+        && let Some(event) = skill_based
+    {
+        let ticks = ctx.host.ticks()?;
+        let last = ctx.host.skills(&entity).0.last_xp_gain;
+        if ticks.wrapping_sub(last) < 250 {
+            return Ok(event);
         }
     }
     Ok(normal)
