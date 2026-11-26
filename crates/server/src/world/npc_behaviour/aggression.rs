@@ -101,17 +101,17 @@ impl<H: Host> Handler<H> {
         };
         let targets = behaviour.possible_targets(h, &entity, radius)?;
         let target = behaviour.logical_target(h, &entity, &targets)?;
-        if let Some(target) = &target {
-            if h.kind(target).is_player() {
-                if h.attribute_bool(target, "ignore_aggression", false)? {
-                    return Ok(false);
-                }
-                let rights = h.rights(target)?.ok_or(Error::Null)?;
-                if rights == Rights::Administrator
-                    && !h.attribute_bool(target, "allow_admin_aggression", false)?
-                {
-                    return Ok(false);
-                }
+        if let Some(target) = &target
+            && h.kind(target).is_player()
+        {
+            if h.attribute_bool(target, "ignore_aggression", false)? {
+                return Ok(false);
+            }
+            let rights = h.rights(target)?.ok_or(Error::Null)?;
+            if rights == Rights::Administrator
+                && !h.attribute_bool(target, "allow_admin_aggression", false)?
+            {
+                return Ok(false);
             }
         }
         if let Some(target) = target {
@@ -217,12 +217,13 @@ pub fn base_can_select_target<H: Host, B: AggressiveBehaviour<H> + ?Sized>(
     }
     if h.kind(entity).is_npc() && h.kind(target).is_player() {
         let handler = ai(h, entity)?.handler.clone();
-        if let Some(handler) = handler {
-            if handler.is_allow_tolerance(h)? && !h.wilderness_in_zone(entity)? {
-                let region = h.region_for_id(region_id)?;
-                if h.is_tolerated(&region, target)? {
-                    return Ok(false);
-                }
+        if let Some(handler) = handler
+            && handler.is_allow_tolerance(h)?
+            && !h.wilderness_in_zone(entity)?
+        {
+            let region = h.region_for_id(region_id)?;
+            if h.is_tolerated(&region, target)? {
+                return Ok(false);
             }
         }
     }

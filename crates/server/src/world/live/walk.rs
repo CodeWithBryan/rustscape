@@ -583,44 +583,42 @@ impl player_walk::Services for WalkHost<'_> {
         // scene, super::destination).
         if let (crate::world::movement::DestinationService::Option(id), Some(target)) =
             (&service, target)
+            && let Ok(object) = state.scenery(target)
         {
-            if let Ok(object) = state.scenery(target) {
-                let plugin = self
-                    .scenery_handler(*id)
-                    .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?;
-                let mut geometry = super::destination::Geometry {
-                    walk: &mut *self.walk,
-                    failures: Vec::new(),
-                };
-                let at = crate::world::global_handlers::registry::handler_destination(
-                    &mut geometry,
-                    plugin,
-                    Some(&super::destination::SceneNode(object)),
-                )
+            let plugin = self
+                .scenery_handler(*id)
                 .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?;
-                if !geometry.failures.is_empty() {
-                    return Err(player_walk::Error::Binding(format!(
-                        "getDestination reached {:?}",
-                        geometry.failures
-                    )));
-                }
-                return Ok(at.map(|[x, y, z]| Location::new(x, y, z)));
+            let mut geometry = super::destination::Geometry {
+                walk: &mut *self.walk,
+                failures: Vec::new(),
+            };
+            let at = crate::world::global_handlers::registry::handler_destination(
+                &mut geometry,
+                plugin,
+                Some(&super::destination::SceneNode(object)),
+            )
+            .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?;
+            if !geometry.failures.is_empty() {
+                return Err(player_walk::Error::Binding(format!(
+                    "getDestination reached {:?}",
+                    geometry.failures
+                )));
             }
+            return Ok(at.map(|[x, y, z]| Location::new(x, y, z)));
         }
         // A content listener's destination override (setDest), evaluated
         // when its movement pulse was made (super::talk).
-        if let crate::world::movement::DestinationService::Override(token) = &service {
-            if let Some((_, at)) = self.walk.approaches.destinations.get(token) {
-                return Ok(at.clone());
-            }
+        if let crate::world::movement::DestinationService::Override(token) = &service
+            && let Some((_, at)) = self.walk.approaches.destinations.get(token)
+        {
+            return Ok(at.clone());
         }
         // A player option handler's getDestination: OptionHandler's null.
         if let (crate::world::movement::DestinationService::Option(_), Some(target)) =
             (&service, target)
+            && self.players.contains_key(&target)
         {
-            if self.players.contains_key(&target) {
-                return Ok(None);
-            }
+            return Ok(None);
         }
         // OptionHandler.getDestination: PickupPlugin's is null (the default
         // destination); no other handler is installed.

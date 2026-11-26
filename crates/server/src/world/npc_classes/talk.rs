@@ -87,6 +87,7 @@ pub fn barcrawl<H: Host + ?Sized>(
 
 /// `getEventNpc(player) == null || getEventNpc(player) != npc ||
 /// getEventNpc(player)?.finalized == true`.
+#[allow(clippy::type_complexity)]
 fn not_this_event<H: Host + ?Sized>(
     h: &mut H,
     npc: &H::Npc,

@@ -83,10 +83,10 @@ pub fn finalize_death<H: Host + ?Sized>(
         }
         Some(Class::HighwayMan) => {
             h.base_finalize_death(npc, killer)?;
-            if h.id(npc)? == 180 {
-                if let Some(p) = player(h) {
-                    falador_task(h, p, 0, 10, |_, _| Ok(true))?;
-                }
+            if h.id(npc)? == 180
+                && let Some(p) = player(h)
+            {
+                falador_task(h, p, 0, 10, |_, _| Ok(true))?;
             }
             Ok(())
         }

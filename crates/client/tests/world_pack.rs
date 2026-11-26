@@ -1,5 +1,6 @@
-//! The native starting-scene pack against `assets/visual/demo.pack`, which an
-//! earlier `tools/prepare_visual.py` wrote from the same pinned cache.
+//! The native starting-scene pack against the recorded `demo.pack`
+//! (`support/packs.rs`), which an earlier `tools/prepare_visual.py` wrote
+//! from the same pinned cache.
 //!
 //! The script read three files from the pinned server commit; the test takes
 //! them from the reference checkout with `git show`. It needs `assets/cache`,
@@ -15,6 +16,10 @@ use rs09_client::{
 };
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, path::Path, process::Command};
+
+#[path = "support/packs.rs"]
+mod packs;
+use packs::recorded;
 
 fn root() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -49,7 +54,7 @@ fn order(pack: &Pack) -> Vec<&str> {
 #[test]
 fn native_world_pack_reproduces_the_recorded_python_pack() {
     let (Ok(recorded_bytes), true) = (
-        std::fs::read(root().join("assets/visual/demo.pack")),
+        std::fs::read(recorded("demo.pack")),
         root().join("assets/cache").is_dir(),
     ) else {
         eprintln!("skipped: no recorded pack or cache");
@@ -63,14 +68,12 @@ fn native_world_pack_reproduces_the_recorded_python_pack() {
         eprintln!("skipped: the pinned server files are not available from git");
         return;
     };
-    let provenance: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(root().join("assets/visual/provenance.json")).unwrap(),
-    )
-    .unwrap();
+    let provenance: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(recorded("provenance.json")).unwrap()).unwrap();
     assert_eq!(
         format!("{:x}", Sha256::digest(&recorded_bytes)),
         provenance["pack_sha256"].as_str().unwrap(),
-        "assets/visual/demo.pack is not the pack its provenance records"
+        "the recorded demo.pack is not the pack its provenance records"
     );
     assert_eq!(
         format!("{:x}", Sha256::digest(&spawns)),
@@ -113,10 +116,10 @@ fn native_world_pack_reproduces_the_recorded_python_pack() {
                         // Morph children were added to the script later, and
                         // the placement fields by the native builder.
                         for added in ["children", "placement"] {
-                            if definition.get(added).is_none() {
-                                if let Some(object) = ours.as_object_mut() {
-                                    object.remove(added);
-                                }
+                            if definition.get(added).is_none()
+                                && let Some(object) = ours.as_object_mut()
+                            {
+                                object.remove(added);
                             }
                         }
                         if &ours != definition {
@@ -167,7 +170,12 @@ fn native_world_pack_reproduces_the_recorded_python_pack() {
             // says they are all listed, and the models of their locations.
             "underwater",
             "underwater-complete",
-            "model"
+            // Models and animations of underwater locations and of morph
+            // children (the script packed a child's definition alone).
+            "model",
+            "seq",
+            "frame",
+            "base"
         ]
         .contains(family)),
         "{added:?}"

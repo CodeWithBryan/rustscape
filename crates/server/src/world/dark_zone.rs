@@ -322,10 +322,10 @@ pub fn insect_pulse<H: Host>(host: &mut H, pulse: &InsectPulse) -> Result<bool> 
 /// otherwise a new insect pulse is submitted and stored before the
 /// component itself opens.
 pub fn darkness_open<H: Host>(host: &mut H, player: &NodeHandle) -> Result<()> {
-    if let Some(pulse) = host.dark_extension(player)? {
-        if pulses::is_running_base(pulse.handle()) {
-            return Ok(());
-        }
+    if let Some(pulse) = host.dark_extension(player)?
+        && pulses::is_running_base(pulse.handle())
+    {
+        return Ok(());
     }
     let pulse = InsectPulse::new(player);
     host.pulser_submit(pulse.handle())?;

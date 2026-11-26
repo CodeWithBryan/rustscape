@@ -1,6 +1,8 @@
 //! Explicit empty-content NPC fixture bindings. Uses pinned metadata/spawns,
 //! native initialization/tick/search/queue/render kernels and real scene collision.
 //! Concrete subclasses/combat/skills/timers/region-viewer startup remain separate.
+// Shared by several examples; each uses part of it.
+#![allow(dead_code)]
 use super::{Frame, Host, Location, Node, Probe, Shared, State};
 use rs09_cache::archive::Archive;
 use rs09_game_core::{direction::Direction, random::JavaRandom};

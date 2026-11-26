@@ -279,11 +279,9 @@ impl<H: Host> Dsl<'_, H> {
         };
         if run {
             let component = callback(host)?;
-            if unclosable {
-                if let Some(component) = &component {
-                    let player = self.file.player();
-                    api::set_unclosable(host, player.as_ref(), component)?;
-                }
+            if unclosable && let Some(component) = &component {
+                let player = self.file.player();
+                api::set_unclosable(host, player.as_ref(), component)?;
             }
             self.file
                 .set_base_stage(self.file.base_stage().wrapping_add(1));
@@ -544,13 +542,13 @@ impl<H: Host> Dsl<'_, H> {
             Ok(component)
         })?;
         let mut s = self.st();
-        if s.stage == s.dialogue_counter {
-            if let Some(b) = s.opt_button {
-                if b >= 1 && b as usize <= s.filtered_options.len() {
-                    let goto = s.filtered_options[b as usize - 1].goto.clone();
-                    s.jump_to = s.label_stage_map.get(&goto).copied();
-                }
-            }
+        if s.stage == s.dialogue_counter
+            && let Some(b) = s.opt_button
+            && b >= 1
+            && b as usize <= s.filtered_options.len()
+        {
+            let goto = s.filtered_options[b as usize - 1].goto.clone();
+            s.jump_to = s.label_stage_map.get(&goto).copied();
         }
         s.dialogue_counter = s.dialogue_counter.wrapping_add(1);
         Ok(())

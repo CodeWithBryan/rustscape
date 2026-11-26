@@ -692,11 +692,11 @@ impl<H: Host> SpecialPulse<H> {
     /// inside the body is printed and stops the pulse.
     pub fn update(&mut self, h: &mut H) -> Result<bool> {
         for at in 0..self.checks.len() {
-            if let Some(node) = self.checks[at].clone() {
-                if !h.is_active(&node)? {
-                    self.running = false;
-                    return Ok(true);
-                }
+            if let Some(node) = self.checks[at].clone()
+                && !h.is_active(&node)?
+            {
+                self.running = false;
+                return Ok(true);
             }
         }
         if !self.running {

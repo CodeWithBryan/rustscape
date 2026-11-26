@@ -1,4 +1,6 @@
 //! Individual special handlers from the pinned 2009scape NPC combat path.
+// Shared by several examples; each uses part of it.
+#![allow(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Effect {
     None,

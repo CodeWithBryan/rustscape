@@ -525,9 +525,7 @@ fn world() -> World {
         messages: Vec::new(),
         inventory: vec![None; 28],
     };
-    world
-        .with_timers(|n, m| content::register_prototypes(n, m))
-        .unwrap();
+    world.with_timers(content::register_prototypes).unwrap();
     world
 }
 

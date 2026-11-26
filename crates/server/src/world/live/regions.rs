@@ -77,23 +77,23 @@ impl Live {
     /// and music zones the start-up's music loader gave it.
     pub fn region(&mut self, id: i32) -> region::Handle {
         let handle = self.walk.scene.region(id);
-        if self.regions.configured.insert(id) {
-            if let Some(config) = self.regions.loaded.get(id) {
-                let music = config.music;
-                let zones: Vec<std::sync::Arc<LoadedZone>> = config.music_zones.clone();
-                let activity = handle.read().activity.clone();
-                activity.write().music = music;
-                let list = activity.read().music_zones.clone();
-                for zone in zones {
-                    let key = std::sync::Arc::as_ptr(&zone) as usize;
-                    let object = self
-                        .regions
-                        .music
-                        .entry(key)
-                        .or_insert_with(|| MusicZone::new(zone.music_id, borders(&zone.borders)))
-                        .clone();
-                    list.add(object);
-                }
+        if self.regions.configured.insert(id)
+            && let Some(config) = self.regions.loaded.get(id)
+        {
+            let music = config.music;
+            let zones: Vec<std::sync::Arc<LoadedZone>> = config.music_zones.clone();
+            let activity = handle.read().activity.clone();
+            activity.write().music = music;
+            let list = activity.read().music_zones.clone();
+            for zone in zones {
+                let key = std::sync::Arc::as_ptr(&zone) as usize;
+                let object = self
+                    .regions
+                    .music
+                    .entry(key)
+                    .or_insert_with(|| MusicZone::new(zone.music_id, borders(&zone.borders)))
+                    .clone();
+                list.add(object);
             }
         }
         handle

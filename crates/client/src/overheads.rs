@@ -51,12 +51,12 @@ impl State {
         }
     }
     pub fn tick_chat(&mut self) {
-        if let Some(chat) = &mut self.chat {
-            if chat.loops > 0 {
-                chat.loops -= 1;
-                if chat.loops == 0 {
-                    self.chat = None;
-                }
+        if let Some(chat) = &mut self.chat
+            && chat.loops > 0
+        {
+            chat.loops -= 1;
+            if chat.loops == 0 {
+                self.chat = None;
             }
         }
     }
@@ -260,16 +260,15 @@ pub fn layout(
                 });
             }
         }
-        if let Some(chat) = &a.state.chat {
-            if a.npc.is_some()
+        if let Some(chat) = &a.state.chat
+            && (a.npc.is_some()
                 || c.public_filter == 0
                 || c.public_filter == 3
-                || c.public_filter == 1 && a.friend
-            {
-                let p = project(i, a.model_height);
-                if p[0] > -1 && chats.len() < 50 {
-                    chats.push((p, width(&chat.text) / 2, chat));
-                }
+                || c.public_filter == 1 && a.friend)
+        {
+            let p = project(i, a.model_height);
+            if p[0] > -1 && chats.len() < 50 {
+                chats.push((p, width(&chat.text) / 2, chat));
             }
         }
         let base = a.npc.map_or(a.model_height, |n| {

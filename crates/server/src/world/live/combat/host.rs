@@ -243,10 +243,10 @@ impl Live {
         else {
             return Ok(());
         };
-        if let Some(row) = self.npc_row(e) {
-            if row.brain.fields.read().never_walks {
-                return Ok(());
-            }
+        if let Some(row) = self.npc_row(e)
+            && row.brain.fields.read().never_walks
+        {
+            return Ok(());
         }
         let Some(target) = self.cloc(&victim) else {
             return Ok(());
@@ -1347,10 +1347,10 @@ impl cp::Host for Live {
         let node = entity.node();
         let manager = self.inner.state.actor(node).map_err(bind)?.manager.clone();
         for (kind, pulse) in manager.entries() {
-            if let Some(pulse) = pulse {
-                if !pulse.read().running {
-                    manager.put(kind, None);
-                }
+            if let Some(pulse) = pulse
+                && !pulse.read().running
+            {
+                manager.put(kind, None);
             }
         }
         if manager

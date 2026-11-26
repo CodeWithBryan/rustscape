@@ -1,5 +1,7 @@
 //! Post-tutorial gameframe binding using original component metadata and
 //! canonical player state.
+// Shared by several examples; each uses part of it.
+#![allow(dead_code)]
 use super::{Frame, Host, Node, Probe, State};
 use rs09_protocol::game::{actions::ClientAction, updates};
 use rs09_server::{
@@ -257,12 +259,12 @@ impl Context for UiContext<'_> {
     }
     fn close_event(&mut self, event: ui::CloseEvent, _: &Handle) -> Result<bool> {
         if let Some(event) = event.value::<rs09_server::world::component_objects::BankClose>() {
-            if let rs09_server::inventory::bank::CloseEvent::Bank(bank) = &event.0 {
-                if let Some(owner) = bank.owner() {
-                    self.state
-                        .player_fields(&owner)
-                        .map_err(|e| Error::Binding(e.to_string()))?;
-                }
+            if let rs09_server::inventory::bank::CloseEvent::Bank(bank) = &event.0
+                && let Some(owner) = bank.owner()
+            {
+                self.state
+                    .player_fields(&owner)
+                    .map_err(|e| Error::Binding(e.to_string()))?;
             }
             let owner = self
                 .state

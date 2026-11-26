@@ -224,6 +224,7 @@ impl Icons {
                 kinds[i] = 1;
                 continue;
             }
+            #[allow(clippy::needless_range_loop)]
             for j in 0..3 {
                 let light = shade(surfaces[i].normals[j]);
                 colors[i][j] = if textures[i] < 0 {

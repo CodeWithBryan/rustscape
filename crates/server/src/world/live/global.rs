@@ -1666,10 +1666,10 @@ impl Live {
         };
         let result = (|| -> Result<bool> {
             let player = player.ok_or(Error::Null)?;
-            if let GNode::Entity(p) = &player {
-                if !self.inner.players.contains_key(&p.node()) {
-                    return Ok(true);
-                }
+            if let GNode::Entity(p) = &player
+                && !self.inner.players.contains_key(&p.node())
+            {
+                return Ok(true);
             }
             let outcome = gh::run_task(&mut GHost { live: self }, &task, &player, None)?;
             Ok(match outcome {

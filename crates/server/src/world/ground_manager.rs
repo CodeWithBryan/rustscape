@@ -308,10 +308,10 @@ pub fn get(
                 if !ground::is_private(ctx, &item)? {
                     return Ok(Some(item));
                 }
-                if let Some(ref player) = player {
-                    if ground::dropped_by(ctx, &item, player)? {
-                        return Ok(Some(item));
-                    }
+                if let Some(ref player) = player
+                    && ground::dropped_by(ctx, &item, player)?
+                {
+                    return Ok(Some(item));
                 }
             }
         }

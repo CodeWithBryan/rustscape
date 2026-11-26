@@ -2151,10 +2151,10 @@ impl cr::Host for World {
         self.emit(json!(["invContains", player.0, id, amount]))?;
         let mut held = 0;
         for slot in 0..28 {
-            if let Some(item) = self.inventory_at(player, slot) {
-                if item.id() == id {
-                    held += item.0.borrow().amount;
-                }
+            if let Some(item) = self.inventory_at(player, slot)
+                && item.id() == id
+            {
+                held += item.0.borrow().amount;
             }
         }
         Ok(held >= amount)

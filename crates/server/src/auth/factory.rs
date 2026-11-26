@@ -97,19 +97,19 @@ impl Registry {
         } else {
             Provider::Memory(Arc::new(InMemoryStorage::default()))
         });
-        if settings.use_auth {
-            if let Some(Provider::Sql(sql)) = &mut self.provider {
-                let fields = &settings.database;
-                // Argument evaluation uses !! left to right. Assignment of the
-                // global authenticator occurs only after configureFor succeeds.
-                let address = fields.address.as_deref().ok_or(MissingSetting::Address)?;
-                let name = fields.name.as_deref().ok_or(MissingSetting::Name)?;
-                let username = fields.username.as_deref().ok_or(MissingSetting::Username)?;
-                let password = fields.password.as_deref().ok_or(MissingSetting::Password)?;
-                Arc::get_mut(sql)
-                    .expect("new provider has no shared handles")
-                    .configure_reference(address, name, username, password);
-            }
+        if settings.use_auth
+            && let Some(Provider::Sql(sql)) = &mut self.provider
+        {
+            let fields = &settings.database;
+            // Argument evaluation uses !! left to right. Assignment of the
+            // global authenticator occurs only after configureFor succeeds.
+            let address = fields.address.as_deref().ok_or(MissingSetting::Address)?;
+            let name = fields.name.as_deref().ok_or(MissingSetting::Name)?;
+            let username = fields.username.as_deref().ok_or(MissingSetting::Username)?;
+            let password = fields.password.as_deref().ok_or(MissingSetting::Password)?;
+            Arc::get_mut(sql)
+                .expect("new provider has no shared handles")
+                .configure_reference(address, name, username, password);
         }
         let mode = if settings.use_auth {
             Mode::Production

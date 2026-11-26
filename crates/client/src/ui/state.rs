@@ -462,15 +462,16 @@ impl State {
                 menu.entries.retain(|e| e.action == 1005);
                 hit = true;
             }
-            if c.kind == 0 && node.key.child == -1 {
-                if let Some(&(group, 0)) = self.subinterfaces.get(&node.key.id) {
-                    let end = node.subtree_end.min(nodes.len());
-                    modal_starts.push(
-                        (index + 1..end)
-                            .find(|&i| nodes[i].key.id >> 16 == group)
-                            .unwrap_or(end),
-                    );
-                }
+            if c.kind == 0
+                && node.key.child == -1
+                && let Some(&(group, 0)) = self.subinterfaces.get(&node.key.id)
+            {
+                let end = node.subtree_end.min(nodes.len());
+                modal_starts.push(
+                    (index + 1..end)
+                        .find(|&i| nodes[i].key.id >> 16 == group)
+                        .unwrap_or(end),
+                );
             }
             if let Some(special_hit) = special(&c, node, menu) {
                 hit |= special_hit;
@@ -511,107 +512,105 @@ impl State {
                     6 if self.please_wait.is_none() => add(41, c.option.clone(), 0, ""),
                     _ => {}
                 }
-                if c.kind == 2 {
-                    if let Some(ids) = &c.obj_types {
-                        for (slot, &wire_id) in ids.iter().enumerate() {
-                            if wire_id <= 0 {
-                                continue;
-                            }
-                            let x = (slot as i32 % c.base_width.max(1)) * (32 + c.inv_margin_x)
-                                + c.inv_offset_x
-                                    .as_ref()
-                                    .and_then(|a| a.get(slot))
-                                    .copied()
-                                    .unwrap_or(0);
-                            let y = (slot as i32 / c.base_width.max(1)) * (32 + c.inv_margin_y)
-                                + c.inv_offset_y
-                                    .as_ref()
-                                    .and_then(|a| a.get(slot))
-                                    .copied()
-                                    .unwrap_or(0);
-                            let rect = Rect {
-                                x: node.rect.x + x,
-                                y: node.rect.y + y,
-                                w: 32,
-                                h: 32,
-                            };
-                            if !rect.contains(point) {
-                                continue;
-                            }
-                            if let Ok(item) = self.items.get(&self.pack, wire_id - 1) {
-                                if let Some(selected) = &self.selected_item {
-                                    if properties.events >> 30 & 1 != 0 {
-                                        if selected.component != c.id
-                                            || selected.slot != slot as i32
-                                        {
-                                            menu.add(crate::interaction::MenuEntry {
-                                                option: "Use".into(),
-                                                target: format!(
-                                                    "{} -> <col=ff9040>{}",
-                                                    selected.text, item.name
-                                                ),
-                                                action: 40,
-                                                key: item.id as u64,
-                                                args: [slot as i32, c.id],
-                                                cursor: -1,
-                                            });
-                                        }
-                                        continue;
-                                    }
-                                }
-                                if self.targeting.active && properties.events >> 30 & 1 != 0 {
-                                    let entry = crate::interaction::MenuEntry {
-                                        option: String::new(),
-                                        target: format!("<col=ff9040>{}", item.name),
-                                        action: 3,
-                                        key: item.id as u64,
-                                        args: [slot as i32, c.id],
-                                        cursor: -1,
-                                    };
-                                    if let Err(error) =
-                                        self.target_entry(menu, 16, item.params.as_ref(), entry)
-                                    {
-                                        self.diagnostic(error);
-                                    }
-                                    continue;
-                                }
-                                let target = format!("<col=ff9040>{}", item.name);
-                                let mut add_item = |action, option: String| {
+                if c.kind == 2
+                    && let Some(ids) = &c.obj_types
+                {
+                    for (slot, &wire_id) in ids.iter().enumerate() {
+                        if wire_id <= 0 {
+                            continue;
+                        }
+                        let x = (slot as i32 % c.base_width.max(1)) * (32 + c.inv_margin_x)
+                            + c.inv_offset_x
+                                .as_ref()
+                                .and_then(|a| a.get(slot))
+                                .copied()
+                                .unwrap_or(0);
+                        let y = (slot as i32 / c.base_width.max(1)) * (32 + c.inv_margin_y)
+                            + c.inv_offset_y
+                                .as_ref()
+                                .and_then(|a| a.get(slot))
+                                .copied()
+                                .unwrap_or(0);
+                        let rect = Rect {
+                            x: node.rect.x + x,
+                            y: node.rect.y + y,
+                            w: 32,
+                            h: 32,
+                        };
+                        if !rect.contains(point) {
+                            continue;
+                        }
+                        if let Ok(item) = self.items.get(&self.pack, wire_id - 1) {
+                            if let Some(selected) = &self.selected_item
+                                && properties.events >> 30 & 1 != 0
+                            {
+                                if selected.component != c.id || selected.slot != slot as i32 {
                                     menu.add(crate::interaction::MenuEntry {
-                                        option,
-                                        target: target.clone(),
-                                        action,
+                                        option: "Use".into(),
+                                        target: format!(
+                                            "{} -> <col=ff9040>{}",
+                                            selected.text, item.name
+                                        ),
+                                        action: 40,
                                         key: item.id as u64,
                                         args: [slot as i32, c.id],
                                         cursor: -1,
                                     });
-                                };
-                                if properties.events >> 30 & 1 != 0 {
-                                    for i in (3..5).rev() {
-                                        if let Some(op) = &item.iops[i] {
-                                            add_item([47, 5, 43, 35, 58][i], op.clone());
-                                        }
-                                    }
                                 }
-                                if properties.events >> 31 & 1 != 0 {
-                                    add_item(22, "Use".into());
-                                }
-                                if properties.events >> 30 & 1 != 0 {
-                                    for i in (0..3).rev() {
-                                        if let Some(op) = &item.iops[i] {
-                                            add_item([47, 5, 43, 35, 58][i], op.clone());
-                                        }
-                                    }
-                                }
-                                if let Some(ops) = &c.inv_options {
-                                    for i in (0..5).rev() {
-                                        if let Some(op) = &ops[i] {
-                                            add_item([25, 23, 48, 7, 13][i], op.clone());
-                                        }
-                                    }
-                                }
-                                add_item(1006, "Examine".into());
+                                continue;
                             }
+                            if self.targeting.active && properties.events >> 30 & 1 != 0 {
+                                let entry = crate::interaction::MenuEntry {
+                                    option: String::new(),
+                                    target: format!("<col=ff9040>{}", item.name),
+                                    action: 3,
+                                    key: item.id as u64,
+                                    args: [slot as i32, c.id],
+                                    cursor: -1,
+                                };
+                                if let Err(error) =
+                                    self.target_entry(menu, 16, item.params.as_ref(), entry)
+                                {
+                                    self.diagnostic(error);
+                                }
+                                continue;
+                            }
+                            let target = format!("<col=ff9040>{}", item.name);
+                            let mut add_item = |action, option: String| {
+                                menu.add(crate::interaction::MenuEntry {
+                                    option,
+                                    target: target.clone(),
+                                    action,
+                                    key: item.id as u64,
+                                    args: [slot as i32, c.id],
+                                    cursor: -1,
+                                });
+                            };
+                            if properties.events >> 30 & 1 != 0 {
+                                for i in (3..5).rev() {
+                                    if let Some(op) = &item.iops[i] {
+                                        add_item([47, 5, 43, 35, 58][i], op.clone());
+                                    }
+                                }
+                            }
+                            if properties.events >> 31 & 1 != 0 {
+                                add_item(22, "Use".into());
+                            }
+                            if properties.events >> 30 & 1 != 0 {
+                                for i in (0..3).rev() {
+                                    if let Some(op) = &item.iops[i] {
+                                        add_item([47, 5, 43, 35, 58][i], op.clone());
+                                    }
+                                }
+                            }
+                            if let Some(ops) = &c.inv_options {
+                                for i in (0..5).rev() {
+                                    if let Some(op) = &ops[i] {
+                                        add_item([25, 23, 48, 7, 13][i], op.clone());
+                                    }
+                                }
+                            }
+                            add_item(1006, "Examine".into());
                         }
                     }
                 }
@@ -631,30 +630,30 @@ impl State {
                 continue;
             }
             for i in (0..10).rev() {
-                if i == 4 {
-                    if let Some(verb) = super::targeting::target_verb(&c, properties) {
-                        add(32, verb.into(), 0, &c.option_base);
-                    }
+                if i == 4
+                    && let Some(verb) = super::targeting::target_verb(&c, properties)
+                {
+                    add(32, verb.into(), 0, &c.option_base);
                 }
                 if !properties.button_enabled(i as i32) && c.on_option_click.is_none() {
                     continue;
                 }
-                if let Some(Some(op)) = c.ops.as_ref().and_then(|ops| ops.get(i)) {
-                    if !op.trim().is_empty() {
-                        op_cursor.set(
-                            c.drag_targets
-                                .as_ref()
-                                .and_then(|cursors| cursors.get(i))
-                                .copied()
-                                .unwrap_or(-1),
-                        );
-                        add(
-                            if i >= 5 { 1003 } else { 9 },
-                            op.clone(),
-                            (i + 1) as u64,
-                            &c.option_base,
-                        );
-                    }
+                if let Some(Some(op)) = c.ops.as_ref().and_then(|ops| ops.get(i))
+                    && !op.trim().is_empty()
+                {
+                    op_cursor.set(
+                        c.drag_targets
+                            .as_ref()
+                            .and_then(|cursors| cursors.get(i))
+                            .copied()
+                            .unwrap_or(-1),
+                    );
+                    add(
+                        if i >= 5 { 1003 } else { 9 },
+                        op.clone(),
+                        (i + 1) as u64,
+                        &c.option_base,
+                    );
                 }
             }
             if properties.events & 1 != 0 {
@@ -763,10 +762,10 @@ impl State {
             .components
             .range(Key::component(group << 16)..Key::component((group + 1) << 16))
         {
-            if key.child == -1 {
-                if let Some(args) = &c.on_load {
-                    self.hooks.push_back(Hook::new(key, args.clone()));
-                }
+            if key.child == -1
+                && let Some(args) = &c.on_load
+            {
+                self.hooks.push_back(Hook::new(key, args.clone()));
             }
         }
     }
@@ -1063,15 +1062,13 @@ impl State {
         }
         if pointer >= 0 {
             self.load_group(pointer >> 16)?;
-            if let Some(c) = self.components.get_mut(&Key::component(pointer)) {
-                if let (Some(ids), Some(amounts)) = (&mut c.obj_types, &mut c.obj_counts) {
-                    if let (Some(id), Some(amount)) =
-                        (ids.get_mut(slot as usize), amounts.get_mut(slot as usize))
-                    {
-                        *id = item.id.wrapping_add(1);
-                        *amount = item.amount;
-                    }
-                }
+            if let Some(c) = self.components.get_mut(&Key::component(pointer))
+                && let (Some(ids), Some(amounts)) = (&mut c.obj_types, &mut c.obj_counts)
+                && let (Some(id), Some(amount)) =
+                    (ids.get_mut(slot as usize), amounts.get_mut(slot as usize))
+            {
+                *id = item.id.wrapping_add(1);
+                *amount = item.amount;
             }
         }
         let items = self
@@ -1413,18 +1410,19 @@ impl State {
                     break;
                 }
             }
-            if laid_out.is_ok() && key.child == -1 {
-                if let Some(&(group, _)) = self.subinterfaces.get(&key.id) {
-                    // layoutComponent 330-339: the open interface is sized
-                    // against the host's scroll size, and placed at the
-                    // host's own position without its scroll offset.
-                    let host = Rect {
-                        w: content_size[0],
-                        h: content_size[1],
-                        ..rect
-                    };
-                    laid_out = self.layout_group(group, host, node_clip, out, depth + 1, visible);
-                }
+            if laid_out.is_ok()
+                && key.child == -1
+                && let Some(&(group, _)) = self.subinterfaces.get(&key.id)
+            {
+                // layoutComponent 330-339: the open interface is sized
+                // against the host's scroll size, and placed at the
+                // host's own position without its scroll offset.
+                let host = Rect {
+                    w: content_size[0],
+                    h: content_size[1],
+                    ..rect
+                };
+                laid_out = self.layout_group(group, host, node_clip, out, depth + 1, visible);
             }
             self.resize_inside -= u32::from(scoped);
             laid_out?;

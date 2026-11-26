@@ -18,12 +18,12 @@ fn first_difference(a: &Value, b: &Value, path: String) -> Option<String> {
             }
         }
     }
-    if let (Some(a), Some(b)) = (a.as_array(), b.as_array()) {
-        if a.len() == b.len() {
-            for (index, (a, b)) in a.iter().zip(b).enumerate() {
-                if let Some(diff) = first_difference(a, b, format!("{path}/{index}")) {
-                    return Some(diff);
-                }
+    if let (Some(a), Some(b)) = (a.as_array(), b.as_array())
+        && a.len() == b.len()
+    {
+        for (index, (a, b)) in a.iter().zip(b).enumerate() {
+            if let Some(diff) = first_difference(a, b, format!("{path}/{index}")) {
+                return Some(diff);
             }
         }
     }

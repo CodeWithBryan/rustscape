@@ -51,6 +51,7 @@ fn read_lines(lines: &Lines) -> Vec<Option<Text>> {
 }
 
 /// The `runscript` attribute a prompt stores: `(value: Any) -> Unit`.
+#[allow(clippy::type_complexity)]
 pub struct RunScript<H: Host>(Arc<dyn Fn(&mut H, Response) -> Result<()> + Send + Sync>);
 impl<H: Host> Clone for RunScript<H> {
     fn clone(&self) -> Self {

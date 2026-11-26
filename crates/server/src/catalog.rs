@@ -120,10 +120,8 @@ impl Catalog {
                 } else {
                     false
                 };
-                if !retained {
-                    if let Ok(mut frames) = self.frames.lock() {
-                        frames.remove(&tag);
-                    }
+                if !retained && let Ok(mut frames) = self.frames.lock() {
+                    frames.remove(&tag);
                 }
                 result
             })

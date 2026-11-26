@@ -233,10 +233,10 @@ fn render(
             continue;
         };
         let ch = usize::from(glyph);
-        if previous != 0 {
-            if let Some(kerning) = &font.metrics.kerning {
-                x = x.wrapping_add(i32::from(kerning[previous * 256 + ch]));
-            }
+        if previous != 0
+            && let Some(kerning) = &font.metrics.kerning
+        {
+            x = x.wrapping_add(i32::from(kerning[previous * 256 + ch]));
         }
         if ch != 32 {
             let [ox, oy] = font.offsets[ch];

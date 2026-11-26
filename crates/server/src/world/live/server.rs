@@ -362,10 +362,8 @@ fn read_input(live: &mut Live) {
         }
         if ended {
             let was_active = live.inner.sessions.get(&id).is_some_and(|s| s.active);
-            if was_active {
-                if let Err(error) = driver.close(live, &id) {
-                    live.inner.log_line(format!("disconnect failed: {error:?}"));
-                }
+            if was_active && let Err(error) = driver.close(live, &id) {
+                live.inner.log_line(format!("disconnect failed: {error:?}"));
             }
         }
     }
@@ -428,14 +426,14 @@ fn deliver(live: &mut Live) {
     for (id, session) in live.inner.sessions.iter_mut() {
         let mut frames = std::mem::take(&mut session.direct);
         frames.extend(queued.remove(id).unwrap_or_default());
-        if !frames.is_empty() {
-            if let Some(output) = &session.link.output {
-                match output.try_send(frames) {
-                    Ok(()) => {}
-                    Err(mpsc::error::TrySendError::Full(_)) => stalled.push(*id),
-                    Err(mpsc::error::TrySendError::Closed(_)) => {
-                        session.link.output = None;
-                    }
+        if !frames.is_empty()
+            && let Some(output) = &session.link.output
+        {
+            match output.try_send(frames) {
+                Ok(()) => {}
+                Err(mpsc::error::TrySendError::Full(_)) => stalled.push(*id),
+                Err(mpsc::error::TrySendError::Closed(_)) => {
+                    session.link.output = None;
                 }
             }
         }

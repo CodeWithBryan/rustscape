@@ -120,10 +120,10 @@ pub fn if_action(ctx: &mut impl Context, p: &NodeHandle, a: Action) -> Result<()
     let plugin = ctx.plugin(&c)?;
     let id = ctx.id(&c)?;
     ctx.button_event(p, id, a.child)?;
-    if !ctx.run_listener(p, &c, a.button())? {
-        if let Some(plugin) = plugin {
-            ctx.handle_plugin(plugin, p, &c, a.button())?;
-        }
+    if !ctx.run_listener(p, &c, a.button())?
+        && let Some(plugin) = plugin
+    {
+        ctx.handle_plugin(plugin, p, &c, a.button())?;
     }
     Ok(())
 }
@@ -178,10 +178,10 @@ pub fn continue_option(ctx: &mut impl ContinueContext, p: &NodeHandle, a: Action
             slot: a.slot,
             item: -1,
         };
-        if !ctx.run_listener(p, &c, b)? {
-            if let Some(plugin) = ctx.plugin(&c)? {
-                ctx.handle_plugin(plugin, p, &c, b)?;
-            }
+        if !ctx.run_listener(p, &c, b)?
+            && let Some(plugin) = ctx.plugin(&c)?
+        {
+            ctx.handle_plugin(plugin, p, &c, b)?;
         }
         return Ok(());
     }

@@ -587,45 +587,45 @@ impl Game {
                     });
                 }
             };
-        if !workbench.avatar.is_empty() {
-            if let Some(state) = actor_states.get(&rs09_protocol::game::players::SELF) {
+        if !workbench.avatar.is_empty()
+            && let Some(state) = actor_states.get(&rs09_protocol::game::players::SELF)
+        {
+            add_spot(
+                false,
+                rs09_protocol::game::players::SELF,
+                motion.fine,
+                motion.angle,
+                workbench.bas.terrain,
+                state,
+            );
+        }
+        for index in &player_state.local_ids {
+            if let (Some(actor), Some(state)) = (live_actors.get(index), actor_states.get(index))
+                && live_appearances.contains_key(index)
+            {
                 add_spot(
                     false,
-                    rs09_protocol::game::players::SELF,
-                    motion.fine,
-                    motion.angle,
-                    workbench.bas.terrain,
+                    *index,
+                    actor.fine,
+                    actor.angle,
+                    live_bas.get(index).map_or([0; 2], |b| b.terrain),
                     state,
                 );
             }
         }
-        for index in &player_state.local_ids {
-            if let (Some(actor), Some(state)) = (live_actors.get(index), actor_states.get(index)) {
-                if live_appearances.contains_key(index) {
-                    add_spot(
-                        false,
-                        *index,
-                        actor.fine,
-                        actor.angle,
-                        live_bas.get(index).map_or([0; 2], |b| b.terrain),
-                        state,
-                    );
-                }
-            }
-        }
         for npc in &workbench.npcs {
-            if npc.render_id.is_some() {
-                if let Some(state) = &npc.animation {
-                    let bas = workbench.npc_definitions[&npc.id].bas;
-                    add_spot(
-                        true,
-                        npc.index,
-                        npc.motion.fine,
-                        npc.motion.angle,
-                        workbench.npc_bases.get(&bas).map_or([0; 2], |b| b.terrain),
-                        state,
-                    );
-                }
+            if npc.render_id.is_some()
+                && let Some(state) = &npc.animation
+            {
+                let bas = workbench.npc_definitions[&npc.id].bas;
+                add_spot(
+                    true,
+                    npc.index,
+                    npc.motion.fine,
+                    npc.motion.angle,
+                    workbench.npc_bases.get(&bas).map_or([0; 2], |b| b.terrain),
+                    state,
+                );
             }
         }
         let spot_tick = world_ticks as u64;
@@ -1349,169 +1349,167 @@ impl Game {
             );
         }
         ui_renderer.inventory_press_presented = None;
-        if show_ui {
-            if let Some(ui) = &mut ui {
-                if let Some(map) = &mut minimap {
-                    map.fine = motion.fine;
-                    map.state = ui_vm.minimap.state;
-                    map.flag = (destination_flag.tile[0] != 0).then_some([
-                        destination_flag.tile[0] + workbench.navigation.origin[0],
-                        destination_flag.tile[1] + workbench.navigation.origin[1],
-                    ]);
-                    map.markers.clear();
-                    map.hints.clear();
-                    if rs09_client::minimap::hints_visible(ui_vm.cycle) {
-                        for hint in ui_vm.minimap.hints.iter().flatten() {
-                            let fine = match hint.kind {
-                                1 => workbench
-                                    .npcs
-                                    .iter()
-                                    .find(|n| n.index as i32 == hint.actor)
-                                    .map(|n| n.motion.fine),
-                                2 => Some(hint.tile.map(|n| n * 128 + 64)),
-                                10 if hint.actor == rs09_protocol::game::players::SELF as i32 => {
-                                    Some(motion.fine)
-                                }
-                                10 => live_actors.get(&(hint.actor as usize)).map(|a| a.fine),
-                                _ => None,
-                            };
-                            if let Some(fine) = fine {
-                                map.hints.push((hint.sprite, fine));
+        if show_ui && let Some(ui) = &mut ui {
+            if let Some(map) = &mut minimap {
+                map.fine = motion.fine;
+                map.state = ui_vm.minimap.state;
+                map.flag = (destination_flag.tile[0] != 0).then_some([
+                    destination_flag.tile[0] + workbench.navigation.origin[0],
+                    destination_flag.tile[1] + workbench.navigation.origin[1],
+                ]);
+                map.markers.clear();
+                map.hints.clear();
+                if rs09_client::minimap::hints_visible(ui_vm.cycle) {
+                    for hint in ui_vm.minimap.hints.iter().flatten() {
+                        let fine = match hint.kind {
+                            1 => workbench
+                                .npcs
+                                .iter()
+                                .find(|n| n.index as i32 == hint.actor)
+                                .map(|n| n.motion.fine),
+                            2 => Some(hint.tile.map(|n| n * 128 + 64)),
+                            10 if hint.actor == rs09_protocol::game::players::SELF as i32 => {
+                                Some(motion.fine)
                             }
+                            10 => live_actors.get(&(hint.actor as usize)).map(|a| a.fine),
+                            _ => None,
+                        };
+                        if let Some(fine) = fine {
+                            map.hints.push((hint.sprite, fine));
                         }
                     }
-                    let dots = map.asset("mapdots").expect("minimap mapdots");
-                    let functions = map.asset("mapfunction").expect("minimap mapfunction");
-                    for tile in workbench
-                        .ground
-                        .occupied()
-                        .into_iter()
-                        .filter(|t| t.plane == workbench.ground.plane)
+                }
+                let dots = map.asset("mapdots").expect("minimap mapdots");
+                let functions = map.asset("mapfunction").expect("minimap mapfunction");
+                for tile in workbench
+                    .ground
+                    .occupied()
+                    .into_iter()
+                    .filter(|t| t.plane == workbench.ground.plane)
+                {
+                    map.markers.push(minimap_render::Marker {
+                        group: dots,
+                        frame: 0,
+                        fine: [
+                            (tile.x + workbench.navigation.origin[0]) * 128 + 64,
+                            (tile.y + workbench.navigation.origin[1]) * 128 + 64,
+                        ],
+                    });
+                }
+                for npc in &workbench.npcs {
+                    if let Ok(Some(id)) = workbench.npc_choice(npc.id, &ui_vm, Some(ui)) {
+                        // A morph child the scene did not load (the
+                        // title scene loads base types only) has no dot.
+                        let Some(d) = workbench.npc_definitions.get(&id) else {
+                            continue;
+                        };
+                        if d.minimap_display && d.interactive {
+                            map.markers.push(minimap_render::Marker {
+                                group: if d.minimap_marker == -1 {
+                                    dots
+                                } else {
+                                    functions
+                                },
+                                frame: if d.minimap_marker == -1 {
+                                    1
+                                } else {
+                                    d.minimap_marker as usize
+                                },
+                                fine: npc.motion.fine,
+                            });
+                        }
+                    }
+                }
+                let team = live_decoded
+                    .get(&rs09_protocol::game::players::SELF)
+                    .map_or(Ok(0), |d| map.player_team(ui, d))
+                    .unwrap_or_else(|e| {
+                        ui.diagnostic(e);
+                        0
+                    });
+                for index in &player_state.local_ids {
+                    if let (Some(actor), Some(d)) =
+                        (live_actors.get(index), live_decoded.get(index))
                     {
-                        map.markers.push(minimap_render::Marker {
-                            group: dots,
-                            frame: 0,
-                            fine: [
-                                (tile.x + workbench.navigation.origin[0]) * 128 + 64,
-                                (tile.y + workbench.navigation.origin[1]) * 128 + 64,
-                            ],
-                        });
-                    }
-                    for npc in &workbench.npcs {
-                        if let Ok(Some(id)) = workbench.npc_choice(npc.id, &ui_vm, Some(ui)) {
-                            // A morph child the scene did not load (the
-                            // title scene loads base types only) has no dot.
-                            let Some(d) = workbench.npc_definitions.get(&id) else {
-                                continue;
-                            };
-                            if d.minimap_display && d.interactive {
-                                map.markers.push(minimap_render::Marker {
-                                    group: if d.minimap_marker == -1 {
-                                        dots
-                                    } else {
-                                        functions
-                                    },
-                                    frame: if d.minimap_marker == -1 {
-                                        1
-                                    } else {
-                                        d.minimap_marker as usize
-                                    },
-                                    fine: npc.motion.fine,
-                                });
-                            }
-                        }
-                    }
-                    let team = live_decoded
-                        .get(&rs09_protocol::game::players::SELF)
-                        .map_or(Ok(0), |d| map.player_team(ui, d))
-                        .unwrap_or_else(|e| {
+                        let peer_team = map.player_team(ui, d).unwrap_or_else(|e| {
                             ui.diagnostic(e);
                             0
                         });
-                    for index in &player_state.local_ids {
-                        if let (Some(actor), Some(d)) =
-                            (live_actors.get(index), live_decoded.get(index))
-                        {
-                            let peer_team = map.player_team(ui, d).unwrap_or_else(|e| {
-                                ui.diagnostic(e);
-                                0
-                            });
-                            // A key decode37 rejects has no player in the original.
-                            let Some(name) = rs09_client::minimap::username_key(d.name37) else {
-                                continue;
-                            };
-                            map.markers.push(minimap_render::Marker {
-                                group: dots,
-                                frame: rs09_client::minimap::player_dot(
-                                    name,
-                                    ui_vm.social.friends.iter().map(|f| (f.key, f.world)),
-                                    ui_vm.social.clan_members.iter().map(|m| m.key),
-                                    team,
-                                    peer_team,
-                                ),
-                                fine: actor.fine,
-                            });
-                        }
+                        // A key decode37 rejects has no player in the original.
+                        let Some(name) = rs09_client::minimap::username_key(d.name37) else {
+                            continue;
+                        };
+                        map.markers.push(minimap_render::Marker {
+                            group: dots,
+                            frame: rs09_client::minimap::player_dot(
+                                name,
+                                ui_vm.social.friends.iter().map(|f| (f.key, f.world)),
+                                ui_vm.social.clan_members.iter().map(|m| m.key),
+                                team,
+                                peer_team,
+                            ),
+                            fine: actor.fine,
+                        });
                     }
-                    if let Err(e) = map.prepare(&workbench, &ui_vm, ui) {
-                        ui.diagnostic(format!("Minimap: {e}"));
-                    }
-                    ui.world_map.scene_jitter = map.scene_jitter();
                 }
-                ui_models.set_brightness(brightness);
-                ui_models.begin();
-                let model_context = ui_model_render::Context {
-                    world: &workbench,
-                    vm: &ui_vm,
-                    players: &live_decoded,
-                    self_index: connection
-                        .as_ref()
-                        .and_then(|s| s.world.as_ref())
-                        .map_or(0, |w| w.player_index as usize),
-                    live: live_mode,
-                };
-                ui_renderer.inventory_drag = ui_drag.inventory_visual;
-                // applyClientCode's inputs: the client loop, and the local
-                // player's name and movement animation for the body on the
-                // character design screens.
-                ui_renderer.client_codes = rs09_client::ui::client_code::Inputs {
-                    cycle: ui_vm.cycle,
-                    default_female: false,
-                    self_name37: live_decoded
-                        .get(&rs09_protocol::game::players::SELF)
-                        .map(|raw| raw.name37),
-                    movement: actor_states
-                        .get(&rs09_protocol::game::players::SELF)
-                        .map_or([-1, 0, 0], |state| {
-                            [state.movement.id, state.movement.frame, state.movement.next]
-                        }),
-                };
-                ui_renderer.scene_delta = ui_scene_delta;
-                ui_renderer.title_scene_drawn = title_world.active();
-                ui_renderer.excluded = ui_drag.visual.map(|n| n.key);
+                if let Err(e) = map.prepare(&workbench, &ui_vm, ui) {
+                    ui.diagnostic(format!("Minimap: {e}"));
+                }
+                ui.world_map.scene_jitter = map.scene_jitter();
+            }
+            ui_models.set_brightness(brightness);
+            ui_models.begin();
+            let model_context = ui_model_render::Context {
+                world: &workbench,
+                vm: &ui_vm,
+                players: &live_decoded,
+                self_index: connection
+                    .as_ref()
+                    .and_then(|s| s.world.as_ref())
+                    .map_or(0, |w| w.player_index as usize),
+                live: live_mode,
+            };
+            ui_renderer.inventory_drag = ui_drag.inventory_visual;
+            // applyClientCode's inputs: the client loop, and the local
+            // player's name and movement animation for the body on the
+            // character design screens.
+            ui_renderer.client_codes = rs09_client::ui::client_code::Inputs {
+                cycle: ui_vm.cycle,
+                default_female: false,
+                self_name37: live_decoded
+                    .get(&rs09_protocol::game::players::SELF)
+                    .map(|raw| raw.name37),
+                movement: actor_states
+                    .get(&rs09_protocol::game::players::SELF)
+                    .map_or([-1, 0, 0], |state| {
+                        [state.movement.id, state.movement.frame, state.movement.next]
+                    }),
+            };
+            ui_renderer.scene_delta = ui_scene_delta;
+            ui_renderer.title_scene_drawn = title_world.active();
+            ui_renderer.excluded = ui_drag.visual.map(|n| n.key);
+            ui_renderer.draw(
+                ui,
+                &workbench.pack,
+                &ui_nodes,
+                minimap.as_mut(),
+                &mut ui_models,
+                &model_context,
+            );
+            ui_renderer.excluded = None;
+            ui_drag.inventory_presented(ui_renderer.inventory_drag);
+            if let Some(node) = ui_drag.visual {
+                ui_renderer.alpha_override =
+                    (!ui.components[&node.key].drag_render_behavior).then_some(128);
                 ui_renderer.draw(
                     ui,
                     &workbench.pack,
-                    &ui_nodes,
+                    &[node],
                     minimap.as_mut(),
                     &mut ui_models,
                     &model_context,
                 );
-                ui_renderer.excluded = None;
-                ui_drag.inventory_presented(ui_renderer.inventory_drag);
-                if let Some(node) = ui_drag.visual {
-                    ui_renderer.alpha_override =
-                        (!ui.components[&node.key].drag_render_behavior).then_some(128);
-                    ui_renderer.draw(
-                        ui,
-                        &workbench.pack,
-                        &[node],
-                        minimap.as_mut(),
-                        &mut ui_models,
-                        &model_context,
-                    );
-                    ui_renderer.alpha_override = None;
-                }
+                ui_renderer.alpha_override = None;
             }
         }
         ui_scene_delta = 0;

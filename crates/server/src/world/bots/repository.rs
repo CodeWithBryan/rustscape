@@ -83,10 +83,10 @@ pub(crate) fn remove_item<H: Host>(host: &mut H, player: &H::Node, item: Option<
         return;
     };
     host.statics().write(|s| {
-        if let Some((_, list)) = s.ground_items.iter_mut().find(|(key, _)| key == player) {
-            if let Some(at) = list.iter().position(|held| held == item) {
-                list.remove(at);
-            }
+        if let Some((_, list)) = s.ground_items.iter_mut().find(|(key, _)| key == player)
+            && let Some(at) = list.iter().position(|held| held == item)
+        {
+            list.remove(at);
         }
     });
 }

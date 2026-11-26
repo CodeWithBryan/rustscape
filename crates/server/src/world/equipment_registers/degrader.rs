@@ -149,10 +149,10 @@ pub fn check_weapon_degrades<H: Host>(
 }
 
 fn check_slot<H: Host>(h: &mut H, registry: &Registry, p: &H::Entity, slot: i32) -> Result<()> {
-    if let Some(item) = h.equipment(p, slot)? {
-        if registry.can_degrade(h.item_id(&item)) {
-            degrade(h, registry, p, &item, slot)?;
-        }
+    if let Some(item) = h.equipment(p, slot)?
+        && registry.can_degrade(h.item_id(&item))
+    {
+        degrade(h, registry, p, &item, slot)?;
     }
     Ok(())
 }
