@@ -408,13 +408,13 @@ pub struct SpellHost<'a> {
 
 impl Drop for SpellHost<'_> {
     fn drop(&mut self) {
-        if let Some((p, book)) = self.book.take() {
-            if self.live.inner.is_player_node(p.node()) {
-                let _ = self
-                    .live
-                    .inner
-                    .with_profile(&p, |profile| profile.spell_book = book);
-            }
+        if let Some((p, book)) = self.book.take()
+            && self.live.inner.is_player_node(p.node())
+        {
+            let _ = self
+                .live
+                .inner
+                .with_profile(&p, |profile| profile.spell_book = book);
         }
     }
 }
@@ -760,10 +760,10 @@ impl sp::Host for SpellHost<'_> {
         let distance = if npc {
             let size = sent.distance; // projectile_create's `size << 5`
             for spell in self.live.round.magic.registry.values_mut() {
-                if let Some(template) = spell.projectile.as_mut() {
-                    if template.label == projectile.label {
-                        template.distance = size;
-                    }
+                if let Some(template) = spell.projectile.as_mut()
+                    && template.label == projectile.label
+                {
+                    template.distance = size;
                 }
             }
             size
@@ -971,12 +971,12 @@ pub fn cast_spell(
     if let Some(refused) = refused_registration(book, spell_id) {
         return Err(format!("not ported in the live world: {refused}"));
     }
-    if let Some(spell) = live.round.magic.registry.get(&(book, spell_id)) {
-        if let Err(name) = Live::fire_effect_ported(spell.class) {
-            return Err(format!(
-                "not ported in the live world: {name}.fireEffect (a combat spell with an effect)"
-            ));
-        }
+    if let Some(spell) = live.round.magic.registry.get(&(book, spell_id))
+        && let Err(name) = Live::fire_effect_ported(spell.class)
+    {
+        return Err(format!(
+            "not ported in the live world: {name}.fireEffect (a combat spell with an effect)"
+        ));
     }
     match target {
         Some(target) => live
