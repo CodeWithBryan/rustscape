@@ -291,10 +291,9 @@ impl Effects {
                     .sounds
                     .get(&[event.id, event.loops])
                     .map(|s| s.pcm.clone())
+                    && self.start_pcm(pcm, event.loops - 1, event.volume).is_some()
                 {
-                    if self.start_pcm(pcm, event.loops - 1, event.volume).is_some() {
-                        self.submitted += 1;
-                    }
+                    self.submitted += 1;
                 }
                 #[cfg(not(any(target_os = "windows", target_arch = "wasm32")))]
                 if let Some(sound) = self.sounds.get(&[event.id, event.loops]) {

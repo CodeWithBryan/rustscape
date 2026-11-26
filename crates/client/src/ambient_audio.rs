@@ -471,8 +471,8 @@ impl Locations {
         self.refresh_npcs(services, &vm.varps, &mut errors);
         self.npc_varp_cursor = 0;
         for [id, x, y, plane, shape, rotation] in std::mem::take(&mut self.initial) {
-            if let Some(layer) = world::layer(shape as u8) {
-                if let Err(error) = self.add(
+            if let Some(layer) = world::layer(shape as u8)
+                && let Err(error) = self.add(
                     Slot {
                         plane: plane as usize,
                         tile: [x, y],
@@ -485,42 +485,41 @@ impl Locations {
                     },
                     vm,
                     ui,
-                ) {
-                    errors.push(error);
-                }
+                )
+            {
+                errors.push(error);
             }
         }
         for (slot, loc) in updates.locations {
-            if let Some(old) = self.current.remove(&slot) {
-                if let Some(index) = self
+            if let Some(old) = self.current.remove(&slot)
+                && let Some(index) = self
                     .entries
                     .iter()
                     .position(|e| e.plane == slot.plane && e.tile == slot.tile && e.id == old.id)
-                {
-                    let mut entry = self.entries.remove(index);
-                    entry.emitter.remove(&mut AudioHost {
-                        cache: &mut self.cache,
-                        failed: &mut self.failed,
-                        handles: &mut self.handles,
-                        effects,
-                        pack: &ui.pack,
-                        errors: &mut errors,
-                        submitted: &mut self.submitted,
-                    });
-                }
+            {
+                let mut entry = self.entries.remove(index);
+                entry.emitter.remove(&mut AudioHost {
+                    cache: &mut self.cache,
+                    failed: &mut self.failed,
+                    handles: &mut self.handles,
+                    effects,
+                    pack: &ui.pack,
+                    errors: &mut errors,
+                    submitted: &mut self.submitted,
+                });
             }
             if loc.id >= 0 {
-                if !self.definitions.contains_key(&loc.id) {
-                    if let Some(definition) = services.location_types.get(&(loc.id as u32)) {
-                        if let Some(children) = &definition.children {
-                            for &id in children {
-                                if let Some(child) = services.location_types.get(&(id as u32)) {
-                                    self.definitions.entry(id).or_insert_with(|| child.clone());
-                                }
+                if !self.definitions.contains_key(&loc.id)
+                    && let Some(definition) = services.location_types.get(&(loc.id as u32))
+                {
+                    if let Some(children) = &definition.children {
+                        for &id in children {
+                            if let Some(child) = services.location_types.get(&(id as u32)) {
+                                self.definitions.entry(id).or_insert_with(|| child.clone());
                             }
                         }
-                        self.definitions.insert(loc.id, definition.clone());
                     }
+                    self.definitions.insert(loc.id, definition.clone());
                 }
                 self.current.insert(slot, loc);
                 if let Err(error) = self.add(slot, loc, vm, ui) {
