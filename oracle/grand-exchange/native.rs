@@ -1346,8 +1346,7 @@ impl Host for World {
         Ok(self
             .players
             .iter()
-            .filter(|p| p.online && p.uid == uid)
-            .last()
+            .rfind(|p| p.online && p.uid == uid)
             .map(|p| p.node.clone()))
     }
     fn player_by_account(&mut self, uid: i32) -> R<Option<NodeHandle>> {

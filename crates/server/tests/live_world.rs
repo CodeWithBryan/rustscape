@@ -245,17 +245,14 @@ impl Client {
                             i32::from(u16::from_be_bytes([frame.payload[7], frame.payload[8]]));
                         self.opened.push((n, id));
                     }
-                    if frame.opcode == 230 {
-                        if let Ok(Some(updates::ServerUpdate::ZoneEnclosed { frames, .. })) =
+                    if frame.opcode == 230
+                        && let Ok(Some(updates::ServerUpdate::ZoneEnclosed { frames, .. })) =
                             updates::ServerUpdate::decode(&frame)
-                        {
-                            for child in frames.iter().filter(|f| f.opcode == 16) {
-                                let projectile =
-                                    updates::Projectile::decode(child).unwrap_or_else(|e| {
-                                        panic!("{}: projectile {n}: {e:?}", self.name)
-                                    });
-                                self.projectiles.push((n, projectile));
-                            }
+                    {
+                        for child in frames.iter().filter(|f| f.opcode == 16) {
+                            let projectile = updates::Projectile::decode(child)
+                                .unwrap_or_else(|e| panic!("{}: projectile {n}: {e:?}", self.name));
+                            self.projectiles.push((n, projectile));
                         }
                     }
                     if self.base.is_some() {

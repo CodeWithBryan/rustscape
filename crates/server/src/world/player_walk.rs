@@ -537,10 +537,10 @@ impl State {
         item: super::ground_item::Handle,
         registry: &super::ground_spawn::Registry,
     ) -> Result<NodeHandle> {
-        if let Some(dropper) = &item.read().dropper {
-            if !self.local_handle(dropper) {
-                return Err(Error::Unsupported("ground dropper from another world"));
-            }
+        if let Some(dropper) = &item.read().dropper
+            && !self.local_handle(dropper)
+        {
+            return Err(Error::Unsupported("ground dropper from another world"));
         }
         let identity = item.identity();
         let target = GroundTarget::new(item, registry)?;
@@ -710,18 +710,18 @@ impl State {
         }
         self.child_arrays.retain(|_, a| a.upgrade().is_some());
         for (&id, weak) in &self.child_arrays {
-            if let Some(array) = weak.upgrade() {
-                if array.strong_count() > 1 + internal_arrays.get(&id).copied().unwrap_or(0) {
-                    nodes.extend(array.read().iter().flatten().copied());
-                }
+            if let Some(array) = weak.upgrade()
+                && array.strong_count() > 1 + internal_arrays.get(&id).copied().unwrap_or(0)
+            {
+                nodes.extend(array.read().iter().flatten().copied());
             }
         }
         self.check_arrays.retain(|_, a| a.upgrade().is_some());
         for (&id, weak) in &self.check_arrays {
-            if let Some(array) = weak.upgrade() {
-                if array.strong_count() > 1 + internal_arrays.get(&id).copied().unwrap_or(0) {
-                    nodes.extend(array.read().iter().flatten().copied());
-                }
+            if let Some(array) = weak.upgrade()
+                && array.strong_count() > 1 + internal_arrays.get(&id).copied().unwrap_or(0)
+            {
+                nodes.extend(array.read().iter().flatten().copied());
             }
         }
         for (&node, a) in &self.actors {
@@ -747,18 +747,18 @@ impl State {
             }
             let item = target.view();
             let item = item.read();
-            if let Some(dropper) = &item.dropper {
-                if self.local_handle(dropper) {
-                    *internal_leases.entry(dropper.node).or_default() += 1;
-                }
+            if let Some(dropper) = &item.dropper
+                && self.local_handle(dropper)
+            {
+                *internal_leases.entry(dropper.node).or_default() += 1;
             }
         }
         self.leases.retain(|_, lease| lease.upgrade().is_some());
         for (&node, weak) in &self.leases {
-            if let Some(lease) = weak.upgrade() {
-                if lease.strong_count() > 1 + internal_leases.get(&node).copied().unwrap_or(0) {
-                    nodes.insert(node);
-                }
+            if let Some(lease) = weak.upgrade()
+                && lease.strong_count() > 1 + internal_leases.get(&node).copied().unwrap_or(0)
+            {
+                nodes.insert(node);
             }
         }
         let mut internal: BTreeMap<usize, usize> = BTreeMap::new();
@@ -820,10 +820,10 @@ impl State {
                 if let Some(target) = self.grounds.get(&node) {
                     let item = target.view();
                     let item = item.read();
-                    if let Some(dropper) = &item.dropper {
-                        if self.local_handle(dropper) {
-                            nodes.insert(dropper.node);
-                        }
+                    if let Some(dropper) = &item.dropper
+                        && self.local_handle(dropper)
+                    {
+                        nodes.insert(dropper.node);
                     }
                 }
                 motions.extend(self.attribute_motions.get(&node).copied());

@@ -237,10 +237,10 @@ impl Ctx<'_> {
     /// An item's InteractPlugin, set up once (`getInteraction()`).
     fn item_table(&mut self, item: &ItemHandle) -> Result<options::Handle> {
         let key = item.identity();
-        if let Some((weak, table)) = self.0.item_actions.tables.get(&key) {
-            if weak.upgrade().is_some_and(|i| i.same(item)) {
-                return Ok(table.clone());
-            }
+        if let Some((weak, table)) = self.0.item_actions.tables.get(&key)
+            && weak.upgrade().is_some_and(|i| i.same(item))
+        {
+            return Ok(table.clone());
         }
         let table = options::Table::new(Some(key));
         let defaults = self.0.walk.ground.options.defaults();
@@ -1397,12 +1397,7 @@ impl Live {
             .insert(ATTACK_LISTENER.to_owned());
         let function = Function::new(FunctionKind::On, ATTACK_LISTENER, AttackListener);
         registry
-            .add_generics(
-                &mut Ctx(self),
-                &[text("attack")],
-                Kind::Npc.ordinal(),
-                function,
-            )
+            .add_generics(&Ctx(self), &[text("attack")], Kind::Npc.ordinal(), function)
             .map_err(err)?;
         // GraveController.defineListeners: read, bless, repair, demolish.
         let ids = crate::world::player_death::GraveType::ids();
@@ -1410,7 +1405,7 @@ impl Live {
             let function = Function::new(FunctionKind::On, GRAVE_CONTROLLER, GraveListener(option));
             registry
                 .add_ids(
-                    &mut Ctx(self),
+                    &Ctx(self),
                     &ids,
                     Kind::Npc.ordinal(),
                     &[text(name)],

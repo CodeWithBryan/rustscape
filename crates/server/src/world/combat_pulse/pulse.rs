@@ -103,11 +103,11 @@ impl<H: Host> WorldPulse<H> {
     /// `catch (Exception)` does.
     pub fn update(&mut self, h: &mut H) -> Result<bool> {
         for at in 0..self.checks.len() {
-            if let Some(node) = self.checks[at].clone() {
-                if !h.is_active(&node)? {
-                    self.running = false;
-                    return Ok(true);
-                }
+            if let Some(node) = self.checks[at].clone()
+                && !h.is_active(&node)?
+            {
+                self.running = false;
+                return Ok(true);
             }
         }
         if !self.running {
@@ -194,10 +194,10 @@ impl<H: Host> WorldPulse<H> {
 /// `Pulse.hasInactiveNode()` over the combat pulse's live check array.
 fn has_inactive_node<H: Host>(h: &mut H, entity: &H::Entity) -> Result<bool> {
     for at in 0..2 {
-        if let Some(node) = h.combat_pulse(entity).checks[at].clone() {
-            if !h.is_active(&node)? {
-                return Ok(true);
-            }
+        if let Some(node) = h.combat_pulse(entity).checks[at].clone()
+            && !h.is_active(&node)?
+        {
+            return Ok(true);
         }
     }
     Ok(false)
@@ -311,10 +311,10 @@ pub fn pulse<H: Host>(h: &mut H, entity: &H::Entity) -> Result<bool> {
         h.combat_pulse(entity).temporary_handler = None;
         set_combat_flags(h, entity, Some(&v))?;
     }
-    if let Some(victim) = h.combat_pulse(entity).victim.clone() {
-        if h.lifepoints(&victim)? < 1 {
-            return Ok(true);
-        }
+    if let Some(victim) = h.combat_pulse(entity).victim.clone()
+        && h.lifepoints(&victim)? < 1
+    {
+        return Ok(true);
     }
     Ok(h.lifepoints(entity)? < 1)
 }
@@ -423,31 +423,33 @@ pub fn attack<H: Host>(h: &mut H, entity: &H::Entity, victim: Option<&H::Entity>
     }
     if h.kind(victim).is_npc() {
         let last = h.combat_pulse(entity).last_victim.clone();
-        if h.kind(entity).is_player() && !same && !last.is_some_and(|l| h.same_entity(&l, victim)) {
-            if let Some(mask) = h.equipment(entity, slot::HAT)? {
-                let id = h.item_id(&mask);
-                if (8901..8920).contains(&id) && random(h, 50)? == 0 {
-                    let charges = if id == 8919 {
-                        "no".to_owned()
-                    } else {
-                        ((8920 - id) / 2).to_string()
-                    };
-                    h.send_message(
-                        entity,
-                        &format!(
-                            "Your black mask startles your enemy, you have {charges} charges left."
-                        ),
-                    )?;
-                    h.equipment_replace(entity, Some((id + 2, 1, 1000)), slot::HAT)?;
-                    let mut drain = 3 + h.level(victim, cs::skill::DEFENCE)? / 14;
-                    if drain > 10 {
-                        drain = 10;
-                    }
-                    let maximum = h
-                        .static_level(victim, cs::skill::DEFENCE)?
-                        .wrapping_sub(drain);
-                    h.update_level(victim, cs::skill::DEFENCE, -drain, maximum)?;
+        if h.kind(entity).is_player()
+            && !same
+            && !last.is_some_and(|l| h.same_entity(&l, victim))
+            && let Some(mask) = h.equipment(entity, slot::HAT)?
+        {
+            let id = h.item_id(&mask);
+            if (8901..8920).contains(&id) && random(h, 50)? == 0 {
+                let charges = if id == 8919 {
+                    "no".to_owned()
+                } else {
+                    ((8920 - id) / 2).to_string()
+                };
+                h.send_message(
+                    entity,
+                    &format!(
+                        "Your black mask startles your enemy, you have {charges} charges left."
+                    ),
+                )?;
+                h.equipment_replace(entity, Some((id + 2, 1, 1000)), slot::HAT)?;
+                let mut drain = 3 + h.level(victim, cs::skill::DEFENCE)? / 14;
+                if drain > 10 {
+                    drain = 10;
                 }
+                let maximum = h
+                    .static_level(victim, cs::skill::DEFENCE)?
+                    .wrapping_sub(drain);
+                h.update_level(victim, cs::skill::DEFENCE, -drain, maximum)?;
             }
         }
         if !h.movement_locked(victim)? {
@@ -590,10 +592,10 @@ pub fn swing<H: Host>(
         handler::visualize_impact(h, r, Some(entity), Some(victim), &mut state)?;
     }
     handler::visualize_audio(h, r, entity, &state)?;
-    if let Some(set) = set {
-        if handler::armour_set_effect(h, set, entity, victim, &state)? {
-            handler::armour_set_visualize(h, set, victim)?;
-        }
+    if let Some(set) = set
+        && handler::armour_set_effect(h, set, entity, victim, &state)?
+    {
+        handler::armour_set_visualize(h, set, victim)?;
     }
     h.submit(WorldPulse::new(
         delay.wrapping_sub(1),

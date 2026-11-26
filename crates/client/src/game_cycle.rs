@@ -326,10 +326,10 @@ impl Walk {
     /// canvas, if any (SceneGraph.java:3923, 3949, 4282), and the wait ends
     /// either way (SceneGraph.java:3144, 3191, 3199).
     pub fn drawn(&mut self, tile_at: impl FnOnce([i32; 2]) -> Option<[i32; 2]>) {
-        if let Some(point) = self.pending.take() {
-            if let Some(tile) = tile_at(point) {
-                self.click_tile = Some(tile);
-            }
+        if let Some(point) = self.pending.take()
+            && let Some(tile) = tile_at(point)
+        {
+            self.click_tile = Some(tile);
         }
     }
 

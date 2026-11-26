@@ -55,6 +55,7 @@ impl PetDetails {
         self.set_hunger(hunger);
     }
     /// `updateGrowth`: add, then clamp to 0.0..=100.0.
+    #[allow(clippy::manual_clamp)] // the original order of checks, kept
     pub fn update_growth(&self, amount: f64) {
         let mut growth = self.growth() + amount;
         if growth < 0.0 {

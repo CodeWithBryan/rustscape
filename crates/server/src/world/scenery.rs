@@ -215,17 +215,17 @@ pub fn replace(
             None
         }
     };
-    if let Some(previous) = previous {
-        if equals(&previous, construct) {
-            if matches!(mode, ReplaceMode::Temporary { .. }) {
-                return Err(Error::State(
-                    "Can't temporarily replace an already temporary object!",
-                ));
-            }
-            ctx.add_landscape(&previous)?;
-            update(ctx, &[Some(current), Some(previous)])?;
-            return Ok(true);
+    if let Some(previous) = previous
+        && equals(&previous, construct)
+    {
+        if matches!(mode, ReplaceMode::Temporary { .. }) {
+            return Err(Error::State(
+                "Can't temporarily replace an already temporary object!",
+            ));
         }
+        ctx.add_landscape(&previous)?;
+        update(ctx, &[Some(current), Some(previous)])?;
+        return Ok(true);
     }
     let constructed = as_constructed(ctx, construct.ok_or(Error::Null)?)?;
     if !matches!(

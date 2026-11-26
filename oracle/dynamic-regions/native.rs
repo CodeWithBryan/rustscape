@@ -1475,16 +1475,15 @@ pub fn evaluate(input: &Value, cache_text: &str, index: usize) -> Value {
         model.diagnostics = diagnostics;
         model.know();
         for p in model.runner.current() {
-            if !model.owners.iter().any(|(h, _)| h.same(&p)) {
-                if let Some(r) = model
+            if !model.owners.iter().any(|(h, _)| h.same(&p))
+                && let Some(r) = model
                     .scene
                     .regions
                     .values()
                     .find(|r| region_activity::activity_pulse(r).same(&p))
-                {
-                    let id = r.read().id();
-                    model.owners.push((p.clone(), id));
-                }
+            {
+                let id = r.read().id();
+                model.owners.push((p.clone(), id));
             }
         }
         let mut snapshot = model.snapshot(&format!("{index}-{step}"));

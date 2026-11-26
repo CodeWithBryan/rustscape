@@ -430,10 +430,11 @@ pub fn process<C: Context>(ctx: &mut C, player: &C::Node, request: UseWith) -> R
     if ctx.listeners_use(&item, &node, kind, player)? {
         return Ok(());
     }
-    if let Some(child) = &child {
-        if ctx.id(child)? != ctx.id(&node)? && ctx.listeners_use(&item, child, kind, player)? {
-            return Ok(());
-        }
+    if let Some(child) = &child
+        && ctx.id(child)? != ctx.id(&node)?
+        && ctx.listeners_use(&item, child, kind, player)?
+    {
+        return Ok(());
     }
     let flipped = kind == Kind::Item && ctx.id(&item)? < ctx.id(&node)?;
     let event = if flipped {

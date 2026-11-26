@@ -1701,7 +1701,7 @@ fn state(w: &mut World) -> Json {
             let label = w.pulses.iter().find_map(|(label, held)| {
                 matches!(held, Pulse::Script(other) if other.same(pulse)).then(|| label.clone())
             });
-            let running = label.map_or(true, |l| !w.stopped.contains(&l));
+            let running = label.is_none_or(|l| !w.stopped.contains(&l));
             json!([
                 name,
                 [

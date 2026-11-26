@@ -498,15 +498,15 @@ pub fn align_to_terrain(
             }
             for v in vertices {
                 let share = v[1].wrapping_shl(16).wrapping_div(lowest);
-                if share < amount {
-                    if let Some(ground) = sample(heights.ground, v).filter(|_| amount != 0) {
-                        v[1] = v[1].wrapping_add(
-                            ground
-                                .wrapping_sub(base)
-                                .wrapping_mul(amount.wrapping_sub(share))
-                                .wrapping_div(amount),
-                        );
-                    }
+                if share < amount
+                    && let Some(ground) = sample(heights.ground, v).filter(|_| amount != 0)
+                {
+                    v[1] = v[1].wrapping_add(
+                        ground
+                            .wrapping_sub(base)
+                            .wrapping_mul(amount.wrapping_sub(share))
+                            .wrapping_div(amount),
+                    );
                 }
             }
         }
@@ -767,11 +767,12 @@ impl Plan {
                     }
                 }
             }
-            if matches!(shape, 0 | 2 | 9) && rules.wall_offset != 16 {
-                if let Some(planned) = tile.decoration.and_then(|i| entries[i].as_mut()) {
-                    for piece in planned.placement.pieces.iter_mut().flatten() {
-                        piece.offset = rescale(piece.offset, rules.wall_offset);
-                    }
+            if matches!(shape, 0 | 2 | 9)
+                && rules.wall_offset != 16
+                && let Some(planned) = tile.decoration.and_then(|i| entries[i].as_mut())
+            {
+                for piece in planned.placement.pieces.iter_mut().flatten() {
+                    piece.offset = rescale(piece.offset, rules.wall_offset);
                 }
             }
         }

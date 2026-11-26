@@ -25,10 +25,10 @@ pub fn request<H: Host>(
     h.set_request_target(player, Some(target.clone()))?;
     if h.is_artificial(target)? {
         let name = super::lowercase(&h.username(target)?);
-        if let Some(bot) = h.bot(&name)? {
-            if bot.doubling {
-                h.bot_trade_received(&name, player)?;
-            }
+        if let Some(bot) = h.bot(&name)?
+            && bot.doubling
+        {
+            h.bot_trade_received(&name, player)?;
         }
     }
     Ok(true)

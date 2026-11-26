@@ -869,11 +869,11 @@ impl Host for World {
     }
     fn combat_attack(&mut self, e: &usize, victim: Option<&usize>) -> R<()> {
         self.emit("combat_attack", vec![json!(e), opt(victim)])?;
-        if let Some(v) = victim {
-            if self.sticky() {
-                self.ents[*e].attacking = true;
-                self.ents[*e].victim = Some(*v);
-            }
+        if let Some(v) = victim
+            && self.sticky()
+        {
+            self.ents[*e].attacking = true;
+            self.ents[*e].victim = Some(*v);
         }
         Ok(())
     }

@@ -216,12 +216,11 @@ impl Workbench {
         }
         let key = u32::try_from(id).map_err(|_| format!("Hint arrow model {id}"))?;
         #[cfg(not(target_arch = "wasm32"))]
-        if !self.models.contains_key(&key) {
-            if let Some(cache) = &self.world_cache {
-                if let Some(model) = cache.model(key)? {
-                    self.models.insert(key, model);
-                }
-            }
+        if !self.models.contains_key(&key)
+            && let Some(cache) = &self.world_cache
+            && let Some(model) = cache.model(key)?
+        {
+            self.models.insert(key, model);
         }
         if !self.models.contains_key(&key) {
             let name = format!("model/{id}");

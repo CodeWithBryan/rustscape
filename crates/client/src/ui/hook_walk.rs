@@ -279,10 +279,11 @@ impl State {
         // this walk with whatever the slot holds now, and stops if it holds
         // nothing.
         let c = &self.components[&key];
-        if c.if3 && c.key_codes.is_some() {
-            if let Some(keys) = queues.keys.as_mut() {
-                crate::input::bindings::component(self, key, keys.pressed, keys.cycle, keys.click);
-            }
+        if c.if3
+            && c.key_codes.is_some()
+            && let Some(keys) = queues.keys.as_mut()
+        {
+            crate::input::bindings::component(self, key, keys.pressed, keys.cycle, keys.click);
         }
         let Some(c) = self.components.get_mut(&key) else {
             return;
@@ -361,10 +362,11 @@ impl State {
                         queues.low.push((hook, true));
                     }
                 }
-                if c.dragging && pressed {
-                    if let Some(hook) = request(&c.on_drag, relative) {
-                        queues.low.push((hook, true));
-                    }
+                if c.dragging
+                    && pressed
+                    && let Some(hook) = request(&c.on_drag, relative)
+                {
+                    queues.low.push((hook, true));
                 }
                 if c.dragging && !pressed {
                     c.dragging = false;
@@ -372,10 +374,8 @@ impl State {
                         queues.medium.push(hook);
                     }
                 }
-                if pressed {
-                    if let Some(hook) = request(&c.on_hold, relative) {
-                        queues.low.push((hook, true));
-                    }
+                if pressed && let Some(hook) = request(&c.on_hold, relative) {
+                    queues.low.push((hook, true));
                 }
                 if !c.mouse_over && hovered {
                     c.mouse_over = true;
@@ -383,10 +383,11 @@ impl State {
                         queues.low.push((hook, true));
                     }
                 }
-                if c.mouse_over && hovered {
-                    if let Some(hook) = request(&c.on_mouse_repeat, relative) {
-                        queues.low.push((hook, true));
-                    }
+                if c.mouse_over
+                    && hovered
+                    && let Some(hook) = request(&c.on_mouse_repeat, relative)
+                {
+                    queues.low.push((hook, true));
                 }
                 if c.mouse_over && !hovered {
                     c.mouse_over = false;
@@ -444,10 +445,8 @@ impl State {
                                 || (*reader..writer)
                                     .any(|i| triggers.contains(&ring[(i & 31) as usize]))
                         });
-                        if changed {
-                            if let Some(hook) = request(arguments, [0, 0]) {
-                                queues.low.push((hook, false));
-                            }
+                        if changed && let Some(hook) = request(arguments, [0, 0]) {
+                            queues.low.push((hook, false));
                         }
                         *reader = writer;
                     }
@@ -459,10 +458,10 @@ impl State {
                     (self.stock_transmit_at, &c.on_stock_transmit),
                     (self.misc_transmit_at, &c.on_misc_transmit),
                 ] {
-                    if stamp > c.last_transmit_timer {
-                        if let Some(hook) = request(arguments, [0, 0]) {
-                            queues.low.push((hook, false));
-                        }
+                    if stamp > c.last_transmit_timer
+                        && let Some(hook) = request(arguments, [0, 0])
+                    {
+                        queues.low.push((hook, false));
                     }
                 }
                 c.last_transmit_timer = self.transmit_timer;
@@ -473,10 +472,10 @@ impl State {
                         queues.low.push((hook, false));
                     }
                 }
-                if self.spline_just_finished {
-                    if let Some(hook) = request(&c.on_minimap_unlock, [0, 0]) {
-                        queues.low.push((hook, false));
-                    }
+                if self.spline_just_finished
+                    && let Some(hook) = request(&c.on_minimap_unlock, [0, 0])
+                {
+                    queues.low.push((hook, false));
                 }
             }
         }

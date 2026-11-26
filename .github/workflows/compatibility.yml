@@ -19,8 +19,8 @@ jobs:
           java-version: '25'
       - name: Install pinned Rust toolchain
         run: |
-          rustup toolchain install 1.86.0 --profile minimal --component clippy --component rustfmt
-          rustup default 1.86.0
+          rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
+          rustup default 1.97.0
           rustup target add wasm32-unknown-unknown
       - name: Formatting
         run: cargo fmt --check
@@ -28,12 +28,13 @@ jobs:
         run: python tools/check_macroquad_vendor.py
       - name: Lints
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      # Some tests read the pinned original sources, so fetch them first.
+      - name: Fetch locked original sources
+        run: cargo xtask bootstrap
       - name: Rust regression and differential tests
         run: cargo test --locked --workspace
       - name: Browser protocol and visual build checks
         run: cargo check --locked --target wasm32-unknown-unknown -p rs09-protocol -p rs09-client -p rs09-audio-worklet
-      - name: Fetch locked original sources
-        run: cargo xtask bootstrap
       - name: Reproduce original JVM outputs and source hashes
         run: cargo xtask oracle --check
       - name: Reproduce original cache reader and extraction fixtures
@@ -65,8 +66,30 @@ jobs:
         with:
           distribution: temurin
           java-version: '11'
+      # Oracles that compile the original Kotlin read RS09_ORACLE_JAVA_HOME and
+      # use JDK 11. The rest use the default JDK, and some need APIs newer than 11.
+      - name: Keep JDK 25 as the default and point the Kotlin oracles at JDK 11
+        run: |
+          "RS09_ORACLE_JAVA_HOME=$env:JAVA_HOME_11_X64" >> $env:GITHUB_ENV
+          "JAVA_HOME=$env:JAVA_HOME_25_X64" >> $env:GITHUB_ENV
+          "$env:JAVA_HOME_25_X64\bin" >> $env:GITHUB_PATH
       - name: Reproduce original Java and Kotlin login cases
         run: cargo xtask login-oracle --check
+      # Later oracles reuse the classes and pinned jars these runs leave in runs/,
+      # so they go first.
+      - name: Reproduce original item instances, containers, events and callbacks
+        run: cargo xtask inventory-oracle --check
+      - name: Reproduce original inventory listener, container packet bytes and pouch keys
+        run: |
+          cargo xtask inventory-listener-oracle --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/port_summoning_pouch_ids.py --check
+      - name: Reproduce original interaction dispatch and captured arrival bodies
+        run: cargo xtask legacy-interaction-oracle --check
+      - name: Reproduce original interface metadata and gameframe orchestration
+        run: cargo xtask interfaces-oracle --check
+      - name: Reproduce complete server animation records, definitions and controller
+        run: cargo xtask animator-oracle --check
       - name: Verify original and Rust login codecs over real sockets
         run: cargo xtask login-interop
       - name: Reproduce original account and password rules
@@ -102,8 +125,6 @@ jobs:
           cargo xtask item-oracle --check
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/port_jdk_case.py --check
-      - name: Reproduce original item instances, containers, events and callbacks
-        run: cargo xtask inventory-oracle --check
       - name: Reproduce shared container receivers and exposed listener references
         run: cargo xtask container-ownership-oracle --check
       - name: Reproduce distinct native listener objects, aliases and callback rebinding
@@ -116,11 +137,6 @@ jobs:
         run: cargo xtask player-appearance-oracle --check
       - name: Reproduce late appearance receivers, shared output and failed byte prefixes
         run: cargo xtask appearance-writer-oracle --check
-      - name: Reproduce original inventory listener, container packet bytes and pouch keys
-        run: |
-          cargo xtask inventory-listener-oracle --check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python tools/port_summoning_pouch_ids.py --check
       - name: Reproduce joined player inventory, weight and packet effects
         run: cargo xtask player-inventory-oracle --check
       - name: Reproduce complete original item configuration loader and typed values
@@ -179,8 +195,6 @@ jobs:
         run: cargo xtask walk-request-oracle --check
       - name: Reproduce original scenery click dispatch and retained interactions
         run: cargo xtask scenery-action-oracle --check
-      - name: Reproduce original interaction dispatch and captured arrival bodies
-        run: cargo xtask legacy-interaction-oracle --check
       - name: Reproduce original option tables, defaults and retained aliases
         run: cargo xtask interaction-options-oracle --check
       - name: Reproduce ground click lookup and ordered interaction dispatch
@@ -235,16 +249,12 @@ jobs:
         run: cargo xtask npc-init-oracle --check
       - name: Reproduce entity chunk membership and ordered local queries
         run: cargo xtask entity-regions-oracle --check
-      - name: Reproduce original interface metadata and gameframe orchestration
-        run: cargo xtask interfaces-oracle --check
       - name: Reproduce original player settings and captured service ordering
         run: cargo xtask settings-oracle --check
       - name: Reproduce original update-mask lifecycle and live encoder traversal
         run: cargo xtask update-masks-oracle --check
       - name: Reproduce joined entity facing and prepared player mask bytes
         run: cargo xtask prepared-masks-oracle --check
-      - name: Reproduce complete server animation records, definitions and controller
-        run: cargo xtask animator-oracle --check
       - name: Compare every pinned server animation definition with the original JVM
         if: github.event_name == 'workflow_dispatch'
         run: cargo run --release -p xtask -- animator-audit

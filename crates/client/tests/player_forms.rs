@@ -130,6 +130,18 @@ fn check_body_poses(terrain: bool) {
     let f = fixture();
     let types = definitions(&f);
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    // Needs local assets that are not in the repository.
+    let missing: Vec<_> = f["packs"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| root.join(p["path"].as_str().unwrap()))
+        .filter(|path| !path.exists())
+        .collect();
+    if !missing.is_empty() {
+        eprintln!("skipped: needs {missing:?}, nothing was checked");
+        return;
+    }
     let packs: Vec<_> = f["packs"]
         .as_array()
         .unwrap()

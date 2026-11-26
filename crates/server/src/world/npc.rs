@@ -178,10 +178,10 @@ impl State {
                 };
                 if should_return {
                     let pulse = self.fields.read().return_pulse;
-                    if let Some(p) = pulse {
-                        if ctx.pulse_running(self, p)? {
-                            return Ok(());
-                        }
+                    if let Some(p) = pulse
+                        && ctx.pulse_running(self, p)?
+                    {
+                        return Ok(());
                     }
                     {
                         let mut f = self.fields.write();

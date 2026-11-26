@@ -51,10 +51,10 @@ impl Vm {
                     let at = usize::try_from(index).ok()?;
                     Some([*labels.coord_x.get(at)?, *labels.coord_y.get(at)?])
                 });
-                if let Some([x, y]) = target {
-                    if !map.pan_to_coords(i32::from(x), i32::from(y)) {
-                        return Err(NO_COMPONENT.into());
-                    }
+                if let Some([x, y]) = target
+                    && !map.pan_to_coords(i32::from(x), i32::from(y))
+                {
+                    return Err(NO_COMPONENT.into());
                 }
             }
             5204 => {

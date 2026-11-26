@@ -1,5 +1,10 @@
 """Every cached SpriteLoader frame, alpha plane and decoded sprite pixels."""
 import hashlib,json,pathlib,re,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 def generate(root,clean,method,check=False):
     src=root/'reference/client/client/src/main/java/rt4';run=root/'runs/ui-oracle/sprites';run.mkdir(parents=True,exist_ok=True);hashes={}
     def source(name):
@@ -12,7 +17,7 @@ class GlRenderer{static boolean enabled=false;}class Sprite{int[] pixels;boolean
 public class Probe{public static void main(String[]args)throws Exception{BufferedReader r=new BufferedReader(new InputStreamReader(System.in));String line;while((line=r.readLine())!=null){SpriteLoader.decode(HexFormat.of().parseHex(line));ByteArrayOutputStream bytes=new ByteArrayOutputStream();DataOutputStream out=new DataOutputStream(bytes);out.writeInt(SpriteLoader.width);out.writeInt(SpriteLoader.height);out.writeInt(SpriteLoader.frames);out.writeInt(SpriteLoader.palette.length);for(int p:SpriteLoader.palette)out.writeInt(p);for(int i=0;i<SpriteLoader.frames;i++){out.writeInt(SpriteLoader.xOffsets[i]);out.writeInt(SpriteLoader.yOffsets[i]);out.writeInt(SpriteLoader.innerWidths[i]);out.writeInt(SpriteLoader.innerHeights[i]);out.writeBoolean(SpriteLoader.hasAlpha[i]);out.writeInt(SpriteLoader.pixels[i].length);out.write(SpriteLoader.pixels[i]);out.write(SpriteLoader.alpha[i]);}Sprite[] sprites=SpriteLoader.createAlphaSprites();for(Sprite s:sprites)for(int p:s.pixels){out.writeByte(p>>16);out.writeByte(p>>8);out.writeByte(p);out.writeByte(s.alpha?p>>>24:p==0?0:255);}System.out.println(HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray())));}}}
 ''',encoding='utf-8')
     subprocess.run(['javac','-encoding','UTF-8','-d',str(run),*[str(p)for p in run.glob('*.java')]],check=True)
-    data=(root/'assets/visual/demo.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);start=12+n;blob=bytearray();cases=[];inputs=[]
+    data=_recorded(root,'demo.pack').read_bytes();n=struct.unpack_from('<I',data,8)[0];manifest=json.loads(data[12:12+n]);start=12+n;blob=bytearray();cases=[];inputs=[]
     for name,(offset,size)in manifest['files'].items():
         if name.startswith('sprite/'):
             raw=data[start+offset:start+offset+size];cases.append(dict(name=name,offset=len(blob),size=size));blob.extend(raw);inputs.append(raw.hex())

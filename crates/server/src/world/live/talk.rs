@@ -543,10 +543,10 @@ impl dsl::Host for Live {
         Ok(())
     }
     fn unhook(&mut self, player: &NodeHandle, hook: &CloseHook<Self>) -> d::Result<()> {
-        if let Some(hooks) = self.round.talk.close_hooks.get_mut(&player.node) {
-            if let Some(at) = hooks.iter().position(|h| h.same(hook)) {
-                hooks.remove(at);
-            }
+        if let Some(hooks) = self.round.talk.close_hooks.get_mut(&player.node)
+            && let Some(at) = hooks.iter().position(|h| h.same(hook))
+        {
+            hooks.remove(at);
         }
         Ok(())
     }

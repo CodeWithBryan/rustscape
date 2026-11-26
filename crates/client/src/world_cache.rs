@@ -509,10 +509,10 @@ async fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepa
         }
         if ![-1, 65535].contains(&definition.animation) {
             let id = definition.animation as u32;
-            if let std::collections::btree_map::Entry::Vacant(entry) = sequences.entry(id) {
-                if let Some(sequence) = cache.sequence(id)? {
-                    entry.insert(sequence);
-                }
+            if let std::collections::btree_map::Entry::Vacant(entry) = sequences.entry(id)
+                && let Some(sequence) = cache.sequence(id)?
+            {
+                entry.insert(sequence);
             }
             if !sequences.contains_key(&id) {
                 definition.animation = -1;
@@ -559,32 +559,30 @@ async fn build(cache: &Cache, request: Request, assets: &Assets) -> Result<Prepa
         if let Some(children) = &definition.children {
             npc_ids.extend(children.iter().filter_map(|id| u32::try_from(*id).ok()));
         }
-        if let std::collections::btree_map::Entry::Vacant(entry) = npc_bases.entry(definition.bas) {
-            if let Some(bas) = cache.bas(definition.bas)? {
-                entry.insert(bas);
-            }
+        if let std::collections::btree_map::Entry::Vacant(entry) = npc_bases.entry(definition.bas)
+            && let Some(bas) = cache.bas(definition.bas)?
+        {
+            entry.insert(bas);
         }
         if !add_models(cache, &mut models, &mut missing_models, &definition.models)?
             || definition.models.is_empty()
         {
             continue;
         }
-        if let Some(bas) = npc_bases.get(&definition.bas) {
-            if let Ok(mut model) = definition.assemble_with_bas(&models, &bas.movement) {
-                model.draw_order =
-                    rs09_client::surface::face_order(&model, &assets.textures.materials);
-                model.surfaces = rs09_client::surface::prepare(&model, &assets.textures.materials);
-                npc_bodies.insert(id, NpcBody { definition, model });
-            }
+        if let Some(bas) = npc_bases.get(&definition.bas)
+            && let Ok(mut model) = definition.assemble_with_bas(&models, &bas.movement)
+        {
+            model.draw_order = rs09_client::surface::face_order(&model, &assets.textures.materials);
+            model.surfaces = rs09_client::surface::prepare(&model, &assets.textures.materials);
+            npc_bodies.insert(id, NpcBody { definition, model });
         }
     }
     for id in npc_bases.values().flat_map(|bas| bas.movement.sequences()) {
-        if let Ok(id) = u32::try_from(id) {
-            if let std::collections::btree_map::Entry::Vacant(entry) = sequences.entry(id) {
-                if let Some(sequence) = cache.sequence(id)? {
-                    entry.insert(sequence);
-                }
-            }
+        if let Ok(id) = u32::try_from(id)
+            && let std::collections::btree_map::Entry::Vacant(entry) = sequences.entry(id)
+            && let Some(sequence) = cache.sequence(id)?
+        {
+            entry.insert(sequence);
         }
     }
     let mut frames = BTreeMap::new();
@@ -1158,12 +1156,12 @@ impl WorldMap {
             self.uncovered_frames = self.uncovered_frames.saturating_add(1);
         }
         let previous = self.previous.replace(tile);
-        if let Some(last) = previous.filter(|last| last.map(|v| v >> 6) != here) {
-            if self.crossings.len() < 128 {
-                self.crossings.push(serde_json::json!({
-                    "from": last, "to": tile, "covered": covered, "frame_ms": frame_time * 1000.0,
-                }));
-            }
+        if let Some(last) = previous.filter(|last| last.map(|v| v >> 6) != here)
+            && self.crossings.len() < 128
+        {
+            self.crossings.push(serde_json::json!({
+                "from": last, "to": tile, "covered": covered, "frame_ms": frame_time * 1000.0,
+            }));
         }
         if let Some(old) = previous.filter(|&old| old != tile) {
             self.direction = std::array::from_fn(|i| (tile[i] - old[i]).signum());

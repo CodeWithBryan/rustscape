@@ -208,11 +208,11 @@ impl<H: Host> CreaturePulse<H> {
     /// itself leaves `update`.
     pub fn update(&mut self, h: &mut H) -> Result<bool> {
         for at in 0..self.checks.len() {
-            if let Some(node) = self.checks[at].clone() {
-                if !h.is_active(&node)? {
-                    self.stop(h)?;
-                    return Ok(true);
-                }
+            if let Some(node) = self.checks[at].clone()
+                && !h.is_active(&node)?
+            {
+                self.stop(h)?;
+                return Ok(true);
             }
         }
         if !self.running {

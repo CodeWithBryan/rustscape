@@ -1,5 +1,10 @@
 """Original server widget writers, RT4 readers and delayed model-state application."""
 import argparse,hashlib,importlib.util,json,pathlib,random,re,struct,subprocess
+def _recorded(root,name):
+    # The packs the JVM fixtures were recorded from: kept under recorded/ once
+    # the default packs are rebuilt natively (crates/client/tests/support/packs.rs).
+    kept=root/'assets/visual/recorded'/name
+    return kept if kept.is_file() else root/'assets/visual'/name
 ROOT=pathlib.Path(__file__).resolve().parents[2];RUN=ROOT/'runs/ui-model-updates-oracle';FIX=ROOT/'fixtures/ui/model-updates.json'
 def module(name,path):
     spec=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
@@ -28,7 +33,7 @@ def generate(check=False):
     declarations=''.join('static final int '+name+'='+str(op)+';'for name,op in zip(names,[36,130,73,66,132,50,119]));(RUN/'ServerProt.java').write_text('class ServerProt{'+declarations+'}',encoding='utf-8')
     (RUN/'Probe.java').write_text(SUPPORT.replace('__FIELDS__',','.join('"'+s+'"'for s in FIELDS)),encoding='utf-8')
     subprocess.run(['javac','-encoding','UTF-8','-d',str(RUN),*[str(p)for p in RUN.glob('*.java')]],check=True)
-    raw=(ROOT/'assets/visual/ui.pack').read_bytes();n=struct.unpack_from('<I',raw,8)[0];manifest=json.loads(raw[12:12+n]);requests=[]
+    raw=_recorded(ROOT,'ui.pack').read_bytes();n=struct.unpack_from('<I',raw,8)[0];manifest=json.loads(raw[12:12+n]);requests=[]
     for name,(off,size)in manifest['files'].items():
         if name.startswith('item/'):requests.append('D;'+name[5:]+';'+raw[12+n+off:12+n+off+size].hex())
     rng=random.Random(530605);wires=[];pointer=241<<16|2

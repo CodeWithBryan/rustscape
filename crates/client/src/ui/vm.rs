@@ -262,10 +262,10 @@ impl Vm {
     /// ScriptRunner catches ordinary script exceptions. Report the completed
     /// prefix, then allow MiniMenu's outer targeting transition to continue.
     fn target_hook(&mut self, state: &mut State, key: Key, arguments: Option<Vec<HookArg>>) {
-        if let Some(arguments) = arguments {
-            if let Err(error) = self.run(state, &Hook::new(key, arguments), 200000) {
-                state.diagnostic(error);
-            }
+        if let Some(arguments) = arguments
+            && let Err(error) = self.run(state, &Hook::new(key, arguments), 200000)
+        {
+            state.diagnostic(error);
         }
     }
     pub fn cancel_targeting(&mut self, state: &mut State) {
@@ -421,11 +421,10 @@ impl Vm {
         if let Some(ServerUpdate::OpenInterface {
             pointer, interface, ..
         }) = &update
+            && let Some(&(old, _)) = state.subinterfaces.get(pointer)
         {
-            if let Some(&(old, _)) = state.subinterfaces.get(pointer) {
-                state.close_sub(*pointer, old != *interface);
-                self.drain(state);
-            }
+            state.close_sub(*pointer, old != *interface);
+            self.drain(state);
         }
         if let Some(ServerUpdate::Varp { id, value }) = update {
             self.pending_varps
@@ -463,12 +462,11 @@ impl Vm {
             Ok(true)
         } else {
             let mut consumed = state.apply_frame(frame)?;
-            if !consumed {
-                if let Some(event) = rs09_protocol::game::events::ServerEvent::decode(frame)
+            if !consumed
+                && let Some(event) = rs09_protocol::game::events::ServerEvent::decode(frame)
                     .map_err(|e| e.to_string())?
-                {
-                    consumed = self.apply_event(state, &event)?;
-                }
+            {
+                consumed = self.apply_event(state, &event)?;
             }
             self.drain(state);
             Ok(consumed)
@@ -595,19 +593,19 @@ impl Vm {
                 }
                 12 => {
                     // A missing or non-layer component is ignored, not an error.
-                    if let Ok(c) = state.get_mut(Key::component(change.id)) {
-                        if c.kind == 0 {
-                            let mut scroll = change.value;
-                            if scroll > c.scroll_max_v - c.height {
-                                scroll = c.scroll_max_v - c.height;
-                            }
-                            if scroll < 0 {
-                                scroll = 0;
-                            }
-                            if scroll != c.scroll_y {
-                                c.scroll_y = scroll;
-                                state.model_redraws = state.model_redraws.wrapping_add(1);
-                            }
+                    if let Ok(c) = state.get_mut(Key::component(change.id))
+                        && c.kind == 0
+                    {
+                        let mut scroll = change.value;
+                        if scroll > c.scroll_max_v - c.height {
+                            scroll = c.scroll_max_v - c.height;
+                        }
+                        if scroll < 0 {
+                            scroll = 0;
+                        }
+                        if scroll != c.scroll_y {
+                            c.scroll_y = scroll;
+                            state.model_redraws = state.model_redraws.wrapping_add(1);
                         }
                     }
                 }

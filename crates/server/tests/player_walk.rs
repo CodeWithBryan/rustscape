@@ -18,12 +18,12 @@ fn diff(a: &Value, b: &Value, path: String) -> Option<String> {
             }
         }
     }
-    if let (Some(a), Some(b)) = (a.as_array(), b.as_array()) {
-        if a.len() == b.len() {
-            for (i, (a, b)) in a.iter().zip(b).enumerate() {
-                if let Some(d) = diff(a, b, format!("{path}/{i}")) {
-                    return Some(d);
-                }
+    if let (Some(a), Some(b)) = (a.as_array(), b.as_array())
+        && a.len() == b.len()
+    {
+        for (i, (a, b)) in a.iter().zip(b).enumerate() {
+            if let Some(d) = diff(a, b, format!("{path}/{i}")) {
+                return Some(d);
             }
         }
     }
@@ -118,8 +118,8 @@ fn retained_movement_base_checks_queue_manager_and_node_keep_original_owner_unti
     check(|s, n| s.current(n).unwrap().unwrap().base());
     check(|s, n| {
         let p = s.current(n).unwrap().unwrap().base();
-        let checks = p.read().checks.clone().unwrap();
-        checks
+
+        p.read().checks.clone().unwrap()
     });
     check(|s, n| s.actor(n).unwrap().queue.clone());
     check(|s, n| s.actor(n).unwrap().manager.clone());

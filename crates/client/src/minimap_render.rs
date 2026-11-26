@@ -57,14 +57,14 @@ impl Sprite {
                 } else {
                     u8::from(rgb != 0) * 255
                 };
-                if let Some(delta) = adjust {
-                    if rgb != 0 {
-                        rgb = (0..3).fold(0, |out, k| {
-                            let shift = 16 - k * 8;
-                            out | ((((rgb >> shift) & 255) as i32 + delta[k]).clamp(1, 255) as u32)
-                                << shift
-                        });
-                    }
+                if let Some(delta) = adjust
+                    && rgb != 0
+                {
+                    rgb = (0..3).fold(0, |out, k| {
+                        let shift = 16 - k * 8;
+                        out | ((((rgb >> shift) & 255) as i32 + delta[k]).clamp(1, 255) as u32)
+                            << shift
+                    });
                 }
                 let [ox, oy] = if trim { f.offset } else { [0, 0] };
                 let j = ((y + oy) * power[0] as usize + x + ox) * 4;
@@ -220,10 +220,10 @@ impl Renderer {
                 .ok();
         }
         // Diagnostic only: the pinned cache marks no label for the minimap.
-        if std::env::args().any(|arg| arg == "--minimap-all-labels") {
-            if let Some(labels) = &mut labels {
-                labels.show_all();
-            }
+        if std::env::args().any(|arg| arg == "--minimap-all-labels")
+            && let Some(labels) = &mut labels
+        {
+            labels.show_all();
         }
         let map = Texture2D::from_rgba8(512, 512, &vec![0; 512 * 512 * 4]);
         map.set_filter(FilterMode::Linear);

@@ -342,10 +342,10 @@ fn get_ladder<H: Host + ?Sized>(
 fn find_ladder<H: Host + ?Sized>(h: &mut H, at: [i32; 3]) -> Result<Option<H::Node>> {
     for x in -5..6 {
         for y in -5..6 {
-            if let Some(object) = h.get_object(transform(at, x, y, 0))? {
-                if is_ladder(h, &object)? {
-                    return Ok(Some(object));
-                }
+            if let Some(object) = h.get_object(transform(at, x, y, 0))?
+                && is_ladder(h, &object)?
+            {
+                return Ok(Some(object));
             }
         }
     }

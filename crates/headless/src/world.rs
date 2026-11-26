@@ -292,33 +292,34 @@ pub async fn observe(
                 player_spots.record(observed + 1, &update, &frame);
                 player_animations.record(observed + 1, &update, &frame);
                 observed += 1;
-                if walk.is_some() {
-                    if let Some(r) = &rebuild {
-                        let base = r.base();
-                        let p = state.self_player();
-                        trajectory.push_back(json!({"update":observed,"location":[base[0]+p.queue_x[0],base[1]+p.queue_y[0],state.plane],"energy":energy}));
-                        if trajectory.len() > 256 {
-                            trajectory.pop_front();
-                        }
+                if walk.is_some()
+                    && let Some(r) = &rebuild
+                {
+                    let base = r.base();
+                    let p = state.self_player();
+                    trajectory.push_back(json!({"update":observed,"location":[base[0]+p.queue_x[0],base[1]+p.queue_y[0],state.plane],"energy":energy}));
+                    if trajectory.len() > 256 {
+                        trajectory.pop_front();
                     }
                 }
-                if let Some(walk) = walk {
-                    if sent.is_none() && observed == walk.after_update {
-                        if rebuild.is_none() {
-                            return Err(io::Error::other(
-                                "walking requires a received scene rebuild",
-                            ));
-                        }
-                        let frame = game::actions::worldspace_walk(
-                            walk.destination[0],
-                            walk.destination[1],
-                            walk.running,
-                        );
-                        let bytes = sender.send_frame(&frame).await?;
-                        sent = Some(
-                            json!({"destination":walk.destination,"running":walk.running,"afterUpdate":observed,"opcode":frame.opcode,"wire":bytes}),
-                        );
+                if let Some(walk) = walk
+                    && sent.is_none()
+                    && observed == walk.after_update
+                {
+                    if rebuild.is_none() {
+                        return Err(io::Error::other(
+                            "walking requires a received scene rebuild",
+                        ));
                     }
+                    let frame = game::actions::worldspace_walk(
+                        walk.destination[0],
+                        walk.destination[1],
+                        walk.running,
+                    );
+                    let bytes = sender.send_frame(&frame).await?;
+                    sent = Some(
+                        json!({"destination":walk.destination,"running":walk.running,"afterUpdate":observed,"opcode":frame.opcode,"wire":bytes}),
+                    );
                 }
                 for scheduled in &scenery_actions {
                     if observed == scheduled.after_update {

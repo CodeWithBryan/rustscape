@@ -322,8 +322,8 @@ impl Game {
             let target = face_target(*index, actor.face_entity, &motion, &live_actors);
             let actor = live_actors.get_mut(index).unwrap();
             let state = actor_states.entry(*index).or_default();
-            if let Some(bas) = live_bas.get(index) {
-                if let Err(error) = actor.advance_actor(
+            if let Some(bas) = live_bas.get(index)
+                && let Err(error) = actor.advance_actor(
                     state,
                     rs09_client::actor_motion::Context {
                         bas,
@@ -334,9 +334,9 @@ impl Game {
                         face_target: target,
                         sequences: &workbench.sequences,
                     },
-                ) {
-                    route_status = format!("Actor motion: {error}");
-                }
+                )
+            {
+                route_status = format!("Actor motion: {error}");
             }
             state.movement.id = actor.sequence;
             if let Ok(events) = state.tick(cycle, &workbench.sequences, &workbench.spot_sequences) {
@@ -785,31 +785,32 @@ impl Game {
         // component (2815-2817). The click a press stood for comes back when
         // the button is let go without a drag.
         let mut chosen = None;
-        if let Some(ui) = &mut ui {
-            if ui_drag.active() && ui_drag.inventory() == inventory {
-                let point = [input.mouse.last_mouse_x, input.mouse.last_mouse_y];
-                let (hooks, click, packet) = ui_drag.step(
-                    ui,
-                    &ui_nodes,
-                    point,
-                    ui_vm.cycle,
-                    input.mouse.pressed_button != 0,
-                    ui_vm.inserting == 1,
-                );
-                for hook in hooks {
-                    if let Err(e) = ui_vm.run(ui, &hook, 200_000) {
-                        ui.diagnostic(e);
-                    }
+        if let Some(ui) = &mut ui
+            && ui_drag.active()
+            && ui_drag.inventory() == inventory
+        {
+            let point = [input.mouse.last_mouse_x, input.mouse.last_mouse_y];
+            let (hooks, click, packet) = ui_drag.step(
+                ui,
+                &ui_nodes,
+                point,
+                ui_vm.cycle,
+                input.mouse.pressed_button != 0,
+                ui_vm.inserting == 1,
+            );
+            for hook in hooks {
+                if let Err(e) = ui_vm.run(ui, &hook, 200_000) {
+                    ui.diagnostic(e);
                 }
-                if let Some(packet) = packet.and_then(|release| release.resolve(ui)) {
-                    if outbox.len() >= 512 {
-                        outbox.remove(0);
-                    }
-                    outbox.push(packet);
+            }
+            if let Some(packet) = packet.and_then(|release| release.resolve(ui)) {
+                if outbox.len() >= 512 {
+                    outbox.remove(0);
                 }
-                if click.is_some() {
-                    chosen = click;
-                }
+                outbox.push(packet);
+            }
+            if click.is_some() {
+                chosen = click;
             }
         }
         self.ui_nodes = ui_nodes;
@@ -971,18 +972,17 @@ impl Game {
                 normalized.action -= 2000;
             }
             let entry = &normalized;
-            if entry.action == 32 {
-                if let Some(ui) = &mut ui {
-                    if let Err(error) = ui_vm.select_target(
-                        ui,
-                        rs09_client::ui::state::Key {
-                            id: entry.args[1],
-                            child: entry.args[0],
-                        },
-                    ) {
-                        ui.diagnostic(error);
-                    }
-                }
+            if entry.action == 32
+                && let Some(ui) = &mut ui
+                && let Err(error) = ui_vm.select_target(
+                    ui,
+                    rs09_client::ui::state::Key {
+                        id: entry.args[1],
+                        child: entry.args[0],
+                    },
+                )
+            {
+                ui.diagnostic(error);
             }
             let mut ground_packet = rs09_client::ground_interaction::packet(
                 entry.action,
@@ -1161,17 +1161,13 @@ impl Game {
                         component: entry.args[1],
                         text: format!("{}<col=ffffff>", entry.target),
                     });
-                } else if entry.action == 40 {
-                    if let Some(selected) = &ui.selected_item {
-                        if outbox.len() >= 512 {
-                            outbox.remove(0);
-                        }
-                        outbox.push(selected.on_item(
-                            entry.key as i32,
-                            entry.args[0],
-                            entry.args[1],
-                        ));
+                } else if entry.action == 40
+                    && let Some(selected) = &ui.selected_item
+                {
+                    if outbox.len() >= 512 {
+                        outbox.remove(0);
                     }
+                    outbox.push(selected.on_item(entry.key as i32, entry.args[0], entry.args[1]));
                 }
                 // A spell cast on the world (key 0) needs the mouse on a
                 // drawn tile and shows the yellow cross (Protocol.loop,
@@ -1276,17 +1272,17 @@ impl Game {
                 outbox.push(packet);
                 route_status = format!("Offline: {}", client_ui::label(entry));
             }
-            if matches!(entry.action, 9 | 1003) {
-                if let Some(ui) = &mut ui {
-                    let key = rs09_client::ui::state::Key {
-                        id: entry.args[1],
-                        child: entry.args[0],
-                    };
-                    if let Err(e) = ui_vm.click_button(ui, key, entry.key as i32, &entry.target) {
-                        ui.diagnostic(e);
-                    }
-                    route_status = format!("Offline: {}", client_ui::label(entry));
+            if matches!(entry.action, 9 | 1003)
+                && let Some(ui) = &mut ui
+            {
+                let key = rs09_client::ui::state::Key {
+                    id: entry.args[1],
+                    child: entry.args[0],
+                };
+                if let Err(e) = ui_vm.click_button(ui, key, entry.key as i32, &entry.target) {
+                    ui.diagnostic(e);
                 }
+                route_status = format!("Offline: {}", client_ui::label(entry));
             }
             let mut location_packet = rs09_client::interaction::location_packet(
                 entry.action,
@@ -1297,15 +1293,15 @@ impl Game {
                 },
                 [entry.args[0] + origin[0], entry.args[1] + origin[1]],
             );
-            if entry.action == 14 {
-                if let Some(selected) = ui.as_ref().and_then(|u| u.selected_item.as_ref()) {
-                    let frame = selected.on_location(
-                        (entry.key >> 32) as i32 & i32::MAX,
-                        [entry.args[0] + origin[0], entry.args[1] + origin[1]],
-                    );
-                    location_packet =
-                        Some(std::iter::once(frame.opcode).chain(frame.payload).collect());
-                }
+            if entry.action == 14
+                && let Some(selected) = ui.as_ref().and_then(|u| u.selected_item.as_ref())
+            {
+                let frame = selected.on_location(
+                    (entry.key >> 32) as i32 & i32::MAX,
+                    [entry.args[0] + origin[0], entry.args[1] + origin[1]],
+                );
+                location_packet =
+                    Some(std::iter::once(frame.opcode).chain(frame.payload).collect());
             }
             if entry.action == 38 {
                 location_packet = ui
@@ -1358,36 +1354,36 @@ impl Game {
             if let Some(ui) = ui
                 .as_mut()
                 .filter(|_| entry.action != 1006 && !menu_action_failed)
-            {
-                if let Err(error) =
+                && let Err(error) =
                     ui.capture_inventory_press(entry.action, entry.args[1], entry.args[0])
-                {
-                    ui.diagnostic(error);
-                    menu_action_failed = true;
-                }
+            {
+                ui.diagnostic(error);
+                menu_action_failed = true;
             }
-            if !menu_action_failed && !matches!(entry.action, 22 | 32) {
-                if let Some(ui) = &mut ui {
-                    ui.selected_item = None;
-                    ui_vm.cancel_targeting(ui);
-                    ui.finish_inventory_action();
-                }
-            }
-        }
-        if ui_drag.take_inventory_release() && !menu_action_failed {
-            if let Some(ui) = &mut ui {
-                ui.released_inventory();
+            if !menu_action_failed
+                && !matches!(entry.action, 22 | 32)
+                && let Some(ui) = &mut ui
+            {
+                ui.selected_item = None;
+                ui_vm.cancel_targeting(ui);
+                ui.finish_inventory_action();
             }
         }
-        if chosen.is_some() {
-            if let Some(ui) = &mut ui {
-                ui_nodes = ui
-                    .layout(screen_width() as i32, screen_height() as i32)
-                    .unwrap_or_else(|e| {
-                        ui.diagnostic(e);
-                        Vec::new()
-                    });
-            }
+        if ui_drag.take_inventory_release()
+            && !menu_action_failed
+            && let Some(ui) = &mut ui
+        {
+            ui.released_inventory();
+        }
+        if chosen.is_some()
+            && let Some(ui) = &mut ui
+        {
+            ui_nodes = ui
+                .layout(screen_width() as i32, screen_height() as i32)
+                .unwrap_or_else(|e| {
+                    ui.diagnostic(e);
+                    Vec::new()
+                });
         }
         for packet in ui_vm.outgoing.drain(..) {
             if outbox.len() >= 512 {
@@ -1400,13 +1396,13 @@ impl Game {
         // has found the tile under it; on the minimap (key 1) the tile is
         // known and the walk starts now.
         let mut minimap_walk = None;
-        if let Some(entry) = &chosen {
-            if entry.action == 60 || entry.action == 2060 {
-                if entry.key == 0 {
-                    walk.set_destination(entry.args);
-                } else {
-                    minimap_walk = Some([entry.args[0] + origin[0], entry.args[1] + origin[1]]);
-                }
+        if let Some(entry) = &chosen
+            && (entry.action == 60 || entry.action == 2060)
+        {
+            if entry.key == 0 {
+                walk.set_destination(entry.args);
+            } else {
+                minimap_walk = Some([entry.args[0] + origin[0], entry.args[1] + origin[1]]);
             }
         }
         self.route_run = route_run;
@@ -1446,10 +1442,10 @@ impl Game {
         for &[x, y, level] in tiles {
             let context = ui_vm.cheat.context(ui_vm.window_mode != 0);
             let (command, effects) = rs09_client::cheat::teleport(x, y, level, &context);
-            if ui_vm.cheat.apply(effects, &mut ui_vm.preferences).is_ok() {
-                if let Ok(packet) = rs09_client::ui::chat::command(&command[2..]) {
-                    ui_vm.outgoing.push(packet);
-                }
+            if ui_vm.cheat.apply(effects, &mut ui_vm.preferences).is_ok()
+                && let Ok(packet) = rs09_client::ui::chat::command(&command[2..])
+            {
+                ui_vm.outgoing.push(packet);
             }
         }
     }
@@ -1591,12 +1587,10 @@ impl Game {
         let mut ui_cycle = self.ui_cycle;
         let mut ui_nodes = std::mem::take(&mut self.ui_nodes);
         ui_cycle = ui_cycle.wrapping_add(1);
-        if interfaces {
-            if let Some(ui) = &mut ui {
-                ui_nodes = ui
-                    .layout(screen_width() as i32, screen_height() as i32)
-                    .unwrap_or_default();
-            }
+        if interfaces && let Some(ui) = &mut ui {
+            ui_nodes = ui
+                .layout(screen_width() as i32, screen_height() as i32)
+                .unwrap_or_default();
         }
         self.ui_cycle = ui_cycle;
         self.ui_nodes = ui_nodes;
@@ -1618,12 +1612,12 @@ impl Game {
                 .filter(|&id| id != -1)
                 .collect();
             for id in ids {
-                if workbench.prepared_actor_sequences.insert(id) {
-                    if let Err(error) = workbench.player_sequence(&ui.pack, id) {
-                        let message = format!("Actor sequence{id} assets: {error}");
-                        if live_diagnostics.len() < 32 && !live_diagnostics.contains(&message) {
-                            live_diagnostics.push(message);
-                        }
+                if workbench.prepared_actor_sequences.insert(id)
+                    && let Err(error) = workbench.player_sequence(&ui.pack, id)
+                {
+                    let message = format!("Actor sequence{id} assets: {error}");
+                    if live_diagnostics.len() < 32 && !live_diagnostics.contains(&message) {
+                        live_diagnostics.push(message);
                     }
                 }
             }
