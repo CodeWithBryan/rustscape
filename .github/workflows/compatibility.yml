@@ -28,12 +28,13 @@ jobs:
         run: python tools/check_macroquad_vendor.py
       - name: Lints
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      # Some tests read the pinned original sources, so fetch them first.
+      - name: Fetch locked original sources
+        run: cargo xtask bootstrap
       - name: Rust regression and differential tests
         run: cargo test --locked --workspace
       - name: Browser protocol and visual build checks
         run: cargo check --locked --target wasm32-unknown-unknown -p rs09-protocol -p rs09-client -p rs09-audio-worklet
-      - name: Fetch locked original sources
-        run: cargo xtask bootstrap
       - name: Reproduce original JVM outputs and source hashes
         run: cargo xtask oracle --check
       - name: Reproduce original cache reader and extraction fixtures

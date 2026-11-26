@@ -10,3 +10,6 @@
 *.wav binary
 *.dat2 binary
 *.idx* binary
+# Vendored sources are checked byte for byte against their provenance
+# (tools/check_macroquad_vendor.py): no line-ending conversion.
+vendor/macroquad/** -text
