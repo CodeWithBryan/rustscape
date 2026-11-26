@@ -46,7 +46,7 @@ pub struct EntityFaults {
 /// Whether the `count`th failure of a run is logged: 1, 10, 100, ...
 fn milestone(count: u64) -> bool {
     let mut n = count;
-    while n >= 10 && n % 10 == 0 {
+    while n >= 10 && n.is_multiple_of(10) {
         n /= 10;
     }
     n == 1
