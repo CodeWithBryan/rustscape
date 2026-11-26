@@ -1,4 +1,5 @@
-* text=auto
+# Fixtures and pinned sources are hashed byte for byte, so check out LF everywhere.
+* text=auto eol=lf
 *.rs text eol=lf
 *.java text eol=lf
 *.json text eol=lf
