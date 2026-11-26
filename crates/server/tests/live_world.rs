@@ -1613,6 +1613,37 @@ async fn teleport_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     assert_eq!(one.position(), [3213, 3424, 0], "no second teleport");
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+    // A teleport cut short by a disconnection: the pulse is stopped at the
+    // logout and never runs against the removed player; the world goes on
+    // (a later login is served).
+    write_save_with(
+        &players,
+        "teleone",
+        "teletwo",
+        at,
+        &[(0, 554, 1), (1, 556, 3), (2, 563, 1)],
+        |_| {},
+    );
+    let (code, two) = Client::login(address, "teletwo").await;
+    assert_eq!(code, 2, "teletwo's login");
+    let mut two = two.unwrap();
+    two.until(Duration::from_secs(10), "teletwo's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    two.send(button(378, 140)).await;
+    two.until(Duration::from_secs(10), "teletwo's rebuild", |c| {
+        !c.updates.is_empty() && c.containers.get(&93).is_some_and(|c| c.len() == 3)
+    })
+    .await;
+    two.send(button(192, 15)).await;
+    two.pump(Duration::from_millis(300)).await;
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(4)).await;
+    let (code, three) = Client::login(address, "teleone").await;
+    assert_eq!(code, 2, "a login after the cut-short teleport");
+    three.unwrap().writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// Combat against an NPC: a saved character in the

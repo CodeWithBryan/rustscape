@@ -339,6 +339,16 @@ impl Live {
             .iter()
             .find(|t| t.handle().same(pulse))
             .cloned()?;
+        let node = teleport.entity().node();
+        if !self.inner.players.contains_key(&node) && !self.inner.is_npc_node(node) {
+            // The entity left the world: finished, untracked first so the
+            // runner's stop is the base stop.
+            self.round
+                .magic
+                .teleports
+                .retain(|t| !t.handle().same(pulse));
+            return Some(Ok(true));
+        }
         let result = self
             .with_teleports(|h| teleport.pulse(h))
             .map_err(|e| format!("{e:?}"));
@@ -372,6 +382,18 @@ impl Live {
     /// A player left: its teleporter and the spell state this world keeps.
     pub fn magic_logout(&mut self, node: usize) {
         self.round.magic.teleporters.remove(&node);
+        // A teleport still running for the player (the logout can come
+        // before the move, and the pulse checks no node): stopped with the
+        // base stop and untracked, so the runner drops it without running
+        // its body or the stop override against a removed player.
+        self.round.magic.teleports.retain(|t| {
+            if t.entity().node() == node {
+                pulses::stop_base(t.handle());
+                false
+            } else {
+                true
+            }
+        });
     }
 }
 

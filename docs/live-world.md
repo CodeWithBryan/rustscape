@@ -312,6 +312,10 @@ modes of `rs09-server` are unchanged.
 - A potion's dose script is kept by the world, not in the canonical script
   queue: it runs at the start of the player's `Player.tick` once due, and
   `getActiveScript()` answers none for it.
+- A teleport pulse still running when its player logs out is stopped with
+  the base stop at the logout (no `TeleportPulse.stop` override, no ending
+  animation); the original's pulse would run on against the stale Player
+  object, which the live world no longer holds.
 - `ShopHost` keeps the "shop", "shop-cont" and "shop-main" attributes, the
   trade world the `lastRequest` attribute, the RequestManager target and the
   TradeModule extension, by player (they hold objects).
