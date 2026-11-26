@@ -47,6 +47,7 @@ pub mod ground_items;
 pub mod host;
 pub mod inner;
 pub mod items;
+pub mod magic;
 pub mod not_ported;
 pub mod npc_life;
 pub mod npcs;

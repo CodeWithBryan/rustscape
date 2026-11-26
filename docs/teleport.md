@@ -13,8 +13,12 @@ home-teleport or jewellery type in this class: the home teleport is its own
 content pulse and jewellery calls `send(location, NORMAL, 1)`; both are
 content and not ported here.
 
-This is a library. Nothing installs it: no session, example or world owns a
-`Manager`, and no packet reaches `send`.
+This is a library. The live world (`--world`, `world/live/magic.rs`) owns
+a `Manager` per entity and reaches `send` from the standard book's Varrock,
+Lumbridge and Falador teleports on the magic tab; its world pulse runner
+dispatches the pulses by identity and runs their `stop` override through
+the driver's `pulse_stop` hook (docs/live-world.md). The controlled
+sessions do not install it.
 
 ## What runs where
 

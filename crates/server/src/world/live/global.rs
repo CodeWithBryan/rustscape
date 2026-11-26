@@ -824,13 +824,10 @@ impl gh::Host for GHost<'_> {
             .map_err(bind)
     }
     fn is_teleporting(&mut self, player: &Self::Node) -> Result<bool> {
-        // Entity.isTeleporting: no TeleportManager pulse runs here (false).
-        self.player(player)?;
+        let p = self.player(player)?;
         self.live
-            .inner
-            .not_ported
-            .default_answer("Entity.isTeleporting (teleports not installed: false)");
-        Ok(false)
+            .entity_is_teleporting(&p)
+            .map_err(|e| Error::Binding(Some(e)))
     }
     fn can_logout(&mut self, player: &Self::Node) -> Result<bool> {
         let p = self.player(player)?;
@@ -1275,7 +1272,15 @@ impl gh::Host for GHost<'_> {
         player: &Self::Node,
         node: Option<&Self::Node>,
     ) -> Result<()> {
-        refuse("spell_listeners")
+        let p = self.player(player)?;
+        // The magic tab runs the NONE listeners (no node); a node here
+        // would be a listener with a target, which these handlers never
+        // pass.
+        if node.is_some() {
+            return refuse("SpellListeners.run with a node from the global handlers");
+        }
+        super::magic::spell_listeners(self.live, button, kind, book, &p, -1)
+            .map_err(|e| Error::Binding(Some(e)))
     }
     fn cast_spell(
         &mut self,
@@ -1284,7 +1289,13 @@ impl gh::Host for GHost<'_> {
         spell: i32,
         target: &Self::Node,
     ) -> Result<bool> {
-        refuse("cast_spell")
+        let p = self.player(player)?;
+        let target = match target {
+            GNode::Entity(e) => Some(e.clone()),
+            _ => None,
+        };
+        super::magic::cast_spell(self.live, &p, book, spell, target.as_ref())
+            .map_err(|e| Error::Binding(Some(e)))
     }
     fn attack_animation(&mut self, player: &Self::Node) -> Result<i32> {
         refuse("attack_animation")
