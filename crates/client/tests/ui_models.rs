@@ -240,6 +240,23 @@ fn hash(bytes: &[u8]) -> String {
 
 #[test]
 fn every_cached_item_widget_geometry_normals_uvs_palette_resize_and_bounds_match() {
+    // Needs local assets that are not in the repository.
+    if !recorded("ui-models.pack").exists()
+        || !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("assets/visual/live/lumbridge-minimap.pack")
+            .exists()
+    {
+        eprintln!(
+            "skipped: needs {}, {}, nothing was checked",
+            recorded("ui-models.pack").display(),
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join("assets/visual/live/lumbridge-minimap.pack")
+                .display()
+        );
+        return;
+    }
     use rs09_client::{
         model::Model,
         pack::Pack,
@@ -321,6 +338,23 @@ fn every_cached_item_widget_geometry_normals_uvs_palette_resize_and_bounds_match
 
 #[test]
 fn real_kit_item_npc_and_player_head_geometry_matches_original_assembly() {
+    // Needs local assets that are not in the repository.
+    if !recorded("ui-models.pack").exists()
+        || !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("assets/visual/live/lumbridge-minimap.pack")
+            .exists()
+    {
+        eprintln!(
+            "skipped: needs {}, {}, nothing was checked",
+            recorded("ui-models.pack").display(),
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join("assets/visual/live/lumbridge-minimap.pack")
+                .display()
+        );
+        return;
+    }
     use rs09_client::{
         appearance::IdentityKit,
         model::Model,
@@ -489,6 +523,14 @@ fn original_entity_animation_readiness_flags_secondary_indices_and_passes_match(
 
 #[test]
 fn original_model_update_readers_delayed_overwrites_protection_and_partial_writes_match() {
+    // Needs local assets that are not in the repository.
+    if !recorded("ui.pack").exists() {
+        eprintln!(
+            "skipped: needs {}, nothing was checked",
+            recorded("ui.pack").display()
+        );
+        return;
+    }
     use rs09_client::{
         pack::Pack,
         ui::{

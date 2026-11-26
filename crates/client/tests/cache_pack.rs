@@ -37,6 +37,23 @@ fn order(pack: &Pack) -> Vec<&str> {
 
 #[test]
 fn native_interface_pack_reproduces_the_recorded_python_pack() {
+    // Needs local assets that are not in the repository.
+    if !recorded("ui.pack").exists()
+        || !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("assets/cache")
+            .exists()
+    {
+        eprintln!(
+            "skipped: needs {}, {}, nothing was checked",
+            recorded("ui.pack").display(),
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join("assets/cache")
+                .display()
+        );
+        return;
+    }
     let recorded_bytes = std::fs::read(recorded("ui.pack")).unwrap();
     let provenance: serde_json::Value =
         serde_json::from_slice(&std::fs::read(recorded("ui.provenance.json")).unwrap()).unwrap();
@@ -132,6 +149,21 @@ fn native_interface_pack_reproduces_the_recorded_python_pack() {
 /// descriptions and map files are outside its scope and are skipped by name.
 #[test]
 fn whole_cache_pack_serves_every_entry_of_the_prepared_packs() {
+    // Needs local assets that are not in the repository.
+    if !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join("assets/cache")
+        .exists()
+    {
+        eprintln!(
+            "skipped: needs {}, nothing was checked",
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join("assets/cache")
+                .display()
+        );
+        return;
+    }
     let cache = rs09_client::cache_pack::cache_pack(&root().join("assets/cache"), &server_commit())
         .unwrap();
     let mut total = 0usize;
