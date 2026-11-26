@@ -321,9 +321,7 @@ impl sa::Host for Live {
         entity: &P,
         (identifier, args): (String, Vec<TimerArg>),
     ) -> Result<()> {
-        if !self.inner.is_player_node(entity.node()) {
-            return refuse("a timer on an NPC (NPC timers are not installed)");
-        }
+        // A player's or an NPC's timer manager (super::super::timers).
         let args: Vec<crate::timers::content::Arg<P>> = args
             .into_iter()
             .map(|a| match a {

@@ -169,6 +169,12 @@ pub enum Deferred {
     PlayerHandler(super::follow::PlayerHandlerCall),
     /// A follow pulse's `pulse()` (super::follow).
     Follow(crate::world::interaction::OptionHandle),
+    /// An NPC's `Entity.tick` reached `timers.processTimers()`: run by
+    /// `Live::npc_tick_of` right after the walking call returns.
+    NpcTimers(Node),
+    /// `Entity.fullRestore()`'s `timers.removeTimer("poison")` and
+    /// `("poison:immunity")` of an NPC.
+    NpcRestoreTimers(Node),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -275,15 +281,16 @@ impl player_walk::Services for WalkHost<'_> {
                     .map_err(binding)?
             }
             Query::Timer(n, name) => {
-                // timers.getTimer(name) != null over the player's timer
-                // manager (super::timers). An NPC's manager holds only the
-                // start-up's auto timers (AntiMacro and HolidayRandoms remove
-                // themselves, GrandExchangeTimer polls): none is asked for.
+                // timers.getTimer(name) != null over the player's or the
+                // NPC's timer manager (super::timers).
                 let Some(slot) = self.players.get(&n) else {
-                    self.not_ported.default_answer(
-                        "NPC timer queries (NPC timers not installed: none registered)",
-                    );
-                    return Ok(false);
+                    let row = self.npcs.rows.get(&n).ok_or_else(|| {
+                        player_walk::Error::Binding(format!(
+                            "timer query of node {n}: neither a player nor an NPC"
+                        ))
+                    })?;
+                    return crate::timers::content::has_identifier(&row.timers, name)
+                        .map_err(binding_debug);
                 };
                 slot.canonical
                     .player
@@ -380,12 +387,11 @@ impl player_walk::Services for WalkHost<'_> {
                 }
             }
             Event::Timers(n) => {
-                // A player's timers.processTimers() runs right after this
-                // call returns (Live::player_tick, super::timers); NPC
-                // timers are not installed.
+                // timers.processTimers() runs right after this call returns:
+                // a player's in Live::player_tick, an NPC's in
+                // Live::npc_tick_of (super::timers; it needs the whole world).
                 if !self.players.contains_key(&n) {
-                    self.not_ported
-                        .skip("timers.processTimers for NPCs (NPC timers not installed)");
+                    self.deferred.push(Deferred::NpcTimers(n));
                 }
             }
             Event::PulseLength(_, _)

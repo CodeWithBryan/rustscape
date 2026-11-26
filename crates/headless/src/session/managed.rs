@@ -184,6 +184,10 @@ impl Sender {
     pub async fn scenery(&self, action: SceneryAction) -> io::Result<Vec<u8>> {
         self.send_frame(&action.frame()?).await
     }
+    /// An agent action (NPC options, use-with, dialogue) as its original packet.
+    pub async fn act(&self, action: &crate::agent::Action) -> io::Result<Vec<u8>> {
+        self.send_frame(&action.frame()?).await
+    }
 }
 
 /// Owns one background connection task. The observation queue is bounded to256

@@ -151,13 +151,8 @@ impl df::Host for Live {
     }
 
     fn timer_active(&mut self, entity: &P, identifier: &str) -> Result<bool> {
-        if self.inner.is_player_node(entity.node()) {
-            return self.has_timer_of(entity.node(), identifier).map_err(bind);
-        }
-        self.inner
-            .not_ported
-            .default_answer("NPC timer queries (none: no NPC timer is registered)");
-        Ok(false)
+        // A player's or an NPC's timer manager (super::timers).
+        self.has_timer_of(entity.node(), identifier).map_err(bind)
     }
     fn dragonfire_immunity(&mut self, entity: &P) -> Result<bool> {
         df::Host::timer_active(self, entity, "dragonfire:immunity")

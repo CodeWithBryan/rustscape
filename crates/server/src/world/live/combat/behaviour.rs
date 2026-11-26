@@ -523,8 +523,12 @@ impl nb::Host for Live {
         super::death::restore_npc_skills(self, entity);
         Ok(())
     }
-    fn remove_timer(&mut self, _: &P, _: &str) -> Result<()> {
-        refuse("NPC timers (not installed)")
+    fn remove_timer(&mut self, entity: &P, identifier: &str) -> Result<()> {
+        // timers.removeTimer(identifier) over the entity's timer manager.
+        self.with_timers(entity, |natives, manager| {
+            manager.remove_identifier(identifier, &mut (), natives)
+        })
+        .map_err(|e| Error::Binding(format!("{e:?}")))
     }
     fn clipping_flag(&mut self, z: i32, x: i32, y: i32) -> Result<i32> {
         cp::Host::clipping_flag(self, z, x, y)

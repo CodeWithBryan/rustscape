@@ -231,7 +231,12 @@ impl Configuration {
         let raw = path
             .to_str()
             .ok_or_else(|| Error::at("file", ErrorKind::Type))?;
-        let reference = parse_path(raw, std::path::MAIN_SEPARATOR);
+        let mut reference = parse_path(raw, std::path::MAIN_SEPARATOR);
+        // parsePath drops a leading separator; the file itself is read from the
+        // absolute path a caller gave (a Unix world directory).
+        if raw.starts_with('/') && std::path::MAIN_SEPARATOR == '/' {
+            reference.insert(0, '/');
+        }
         // java.io.File discards the final separator that parsePath appends to
         // filenames. Keep stored game paths unchanged; normalize only I/O.
         let file = Path::new(reference.trim_end_matches(std::path::MAIN_SEPARATOR));

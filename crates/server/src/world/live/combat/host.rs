@@ -1285,13 +1285,7 @@ impl cp::Host for Live {
         Ok(self.inner.ticks)
     }
     fn miasmic_active(&mut self, entity: &P) -> Result<bool> {
-        if self.inner.is_npc_node(entity.node()) {
-            // NPC timers are not installed: no NPC has a Miasmic timer.
-            self.inner
-                .not_ported
-                .default_answer("NPC timer queries (none: no NPC timer is registered)");
-            return Ok(false);
-        }
+        // A player's or an NPC's timer manager (super::super::timers).
         self.has_timer_of(entity.node(), "miasmic").map_err(bind)
     }
     fn npc_hidden(&mut self, npc: &P, player: &P) -> Result<bool> {
