@@ -141,19 +141,25 @@ impl use_with::Context for Ctx<'_> {
             // HANDLERS never answers a list for this pulse to carry.
             return refused("a UseWithHandler's MovementPulse (no handler class is ported)");
         }
-        // `new MovementPulse(player, event.getUsedWith())`: no destination
-        // flag, so the node's own getDestination; its arrival runs `body`.
+        // `new MovementPulse(player, event.getUsedWith())`: the two-argument
+        // constructor, whose destination flag is ENTITY for an NPC or a
+        // player and null otherwise (scenery: the path to the object
+        // itself); its arrival runs `body`.
         let Node::Player(p) = player else {
             return Err(Error::Cast);
         };
-        if matches!(destination, Node::Item(_) | Node::Ground(_)) {
-            return refused("UseWithHandler's MovementPulse to an item");
-        }
+        let flag = match destination {
+            Node::Npc(_) | Node::Player(_) => Some(crate::world::movement::Flag::Entity),
+            Node::Scenery(_) => None,
+            Node::Item(_) | Node::Ground(_) => {
+                return refused("UseWithHandler's MovementPulse to an item");
+            }
+        };
         self.0
             .approach_movement(
                 p.clone(),
                 destination,
-                None,
+                flag,
                 None,
                 super::super::round::Pending::UseWith(body),
             )

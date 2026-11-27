@@ -1843,9 +1843,6 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     let base = one.base.unwrap();
     let tile = one.npcs.actors.get(&(index as usize)).unwrap().tile;
     let keeper_at = [base[0] + tile[0], base[1] + tile[1], base[2]];
-    let distance = (at[0] - keeper_at[0])
-        .abs()
-        .max((at[1] - keeper_at[1]).abs());
     eprintln!(
         "useone used the dagger on the shop keeper (index {index}) at {keeper_at:?}: walked {start:?} -> {at:?}"
     );
@@ -1854,17 +1851,24 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
         .iter()
         .find(|(_, m)| m.starts_with("With: "))
         .map(|(_, m)| m.clone());
-    let expected = format!("With: NPC 520, {keeper_at:?}, {index}");
     eprintln!("useone's debug line: {with:?}");
+    // The debug line carries the shop keeper's tile when the walk arrived:
+    // useone is never on it (DestinationFlag.ENTITY). The shop keeper
+    // wanders, and MovementPulse leads a walking target
+    // (checkForEntityPathInterrupt) and reaches it from a tile around the
+    // led point, so the arrival is one to three tiles from it.
+    let with = with.expect("useone's debug line for the shop keeper");
+    let tile: Vec<i32> = with
+        .strip_prefix("With: NPC 520, [")
+        .and_then(|rest| rest.strip_suffix(&format!("], {index}")))
+        .unwrap_or_else(|| panic!("useone's debug line: {with}"))
+        .split(", ")
+        .map(|n| n.parse().unwrap())
+        .collect();
+    let arrival = (at[0] - tile[0]).abs().max((at[1] - tile[1]).abs());
     assert!(
-        with.as_deref().is_some_and(
-            |w| w.starts_with("With: NPC 520, [") && w.ends_with(&format!("], {index}"))
-        ),
-        "useone's debug line for the shop keeper, like {expected}"
-    );
-    assert!(
-        distance <= 2,
-        "useone beside the shop keeper (one wander step allowed), not {distance} tiles away"
+        (1..=3).contains(&arrival),
+        "useone near the shop keeper at arrival, not {arrival} tiles from {tile:?}"
     );
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
