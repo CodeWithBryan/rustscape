@@ -591,6 +591,13 @@ pub struct Outcome {
     pub report: Value,
 }
 
+/// Milliseconds since the Unix epoch: step times a log can be lined up with.
+pub fn unix_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_millis() as u64)
+}
+
 fn seconds(value: &Value, default: f64) -> Duration {
     Duration::from_secs_f64(value.as_f64().unwrap_or(default).max(0.0))
 }
@@ -684,6 +691,49 @@ async fn step(run: &mut Run, step: &Map<String, Value>) -> io::Result<(bool, Val
             }
         }
         "close" => Action::CloseInterface,
+        "dialogue" => {
+            // Walk an open dialogue to its end: Continue, or the `option`-th
+            // option (default the first), until no dialogue is open or `max`
+            // answers were sent. Waits `timeout` for the first one.
+            let max = get("max").as_u64().unwrap_or(12);
+            let option = get("option").as_u64().unwrap_or(0) as usize;
+            let mut first = seconds(get("timeout"), 4.0);
+            let mut sent = Vec::new();
+            run.mark = run.history.len();
+            for _ in 0..max {
+                let mut action = None;
+                run.pump_until(first, |run| {
+                    action = run.agent.view.dialogue().and_then(|d| {
+                        d.resume()
+                            .or_else(|| d.choose(option.min(d.lines.len().saturating_sub(1))))
+                    });
+                    Ok(action.is_some())
+                })
+                .await?;
+                let Some(action) = action else { break };
+                run.agent.act(&action).await?;
+                sent.push(format!("{action:?}"));
+                // The next dialogue replaces this one a tick or two later.
+                first = Duration::from_secs_f64(2.5);
+                run.pump_until(Duration::from_millis(700), |_| Ok(false))
+                    .await?;
+            }
+            let open = run.agent.view.dialogue().is_some();
+            if open {
+                run.agent.act(&Action::CloseInterface).await?;
+            }
+            return Ok((true, json!({"answers": sent, "closedOpenDialogue": open})));
+        }
+        "groundItem" => {
+            run.mark = run.history.len();
+            let option = int(get("option"), "groundItem.option")? as u8;
+            let id = int(get("item"), "groundItem.item")?;
+            let tile = ints(get("tile"), "groundItem.tile")?;
+            let frame = rs09_headless::protocol::game::menu::ground_item_option(option, id, tile)
+                .ok_or_else(|| bad("groundItem.option must be 2 (Take) or 3"))?;
+            run.agent.session.sender().send_frame(&frame).await?;
+            return Ok((true, json!({"groundItem": id, "tile": tile})));
+        }
         "button" => {
             run.mark = run.history.len();
             let frame = button(
@@ -744,19 +794,27 @@ pub async fn run(
         run.agent.view.position()
     );
     let start = run.agent.view.snapshot();
+    // `keepGoing`: a failed step, or a step that cannot be sent (no such NPC
+    // or item in view), is reported and the run goes on (the census tours).
+    let keep_going = script["keepGoing"].as_bool().unwrap_or(false);
     let mut steps = Vec::new();
     let mut ok = true;
     let mut errors = Vec::new();
     for (i, s) in script["steps"].as_array().into_iter().flatten().enumerate() {
         let began = Instant::now();
+        let started_ms = unix_ms();
         // A step's error (a bad step, a lost connection) fails the step; the
-        // report and the view are kept.
+        // report and the view are kept. With `keepGoing`, a step that cannot
+        // be sent (no such NPC or item in view) is only a failed step.
         let result = match s.as_object() {
             Some(map) => step(&mut run, map).await,
             None => Err(bad(format!("step {i} is not an object"))),
         };
         let (passed, detail) = match result {
             Ok(result) => result,
+            Err(e) if keep_going && e.kind() == io::ErrorKind::InvalidInput && s.is_object() => {
+                (false, json!({"error": e.to_string()}))
+            }
             Err(e) => {
                 errors.push(format!("step {i}: {e}"));
                 (false, json!({"error": e.to_string()}))
@@ -768,10 +826,13 @@ pub async fn run(
             s.get("do").and_then(Value::as_str).unwrap_or("?"),
             if passed { "ok" } else { "FAILED" },
         );
-        steps.push(json!({"step": i, "spec": s, "ok": passed, "seconds": took, "detail": detail}));
+        steps.push(json!({"step": i, "spec": s, "ok": passed, "seconds": took,
+            "startedMs": started_ms, "endedMs": unix_ms(), "detail": detail}));
         if !passed {
             ok = false;
-            break;
+            if !keep_going {
+                break;
+            }
         }
     }
     run.collect();

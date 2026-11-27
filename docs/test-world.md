@@ -88,6 +88,10 @@ cargo xtask test-world stop --name goblins --clean
 cargo xtask test-world stop --all
 ```
 
+`--log-every-refusal` starts the server with `RS09_NOT_PORTED_LOG=every`,
+which logs every named not-ported call instead of only the first
+([refusal-census.md](refusal-census.md)).
+
 `stop` kills only the pid in that world's `world.json`, and only while that
 process is still `rs09-server` with that world's saves folder on its command
 line; anything else is reported as not running and left alone. A failure to
@@ -179,6 +183,8 @@ Each step is an object with `"do"`:
 | `continue` | `timeout`? | the open dialogue's Continue (`Action::Resume`) |
 | `choose` | `text`, `timeout`? | the first dialogue option containing `text` |
 | `close` | | `Action::CloseInterface` |
+| `dialogue` | `max`? (12), `option`? (0), `timeout`? (4 s for the first) | Continue, else that option, until no dialogue is open; closes one still open after `max` |
+| `groundItem` | `option` (2 Take, or 3), `item`, `tile: [x, y]` | the ground item option (opcode 66 or 33) |
 | `button` | `interface`, `child` | IF_BUTTON (155), as the original client sends a button |
 | `wait` | `until`, `timeout`? (seconds, default 20) | nothing: reads frames until the condition holds |
 | `assert` | `that` | nothing: the condition must hold now |
@@ -233,7 +239,13 @@ stdout (and to `--output FILE`):
   interfaces);
 - `start` and `view`: the `View` snapshot right after login and at the end.
 
-The run stops at the first failed step. A step that errors (a bad step, a
+The run stops at the first failed step, unless the script sets
+`"keepGoing": true`: then every step runs, and a step that cannot be sent
+(no such NPC or item in view) is only a failed step, not an error. Each
+step's report also has `startedMs` and `endedMs` (Unix milliseconds), and
+keys a step has beyond its `do` fields (such as a `label`) are ignored and
+kept in the report. The refusal census ([refusal-census.md](refusal-census.md))
+uses all three. A step that errors (a bad step, a
 lost connection) is a failed step with its error in `detail` and in
 `error`; the report and the final view are still printed, and the character
 is always logged out. The run then waits up to 20 seconds for the server to

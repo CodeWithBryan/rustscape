@@ -1,0 +1,1854 @@
+{
+  "census": {
+    "area": "Lumbridge",
+    "centre": [
+      3215,
+      3220,
+      0
+    ],
+    "radius": 14,
+    "tour": "lumbridge_castle"
+  },
+  "character": {
+    "inventory": [
+      {
+        "amount": 1,
+        "id": 1351
+      },
+      {
+        "amount": 1,
+        "id": 1265
+      },
+      {
+        "amount": 1,
+        "id": 590
+      },
+      {
+        "amount": 1,
+        "id": 303
+      },
+      {
+        "amount": 3,
+        "id": 1511
+      },
+      {
+        "amount": 1,
+        "id": 2309
+      },
+      {
+        "amount": 1,
+        "id": 315
+      },
+      {
+        "amount": 1,
+        "id": 317
+      },
+      {
+        "amount": 1,
+        "id": 1925
+      },
+      {
+        "amount": 1,
+        "id": 1931
+      },
+      {
+        "amount": 1,
+        "id": 946
+      },
+      {
+        "amount": 1,
+        "id": 1755
+      },
+      {
+        "amount": 1,
+        "id": 1733
+      },
+      {
+        "amount": 5,
+        "id": 1734
+      },
+      {
+        "amount": 1,
+        "id": 1205
+      },
+      {
+        "amount": 1,
+        "id": 1171
+      },
+      {
+        "amount": 5000,
+        "id": 995
+      },
+      {
+        "amount": 1,
+        "id": 526
+      },
+      {
+        "amount": 50,
+        "id": 556
+      },
+      {
+        "amount": 50,
+        "id": 558
+      }
+    ],
+    "location": [
+      3215,
+      3220,
+      0
+    ],
+    "name": "cs_lumcastle",
+    "skills": {
+      "agility": 60,
+      "attack": 60,
+      "construction": 60,
+      "cooking": 60,
+      "crafting": 60,
+      "defence": 60,
+      "farming": 60,
+      "firemaking": 60,
+      "fishing": 60,
+      "fletching": 60,
+      "herblore": 60,
+      "hitpoints": 60,
+      "hunter": 60,
+      "magic": 60,
+      "mining": 60,
+      "prayer": 60,
+      "ranged": 60,
+      "runecrafting": 60,
+      "slayer": 60,
+      "smithing": 60,
+      "strength": 60,
+      "summoning": 60,
+      "thieving": 60,
+      "woodcutting": 60
+    }
+  },
+  "keepGoing": true,
+  "steps": [
+    {
+      "do": "pump",
+      "label": "(idle baseline)",
+      "seconds": 12.0
+    },
+    {
+      "child": 3,
+      "do": "button",
+      "interface": 92,
+      "label": "tab button 92:3"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 92:3",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 92:3",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 92:3"
+    },
+    {
+      "child": 4,
+      "do": "button",
+      "interface": 92,
+      "label": "tab button 92:4"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 92:4",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 92:4",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 92:4"
+    },
+    {
+      "child": 5,
+      "do": "button",
+      "interface": 92,
+      "label": "tab button 92:5"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 92:5",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 92:5",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 92:5"
+    },
+    {
+      "child": 11,
+      "do": "button",
+      "interface": 187,
+      "label": "tab button 187:11"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 187:11",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 187:11",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 187:11"
+    },
+    {
+      "child": 2,
+      "do": "button",
+      "interface": 464,
+      "label": "tab button 464:2"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 464:2",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 464:2",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 464:2"
+    },
+    {
+      "child": 3,
+      "do": "button",
+      "interface": 464,
+      "label": "tab button 464:3"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 464:3",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 464:3",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 464:3"
+    },
+    {
+      "child": 4,
+      "do": "button",
+      "interface": 464,
+      "label": "tab button 464:4"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 464:4",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 464:4",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 464:4"
+    },
+    {
+      "child": 5,
+      "do": "button",
+      "interface": 464,
+      "label": "tab button 464:5"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 464:5",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 464:5",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 464:5"
+    },
+    {
+      "child": 6,
+      "do": "button",
+      "interface": 464,
+      "label": "tab button 464:6"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 464:6",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 464:6",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 464:6"
+    },
+    {
+      "child": 7,
+      "do": "button",
+      "interface": 464,
+      "label": "tab button 464:7"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 464:7",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 464:7",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 464:7"
+    },
+    {
+      "child": 10,
+      "do": "button",
+      "interface": 274,
+      "label": "tab button 274:10"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 274:10",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 274:10",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 274:10"
+    },
+    {
+      "child": 11,
+      "do": "button",
+      "interface": 274,
+      "label": "tab button 274:11"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 274:11",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 274:11",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 274:11"
+    },
+    {
+      "child": 12,
+      "do": "button",
+      "interface": 274,
+      "label": "tab button 274:12"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 274:12",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 274:12",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 274:12"
+    },
+    {
+      "child": 1,
+      "do": "button",
+      "interface": 320,
+      "label": "tab button 320:1"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 320:1",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 320:1",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 320:1"
+    },
+    {
+      "child": 2,
+      "do": "button",
+      "interface": 320,
+      "label": "tab button 320:2"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 320:2",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 320:2",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 320:2"
+    },
+    {
+      "child": 125,
+      "do": "button",
+      "interface": 320,
+      "label": "tab button 320:125"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 320:125",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 320:125",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 320:125"
+    },
+    {
+      "child": 5,
+      "do": "button",
+      "interface": 271,
+      "label": "tab button 271:5"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 271:5",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 271:5",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 271:5"
+    },
+    {
+      "child": 7,
+      "do": "button",
+      "interface": 271,
+      "label": "tab button 271:7"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 271:7",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 271:7",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 271:7"
+    },
+    {
+      "child": 3,
+      "do": "button",
+      "interface": 261,
+      "label": "tab button 261:3"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 261:3",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 261:3",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 261:3"
+    },
+    {
+      "child": 4,
+      "do": "button",
+      "interface": 261,
+      "label": "tab button 261:4"
+    },
+    {
+      "do": "pump",
+      "label": "tab button 261:4",
+      "seconds": 0.8
+    },
+    {
+      "do": "dialogue",
+      "label": "tab button 261:4",
+      "timeout": 0.5
+    },
+    {
+      "do": "close",
+      "label": "tab button 261:4"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Hans (0)",
+      "npc": {
+        "type": 0
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Hans (0)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Hans (0)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Hans (0)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Work-for Hans (0)",
+      "npc": {
+        "type": 0
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Work-for Hans (0)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Work-for Hans (0)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Work-for Hans (0)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Hans (0)",
+      "npc": {
+        "type": 0
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Hans (0)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Hans (0)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Hans (0)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Man (1)",
+      "npc": {
+        "type": 1
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Man (1)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Man (1)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Man (1)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Pickpocket Man (1)",
+      "npc": {
+        "type": 1
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Pickpocket Man (1)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Pickpocket Man (1)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Pickpocket Man (1)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Man (1)",
+      "npc": {
+        "type": 1
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Man (1)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Man (1)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Man (1)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Man (2)",
+      "npc": {
+        "type": 2
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Man (2)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Man (2)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Man (2)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Pickpocket Man (2)",
+      "npc": {
+        "type": 2
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Pickpocket Man (2)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Pickpocket Man (2)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Pickpocket Man (2)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Man (2)",
+      "npc": {
+        "type": 2
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Man (2)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Man (2)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Man (2)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Rat (47)",
+      "npc": {
+        "type": 47
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Rat (47)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Rat (47)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Rat (47)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Cook (278)",
+      "npc": {
+        "type": 278
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Cook (278)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Cook (278)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Cook (278)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Cook (278)",
+      "npc": {
+        "type": 278
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Cook (278)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Cook (278)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Cook (278)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Imp (708)",
+      "npc": {
+        "type": 708
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Imp (708)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Imp (708)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Imp (708)"
+    },
+    {
+      "do": "groundItem",
+      "item": 558,
+      "label": "ground Take Mind rune (558)",
+      "option": 2,
+      "tile": [
+        3206,
+        3208
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Mind rune (558)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3206,
+            3208
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Mind rune (558)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Mind rune (558)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Mind rune (558)"
+    },
+    {
+      "do": "groundItem",
+      "item": 882,
+      "label": "ground Take Bronze arrow (882)",
+      "option": 2,
+      "tile": [
+        3205,
+        3227
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Bronze arrow (882)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3205,
+            3227
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Bronze arrow (882)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Bronze arrow (882)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Bronze arrow (882)"
+    },
+    {
+      "do": "groundItem",
+      "item": 946,
+      "label": "ground Take Knife (946)",
+      "option": 2,
+      "tile": [
+        3205,
+        3212
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Knife (946)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3205,
+            3212
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Knife (946)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Knife (946)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Knife (946)"
+    },
+    {
+      "do": "groundItem",
+      "item": 1923,
+      "label": "ground Take Bowl (1923)",
+      "option": 2,
+      "tile": [
+        3208,
+        3214
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Bowl (1923)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3208,
+            3214
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Bowl (1923)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Bowl (1923)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Bowl (1923)"
+    },
+    {
+      "do": "groundItem",
+      "item": 1931,
+      "label": "ground Take Empty pot (1931)",
+      "option": 2,
+      "tile": [
+        3209,
+        3214
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Empty pot (1931)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3209,
+            3214
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Empty pot (1931)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Empty pot (1931)"
+    },
+    {
+      "do": "groundItem",
+      "item": 1935,
+      "label": "ground Take Jug (1935)",
+      "option": 2,
+      "tile": [
+        3211,
+        3212
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Jug (1935)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3211,
+            3212
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Jug (1935)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Jug (1935)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Jug (1935)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Large door (12349)",
+      "option": 0,
+      "scenery": 12349,
+      "tile": [
+        3213,
+        3221
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Large door (12349)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3213,
+            3221
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Large door (12349)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Large door (12349)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Large door (12349)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Large door (12350)",
+      "option": 0,
+      "scenery": 12350,
+      "tile": [
+        3213,
+        3222
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Large door (12350)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3213,
+            3222
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Large door (12350)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Large door (12350)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Large door (12350)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Crate (37015)",
+      "option": 0,
+      "scenery": 37015,
+      "tile": [
+        3211,
+        3217
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Crate (37015)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3211,
+            3217
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Crate (37015)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Crate (37015)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Crate (37015)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Use Portal (12354)",
+      "option": 0,
+      "scenery": 12354,
+      "tile": [
+        3209,
+        3218
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Use Portal (12354)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3209,
+            3218
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Use Portal (12354)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Use Portal (12354)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Use Portal (12354)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Door (12348)",
+      "option": 0,
+      "scenery": 12348,
+      "tile": [
+        3207,
+        3217
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Door (12348)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3207,
+            3217
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Door (12348)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Door (12348)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Door (12348)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Door (36844)",
+      "option": 0,
+      "scenery": 36844,
+      "tile": [
+        3208,
+        3211
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Door (36844)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3208,
+            3211
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Door (36844)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Door (36844)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Door (36844)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Chop down Tree (1278)",
+      "option": 0,
+      "scenery": 1278,
+      "tile": [
+        3217,
+        3231
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Chop down Tree (1278)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3217,
+            3231
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Chop down Tree (1278)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Chop down Tree (1278)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Chop down Tree (1278)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Door (36846)",
+      "option": 0,
+      "scenery": 36846,
+      "tile": [
+        3226,
+        3214
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Door (36846)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3226,
+            3214
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Door (36846)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Door (36846)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Door (36846)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-down Trapdoor (36687)",
+      "option": 0,
+      "scenery": 36687,
+      "tile": [
+        3209,
+        3216
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-down Trapdoor (36687)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3209,
+            3216
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-down Trapdoor (36687)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-down Trapdoor (36687)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-down Trapdoor (36687)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Staircase (36776)",
+      "option": 0,
+      "scenery": 36776,
+      "tile": [
+        3204,
+        3229
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Staircase (36776)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3204,
+            3229
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Staircase (36776)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Staircase (36776)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Staircase (36776)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Staircase (36773)",
+      "option": 0,
+      "scenery": 36773,
+      "tile": [
+        3204,
+        3207
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Staircase (36773)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3204,
+            3207
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Staircase (36773)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Staircase (36773)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Staircase (36773)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Ladder (36768)",
+      "option": 0,
+      "scenery": 36768,
+      "tile": [
+        3229,
+        3213
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Ladder (36768)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3229,
+            3213
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Ladder (36768)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Ladder (36768)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Ladder (36768)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1351,
+      "label": "item Wield Bronze axe (1351)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze axe (1351)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze axe (1351)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze axe (1351)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1265,
+      "label": "item Wield Bronze pickaxe (1265)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze pickaxe (1265)"
+    },
+    {
+      "do": "itemOption",
+      "item": 2309,
+      "label": "item Eat Bread (2309)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Bread (2309)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Bread (2309)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Bread (2309)"
+    },
+    {
+      "do": "itemOption",
+      "item": 315,
+      "label": "item Eat Shrimps (315)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Shrimps (315)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Shrimps (315)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Shrimps (315)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1205,
+      "label": "item Wield Bronze dagger (1205)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze dagger (1205)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze dagger (1205)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze dagger (1205)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1171,
+      "label": "item Wield Wooden shield (1171)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Wooden shield (1171)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Wooden shield (1171)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Wooden shield (1171)"
+    },
+    {
+      "do": "itemOption",
+      "item": 526,
+      "label": "item Bury Bones (526)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Bury Bones (526)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Bury Bones (526)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Bury Bones (526)"
+    },
+    {
+      "do": "useOnItem",
+      "item": 946,
+      "label": "item use Knife on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Knife on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Knife on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Knife on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 590,
+      "label": "item use Tinderbox on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Tinderbox on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Tinderbox on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Tinderbox on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1755,
+      "label": "item use Chisel on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Chisel on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Chisel on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Chisel on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1733,
+      "label": "item use Needle on Thread",
+      "target": 1734
+    },
+    {
+      "do": "pump",
+      "label": "item use Needle on Thread",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Needle on Thread",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Needle on Thread"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Man (1)",
+      "npc": {
+        "type": 1
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (1)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Man (1)",
+      "run": true,
+      "to": [
+        3215,
+        3220
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (1)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Man (2)",
+      "npc": {
+        "type": 2
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (2)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Man (2)",
+      "run": true,
+      "to": [
+        3215,
+        3220
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (2)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Rat (47)",
+      "npc": {
+        "type": 47
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Rat (47)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Rat (47)",
+      "run": true,
+      "to": [
+        3215,
+        3220
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Rat (47)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Imp (708)",
+      "npc": {
+        "type": 708
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Imp (708)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Imp (708)",
+      "run": true,
+      "to": [
+        3215,
+        3220
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Imp (708)",
+      "seconds": 2.0
+    },
+    {
+      "do": "itemOption",
+      "item": 1931,
+      "label": "item drop Empty pot (1931)",
+      "option": 4
+    },
+    {
+      "do": "pump",
+      "label": "item drop Empty pot (1931)",
+      "seconds": 1.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item drop Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item drop Empty pot (1931)"
+    }
+  ]
+}

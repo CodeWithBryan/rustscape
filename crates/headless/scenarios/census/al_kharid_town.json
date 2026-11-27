@@ -1,0 +1,1027 @@
+{
+  "census": {
+    "area": "Al Kharid",
+    "centre": [
+      3298,
+      3186,
+      0
+    ],
+    "radius": 14,
+    "tour": "al_kharid_town"
+  },
+  "character": {
+    "inventory": [
+      {
+        "amount": 1,
+        "id": 1351
+      },
+      {
+        "amount": 1,
+        "id": 1265
+      },
+      {
+        "amount": 1,
+        "id": 590
+      },
+      {
+        "amount": 1,
+        "id": 303
+      },
+      {
+        "amount": 3,
+        "id": 1511
+      },
+      {
+        "amount": 1,
+        "id": 2309
+      },
+      {
+        "amount": 1,
+        "id": 315
+      },
+      {
+        "amount": 1,
+        "id": 317
+      },
+      {
+        "amount": 1,
+        "id": 1925
+      },
+      {
+        "amount": 1,
+        "id": 1931
+      },
+      {
+        "amount": 1,
+        "id": 946
+      },
+      {
+        "amount": 1,
+        "id": 1755
+      },
+      {
+        "amount": 1,
+        "id": 1733
+      },
+      {
+        "amount": 5,
+        "id": 1734
+      },
+      {
+        "amount": 1,
+        "id": 1205
+      },
+      {
+        "amount": 1,
+        "id": 1171
+      },
+      {
+        "amount": 5000,
+        "id": 995
+      },
+      {
+        "amount": 1,
+        "id": 526
+      },
+      {
+        "amount": 50,
+        "id": 556
+      },
+      {
+        "amount": 50,
+        "id": 558
+      }
+    ],
+    "location": [
+      3298,
+      3186,
+      0
+    ],
+    "name": "cs_aktown",
+    "skills": {
+      "agility": 60,
+      "attack": 60,
+      "construction": 60,
+      "cooking": 60,
+      "crafting": 60,
+      "defence": 60,
+      "farming": 60,
+      "firemaking": 60,
+      "fishing": 60,
+      "fletching": 60,
+      "herblore": 60,
+      "hitpoints": 60,
+      "hunter": 60,
+      "magic": 60,
+      "mining": 60,
+      "prayer": 60,
+      "ranged": 60,
+      "runecrafting": 60,
+      "slayer": 60,
+      "smithing": 60,
+      "strength": 60,
+      "summoning": 60,
+      "thieving": 60,
+      "woodcutting": 60
+    }
+  },
+  "keepGoing": true,
+  "steps": [
+    {
+      "do": "pump",
+      "label": "(idle baseline)",
+      "seconds": 12.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Man (2)",
+      "npc": {
+        "type": 2
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Man (2)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Man (2)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Man (2)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Pickpocket Man (2)",
+      "npc": {
+        "type": 2
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Pickpocket Man (2)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Pickpocket Man (2)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Pickpocket Man (2)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Man (2)",
+      "npc": {
+        "type": 2
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Man (2)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Man (2)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Man (2)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Man (3)",
+      "npc": {
+        "type": 3
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Man (3)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Man (3)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Man (3)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Pickpocket Man (3)",
+      "npc": {
+        "type": 3
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Pickpocket Man (3)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Pickpocket Man (3)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Pickpocket Man (3)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Man (3)",
+      "npc": {
+        "type": 3
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Man (3)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Man (3)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Man (3)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Pickpocket Al-Kharid warrior (18)",
+      "npc": {
+        "type": 18
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Pickpocket Al-Kharid warrior (18)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Pickpocket Al-Kharid warrior (18)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Pickpocket Al-Kharid warrior (18)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Al-Kharid warrior (18)",
+      "npc": {
+        "type": 18
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Al-Kharid warrior (18)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Al-Kharid warrior (18)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Al-Kharid warrior (18)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Zeke (541)",
+      "npc": {
+        "type": 541
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Zeke (541)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Zeke (541)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Zeke (541)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Trade Zeke (541)",
+      "npc": {
+        "type": 541
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Trade Zeke (541)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Trade Zeke (541)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Trade Zeke (541)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Zeke (541)",
+      "npc": {
+        "type": 541
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Zeke (541)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Zeke (541)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Zeke (541)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Osman (924)",
+      "npc": {
+        "type": 924
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Osman (924)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Osman (924)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Osman (924)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Osman (924)",
+      "npc": {
+        "type": 924
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Osman (924)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Osman (924)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Osman (924)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Ali the Smith (2820)",
+      "npc": {
+        "type": 2820
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Ali the Smith (2820)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Ali the Smith (2820)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Ali the Smith (2820)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Ali the Smith (2820)",
+      "npc": {
+        "type": 2820
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Ali the Smith (2820)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Ali the Smith (2820)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Ali the Smith (2820)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Ali the Farmer (2821)",
+      "npc": {
+        "type": 2821
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Ali the Farmer (2821)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Ali the Farmer (2821)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Ali the Farmer (2821)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Ali the Farmer (2821)",
+      "npc": {
+        "type": 2821
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Ali the Farmer (2821)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Ali the Farmer (2821)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Ali the Farmer (2821)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Ali the Guard (2823)",
+      "npc": {
+        "type": 2823
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Ali the Guard (2823)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Ali the Guard (2823)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Ali the Guard (2823)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Ali the Guard (2823)",
+      "npc": {
+        "type": 2823
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Ali the Guard (2823)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Ali the Guard (2823)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Ali the Guard (2823)"
+    },
+    {
+      "do": "groundItem",
+      "item": 1061,
+      "label": "ground Take Leather boots (1061)",
+      "option": 2,
+      "tile": [
+        3302,
+        3190
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Leather boots (1061)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3302,
+            3190
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Leather boots (1061)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Leather boots (1061)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Leather boots (1061)"
+    },
+    {
+      "do": "groundItem",
+      "item": 1925,
+      "label": "ground Take Bucket (1925)",
+      "option": 2,
+      "tile": [
+        3307,
+        3195
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "ground Take Bucket (1925)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3307,
+            3195
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "ground Take Bucket (1925)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "ground Take Bucket (1925)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "ground Take Bucket (1925)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Door (27988)",
+      "option": 0,
+      "scenery": 27988,
+      "tile": [
+        3311,
+        3183
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Door (27988)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3311,
+            3183
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Door (27988)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Door (27988)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Door (27988)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Stairs (35646)",
+      "option": 0,
+      "scenery": 35646,
+      "tile": [
+        3311,
+        3187
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Stairs (35646)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3311,
+            3187
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Stairs (35646)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Stairs (35646)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Stairs (35646)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1351,
+      "label": "item Wield Bronze axe (1351)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze axe (1351)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze axe (1351)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze axe (1351)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1265,
+      "label": "item Wield Bronze pickaxe (1265)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze pickaxe (1265)"
+    },
+    {
+      "do": "itemOption",
+      "item": 2309,
+      "label": "item Eat Bread (2309)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Bread (2309)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Bread (2309)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Bread (2309)"
+    },
+    {
+      "do": "itemOption",
+      "item": 315,
+      "label": "item Eat Shrimps (315)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Shrimps (315)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Shrimps (315)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Shrimps (315)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1205,
+      "label": "item Wield Bronze dagger (1205)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze dagger (1205)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze dagger (1205)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze dagger (1205)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1171,
+      "label": "item Wield Wooden shield (1171)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Wooden shield (1171)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Wooden shield (1171)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Wooden shield (1171)"
+    },
+    {
+      "do": "itemOption",
+      "item": 526,
+      "label": "item Bury Bones (526)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Bury Bones (526)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Bury Bones (526)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Bury Bones (526)"
+    },
+    {
+      "do": "useOnItem",
+      "item": 946,
+      "label": "item use Knife on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Knife on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Knife on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Knife on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 590,
+      "label": "item use Tinderbox on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Tinderbox on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Tinderbox on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Tinderbox on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1755,
+      "label": "item use Chisel on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Chisel on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Chisel on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Chisel on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1733,
+      "label": "item use Needle on Thread",
+      "target": 1734
+    },
+    {
+      "do": "pump",
+      "label": "item use Needle on Thread",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Needle on Thread",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Needle on Thread"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Man (2)",
+      "npc": {
+        "type": 2
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (2)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Man (2)",
+      "run": true,
+      "to": [
+        3298,
+        3186
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (2)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Man (3)",
+      "npc": {
+        "type": 3
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (3)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Man (3)",
+      "run": true,
+      "to": [
+        3298,
+        3186
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Man (3)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Al-Kharid warrior (18)",
+      "npc": {
+        "type": 18
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Al-Kharid warrior (18)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Al-Kharid warrior (18)",
+      "run": true,
+      "to": [
+        3298,
+        3186
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Al-Kharid warrior (18)",
+      "seconds": 2.0
+    },
+    {
+      "do": "itemOption",
+      "item": 1931,
+      "label": "item drop Empty pot (1931)",
+      "option": 4
+    },
+    {
+      "do": "pump",
+      "label": "item drop Empty pot (1931)",
+      "seconds": 1.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item drop Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item drop Empty pot (1931)"
+    }
+  ]
+}

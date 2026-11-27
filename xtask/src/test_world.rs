@@ -22,7 +22,7 @@ use std::{
 
 const DEFAULT_PORT: u16 = 43594;
 const LISTENING: &str = "Native world listening on TCP ";
-const USAGE: &str = "cargo xtask test-world <start [--name N] [--port P] [--data DIR] [--cache DIR] [--no-build] [--timeout SECS] | stop --name N [--clean] | stop --all [--clean] | list>";
+const USAGE: &str = "cargo xtask test-world <start [--name N] [--port P] [--data DIR] [--cache DIR] [--no-build] [--timeout SECS] [--log-every-refusal] | stop --name N [--clean] | stop --all [--clean] | list>";
 
 pub fn run(root: &Path, args: &[String]) -> Result<()> {
     match args.get(1).map(String::as_str) {
@@ -64,6 +64,7 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
     let mut cache = root.join("assets/cache");
     let mut build = true;
     let mut timeout = Duration::from_secs(300);
+    let mut every_refusal = false;
     let mut options = args.iter();
     while let Some(option) = options.next() {
         let mut value = || options.next().ok_or(format!("missing value for {option}"));
@@ -74,6 +75,7 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
             "--cache" => cache = absolute(root, value()?),
             "--no-build" => build = false,
             "--timeout" => timeout = Duration::from_secs(value()?.parse()?),
+            "--log-every-refusal" => every_refusal = true,
             other => return Err(format!("unknown test-world start option {other}\n{USAGE}").into()),
         }
     }
@@ -172,6 +174,10 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
         .stdin(Stdio::null())
         .stdout(fs::File::create(&log)?)
         .stderr(fs::File::create(&error_log)?);
+    if every_refusal {
+        // Log every named not-ported call, not only the first (the census).
+        command.env("RS09_NOT_PORTED_LOG", "every");
+    }
     let mut child = spawn_detached(&mut command)?;
     let pid = child.id();
     let world = json!({
@@ -185,6 +191,7 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
         "cache": cache,
         "log": log,
         "errorLog": error_log,
+        "logEveryRefusal": every_refusal,
     });
     let ready = (|| -> Result<()> {
         fs::write(

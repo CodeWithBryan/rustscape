@@ -386,7 +386,9 @@ modes of `rs09-server` are unchanged.
 ## Answers by name (`world::live::not_ported`)
 
 Skipped (the original runs content or a system without a port; nothing is
-sent or changed; the first call of each is logged with `--verbose`):
+sent or changed; the first call of each is logged with `--verbose`, and
+every call with `RS09_NOT_PORTED_LOG=every`, which only the refusal census
+uses: [refusal-census.md](refusal-census.md)):
 `addAutoTimers`' GrandExchangeTimer and HolidayRandoms,
 `AggressiveHandler`'s tolerance calls from the NPC renderer,
 `DynamicSkillLevelChangeEvent`, `InterfaceOpenEvent` and `InterfaceCloseEvent`

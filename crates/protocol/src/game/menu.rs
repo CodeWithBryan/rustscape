@@ -58,6 +58,31 @@ pub fn npc_option(option: u8, index: i32) -> Option<Frame> {
     npc_packet(*[17, 16, 4, 19, 2].get(usize::from(option))?, index, -1)
 }
 
+/// A ground item's option at zero-based `option` (2 is Take, opcode 66; 3 is
+/// opcode 33): the two ground item actions the server decodes.
+pub fn ground_item_option(option: u8, id: i32, tile: [i32; 2]) -> Option<Frame> {
+    let mut w = Writer::new();
+    let opcode = match option {
+        2 => {
+            w.ip2(tile[0]);
+            w.p2(id);
+            w.ip2add(tile[1]);
+            66
+        }
+        3 => {
+            w.p2(id);
+            w.p2(tile[0]);
+            w.ip2(tile[1]);
+            33
+        }
+        _ => return None,
+    };
+    Some(Frame {
+        opcode,
+        payload: w.into_vec(),
+    })
+}
+
 /// The item a player selected with Use (or a spell's target cursor's item),
 /// with the component it sits in (`interface << 16 | child`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -250,6 +275,24 @@ mod tests {
             decode(&npc_packet(1007, 0, 41).unwrap()),
             ClientAction::NpcExamine { id: 41 }
         );
+    }
+    #[test]
+    fn ground_item_options_decode_as_the_server_reads_them() {
+        for option in [2u8, 3] {
+            for (id, tile) in [(995, [3222, 3218]), (1925, [0, 0]), (32767, [16383, 65535])] {
+                let f = ground_item_option(option, id, tile).unwrap();
+                assert_eq!(
+                    decode(&f),
+                    ClientAction::GroundItemAction {
+                        opt_index: i32::from(option),
+                        id,
+                        x: tile[0],
+                        y: tile[1]
+                    }
+                );
+            }
+        }
+        assert!(ground_item_option(0, 1, [0, 0]).is_none());
     }
     #[test]
     fn use_with_targets_decode_as_the_server_reads_them() {

@@ -10,8 +10,11 @@
 //!   registered (an empty list, `false` for a system with nothing in it),
 //!   recorded the same way.
 //!
-//! The first call of each name is logged; every call is counted. The full
-//! list, with the reason for each, is in docs/live-world.md.
+//! The first call of each name is logged (with `--verbose`); every call is
+//! counted. With the environment variable `RS09_NOT_PORTED_LOG=every` every
+//! call is logged, with its running count (`[#n]`), for the refusal census
+//! (docs/refusal-census.md); it changes nothing but the log. The full list,
+//! with the reason for each, is in docs/live-world.md.
 use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -25,23 +28,31 @@ pub struct NotPorted {
     calls: BTreeMap<&'static str, (Kind, u64)>,
     /// Print the first call of each name to standard error.
     pub verbose: bool,
+    /// Print every call (`RS09_NOT_PORTED_LOG=every`), with its count.
+    pub every: bool,
 }
+
+/// The environment variable that logs every call: `RS09_NOT_PORTED_LOG=every`.
+pub const LOG_EVERY_VAR: &str = "RS09_NOT_PORTED_LOG";
 
 impl NotPorted {
     pub fn new(verbose: bool) -> Self {
         Self {
             calls: BTreeMap::new(),
             verbose,
+            every: std::env::var(LOG_EVERY_VAR).is_ok_and(|v| v.eq_ignore_ascii_case("every")),
         }
     }
     fn record(&mut self, kind: Kind, what: &'static str) {
         let entry = self.calls.entry(what).or_insert((kind, 0));
         entry.1 += 1;
-        if entry.1 == 1 && self.verbose {
-            let label = match kind {
-                Kind::Skipped => "not ported, skipped",
-                Kind::Default => "not ported, original's empty answer",
-            };
+        let label = match kind {
+            Kind::Skipped => "not ported, skipped",
+            Kind::Default => "not ported, original's empty answer",
+        };
+        if self.every {
+            eprintln!("[live] {label}: {what} [#{}]", entry.1);
+        } else if entry.1 == 1 && self.verbose {
             eprintln!("[live] {label}: {what}");
         }
     }

@@ -1,0 +1,748 @@
+{
+  "census": {
+    "area": "Al Kharid",
+    "centre": [
+      3271,
+      3168,
+      0
+    ],
+    "radius": 10,
+    "tour": "al_kharid_bank"
+  },
+  "character": {
+    "inventory": [
+      {
+        "amount": 1,
+        "id": 1351
+      },
+      {
+        "amount": 1,
+        "id": 1265
+      },
+      {
+        "amount": 1,
+        "id": 590
+      },
+      {
+        "amount": 1,
+        "id": 303
+      },
+      {
+        "amount": 3,
+        "id": 1511
+      },
+      {
+        "amount": 1,
+        "id": 2309
+      },
+      {
+        "amount": 1,
+        "id": 315
+      },
+      {
+        "amount": 1,
+        "id": 317
+      },
+      {
+        "amount": 1,
+        "id": 1925
+      },
+      {
+        "amount": 1,
+        "id": 1931
+      },
+      {
+        "amount": 1,
+        "id": 946
+      },
+      {
+        "amount": 1,
+        "id": 1755
+      },
+      {
+        "amount": 1,
+        "id": 1733
+      },
+      {
+        "amount": 5,
+        "id": 1734
+      },
+      {
+        "amount": 1,
+        "id": 1205
+      },
+      {
+        "amount": 1,
+        "id": 1171
+      },
+      {
+        "amount": 5000,
+        "id": 995
+      },
+      {
+        "amount": 1,
+        "id": 526
+      },
+      {
+        "amount": 50,
+        "id": 556
+      },
+      {
+        "amount": 50,
+        "id": 558
+      }
+    ],
+    "location": [
+      3271,
+      3168,
+      0
+    ],
+    "name": "cs_akbank",
+    "skills": {
+      "agility": 60,
+      "attack": 60,
+      "construction": 60,
+      "cooking": 60,
+      "crafting": 60,
+      "defence": 60,
+      "farming": 60,
+      "firemaking": 60,
+      "fishing": 60,
+      "fletching": 60,
+      "herblore": 60,
+      "hitpoints": 60,
+      "hunter": 60,
+      "magic": 60,
+      "mining": 60,
+      "prayer": 60,
+      "ranged": 60,
+      "runecrafting": 60,
+      "slayer": 60,
+      "smithing": 60,
+      "strength": 60,
+      "summoning": 60,
+      "thieving": 60,
+      "woodcutting": 60
+    }
+  },
+  "keepGoing": true,
+  "steps": [
+    {
+      "do": "pump",
+      "label": "(idle baseline)",
+      "seconds": 12.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Banker (496)",
+      "npc": {
+        "type": 496
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Banker (496)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Banker (496)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Banker (496)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Bank Banker (496)",
+      "npc": {
+        "type": 496
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Bank Banker (496)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Bank Banker (496)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Bank Banker (496)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Collect Banker (496)",
+      "npc": {
+        "type": 496
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Collect Banker (496)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Collect Banker (496)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Collect Banker (496)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Banker (496)",
+      "npc": {
+        "type": 496
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Banker (496)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Banker (496)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Banker (496)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Banker (497)",
+      "npc": {
+        "type": 497
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Banker (497)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Banker (497)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Banker (497)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Bank Banker (497)",
+      "npc": {
+        "type": 497
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Bank Banker (497)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Bank Banker (497)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Bank Banker (497)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Collect Banker (497)",
+      "npc": {
+        "type": 497
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Collect Banker (497)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Collect Banker (497)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Collect Banker (497)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Banker (497)",
+      "npc": {
+        "type": 497
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Banker (497)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Banker (497)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Banker (497)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Al the Camel (2809)",
+      "npc": {
+        "type": 2809
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Al the Camel (2809)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Al the Camel (2809)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Al the Camel (2809)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Al the Camel (2809)",
+      "npc": {
+        "type": 2809
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Al the Camel (2809)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Al the Camel (2809)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Al the Camel (2809)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Use Bank booth (35647)",
+      "option": 0,
+      "scenery": 35647,
+      "tile": [
+        3268,
+        3166
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Use Bank booth (35647)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3268,
+            3166
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Use Bank booth (35647)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Use Bank booth (35647)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Use Bank booth (35647)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Use-quickly Bank booth (35647)",
+      "option": 1,
+      "scenery": 35647,
+      "tile": [
+        3268,
+        3166
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Use-quickly Bank booth (35647)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3268,
+            3166
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Use-quickly Bank booth (35647)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Use-quickly Bank booth (35647)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Use-quickly Bank booth (35647)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Collect Bank booth (35647)",
+      "option": 2,
+      "scenery": 35647,
+      "tile": [
+        3268,
+        3166
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Collect Bank booth (35647)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3268,
+            3166
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Collect Bank booth (35647)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Collect Bank booth (35647)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Collect Bank booth (35647)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Close Door (27989)",
+      "option": 0,
+      "scenery": 27989,
+      "tile": [
+        3266,
+        3170
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Close Door (27989)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3266,
+            3170
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Close Door (27989)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Close Door (27989)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Close Door (27989)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1351,
+      "label": "item Wield Bronze axe (1351)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze axe (1351)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze axe (1351)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze axe (1351)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1265,
+      "label": "item Wield Bronze pickaxe (1265)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze pickaxe (1265)"
+    },
+    {
+      "do": "itemOption",
+      "item": 2309,
+      "label": "item Eat Bread (2309)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Bread (2309)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Bread (2309)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Bread (2309)"
+    },
+    {
+      "do": "itemOption",
+      "item": 315,
+      "label": "item Eat Shrimps (315)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Shrimps (315)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Shrimps (315)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Shrimps (315)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1205,
+      "label": "item Wield Bronze dagger (1205)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze dagger (1205)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze dagger (1205)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze dagger (1205)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1171,
+      "label": "item Wield Wooden shield (1171)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Wooden shield (1171)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Wooden shield (1171)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Wooden shield (1171)"
+    },
+    {
+      "do": "itemOption",
+      "item": 526,
+      "label": "item Bury Bones (526)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Bury Bones (526)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Bury Bones (526)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Bury Bones (526)"
+    },
+    {
+      "do": "useOnItem",
+      "item": 946,
+      "label": "item use Knife on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Knife on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Knife on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Knife on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 590,
+      "label": "item use Tinderbox on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Tinderbox on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Tinderbox on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Tinderbox on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1755,
+      "label": "item use Chisel on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Chisel on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Chisel on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Chisel on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1733,
+      "label": "item use Needle on Thread",
+      "target": 1734
+    },
+    {
+      "do": "pump",
+      "label": "item use Needle on Thread",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Needle on Thread",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Needle on Thread"
+    },
+    {
+      "do": "itemOption",
+      "item": 1931,
+      "label": "item drop Empty pot (1931)",
+      "option": 4
+    },
+    {
+      "do": "pump",
+      "label": "item drop Empty pot (1931)",
+      "seconds": 1.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item drop Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item drop Empty pot (1931)"
+    }
+  ]
+}
