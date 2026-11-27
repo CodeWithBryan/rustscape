@@ -60,6 +60,8 @@ pub struct Round {
     pub everyday: super::items::everyday::EverydayWorld,
     /// Five small item-on-object listeners (super::items::withobject).
     pub with_object: super::items::withobject::WithObjectWorld,
+    /// WoodcuttingSkillPulse (super::items::woodcutting).
+    pub woodcutting: super::items::woodcutting::WoodcuttingWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).
@@ -131,6 +133,15 @@ impl super::host::Live {
             }
             *owner != node
         });
+        self.round
+            .woodcutting
+            .pulses
+            .retain(|(handle, owner, _, _)| {
+                if *owner == node {
+                    crate::pulses::stop_base(handle);
+                }
+                *owner != node
+            });
         self.walk.approaches.arrivals.retain(|a| a.player != node);
         if let Some(token) = self.walk.approaches.player_tokens.remove(&node) {
             self.walk.approaches.destinations.remove(&token);

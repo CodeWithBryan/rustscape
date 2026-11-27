@@ -1,6 +1,6 @@
-# Five small item-on-object listeners (`world::item_on_object`)
+# Six small item-on-object listeners (`world::item_on_object`)
 
-Scope: five listener classes of the pinned
+Scope: six listener classes of the pinned
 `content/global/handlers/item/withobject` package. The package's other
 classes are either in `world::global_items2` (docs/global-items2.md),
 `world::smelting`, `world::smithing`, or not ported.
@@ -12,6 +12,7 @@ classes are either in `world::global_items2` (docs/global-items2.md),
 | `HairdresserCheeseListener` (`onUseWith(SCENERY, CHEESE_1985, TREADMILL_11677)` and its `runTask(player, 3, 1)`) | `Class::HairdresserCheese`, `Interaction::HairdresserCheese`, `hairdresser_cheese`, `Pulse::Cheese` |
 | `FishEasterEgg` (`onUseWith(SCENERY, fish, *TREE_IDs)`, `onUseWith(SCENERY, fish, *doors)`) | `Class::FishEasterEgg`, `Interaction::FishOnTree`, `Interaction::FishOnDoor`, `woodcutting_ids()` (the `full` ids of `gathering::nodes::WoodcuttingNode::values()`) |
 | `GWDEntranceRopeListener` (`onUseWith(SCENERY, ROPE_954, HOLE_26340)`) | `Class::GwdEntranceRope`, `Interaction::GwdRope`, `gwd_rope` |
+| `AxeOnTree` (`onUseWith(SCENERY, axes, *trees)`) | `Class::AxeOnTree`, `Interaction::AxeOnTree`, `AXES`, `woodcutting_ids()`; the lambda only hands `WoodcuttingSkillPulse(player, scenery)` to the host (`run_woodcutting_pulse`). The pulse itself is `gathering::woodcutting::Pulse`, verified by the gathering corpus (docs/gathering.md) |
 
 The bodies are functions over `item_on_object::Host`, whose every method is
 a call the original makes outside the lambda (ContentAPI `inInventory`,
@@ -27,7 +28,7 @@ is the `pulse()` of the three pulse classes.
 ## Evidence, and what it does not show
 
 **There is no JVM differential corpus for this module.** It was ported by
-reading the five Kotlin files and the ContentAPI functions they call:
+reading the six Kotlin files and the ContentAPI functions they call:
 
 - `cargo test -p rs09-server --test item_on_object`: a recording host
   written from the same sources checks each branch's calls in order, the
@@ -35,9 +36,10 @@ reading the five Kotlin files and the ContentAPI functions they call:
   the reference checkout is present) the sap tree ids against the source
   text. It shows the port agrees with one reading of the sources, not with
   the original classes running.
-- `live_world`'s `usesap`, `usepoison` and `usecheese` (docs/live-world.md)
-  run sap collecting with the "empty" option, one herring joke, the
-  fountain and the treadmill through a socket.
+- `live_world`'s `usesap`, `usepoison`, `usecheese` and `usechop`
+  (docs/live-world.md) run sap collecting with the "empty" option, one
+  herring joke, the fountain, the treadmill and a bronze axe on a tree
+  through a socket.
 
 Not shown: any of this against a JVM; the animations on a client; the
 herring on a door; the rope on the God Wars hole (the listener only removes
@@ -68,12 +70,20 @@ Chicken's fountain search, not ported).
 - FishEasterEgg registers the herrings on every `WoodcuttingNode` id,
   duplicates included (the array overload overwrites).
 - The rope listener answers false when the rope cannot be removed.
+- AxeOnTree starts the legacy `WoodcuttingSkillPulse`, not
+  WoodcuttingListener's script: the two differ (docs/gathering.md), and an
+  axe used on a tree gets the pulse's rules (a dialogue for a full
+  inventory, no instachop, no stump timer).
 
 ## Live world
 
-`rs09-server --world` registers the five classes at boot when the class scan
+`rs09-server --world` registers the six classes at boot when the class scan
 names them (`world/live/items/everyday.rs` `install_content_use`), runs the
 use-with lambdas from `InteractionListeners.run`'s arrival and the "empty"
 option from the item option path. `WithObject`
 (`world/live/items/withobject.rs`) is the host: see docs/live-world.md for
-the services bound.
+the services bound. The woodcutting pulse's services over the live world
+are `world/live/items/woodcutting.rs`, written without a corpus of its own;
+its header and docs/live-world.md list what is answered natively and what
+is skipped or defaulted by name (familiars, skillcape perks, bird nests,
+the adze's projectile, farming patches).

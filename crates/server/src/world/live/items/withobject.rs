@@ -136,6 +136,14 @@ impl item_on_object::Host for WithObject<'_> {
         let p = self.player(player)?;
         crate::world::login::Host::set_varbit(self.0.0.0, &p, id, value, save).map_err(bind)
     }
+    fn run_woodcutting_pulse(&mut self, player: &Node, scenery: &Node) -> Result<()> {
+        let p = self.player(player)?;
+        let Node::Scenery(tree) = scenery else {
+            return Err(Error::Cast);
+        };
+        // super::woodcutting.
+        self.0.0.0.run_woodcutting_pulse(&p, tree)
+    }
     fn run_pulse(&mut self, pulse: Pulse<Node>, delay: i32) -> Result<()> {
         let p = self.player(pulse.player())?;
         // `Pulse(delay)`: no checked nodes.

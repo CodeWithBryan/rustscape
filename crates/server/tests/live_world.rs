@@ -2506,6 +2506,7 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     use_smelt_scenario(address, saves).await;
     use_smith_scenario(address, saves).await;
     use_object_scenario(address, saves).await;
+    use_chop_scenario(address, saves).await;
 }
 
 /// Cooking (`world::cooking`, docs/cooking.md) at the fire 5631 west of
@@ -2982,6 +2983,61 @@ async fn use_object_scenario(address: std::net::SocketAddr, saves: &std::path::P
         cheese.position()
     );
     cheese.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// AxeOnTree and WoodcuttingSkillPulse (`world::gathering::woodcutting`
+/// over the live world): `usechop` uses a bronze axe on the tree 1276 north
+/// of Lumbridge castle until it has logs, then stands still (the tree fell).
+async fn use_chop_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let start = [3224, 3248, 0];
+    write_save(&players, "traceone", "usechop", start, &[(0, 1351, 1)]);
+    let (code, chop) = Client::login(address, "usechop").await;
+    assert_eq!(code, 2, "usechop's login");
+    let mut chop = chop.unwrap();
+    chop.until(Duration::from_secs(10), "usechop's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = chop.messages.len();
+    let before = chop.skills.get(&8).map_or(0, |s| s.1);
+    chop.send(use_with_scenery(1351, 0, 1276, 3226, 3248)).await;
+    chop.until_pinging(Duration::from_secs(20), "the first swing", |c| {
+        said(c, from, "You swing your axe at the tree...")
+    })
+    .await;
+    // Level 1 with a bronze axe: a roll every four ticks.
+    chop.until_pinging(Duration::from_secs(120), "the logs", |c| held(c, 1511) == 1)
+        .await;
+    assert!(
+        said(&chop, from, "You get some logs."),
+        "usechop's messages: {:?}",
+        &chop.messages[from..]
+    );
+    let after = chop.skills.get(&8).map_or(0, |s| s.1);
+    assert!(
+        after > before,
+        "woodcutting experience rose ({before} -> {after})"
+    );
+    // A normal tree always falls: the pulse ended, so no second log comes.
+    for _ in 0..40 {
+        chop.pump(Duration::from_millis(200)).await;
+    }
+    assert_eq!(held(&chop, 1511), 1, "one log from one tree");
+    eprintln!(
+        "usechop chopped the tree 1276 at [3226, 3248, 0] with a bronze axe: walked {start:?} -> {:?}, woodcutting experience {before} -> {after}",
+        chop.position()
+    );
+    chop.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

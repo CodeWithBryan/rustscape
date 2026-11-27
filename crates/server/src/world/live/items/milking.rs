@@ -133,7 +133,11 @@ impl Live {
                 return result.map_err(bind);
             }
             // SmithingPulse: SkillPulse.stop().
-            return match self.smithing_pulse_stopped(pulse) {
+            if let Some(result) = self.smithing_pulse_stopped(pulse) {
+                return result.map_err(bind);
+            }
+            // WoodcuttingSkillPulse.stop().
+            return match self.woodcutting_pulse_stopped(pulse) {
                 Some(result) => result.map_err(bind),
                 None => Ok(()),
             };

@@ -100,6 +100,10 @@ impl Host for Recorder {
         self.calls.push(format!("varbit {id} {value} {save}"));
         Ok(())
     }
+    fn run_woodcutting_pulse(&mut self, _: &Node, scenery: &Node) -> Result<()> {
+        self.calls.push(format!("woodcutting pulse {scenery:?}"));
+        Ok(())
+    }
     fn run_pulse(&mut self, pulse: Pulse<Node>, delay: i32) -> Result<()> {
         self.calls.push(format!("pulse {} {delay}", pulse.class()));
         self.pulses.push((pulse, delay));
@@ -357,6 +361,20 @@ fn herring_jokes_and_the_god_wars_rope() {
     assert_eq!(take(&mut h), [format!("remove {rope:?}")]);
 }
 
+#[test]
+fn an_axe_on_a_tree_starts_the_woodcutting_pulse() {
+    let axe = Node::Item(1351, 0);
+    let tree = Node::Scenery(1276);
+    let mut h = recorder(&[]);
+    let run = item_on_object::run(&mut h, Interaction::AxeOnTree, &Node::Player, &axe, &tree);
+    assert_eq!(run, Ok(true));
+    assert_eq!(take(&mut h), [format!("woodcutting pulse {tree:?}")]);
+    // `with.asScenery()`.
+    let run = item_on_object::run(&mut h, Interaction::AxeOnTree, &Node::Player, &axe, &axe);
+    assert_eq!(run, Err(Error::Cast));
+    assert!(take(&mut h).is_empty());
+}
+
 struct Lower;
 impl Casing for Lower {
     fn lowercase_default(&self, s: &[u16]) -> Text {
@@ -378,7 +396,7 @@ fn define_listeners_registers_the_rows() {
         item_on_object::define(&registry, &Lower, class).unwrap();
     }
     assert_eq!(
-        Class::named("content.global.handlers.item.withobject.AxeOnTree"),
+        Class::named("content.global.handlers.item.withobject.CoalTruckListener"),
         None
     );
     let tables = registry.inspect();
@@ -421,6 +439,11 @@ fn define_listeners_registers_the_rows() {
     assert_eq!(class_of(954, 26340), Some(Interaction::GwdRope));
     let trees = item_on_object::woodcutting_ids();
     assert!(trees.contains(&1276) && trees.len() > 50);
+    for axe in item_on_object::AXES {
+        for tree in &trees {
+            assert_eq!(class_of(axe, *tree), Some(Interaction::AxeOnTree));
+        }
+    }
     for fish in item_on_object::HERRINGS {
         for tree in &trees {
             assert_eq!(class_of(fish, *tree), Some(Interaction::FishOnTree));
@@ -432,7 +455,10 @@ fn define_listeners_registers_the_rows() {
     let mut distinct = trees.clone();
     distinct.sort_unstable();
     distinct.dedup();
-    assert_eq!(uses.len(), 27 + 3 + 2 * (distinct.len() + 2));
+    assert_eq!(
+        uses.len(),
+        27 + 3 + 2 * (distinct.len() + 2) + 9 * distinct.len()
+    );
     // A second SapCollectListener is the original's IllegalStateException.
     assert!(matches!(
         item_on_object::define(&registry, &Lower, Class::SapCollect),
