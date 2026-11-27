@@ -1377,9 +1377,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   not expose a field with the same name as a synthetic Kotlin getter property;
   validate the real reference layout and require the getter events. Always use
   explicit UTF-8 for fixture/source edits on Windows. The growing byte-output
-  subset is not a full IoBuffer replacement. Actual Properties/skull/familiar/
-  skills/player/provider bindings remain required before replacing the prepared
-  transport publisher or claiming accepted Equip. See docs/appearance-writer.md.
+  subset is not a full IoBuffer replacement. The live world runs this writer at
+  the mask write (world/live/appearance.rs, PreparedMasks::write_late) over its
+  Properties/skull/skills/attribute receivers; familiars (pouch flag only) and
+  transformNPC are not joined, and that join has no JVM fixture of its own. The
+  examples keep the prepared transport publisher. Changes there also need the
+  live_world appearance scenario. See docs/appearance-writer.md.
   Late writer runtime, properties/attributes/skills/familiar/profile/content bindings
   and accepted Equip remain open; do not substitute a cached DTO projection for
   original late getter/encoding order. See docs/player-appearance.md.
@@ -1759,8 +1762,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   the worker thread and written by the saver thread; nothing blocks the tick
   on file I/O. Ground items join the start-up's manager, spawns and option
   table; DropListener's soft script runs at the player's next tick; the
-  appearance body is the canonical prepareBodyData copied into the prepared
-  data. A player's death is player_death over the live world (the dying
+  appearance block is appearance_writer over the live receivers, run at the
+  mask write (live/appearance.rs; no transformNPC, familiars as the pouch
+  flag); reconnect (operation 18) is LoginParser.reconnect with
+  Player.initReconnect and, as in the original, no Entity.init. A player's death is player_death over the live world (the dying
   player's containers answer through its context); a
   projectile is a foreign chunk flag written as ProjectileUpdateFlag at the
   chunk update and dropped by resetAll (ported without a corpus of its own);

@@ -293,21 +293,17 @@ impl prayer::Host for PrayerHost<'_> {
             .inner
             .canonical(player)
             .player
-            .masks()
-            .body()
-            .read()
-            .head_icon)
+            .appearance()
+            .head_icon())
     }
     fn set_head_icon(&mut self, player: &P, icon: i32) -> Result<()> {
-        // appearance.setHeadIcon: the appearance block's head icon.
+        // appearance.setHeadIcon on the canonical appearance.
         self.live
             .inner
             .canonical(player)
             .player
-            .masks()
-            .body()
-            .write()
-            .head_icon = icon;
+            .appearance()
+            .set_head_icon(icon);
         Ok(())
     }
     fn sync_appearance(&mut self, player: &P) -> Result<()> {
