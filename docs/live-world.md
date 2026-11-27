@@ -258,6 +258,12 @@ modes of `rs09-server` are unchanged.
   movement over the scene only.
 - `PulseManager.runUnhandledAction` of an unhandled use-with is a world pulse
   (the canonical pulse manager does not take content bodies).
+- An unhandled use-with on an NPC, a player or a scene object
+  (`UseWithHandler$1`) is a movement of the canonical state toward the node
+  (a scene object's canonical node, as its options walk to) with no
+  destination flag; its body ("Nothing interesting happens." and the debug
+  lines) runs right after the walking call that arrived, with the whole
+  world, as the content listeners' arrivals do.
 - An NPC's `timers.processTimers()` runs right after the walking call of its
   `Entity.tick` returns (when the call reached it), before its masks are
   prepared, as a player's does. `Entity.fullRestore()`'s removal of the
@@ -485,8 +491,10 @@ varp-configured scenery (morphs) and their debug lookup, the bank booths'
 `defineInteraction` scripts (interaction scripts in the player's script
 queue) and the bank chest and deposit box listeners (the walk to scenery
 for a content listener), scenery option handlers that are not global handlers (doors and other
-content); use-with on scenery, the use-with MovementPulse (NPCs, players,
-ground items) and item-on-item Pulse with handlers, `UseWithHandler.handle`;
+content); the use-with MovementPulse to a ground item, a UseWithHandler's
+MovementPulse and item-on-item Pulse (no handler class is ported),
+`UseWithHandler.handle`, use-with on morphing scenery and `ZoneMonitor.useWith`
+inside a region zone;
 the slot switch's bank calls; content NPC clipping suppliers;
 special attack handlers (`instant_spec`), `DialogueInterpreter.sendDialogue`
 from the tab libraries and prayer (a locked emote), the SALUTE, GOBLIN_BOW and GIVE_THANKS emotes,
@@ -633,6 +641,13 @@ the client-side player and NPC update decoders):
   `processSlotSwitch`) and uses the dagger on it (opcode 27,
   `processUseWith`: no listener, plugin or UseWithHandler takes it):
   "Nothing interesting happens." a tick later (`runUnhandledAction`).
+- `useone` (a save south of Lumbridge's general store) uses a bronze dagger
+  on the shop keeper (opcode 115) and `usetwo` (two tiles south of the ladder
+  36768) uses one on the ladder (opcode 134), and `usethree` uses one on
+  `usefour` (opcode 248): `processUseWith` finds no
+  listener, plugin or UseWithHandler, so `UseWithHandler.run`'s
+  MovementPulse walks each next to the node and "Nothing interesting
+  happens." arrives only then (the ladder is not climbed).
 - `climbone` (a save south of the ladder 36768 at 3229,3213 east of
   Lumbridge castle) uses Climb-up (opcode 254): `processSceneryAction`, the
   legacy walk and arrival, the global handlers' LadderManagingPlugin and

@@ -934,6 +934,7 @@ async fn drive(
                 "trade" => trade_scenario(address, saves).await,
                 "follow" => follow_scenario(address, saves).await,
                 "eat" => eat_scenario(address, saves).await,
+                "usewith" => use_with_scenario(address, saves).await,
                 "magic" => magic_scenario(address, saves).await,
                 "teleport" => teleport_scenario(address, saves).await,
                 "effects" => effects_scenario(address, saves).await,
@@ -988,6 +989,7 @@ async fn drive(
     trade_scenario(address, saves).await;
     follow_scenario(address, saves).await;
     eat_scenario(address, saves).await;
+    use_with_scenario(address, saves).await;
     magic_scenario(address, saves).await;
     teleport_scenario(address, saves).await;
     effects_scenario(address, saves).await;
@@ -2337,6 +2339,168 @@ async fn scenery_scenario(address: std::net::SocketAddr, saves: &std::path::Path
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
+/// Item on an NPC and on scenery (`processUseWith`): no listener, plugin or
+/// UseWithHandler takes a bronze dagger on Lumbridge's shop keeper or on the
+/// ladder 36768, so `UseWithHandler.run` runs its `MovementPulse` toward the
+/// node (`UseWithHandler$1`): the player walks next to it, then "Nothing
+/// interesting happens." on arrival, not before.
+async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let nothing = "Nothing interesting happens.";
+    // On an NPC: the shop keeper (520) a few tiles north.
+    let start = [3214, 3241, 0];
+    write_save(&players, "traceone", "useone", start, &[(0, 1205, 1)]);
+    let (code, one) = Client::login(address, "useone").await;
+    assert_eq!(code, 2, "useone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "useone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let keeper = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 520)
+            .map(|(i, _)| *i as i32)
+    };
+    one.until(Duration::from_secs(15), "the shop keeper", |c| {
+        keeper(c).is_some()
+    })
+    .await;
+    let index = keeper(&one).unwrap();
+    let from = one.messages.len();
+    one.send(use_with_npc(1205, 0, index)).await;
+    one.until(Duration::from_secs(20), "nothing interesting (NPC)", |c| {
+        c.messages[from..].iter().any(|(_, m)| m == nothing)
+    })
+    .await;
+    // Where both stand when the message came (the shop keeper wanders: it
+    // may take its own step in the arrival's tick).
+    let at = one.position();
+    let base = one.base.unwrap();
+    let tile = one.npcs.actors.get(&(index as usize)).unwrap().tile;
+    let keeper_at = [base[0] + tile[0], base[1] + tile[1], base[2]];
+    eprintln!(
+        "useone used the dagger on the shop keeper (index {index}) at {keeper_at:?}: walked {start:?} -> {at:?}"
+    );
+    assert_ne!(at, start, "useone walked toward the shop keeper");
+    let with = one.messages[from..]
+        .iter()
+        .find(|(_, m)| m.starts_with("With: "))
+        .map(|(_, m)| m.clone());
+    eprintln!("useone's debug line: {with:?}");
+    // The debug line carries the shop keeper's tile when the walk arrived:
+    // useone is never on it (DestinationFlag.ENTITY). The shop keeper
+    // wanders, and MovementPulse leads a walking target
+    // (checkForEntityPathInterrupt) and reaches it from a tile around the
+    // led point, so the arrival is one to three tiles from it.
+    let with = with.expect("useone's debug line for the shop keeper");
+    let tile: Vec<i32> = with
+        .strip_prefix("With: NPC 520, [")
+        .and_then(|rest| rest.strip_suffix(&format!("], {index}")))
+        .unwrap_or_else(|| panic!("useone's debug line: {with}"))
+        .split(", ")
+        .map(|n| n.parse().unwrap())
+        .collect();
+    let arrival = (at[0] - tile[0]).abs().max((at[1] - tile[1]).abs());
+    assert!(
+        (1..=3).contains(&arrival),
+        "useone near the shop keeper at arrival, not {arrival} tiles from {tile:?}"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // On another player: usethree walks to usefour, three tiles east.
+    let start = [3222, 3219, 0];
+    write_save(&players, "traceone", "usethree", start, &[(0, 1205, 1)]);
+    write_save(&players, "traceone", "usefour", [3225, 3219, 0], &[]);
+    let (code, four) = Client::login(address, "usefour").await;
+    assert_eq!(code, 2, "usefour's login");
+    let mut four = four.unwrap();
+    four.until(Duration::from_secs(10), "usefour's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let (code, three) = Client::login(address, "usethree").await;
+    assert_eq!(code, 2, "usethree's login");
+    let mut three = three.unwrap();
+    three
+        .until(Duration::from_secs(10), "usethree's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = three.messages.len();
+    three.send(use_with_player(1205, 0, four.index)).await;
+    three
+        .until(
+            Duration::from_secs(20),
+            "nothing interesting (player)",
+            |c| c.messages[from..].iter().any(|(_, m)| m == nothing),
+        )
+        .await;
+    let at = three.position();
+    eprintln!("usethree used the dagger on usefour at [3225, 3219, 0]: walked {start:?} -> {at:?}");
+    assert_ne!(at, start, "usethree walked toward usefour");
+    assert!(
+        (at[0] - 3225).abs().max((at[1] - 3219).abs()) <= 1,
+        "usethree beside usefour"
+    );
+    assert!(
+        three.messages[from..]
+            .iter()
+            .any(|(_, m)| m == "With: Player [name=usefour, getRights()=ADMINISTRATOR]"),
+        "usethree's debug line for usefour: {:?}",
+        &three.messages[from..]
+    );
+    three.writer.close(1000, "logout").await.unwrap();
+    four.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // On scenery: the ladder 36768 east of the castle, from two tiles west
+    // and one south (the walk goes round to the ladder's north side).
+    let start = [3227, 3212, 0];
+    write_save(&players, "traceone", "usetwo", start, &[(0, 1205, 1)]);
+    let (code, two) = Client::login(address, "usetwo").await;
+    assert_eq!(code, 2, "usetwo's login");
+    let mut two = two.unwrap();
+    two.until(Duration::from_secs(10), "usetwo's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = two.messages.len();
+    two.send(use_with_scenery(1205, 0, 36768, 3229, 3213)).await;
+    two.until(
+        Duration::from_secs(20),
+        "nothing interesting (scenery)",
+        |c| c.messages[from..].iter().any(|(_, m)| m == nothing),
+    )
+    .await;
+    let at = two.position();
+    eprintln!(
+        "usetwo used the dagger on the ladder 36768 at [3229, 3213, 0]: walked {start:?} -> {at:?}"
+    );
+    assert_eq!(at, [3229, 3214, 0], "usetwo beside the ladder, on plane 0");
+    // The test accounts have debug mode on: UseWithHandler$1's debug lines
+    // (Item.toString and Scenery.toString) come before the message.
+    let lines: Vec<&str> = two.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .collect();
+    assert_eq!(
+        lines,
+        [
+            "Unhandled use with interaction:",
+            "Used: Item id=1205, name=Bronze dagger, amount=1",
+            "With: [Scenery 36768, [3229, 3213, 0], type=10, rot=0]",
+            nothing,
+        ],
+        "usetwo's messages"
+    );
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 /// The engine timers: a saved character with 5 of its 10 hitpoints logs in;
 /// `TimerRegistry.addAutoTimers` installs SkillRestore, which heals one
 /// hitpoint once its counter passes 100 ticks (the client's skill packet for
@@ -2473,6 +2637,40 @@ fn use_item_on_item(used: i32, used_slot: i32, with: i32, with_slot: i32) -> Fra
 /// OBJECT_ACTION_1 (254): a scenery's first option.
 fn scenery_option1(id: i32, x: i32, y: i32) -> Frame {
     frame(254, &[&le16(x), &sa16(id), &be16(y)])
+}
+/// OPLOCU (115): an inventory item (interface 149) used on an NPC.
+fn use_with_npc(item: i32, slot: i32, npc_index: i32) -> Frame {
+    frame(
+        115,
+        &[&ib32(149 << 16), &le16(slot), &le16(npc_index), &la16(item)],
+    )
+}
+/// OPPLAYERU (248): an inventory item used on another player.
+fn use_with_player(item: i32, slot: i32, other_index: i32) -> Frame {
+    frame(
+        248,
+        &[
+            &la16(other_index),
+            &be16(item),
+            &be16(slot),
+            &ib32(149 << 16),
+        ],
+    )
+}
+/// OPLOCU (134): an inventory item used on a scene object.
+fn use_with_scenery(item: i32, slot: i32, id: i32, x: i32, y: i32) -> Frame {
+    frame(
+        134,
+        &[
+            &sa16(x),
+            &be16(item),
+            &le16(y),
+            &be16(slot),
+            &le16(0),
+            &be16(149),
+            &sa16(id),
+        ],
+    )
 }
 /// NPC_ACTION_1 (78): an NPC's first option.
 fn npc_option1(index: i32) -> Frame {

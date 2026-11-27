@@ -1068,6 +1068,7 @@ impl Live {
 // ---------------------------------------------------------------- the walk to an NPC
 
 use super::items::Node as INode;
+use super::round::{Pending, PendingArrival};
 use crate::world::{
     interaction::{Approach, ApproachKind, OptionData},
     interaction_listeners::{self as listeners, Arrival, Function, FunctionKind, Kind as IntType},
@@ -1104,14 +1105,6 @@ impl Live {
         let INode::Player(player) = player else {
             return Err(listeners::Error::Type);
         };
-        let target_node = match &target {
-            INode::Npc(h) | INode::Player(h) => h.node,
-            _ => {
-                return Err(listeners::Error::Binding(
-                    "not ported in the live world: a content listener's walk to an item".into(),
-                ));
-            }
-        };
         let override_method = match dest {
             None => None,
             Some(function) => {
@@ -1131,12 +1124,53 @@ impl Live {
             listeners::Flag::Item => movement::Flag::Item,
             listeners::Flag::Object => movement::Flag::Object,
         });
+        self.approach_movement(
+            player,
+            &target,
+            flag,
+            override_method,
+            Pending::Listener(arrival),
+        )
+    }
+    /// A `MovementPulse(player, node[, flag, destOverride])` toward an NPC,
+    /// a player or a scene object whose arrival body is `pending`: a
+    /// movement of the canonical state whose arrival is kept by a fresh
+    /// option handle ([`super::round::Approaches`]).
+    pub fn approach_movement(
+        &mut self,
+        player: crate::world::player_walk::NodeHandle,
+        target: &INode,
+        flag: Option<movement::Flag>,
+        override_method: Option<usize>,
+        pending: Pending,
+    ) -> listeners::Result<Movement> {
+        let (target_node, lease) = match target {
+            INode::Npc(h) | INode::Player(h) => (h.node, None),
+            // A scene object's node in the canonical state (the one its
+            // options walk to); the lease keeps it until the arrival.
+            INode::Scenery(object) => {
+                let lease = self
+                    .inner
+                    .state
+                    .scenery_target(object.clone())
+                    .map_err(lerr)?;
+                (lease.node, Some(lease))
+            }
+            _ => {
+                return Err(listeners::Error::Binding(
+                    "not ported in the live world: a content listener's walk to an item".into(),
+                ));
+            }
+        };
         let option = Shared::new(OptionData::new(None, -1));
         let approaches = &mut self.walk.approaches;
-        approaches.arrivals.retain(|(_, n, _)| *n != player.node);
-        approaches
-            .arrivals
-            .push((option.clone(), player.node, arrival));
+        approaches.arrivals.retain(|a| a.player != player.node);
+        approaches.arrivals.push(PendingArrival {
+            option: option.clone(),
+            player: player.node,
+            pending,
+            lease,
+        });
         let approach = Approach {
             player: player.node,
             target: Some(target_node),
@@ -1198,15 +1232,31 @@ impl Live {
             .approaches
             .arrivals
             .iter()
-            .position(|(o, _, _)| o.same(option))
+            .position(|a| a.option.same(option))
         else {
             return Ok(());
         };
-        let (_, node, arrival) = self.walk.approaches.arrivals.remove(at);
+        let PendingArrival {
+            player: node,
+            pending,
+            lease,
+            ..
+        } = self.walk.approaches.arrivals.remove(at);
         if let Some(token) = self.walk.approaches.player_tokens.remove(&node) {
             self.walk.approaches.destinations.remove(&token);
         }
-        let result = listeners::arrival(&mut super::items::Ctx(self), arrival).map(|_| ());
+        let result = match pending {
+            Pending::Listener(arrival) => {
+                listeners::arrival(&mut super::items::Ctx(self), arrival).map(|_| ())
+            }
+            // UseWithHandler's MovementPulse arrived: its pulse body.
+            Pending::UseWith(body) => {
+                crate::world::packet_handlers::use_with::pulse(&mut super::items::Ctx(self), &body)
+                    .map(|_| ())
+                    .map_err(lerr)
+            }
+        };
+        drop(lease);
         if let Some(p) = self.player_of(node) {
             self.inner.drain(&p);
         }

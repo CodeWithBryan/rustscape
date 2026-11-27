@@ -17,8 +17,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   ownership/native objects and a real actor-clock/tick phase bridge exist;
   `rs09-server --world` runs `run` with the listener movement and arrival
   for NPC and player targets (world/live/talk.rs); defineInteraction
-  scripts, use-with arrivals, scenery targets, events and booth content are
-  still required runtime joins. See docs/interaction-listeners.md.
+  scripts, scenery on-listeners, content use-with listener bodies, events
+  and booth content are still required runtime joins (only the unhandled
+  use-with MovementPulse to NPCs, players and scenery is joined:
+  world/live/items/use_with.rs). See docs/interaction-listeners.md.
 
 - For ActionLocks/Lock/LockElapse changes, run action_locks/owned_player and all
   affected script/pulse/player/NPC/world/ownership/input/interface suites plus all
@@ -2222,9 +2224,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   keep one implementation). The View reads authoritative frames only; never
   infer outcomes from a sent action. Changes require the protocol menu tests
   (decoded by the server's ClientAction::decode), the headless agent tests,
-  client lib tests and `live_agent` against the in-process live world. Do not
-  claim use-with on NPCs/scenery/players works live until the server's
-  use-with walk exists. See docs/headless-agent.md.
+  client lib tests and `live_agent` against the in-process live world. The
+  server's unhandled use-with walk to NPCs/scenery/players exists
+  (world/live/items/use_with.rs, checked by live_world's `usewith` scenario
+  with raw packets); `live_agent` does not drive it yet, so do not claim the
+  agent's use on those is checked live. See docs/headless-agent.md.
 - For GroundItemManager/chunk item mutation or tradeability, run ground_manager,
   chunk_sync, map_chunk_render, scene, world_pulses, player_walk, entity_regions,
   chunk, region_load, world_update, player_render/rebuild, inventory/attributes,

@@ -1,12 +1,17 @@
 //! `processUseWith` (`world::packet_handlers::use_with`) over the live world:
-//! item on item, NPC, player and ground item, with the zone monitor, the
-//! native `InteractionListeners` (`run_use`), PluginInteractionManager (no
+//! item on item, NPC, player, scenery and ground item, with the zone monitor,
+//! the native `InteractionListeners` (`run_use`), PluginInteractionManager (no
 //! plugins) and `UseWithHandler.HANDLERS` (no handler class is ported: the
 //! list is empty, the original's answer with no content registered).
 //! An unhandled item-on-item use runs `runUnhandledAction` ("Nothing
-//! interesting happens." a tick later, as a world pulse). Use-with on scenery
-//! and the movement pulses to NPCs, players and ground items are refused by
-//! name (the use-with MovementPulse is not joined to the canonical movement).
+//! interesting happens." a tick later, as a world pulse). An unhandled use on
+//! an NPC, a player or a scene object runs `UseWithHandler$1`: a
+//! `MovementPulse` of the canonical movement toward the node (the scene
+//! object's canonical node for scenery) whose arrival sends "Nothing
+//! interesting happens." (super::super::talk's approaches). The movement to
+//! a ground item, a UseWithHandler's own pulses and morphing scenery
+//! (`getChild` through varbits/varps) are refused by name. The debug lines
+//! use the ported `NPC`, `Player` and `Scenery` `toString`.
 use super::{Ctx, Node, err, refused};
 use crate::{
     definitions::item::Shared,
@@ -20,19 +25,39 @@ use crate::{
     },
 };
 
-/// A use-with pulse: `runUnhandledAction`'s.
-#[derive(Clone)]
-pub enum UsePulse {
-    Unhandled(Node),
-}
+/// A use-with pulse the player's pulse manager runs: a `MovementPulse`
+/// toward the target whose arrival runs the body
+/// ([`super::super::round::Pending`]).
+pub type UsePulse = crate::world::movement::Movement;
 
 impl use_with::Context for Ctx<'_> {
     type Pulse = UsePulse;
-    fn object(&mut self, _: i32, _: i32, _: i32, _: i32, _: i32) -> Result<Option<Node>> {
-        refused("use-with on scenery (scenery is not a node of the item handlers here)")
+    fn object(&mut self, x: i32, y: i32, z: i32, id: i32, shape: i32) -> Result<Option<Node>> {
+        // RegionManager.getObject(z, x, y, id): the cache scene's object
+        // (the same lookup as processSceneryAction's).
+        let walk = &mut self.0.walk;
+        walk.scene
+            .context(&mut walk.maps)
+            .object(crate::world::doors::Location::new(x, y, z), id, shape)
+            .map(|found| found.map(Node::Scenery))
+            .map_err(|e| err(e.0))
     }
-    fn scenery_child(&mut self, _: &Node, _: &Node) -> Result<Option<Node>> {
-        refused("use-with on scenery (scenery is not a node of the item handlers here)")
+    fn scenery_child(&mut self, scenery: &Node, player: &Node) -> Result<Option<Node>> {
+        // Scenery.getChild(player): varbit- and varp-configured objects
+        // (morphs) are refused by name, as for scenery options.
+        let Node::Scenery(object) = scenery else {
+            return Err(Error::Cast);
+        };
+        let p = self.player_of(player)?;
+        let walk = &mut self.0.walk;
+        crate::world::scenery_node::child(
+            &mut walk.scene.definitions,
+            &mut super::super::scenery::NoMorphs,
+            object,
+            Some(p.node()),
+        )
+        .map(|child| Some(Node::Scenery(child)))
+        .map_err(err)
     }
     fn zone_use_with(&mut self, player: &Node, _: &Node, _: &Node) -> Result<bool> {
         let p = self.player_of(player)?;
@@ -101,25 +126,51 @@ impl use_with::Context for Ctx<'_> {
         self.0
             .item_actions
             .use_pulses
-            .push((handle, UsePulse::Unhandled(player.clone())));
+            .push((handle, player.clone()));
         Ok(())
     }
     fn movement(
         &mut self,
-        _: &Node,
-        _: &Node,
-        _: Option<&UseHandler>,
-        _: Body<Node>,
+        player: &Node,
+        destination: &Node,
+        handler: Option<&UseHandler>,
+        body: Body<Node>,
     ) -> Result<UsePulse> {
-        refused("UseWithHandler's MovementPulse (use-with on NPCs, players and ground items)")
+        if handler.is_some() {
+            // UseWithHandler.getDestination: no handler class is ported, so
+            // HANDLERS never answers a list for this pulse to carry.
+            return refused("a UseWithHandler's MovementPulse (no handler class is ported)");
+        }
+        // `new MovementPulse(player, event.getUsedWith())`: the two-argument
+        // constructor, whose destination flag is ENTITY for an NPC or a
+        // player and null otherwise (scenery: the path to the object
+        // itself); its arrival runs `body`.
+        let Node::Player(p) = player else {
+            return Err(Error::Cast);
+        };
+        let flag = match destination {
+            Node::Npc(_) | Node::Player(_) => Some(crate::world::movement::Flag::Entity),
+            Node::Scenery(_) => None,
+            Node::Item(_) | Node::Ground(_) => {
+                return refused("UseWithHandler's MovementPulse to an item");
+            }
+        };
+        self.0
+            .approach_movement(
+                p.clone(),
+                destination,
+                flag,
+                None,
+                super::super::round::Pending::UseWith(body),
+            )
+            .map_err(err)
     }
     fn delayed(&mut self, _: &Event<Node>, _: Body<Node>) -> Result<UsePulse> {
         refused("UseWithHandler's item-on-item Pulse (no content use-with handler is ported)")
     }
     fn run_pulse(&mut self, _: &Node, pulse: UsePulse) -> Result<()> {
-        match pulse {
-            UsePulse::Unhandled(_) => refused("a use-with pulse on the entity pulse manager"),
-        }
+        // player.getPulseManager().run(pulse, STANDARD).
+        self.0.run_listener_movement(pulse).map_err(err)
     }
     fn dispatch_use(&mut self, _: &Node, _: i32, _: i32) -> Result<()> {
         self.0
@@ -161,21 +212,17 @@ impl super::super::host::Live {
             .use_pulses
             .iter()
             .position(|(h, _)| h.same(pulse))?;
-        let (_, body) = self.item_actions.use_pulses.remove(at);
-        Some(match body {
-            UsePulse::Unhandled(player) => {
-                let ctx = Ctx(self);
-                let result = match ctx.player_of(&player) {
-                    Ok(p) => ctx
-                        .0
-                        .inner
-                        .message(&p, crate::world::legacy_interaction::NOTHING)
-                        .map_err(err),
-                    // The player left: the pulse's check stops it.
-                    Err(_) => Ok(()),
-                };
-                result.map(|()| true)
-            }
-        })
+        let (_, player) = self.item_actions.use_pulses.remove(at);
+        let ctx = Ctx(self);
+        let result = match ctx.player_of(&player) {
+            Ok(p) => ctx
+                .0
+                .inner
+                .message(&p, crate::world::legacy_interaction::NOTHING)
+                .map_err(err),
+            // The player left: the pulse's check stops it.
+            Err(_) => Ok(()),
+        };
+        Some(result.map(|()| true))
     }
 }

@@ -23,7 +23,7 @@ fn binding(e: impl std::fmt::Debug) -> Error {
 
 /// A player context for `Scenery.getChild(player)`: varbit- and
 /// varp-configured scenery (morphs) is refused by name.
-struct NoMorphs;
+pub(super) struct NoMorphs;
 impl crate::definitions::scenery::PlayerContext for NoMorphs {
     fn varbit(&mut self, _: i32, _: usize) -> crate::definitions::scenery::Result<Option<i32>> {
         Err(crate::definitions::scenery::Error::Binding(

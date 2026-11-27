@@ -14,12 +14,12 @@ use crate::world::{
 };
 
 impl Ctx<'_> {
-    /// An entity node as the world's entity handle; `None` for an item or a
-    /// ground item.
+    /// An entity node as the world's entity handle; `None` for an item, a
+    /// ground item or scenery.
     fn entity(node: &Node) -> Option<P> {
         match node {
             Node::Player(h) | Node::Npc(h) => Some(P(h.clone())),
-            Node::Item(_) | Node::Ground(_) => None,
+            Node::Item(_) | Node::Ground(_) | Node::Scenery(_) => None,
         }
     }
 }

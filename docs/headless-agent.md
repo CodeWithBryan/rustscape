@@ -95,9 +95,10 @@ into its configuration, because `parsePath` drops a leading `/`.
 
 ## Not covered
 
-- Use on an NPC, scenery or player sends the right bytes (unit tests), but
-  the live world refuses the content use-with walk (`UseWithHandler`'s
-  MovementPulse), so no outcome is observable yet.
+- Use on an NPC, scenery or player sends the right bytes (unit tests). The
+  live world now walks to the target and answers "Nothing interesting
+  happens." (`UseWithHandler`'s MovementPulse, checked with raw packets by
+  the server's `live_world` test), but `live_agent` does not drive it yet.
 - The view has no cache definitions: no NPC or item names, and no option
   labels. `Attack` is option slot 1 and `TalkTo` slot 0, as on ordinary
   monsters and humans; other NPCs need `NpcOption` with the right slot.

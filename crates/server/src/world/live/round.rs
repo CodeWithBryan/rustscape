@@ -19,12 +19,8 @@ use std::collections::HashMap;
 /// (super::talk).
 #[derive(Default)]
 pub struct Approaches {
-    /// The pending arrivals with their option handle and player node.
-    pub arrivals: Vec<(
-        OptionHandle,
-        usize,
-        Arrival<super::items::Node, super::items::Node>,
-    )>,
+    /// The pending arrivals.
+    pub arrivals: Vec<PendingArrival>,
     /// A destination override's answer, by the token the movement carries
     /// (`DestinationService::Override(token)`), with its function.
     pub destinations: HashMap<usize, (Function, Option<Location>)>,
@@ -32,6 +28,24 @@ pub struct Approaches {
     /// dropped when a new movement is made).
     pub player_tokens: HashMap<usize, usize>,
     pub next_token: usize,
+}
+
+/// What runs when an approach arrives.
+pub enum Pending {
+    /// `InteractionListeners.run`'s movement pulse body.
+    Listener(Arrival<super::items::Node, super::items::Node>),
+    /// `UseWithHandler.run`'s movement pulse body (`UseWithHandler$1`).
+    UseWith(crate::world::packet_handlers::use_with::Body<super::items::Node>),
+}
+
+/// A pending arrival: its option handle (the identity the walk host finds
+/// it by), the player node, the body, and the lease of a scene object
+/// target's canonical node.
+pub struct PendingArrival {
+    pub option: OptionHandle,
+    pub player: usize,
+    pub pending: Pending,
+    pub lease: Option<crate::world::player_walk::NodeHandle>,
 }
 
 /// The holder of this install round's state ([`super::host::Live::round`]).
@@ -77,7 +91,7 @@ impl super::host::Live {
             .retain(|(_, _, _, player, target)| player.node != node && target.node != node);
         self.walk.follows.retain(|(_, mover)| *mover != node);
         self.round.eat.doses.retain(|(_, owner, _)| *owner != node);
-        self.walk.approaches.arrivals.retain(|(_, n, _)| *n != node);
+        self.walk.approaches.arrivals.retain(|a| a.player != node);
         if let Some(token) = self.walk.approaches.player_tokens.remove(&node) {
             self.walk.approaches.destinations.remove(&token);
         }
