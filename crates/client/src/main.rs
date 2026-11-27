@@ -110,6 +110,37 @@ struct NpcActor {
     model_height: i32,
     terrain: rs09_client::spot::Alignment,
 }
+impl NpcActor {
+    /// A live NPC as this frame's update state has it. The list is rebuilt
+    /// every frame before the pointer is tested, and the pick reads the
+    /// triangles `npc_meshes` left at the last draw (as for every other
+    /// actor), so what that draw left on the same index is kept: with
+    /// fresh empty triangles a live NPC could never be hovered.
+    fn live(
+        index: usize,
+        id: u32,
+        motion: Movement,
+        animation: rs09_client::actor_animation::State,
+        previous: Option<NpcActor>,
+    ) -> Self {
+        let (pick_triangles, model_height, terrain) = previous
+            .map(|p| (p.pick_triangles, p.model_height, p.terrain))
+            .unwrap_or_else(|| (Vec::new(), 200, Default::default()));
+        NpcActor {
+            index,
+            id,
+            render_id: None,
+            home: motion.head,
+            motion,
+            animation: Some(animation),
+            walks: false,
+            phase: 0,
+            pick_triangles,
+            model_height,
+            terrain,
+        }
+    }
+}
 struct PlayerPick {
     index: usize,
     /// Absolute fine position, facing angle and size, as the actor is drawn.
@@ -3689,6 +3720,40 @@ fn click_cross_uses_four_frames_for_each_action_and_expires() {
         }
         assert_eq!(cross.frame(0.4), None);
     }
+}
+
+#[cfg(test)]
+#[test]
+fn live_npc_rebuild_keeps_the_last_draws_pick_mesh() {
+    // The live list is rebuilt from the update state each frame before the
+    // pointer is tested; the pick skips an NPC without triangles, so a
+    // rebuild that dropped them left every live NPC unclickable.
+    let triangle = [
+        vec3(1.0, 2.0, 3.0),
+        vec3(4.0, 5.0, 6.0),
+        vec3(7.0, 8.0, 9.0),
+    ];
+    let mut drawn = NpcActor::live(
+        7,
+        100,
+        Movement::new([3250, 3230]),
+        Default::default(),
+        None,
+    );
+    assert!(drawn.pick_triangles.is_empty());
+    assert_eq!(drawn.model_height, 200);
+    drawn.render_id = Some(100);
+    drawn.pick_triangles.push(triangle);
+    drawn.model_height = 150;
+    let mut moved = Movement::new([3251, 3230]);
+    moved.angle = 512;
+    let next = NpcActor::live(7, 100, moved, Default::default(), Some(drawn));
+    assert_eq!(next.pick_triangles, vec![triangle]);
+    assert_eq!(next.model_height, 150);
+    // The position and type are this frame's; the view is chosen again.
+    assert_eq!(next.motion.angle, 512);
+    assert_eq!(next.home, next.motion.head);
+    assert_eq!(next.render_id, None);
 }
 
 #[macroquad::main(configuration)]
