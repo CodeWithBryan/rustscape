@@ -132,7 +132,10 @@ the file itself. A character seeded this way starts where the script says,
 not on Tutorial Island.
 
 Seed a character only while it is logged out (the server writes its file at
-logout). `--no-seed` logs in a character whose save is already there.
+logout). A run ends only after the server has written the character's
+logout save, so the next run can re-seed and log in the same character at
+once; a login refused as "already logged in" (code 5) is retried for up to
+15 seconds. `--no-seed` logs in a character whose save is already there.
 
 ### Steps
 
@@ -249,10 +252,16 @@ The same script is a test that boots the world in-process (as
 cargo test --release -p rs09-headless --test test_world_kit -- --nocapture
 ```
 
-The test is ignored in debug builds: in one debug run (2026-11-27) the
-goblin took one hit and the fight then stopped, with no retaliation, until
-the 90-second wait ran out; every release run passed. That stall is
-unexplained server behaviour, not something the kit adds.
+It runs in debug and release builds. One stall has been seen, in the
+first debug run (2026-11-27): the goblin took one hit, then neither side
+attacked again (no further hits, no retaliation, no experience) until the
+90-second wait ran out, while the server kept sending frames. It did not come
+back in about 75 later attacks: six more debug and seven release runs of the
+test, and 60 kills in a row from one character in a release `--world` server
+(fights took 1 to 16 seconds). It is not a timeout set too short for a debug
+build. It looks like server behaviour, so far unexplained; when the test fails
+it prints the final view (the player's tile, the target's tile, health bar and
+facing) to make a recurrence readable.
 
 It needs `assets/cache` and a world folder (`RS09_STARTUP_WORLD`, else
 `runs/startup-loaders-oracle/template`, `runs/world-trace-oracle/template` or

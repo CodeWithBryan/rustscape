@@ -226,7 +226,17 @@ impl Character {
 /// Log in, and through the welcome screen when the save has
 /// `tutorial:complete` (the server sends it before the game world).
 pub async fn login(address: SocketAddr, name: &str, password: &str) -> io::Result<Agent> {
-    let session = Session::connect(address, false, name, password).await?;
+    // Code 5 (already logged in): the world has not yet removed this
+    // character's previous session; it does a few ticks after a logout.
+    let give_up = Instant::now() + Duration::from_secs(15);
+    let session = loop {
+        match Session::connect(address, false, name, password).await {
+            Err(e) if e.to_string().ends_with("code 5") && Instant::now() < give_up => {
+                tokio::time::sleep(Duration::from_millis(600)).await;
+            }
+            other => break other?,
+        }
+    };
     let mut agent = Agent::new(session.into_managed());
     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let late = || io::Error::new(io::ErrorKind::TimedOut, format!("{name}'s login"));
@@ -716,6 +726,23 @@ pub async fn run(
         "start": start,
         "view": run.agent.view.snapshot(),
     });
+    // Wait for the logout save, so a later seed of this character is not
+    // overwritten by it and a later login is not refused as a second one.
+    let saved = saves.map(|saves| {
+        saves
+            .join("players")
+            .join(format!("{}.json", character.name))
+    });
+    let modified = |path: &Path| std::fs::metadata(path).and_then(|m| m.modified()).ok();
+    let before = saved.as_deref().and_then(modified);
     run.agent.close().await?;
+    if let Some(path) = saved {
+        let end = Instant::now() + Duration::from_secs(20);
+        while modified(&path) == before && Instant::now() < end {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+        // The disconnection queue removes the character a few ticks later.
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
     Ok(Outcome { ok, report })
 }

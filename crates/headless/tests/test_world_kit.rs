@@ -45,14 +45,11 @@ fn inputs() -> Option<(PathBuf, PathBuf)> {
     (cache.join("main_file_cache.dat2").exists() && world(&data)).then_some((cache, data))
 }
 
-// Release builds only: in a debug build (2026-11-27, Windows) the goblin took
-// one hit and the fight then stopped, with no retaliation, for 90 seconds;
-// the release build passed every run. See docs/test-world.md.
+// One stall was seen (2026-11-27, debug build): the goblin took one hit and
+// both sides stopped fighting until the 90-second wait ran out. About 75 later
+// attacks, debug and release, did not repeat it (docs/test-world.md). A
+// failure prints the final view so a recurrence can be read.
 #[test]
-#[cfg_attr(
-    debug_assertions,
-    ignore = "run with --release: in a debug build the live world's fight stalled after one hit"
-)]
 fn seeded_character_kills_a_lumbridge_goblin_and_gains_experience() {
     let Some((cache, data)) = inputs() else {
         eprintln!(
@@ -118,6 +115,9 @@ fn seeded_character_kills_a_lumbridge_goblin_and_gains_experience() {
     let report = &outcome.report;
     eprintln!("steps: {}", report["steps"]);
     eprintln!("experience gained: {}", report["experienceGained"]);
+    if !outcome.ok {
+        eprintln!("final view: {}", report["view"]);
+    }
     assert!(outcome.ok, "every step passed: {}", report["steps"]);
     // The seeded fields reached the character: the start snapshot is the
     // server's own view of the login.
