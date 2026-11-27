@@ -148,7 +148,7 @@ modes of `rs09-server` are unchanged.
 | shops | `Shops` (start-up, `tick`, the NPC listeners, the destination override, the 620/621 listeners), `Shop`, `ShopListener` | `shopping.rs`: `shops::World` built by `controller::startup` at boot from `shops.json`; `ShopHost` (`shops::Host` over the interface context's state, so the shop's open and close listeners run wherever the interface manager is used); `Shops.tick` after `GraveController.tick` in the tick listeners; Buy-X/Sell-X through the input prompts |
 | requests, trade | `RequestManager`, `RequestType`, `TradeModule`, `TradeContainer`, `TradeCloseEvent`, `TradeInterfacePlugin` | `trading.rs`: `world::trade` with `TradeHost` over the whole world; the global handlers' RequestOption listeners ("trade with", "req assist") through the native InteractionListeners; TradeInterfacePlugin on 334/335/336 from IfAction; `trade::ui::Ui<TradeHost>` is the interface context of the Close packet and of a walk's interface close; the alert pulse on `GameWorld.Pulser`, dispatched by identity |
 | player options | `Option._P_ATTACK`/`_P_FOLLOW.setHandler`, `AttackOptionPlugin`, `FollowOptionPlugin` | `follow.rs`: the handlers bound into the option constants (ids of a player handler arena the legacy runtime resolves for a player target); the legacy walk and arrival, the handler run with the whole world right after; FollowOptionPlugin's `MovementPulse(player, target, FOLLOW_ENTITY)` is a movement of the canonical state whose body (`follow_pulse`: face the target, never finish) runs right after the walking call that reached it |
-| spells | `SpellBook.register` of the combat spells, `MagicSpell.castSpell`, `CombatSpell.cast`/`visualize`/`visualizeImpact`/`getMaximumImpact`/`getTargets`/`addExperience`, `meetsRequirements`, `SpellUtils.hasRunes`, `processComponentUseWith`, the magic swing's spell services | `magic.rs`, `items/component_use.rs`: the 53 combat spells of `world::spells::table` in a registry the world owns (`MagicWorld`); `SpellHost` is `world::spells::Host` over the canonical player (skills, inventory, equipment, attributes, the spell book, the persisted autocast spell), the NPC rows, the animators, the live projectiles (`Projectile.transform(...).send()`) and the combat pulse; the combat hosts' spell services answer through `spells::combat`; the spell-on-NPC/player/item/ground item packet (239 and the others of `ComponentUseWith`) runs `world::packet_handlers::component` with the item handlers' context; `WeaponInterface.selectAutoSpell`/`updateInterface` and the weapon tab's `SpellBook.getSpell` lookup answer from the same table. Only spells whose `fireEffect` is the empty base are cast: the strikes, bolts, blasts and waves, Crumble Undead, Iban Blast, Magic Dart and Sonic Wave; no ancient spell (see refused) |
+| spells | `SpellBook.register` of the combat spells, `MagicSpell.castSpell`, `CombatSpell.cast`/`visualize`/`visualizeImpact`/`getMaximumImpact`/`getTargets`/`addExperience`, `meetsRequirements`, `SpellUtils.hasRunes`, `processComponentUseWith`, the magic swing's spell services | `magic.rs`, `items/component_use.rs`: the 53 combat spells of `world::spells::table` in a registry the world owns (`MagicWorld`); `SpellHost` is `world::spells::Host` over the canonical player (skills, inventory, equipment, attributes, the spell book, the persisted autocast spell), the NPC rows, the animators, the live projectiles (`Projectile.transform(...).send()`) and the combat pulse; the combat hosts' spell services answer through `spells::combat`; the spell-on-NPC/player/item/ground item packet (239 and the others of `ComponentUseWith`) runs `world::packet_handlers::component` with the item handlers' context; `WeaponInterface.selectAutoSpell`/`updateInterface` and the weapon tab's `SpellBook.getSpell` lookup answer from the same table. Every one of the 53 is cast, the binds, curses, god spells, Teleblock and the ancient spells through `spells::effects` (ported without a JVM corpus, see below); no player reaches the ancient book yet, so its spells are exercised in process only |
 | teleports | `TeleportManager`, `TeleportPulse` (`pulse`, `stop`), `Entity.isTeleporting`, `SpellListeners.run`, ModernListeners' Varrock, Lumbridge and Falador teleports (`requires`, `sendTeleport`, `removeRunes`, `addXP`, `setDelay`) | `magic.rs`: one `teleport::Manager` per entity; its pulses submitted to `GameWorld.Pulser` and dispatched by identity, their `stop()` override run through the driver's `pulse_stop` hook (`TeleportPulse.stop`: unlock, the `tele-pulse` attribute, the end animation); the destination written to the walking queue's teleport location; the zone monitor's teleport check and `isTeleBlocked`; the magic tab (192) reaches the listeners through the global handlers' `tabs::magic`. The three teleports are ported from the pinned `ModernListeners.kt`/`SpellListener.kt` without a differential corpus of the listeners themselves (the teleport and spell libraries are differentially tested) |
 | eating, drinking | `ConsumableListener`, `Consumable.consume` of every class, the effects, the potion's dose script | `eating.rs`: `world::consumables` with `Eating` as its `Host` for one player (native Skills taken out of the profile for the call, Settings, the player's clocks, the canonical inventory, the animator, `consumables::join` over the engine timers, the combat pulse's `delayNextAttack`, `manualHit`); the dose message is a SOFT script kept by the world and run at the player's tick once due |
 | lobby | `LoginConfiguration.sendLobbyScreen`, `LastLoginInfo`, `LoginInterface` (378), `configureGameWorld` | a returning character with `tutorial:complete`: the login library's lobby with `LastLoginInfo` (164: the IPv4 address, written at once); the welcome screen's play button (140) through the global handlers (`player.locks.lock("login", 2)`, `closeInterface`, `runTask(1, 0)`) and `configure_game_world` over the live world |
@@ -529,11 +529,28 @@ plugins' `createDrop`/`getItem`, loot share (clan, points,
 chunk moves, the return pulse and `removeRenderableNPC` outside the NPC
 tick.
 
-Spells and teleports refused by name (`magic.rs`): the `fireEffect` of the
-spell classes with an effect (binds, curses, the god spells, Teleblock and
-every ancient spell: Ice, Blood, Shadow, Smoke and Miasmic), refused when a
-cast or an autocast would select them; NPC casters' `DefaultCombatSpell`
-(`Projectile.magic`); multi-target spells (`findMultihitTargets`); the
+The spell effects (`fireEffect` of BindSpell, CurseSpells, GodSpells,
+TeleblockSpell and the ancient IceSpells, BloodSpells, ShadowSpells,
+SmokeSpells and MiasmicSpells) run through `spells::effects`
+(docs/spells.md), ported from the pinned classes without a JVM corpus:
+`SpellHost` answers its services from the action locks (the binds'
+movement lock), the walking queue, the native Skills of a player or the
+levels and lifepoints of an NPC's row (drains, Shadow's Attack, Blood's
+heal), the MAGIC handler's `isAccurateImpact`, the prayers, the timer
+managers of a player or an NPC (`registerTimer(spawnTimer(...))` for
+Teleblock, Frozen and Miasmic) and `applyPoison`. The ancient spells'
+multi-target `getTargets` answers through `findMultihitTargets`
+(`special_attacks::multihit`). Two limits: an NPC's prayer points are not
+kept in its row, so Saradomin Strike's `decrementPrayerPoints` of an NPC is
+a named skip; and no player reaches the ancient book here, because the
+login puts a character without Desert Treasure back on the standard book
+(no quest is installed) and neither the altar nor `::spellbook` is ported,
+so the ancient effects are exercised in process only
+(`live_spell_effects`), never from a client. Teleblock on a player is
+covered by the recording-host test only.
+
+Spells and teleports refused by name (`magic.rs`): NPC casters'
+`DefaultCombatSpell` (`Projectile.magic`); the
 non-combat `MagicSpell` plugins (EnchantSpell, EnchantCrossbowSpell,
 TelekineticGrabSpell, TeleotherSpells, ChargeSpell, BountyLocateSpell,
 AncientTeleportPlugin, and the lunar MagicImbue, Vengeance, StatBoost,
@@ -717,6 +734,14 @@ the client-side player and NPC update decoders):
   added; a second press after the magic delay gets "You don't have enough
   law runes to cast this spell." (`hasRunes` walks its cost map in Java
   HashMap order) and no teleport.
+- `hexone` (magic 99, water, earth, body and nature runes) casts Confuse
+  (192, button 2) on a chicken: projectile 103, a body, three water and two
+  earth runes gone and exactly 13 experience; then Bind (button 12):
+  projectile 178, and a second Bind inside `entangleDelay` gets "You have
+  recently cast a binding spell." and takes no runes. `godone` (a Guthix
+  staff worn, a hundred saved casts) casts Claws of Guthix (button 42): the
+  swing reaches its hit mark through `GodSpells.fireEffect`, with its runes
+  and experience. The scenario is `effects`.
 - `lookone` (saved female, body colours 5/3/7/2/4, 40 Attack, Strength and
   Defence, a bronze two-handed sword 1307) and `looktwo`: `looktwo` reads
   `lookone`'s appearance block with the gender bit, the body slots of the
@@ -760,11 +785,11 @@ stand-ins); this test checks the production binding end to end.
   installed; `ZoneMonitor.interact`/`useWith` for items inside a zone,
   hint icons and warning messages, the DarkZone's overlay and light sources
   and the multiway overlay.
-- The rest of combat: the spells with effects, multi-target and NPC spells,
+- The rest of combat: NPC spells, a way onto the ancient book (quest
+  requirements, the altar or the command), an NPC's prayer points,
   autocast selection from the weapon tab, and the spell listeners refused
-  above (the next step of spells: the binds' and ancients' `fireEffect`
-  over the NPC timers), the specials' services listed as refused, the
-  ancient, home, diary- and quest-gated teleports,
+  above, the specials' services listed as refused, the ancient,
+  home, diary- and quest-gated teleports,
   graves in the server store, the equipment registers (chinchompa and salamander handlers, the
   degrader; docs/equipment-registers.md) and the creature behaviours.
 - The special attacks, the player's death, graves, the NPC class overrides

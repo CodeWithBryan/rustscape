@@ -18,16 +18,22 @@
 //!   other listener the original registers is refused by name, and a key the
 //!   original does not register does nothing, as there.
 //!
-//! What is refused by name (see docs/live-world.md): the `fireEffect` of the
-//! spells with effects (binds, curses, god spells, teleblock and the ancient
-//! spells), NPC casters' `DefaultCombatSpell`, multi-target ancient spells,
-//! the non-combat `MagicSpell` plugins (enchanting, charge, teleother,
-//! telekinetic grab, bounty locate, the ancient teleports, the lunar
-//! plugins), the other `SpellListener` listeners (home teleport, the
-//! diary- and quest-gated teleports, house teleport, alchemy, superheat,
-//! bones to bananas/peaches, charge orb, the whole lunar book), and the
-//! events (`SpellCastEvent`, `TeleportEvent`: entity event hooks are not
-//! ported; a named skip).
+//! - `fireEffect` of every registered class ([`sp::effects`]) through
+//!   `impl Effects for SpellHost`: binds lock movement, curses and the god
+//!   spells drain, Teleblock, the ice and the miasmic spells register their
+//!   timers on the victim (a player's or an NPC's manager), blood heals,
+//!   shadow lowers Attack and smoke poisons. Multi-target ancient spells
+//!   take their targets from `findMultihitTargets`.
+//!
+//! What is refused by name (see docs/live-world.md): NPC casters'
+//! `DefaultCombatSpell`, the non-combat `MagicSpell` plugins (enchanting,
+//! charge, teleother, telekinetic grab, bounty locate, the ancient
+//! teleports, the lunar plugins), the other `SpellListener` listeners (home
+//! teleport, the diary- and quest-gated teleports, house teleport, alchemy,
+//! superheat, bones to bananas/peaches, charge orb, the whole lunar book),
+//! and the events (`SpellCastEvent`, `TeleportEvent`: entity event hooks are
+//! not ported; a named skip). An NPC's prayer points are not kept in its
+//! row, so Saradomin Strike's drain of an NPC is a named skip.
 use super::{P, host::Live, inner::Inner};
 use crate::{
     definitions::item::Shared,
@@ -162,19 +168,13 @@ pub fn combat_classes() -> &'static HashMap<SpellKey, SpellClass> {
 }
 
 /// `SpellBook.<book>.getSpell(id)` for the weapon tab's autocast selection:
-/// a combat spell, another registered spell (the cast fails), or null. A
-/// combat spell whose `fireEffect` is not ported is refused by name.
+/// a combat spell, another registered spell (the cast fails), or null.
 pub fn autocast_lookup(
     book: SpellBook,
     id: i32,
 ) -> Result<crate::world::player_tabs::weapon::Lookup<crate::player::save::Autocast>, String> {
     use crate::world::player_tabs::weapon::Lookup;
-    if let Some(class) = combat_classes().get(&(book, id)) {
-        if let Err(name) = Live::fire_effect_ported(*class) {
-            return Err(format!(
-                "not ported in the live world: {name}.fireEffect (an autocast spell with an effect)"
-            ));
-        }
+    if combat_classes().contains_key(&(book, id)) {
         return Ok(Lookup::Combat(crate::player::save::Autocast {
             book: book.ordinal(),
             spell_id: id,
@@ -194,22 +194,6 @@ impl Live {
             inner: &mut self.inner,
             p: p.clone(),
             walk: Some((&mut self.walk, &mut self.deferred)),
-        }
-    }
-
-    /// A spell class whose `fireEffect` is the empty `CombatSpell.fireEffect`
-    /// (ported: nothing to do), or the name of the class whose effect is not.
-    pub(crate) fn fire_effect_ported(class: SpellClass) -> Result<(), &'static str> {
-        match class {
-            SpellClass::Air
-            | SpellClass::Water
-            | SpellClass::Earth
-            | SpellClass::Fire
-            | SpellClass::CrumbleUndead
-            | SpellClass::IbanBlast
-            | SpellClass::MagicDart
-            | SpellClass::SonicWave => Ok(()),
-            other => Err(other.name()),
         }
     }
 
@@ -259,12 +243,6 @@ impl Live {
                         a.book, a.spell_id
                     ))
                 })?;
-                let class = self.round.magic.registry[&key].class;
-                if let Err(name) = Self::fire_effect_ported(class) {
-                    return Err(cs::Error::Binding(format!(
-                        "not ported in the live world: {name}.fireEffect (an autocast spell with an effect)"
-                    )));
-                }
                 Ok(Some(key))
             }
         }
@@ -919,8 +897,14 @@ impl sp::Host for SpellHost<'_> {
     fn combat_graphics(&mut self, npc: &P) -> sp::Result<Option<Vec<Option<Graphics>>>> {
         cp::Host::npc_combat_graphics(self.live, npc).map_err(from_cs)
     }
-    fn multi_targets(&mut self, _: &P, _: &P) -> sp::Result<Vec<P>> {
-        srefuse("findMultihitTargets (multi-target ancient spells)")
+    fn multi_targets(&mut self, target: &P, attacker: &P) -> sp::Result<Vec<P>> {
+        crate::world::special_attacks::multihit::find_multihit_targets(
+            self.live,
+            target,
+            attacker,
+            cs::CombatStyle::Magic,
+        )
+        .map_err(from_cs)
     }
     fn open_tab(&mut self, _: &P, _: i32) -> sp::Result<()> {
         srefuse("interfaceManager.openTab from the spell classes")
@@ -939,11 +923,129 @@ impl sp::Host for SpellHost<'_> {
     }
 }
 
+impl sp::effects::Effects for SpellHost<'_> {
+    fn movement_locked(&mut self, entity: &P) -> sp::Result<bool> {
+        self.live
+            .locked_kind(entity, action_locks::Kind::Movement)
+            .map_err(from_cs)
+    }
+    fn reset_walking(&mut self, entity: &P) -> sp::Result<()> {
+        self.live.walk_reset(entity).map_err(from_cs)
+    }
+    fn lock_movement(&mut self, entity: &P, ticks: i32) -> sp::Result<()> {
+        let state = &mut self.live.inner.state;
+        state
+            .locks(&entity.0)
+            .map_err(serr)?
+            .lock_kind(
+                action_locks::Kind::Movement,
+                ticks,
+                state,
+                &mut action_locks::Clock,
+            )
+            .map_err(serr)
+    }
+    fn drain_level(&mut self, entity: &P, slot: i32, drain: f64, maximum: f64) -> sp::Result<()> {
+        if let Some(row) = self.live.npc_row(entity) {
+            // Skills.drainLevel over the NPC's levels: updateLevel, no packet.
+            let i = usize::try_from(slot).map_err(|_| sp::Error::Index)?;
+            let level = *row.levels.get(i).ok_or(sp::Error::Index)?;
+            let fixed = *row.static_levels.get(i).ok_or(sp::Error::Index)?;
+            let amount = (f64::from(level) * drain) as i32;
+            let minimum = (f64::from(fixed) * (1.0 - maximum)) as i32;
+            cp::Host::update_level(self.live, entity, slot, amount.wrapping_neg(), minimum)
+                .map_err(from_cs)?;
+            return Ok(());
+        }
+        self.live
+            .with_skills(entity, |skills, ctx| {
+                skills.drain_level(slot, drain, maximum, ctx)
+            })
+            .map_err(from_cs)?
+            .map_err(serr)
+    }
+    fn decrement_prayer_points(&mut self, entity: &P, amount: f64) -> sp::Result<()> {
+        if self.live.inner.is_npc_node(entity.node()) {
+            // An NPC's Skills.prayerPoints has no place in the NPC rows and
+            // nothing here reads it.
+            self.live
+                .inner
+                .not_ported
+                .skip("Skills.decrementPrayerPoints of an NPC (prayer points are not kept in the NPC rows)");
+            return Ok(());
+        }
+        cp::Host::decrement_prayer_points(self.live, entity, amount).map_err(from_cs)
+    }
+    fn static_level(&mut self, entity: &P, slot: i32) -> sp::Result<i32> {
+        cs::Host::static_level(self.live, entity, slot).map_err(from_cs)
+    }
+    fn update_level(
+        &mut self,
+        entity: &P,
+        slot: i32,
+        amount: i32,
+        maximum: i32,
+    ) -> sp::Result<i32> {
+        cp::Host::update_level(self.live, entity, slot, amount, maximum).map_err(from_cs)
+    }
+    fn heal(&mut self, entity: &P, amount: i32) -> sp::Result<i32> {
+        cp::Host::heal(self.live, entity, amount).map_err(from_cs)
+    }
+    fn accurate_impact(
+        &mut self,
+        style: cs::CombatStyle,
+        entity: &P,
+        victim: &P,
+    ) -> sp::Result<bool> {
+        // CombatStyle.getSwingHandler(): the style's singleton; its
+        // two-argument isAccurateImpact passes the handler's own type.
+        let handler = super::combat::style_handler(style);
+        let kind = cp::Host::handler(self.live, &handler).style;
+        cp::handler::is_accurate_impact(
+            self.live,
+            &handler,
+            Some(entity),
+            Some(victim),
+            kind,
+            1.0,
+            1.0,
+        )
+        .map_err(from_cs)
+    }
+    fn protect_from_magic(&mut self, player: &P) -> sp::Result<bool> {
+        cs::Host::has_protection_prayer(self.live, player, cs::CombatStyle::Magic).map_err(from_cs)
+    }
+    fn register_timer(
+        &mut self,
+        entity: &P,
+        identifier: &str,
+        args: &[sp::effects::TimerArg],
+    ) -> sp::Result<()> {
+        use crate::timers::content::Arg;
+        let args: Vec<Arg<P>> = args
+            .iter()
+            .map(|a| match a {
+                sp::effects::TimerArg::Int(v) => Arg::Int(*v),
+                sp::effects::TimerArg::Bool(v) => Arg::Bool(*v),
+            })
+            .collect();
+        self.live
+            .with_timers(entity, |natives, manager| {
+                let registry = natives.registry.clone();
+                let timer = registry.instance(identifier, &args, manager, &mut (), natives)?;
+                manager.register_optional(timer.as_ref(), &mut (), natives)
+            })
+            .map_err(serr)
+    }
+    fn apply_poison(&mut self, victim: &P, source: &P, severity: i32) -> sp::Result<()> {
+        super::combat::death::apply_poison(self.live, victim, source, severity).map_err(from_cs)
+    }
+}
+
 /// `MagicSpell.castSpell(player, book, spellId, target)` for a target that
 /// is an entity, or `None` for another node (an item, a ground item): the
 /// checks before the target is read, then a refusal if a registered combat
-/// spell would be cast on it. A registered spell whose `fireEffect` is not
-/// ported is refused before anything runs.
+/// spell would be cast on it.
 pub fn cast_spell(
     live: &mut Live,
     player: &P,
@@ -970,13 +1072,6 @@ pub fn cast_spell(
     }
     if let Some(refused) = refused_registration(book, spell_id) {
         return Err(format!("not ported in the live world: {refused}"));
-    }
-    if let Some(spell) = live.round.magic.registry.get(&(book, spell_id))
-        && let Err(name) = Live::fire_effect_ported(spell.class)
-    {
-        return Err(format!(
-            "not ported in the live world: {name}.fireEffect (a combat spell with an effect)"
-        ));
     }
     match target {
         Some(target) => live

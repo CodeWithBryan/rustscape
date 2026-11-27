@@ -374,13 +374,24 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   impact sound, Crumble undead's null NPC and the double requirement checks
   of Teleblock and the miasmic spells. Spell objects are host-owned values
   (spell_id and DefaultCombatSpell's projectile mutate); every outside call
-  is a required service with no default; fireEffect is content and stays the
-  combat host's service. spells::combat answers the combat slices' spell
-  services and is replayed against the same corpus; no corpus runs the real
-  MagicSwingHandler with these spells. The live world installs the library
-  for the spells whose fireEffect is the empty base (world/live/magic.rs);
-  every other spell class and listener is refused there by name.
-  Non-combat and lunar spells are not ported. See docs/spells.md.
+  is a required service with no default. spells::combat answers the combat
+  slices' spell services and is replayed against the same corpus; no corpus
+  runs the real MagicSwingHandler with these spells. fireEffect of the nine
+  classes with an effect is spells::effects (its own Effects services, the
+  combat host's spell_fire_effect answers through it): ported from the
+  pinned classes with NO JVM corpus, so run `cargo test -p rs09-server
+  --test spell_effects` (a recording host) and, with the cache,
+  `--test live_spell_effects`; do not cite it as differential evidence.
+  Keep the impling's -2 before the splash return, Bind's -2 only for BIND,
+  the binding ticks read from the state's spell (9/17/25) and entangleDelay
+  = tick + ticks + 2, the god spells' drain whatever the hit, Teleblock's
+  second timer query and its cast of the caster, the ice ticks
+  `(ordinal - 4) * 8` with frozen marked only for a Barrage, Blood's
+  `hit / 4`, Shadow's truncated tenth and Miasmic's `(spellId - 15) * 20`
+  whatever the hit. The live world installs the library for every
+  registered combat spell (world/live/magic.rs); the listeners and
+  non-combat plugins are refused there by name. Non-combat and lunar spells
+  are not ported. See docs/spells.md.
 - For the player tab systems (world/player_tabs: WeaponInterface, LevelUp and
   getSkillJingle, EmoteManager/Emotes, MusicPlayer/MusicZone.enter,
   QuestRepository.syncronizeTab/forButtonId/forIndex and the base
@@ -1783,14 +1794,16 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   the persisted state, quest content refused); dragon and MonkNPC handler
   instances are handler slots whose subclass answers Host::overrides
   (dragons.rs). LoginValidationPlugin runs as the login plugin. Spells and
-  teleports (world/live/magic.rs): the combat spells with an empty
-  fireEffect through MagicSpell.castSpell and the combat pulse, the
+  teleports (world/live/magic.rs): the registered combat spells with their
+  fireEffect (spells::effects; an NPC's prayer drain is a named skip, and
+  no player reaches the ancient book: the login resets it without Desert
+  Treasure) through MagicSpell.castSpell and the combat pulse, the
   spell-on-entity packets (items/component_use.rs), a TeleportManager per
   entity whose pulses run on the world runner with their stop override
   through driver::Host::pulse_stop, and ModernListeners' Varrock, Lumbridge
-  and Falador teleports from the magic tab; the live_world magic and
-  teleport scenarios cover them. Content, NPC timers, the other spells and
-  teleports, ForceMovement,
+  and Falador teleports from the magic tab; the live_world magic, effects
+  and teleport scenarios cover them. Content, NPC spells, the other spell
+  listeners and teleports, ForceMovement,
   commands, quick chat, the Grand Exchange and region unloading remain open.
   The eighth round (world/live/round.rs holds its state): one dialogue
   interpreter per player made when first asked for, the live world itself
