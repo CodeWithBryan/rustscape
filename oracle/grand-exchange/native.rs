@@ -1024,7 +1024,11 @@ fn rusqlite_connection(path: &str) -> rusqlite::Connection {
     if let Some(parent) = std::path::Path::new(path).parent() {
         std::fs::create_dir_all(parent).unwrap();
     }
-    rusqlite::Connection::open(path).unwrap()
+    let connection = rusqlite::Connection::open(path).unwrap();
+    connection
+        .execute_batch("PRAGMA synchronous = OFF;")
+        .unwrap();
+    connection
 }
 
 fn mode(name: &str) -> ironman::Mode {
@@ -1662,6 +1666,10 @@ impl Host for World {
 
 /// Runs one case and returns what the original recorded for it.
 pub fn evaluate(case: &Value) -> Value {
+    // Commits need not wait for the disk here: the rows compared are the
+    // same, and on Windows each autocommitted statement otherwise waits on a
+    // flush (8.5 of CI's minutes; 123s against 16s locally).
+    db::set_synchronous_off(true);
     let mut world = World::new(case);
     let mut out = vec![world.step(|w| w.setup())];
     for a in case["actions"].as_array().unwrap() {

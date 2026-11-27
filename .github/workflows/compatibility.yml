@@ -9,11 +9,15 @@ permissions:
   contents: read
 
 # No debug info: test binaries link faster and the build cache stays small.
-# Incremental artifacts are useless on a fresh runner.
+# Incremental artifacts are useless on a fresh runner. Opt-level 1 for the
+# workspace crates: the replay tests are bound by unoptimized server code
+# (measured 3.5-4x faster). Overflow checks and debug assertions are separate
+# settings and stay on.
 env:
   CARGO_INCREMENTAL: '0'
   CARGO_PROFILE_DEV_DEBUG: '0'
   CARGO_PROFILE_TEST_DEBUG: '0'
+  CARGO_PROFILE_DEV_OPT_LEVEL: '1'
 
 # Two jobs run side by side: formatting, lints and the Rust tests in one, the
 # JVM oracles and interop checks in the other. Neither reads what the other
