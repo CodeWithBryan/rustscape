@@ -6,7 +6,9 @@
 //! original classes running.
 use rs09_server::world::{
     interaction_listeners::{self as interactions, Entry},
-    item_on_npc::{self, Class, Error, Host, Interaction, Kind, Result},
+    item_on_npc::{
+        self, CiderDialogue, Class, DialogueHost, Error, Host, Interaction, Kind, Result,
+    },
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -21,6 +23,8 @@ struct Recorder {
     calls: Vec<String>,
     /// `removeItem` answers false.
     refuse_removal: bool,
+    /// `inBorders` answers true.
+    in_pub: bool,
 }
 
 impl Host for Recorder {
@@ -77,6 +81,167 @@ impl Host for Recorder {
         self.calls.push(format!("chat {text}"));
         Ok(())
     }
+    fn in_borders(&mut self, _: &Node, borders: [i32; 4]) -> Result<bool> {
+        self.calls.push(format!("in borders {borders:?}"));
+        Ok(self.in_pub)
+    }
+    fn open_cider_dialogue(&mut self, _: &Node, with: &Node) -> Result<()> {
+        self.calls.push(format!("open cider dialogue {with:?}"));
+        Ok(())
+    }
+}
+
+/// CiderOnForesterDialogue's file, recorded.
+#[derive(Default)]
+struct Talk {
+    calls: Vec<String>,
+    stage: i32,
+    npc: Option<i32>,
+    /// `seersCiderPub`, when set.
+    count: Option<i32>,
+    completed: bool,
+}
+impl DialogueHost for Talk {
+    type Node = Node;
+    fn stage(&mut self) -> Result<i32> {
+        Ok(self.stage)
+    }
+    fn set_stage(&mut self, stage: i32) -> Result<()> {
+        self.calls.push(format!("stage {stage}"));
+        self.stage = stage;
+        Ok(())
+    }
+    fn npc_id(&mut self) -> Result<i32> {
+        self.npc.ok_or(Error::Null)
+    }
+    fn send_npc_dialogue(&mut self, _: &Node, npc: i32, text: &str) -> Result<()> {
+        self.calls.push(format!("npc {npc}: {text}"));
+        Ok(())
+    }
+    fn remove_from_inventory(&mut self, _: &Node, id: i32, amount: i32) -> Result<bool> {
+        self.calls.push(format!("remove {id} x{amount}"));
+        Ok(false)
+    }
+    fn attribute_int(&mut self, _: &Node, key: &str, default: i32) -> Result<i32> {
+        self.calls.push(format!("attribute {key} {default}"));
+        Ok(self.count.unwrap_or(default))
+    }
+    fn set_attribute_int(&mut self, _: &Node, key: &str, value: i32) -> Result<()> {
+        self.calls.push(format!("set {key} {value}"));
+        self.count = Some(value);
+        Ok(())
+    }
+    fn increment_attribute(&mut self, _: &Node, key: &str, amount: i32) -> Result<()> {
+        self.calls.push(format!("increment {key} {amount}"));
+        self.count = Some(self.count.unwrap_or(0) + amount);
+        Ok(())
+    }
+    fn remove_attribute(&mut self, _: &Node, key: &str) -> Result<()> {
+        self.calls.push(format!("remove attribute {key}"));
+        self.count = None;
+        Ok(())
+    }
+    fn finish_seers_task(&mut self, _: &Node, level: i32, index: i32) -> Result<()> {
+        self.calls.push(format!("finish seers {level} {index}"));
+        self.completed = true;
+        Ok(())
+    }
+    fn seers_task_completed(&mut self, _: &Node, level: i32, index: i32) -> Result<bool> {
+        self.calls.push(format!("completed {level} {index}"));
+        Ok(self.completed)
+    }
+    fn end(&mut self) -> Result<()> {
+        self.calls.push("end".to_owned());
+        Ok(())
+    }
+}
+
+#[test]
+fn cider_opens_its_dialogue_only_in_the_pub() {
+    let man = Node::Npc(3, "Man");
+    let cider = Node::Item(5763, "Cider");
+    let mut host = Recorder {
+        in_pub: true,
+        ..Default::default()
+    };
+    let run = item_on_npc::run(&mut host, Interaction::Cider, &Node::Player, &cider, &man);
+    assert_eq!(run, Ok(true));
+    assert_eq!(
+        host.calls,
+        [
+            "in borders [2689, 3488, 2700, 3498]",
+            "open cider dialogue Npc(3, \"Man\")",
+        ]
+    );
+    let mut host = Recorder::default();
+    let run = item_on_npc::run(&mut host, Interaction::Cider, &Node::Player, &cider, &man);
+    assert_eq!(run, Ok(false));
+    assert_eq!(host.calls, ["in borders [2689, 3488, 2700, 3498]"]);
+}
+
+#[test]
+fn five_ciders_finish_the_seers_task() {
+    const READ: &str = "attribute seersCiderPub -1";
+    let mut talk = Talk {
+        npc: Some(3),
+        ..Default::default()
+    };
+    // One cider is three calls of handle: two lines and the count.
+    let cider = |talk: &mut Talk| -> Vec<String> {
+        let mut file = CiderDialogue::default();
+        assert!(file.init);
+        for _ in 0..3 {
+            file.handle(talk, &Node::Player).unwrap();
+            assert!(!file.init);
+        }
+        std::mem::take(&mut talk.calls)
+    };
+    // The first: the lines, the removal (its answer unread), the count 1.
+    assert_eq!(
+        cider(&mut talk),
+        [
+            "stage 0",
+            "npc 3: Ah, a glass of cider, Don't mind if I do!",
+            "stage 1",
+            "npc 3: Thanks!",
+            "remove 5763 x1",
+            "stage 3",
+            READ,
+            READ,
+            "completed 0 6",
+            "set seersCiderPub 1",
+            "end",
+        ]
+    );
+    // The second to the fourth increment (the task is not asked: the
+    // count is in 0..3).
+    for expected in [2, 3, 4] {
+        let calls = cider(&mut talk);
+        assert_eq!(
+            calls[6..],
+            [READ, READ, READ, "increment seersCiderPub 1", "end"]
+        );
+        assert_eq!(talk.count, Some(expected));
+    }
+    // The fifth finishes the task.
+    let calls = cider(&mut talk);
+    assert_eq!(
+        calls[6..],
+        [
+            READ,
+            "finish seers 0 6",
+            "remove attribute seersCiderPub",
+            "end"
+        ]
+    );
+    // After it: nothing is counted.
+    let calls = cider(&mut talk);
+    assert_eq!(calls[6..], [READ, READ, "completed 0 6", READ, "end"]);
+    assert_eq!(talk.count, None);
+    // Without an NPC the first line is `this.npc!!`'s NullPointerException.
+    let mut talk = Talk::default();
+    let mut file = CiderDialogue::default();
+    assert_eq!(file.handle(&mut talk, &Node::Player), Err(Error::Null));
 }
 
 fn run(
@@ -242,6 +407,7 @@ fn tables_follow_the_sources() {
 fn define_registers_both_classes() {
     let registry = interactions::Registry::default();
     for name in [
+        "content.global.handlers.item.withnpc.CiderOnForester",
         "content.global.handlers.item.withnpc.FeedFaladorSheepdog",
         "content.global.handlers.item.withnpc.FeedOnStrayDog",
     ] {
@@ -270,7 +436,11 @@ fn define_registers_both_classes() {
     used.sort_unstable();
     used.dedup();
     let rows = table("useWithListeners");
-    assert_eq!(rows.len(), used.len() * item_on_npc::STRAY_DOGS.len());
+    // onUseWith(IntType.NPC, CIDER_5763, 1, 2, 3, 4, 5): five more rows.
+    assert_eq!(rows.len(), used.len() * item_on_npc::STRAY_DOGS.len() + 5);
+    for id in 1..=5 {
+        assert!(rows.contains(&format!("5763:{id}:{npc}")));
+    }
     assert!(rows.contains(&format!("526:5917:{npc}")));
     assert!(rows.contains(&format!("2142:4766:{npc}")));
     assert!(!rows.contains(&format!("1205:5917:{npc}")));

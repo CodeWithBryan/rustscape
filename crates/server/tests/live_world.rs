@@ -3566,6 +3566,85 @@ async fn use_content_scenario(address: std::net::SocketAddr, saves: &std::path::
     );
     dog.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // CiderOnForester: five ciders for the people (ids 1 to 5) of the
+    // Seers' Village pub, each a two-line dialogue; the fifth finishes the
+    // Seers' Village diary's task.
+    let start = [2694, 3494, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usecider",
+        start,
+        &[
+            (0, 5763, 1),
+            (1, 5763, 1),
+            (2, 5763, 1),
+            (3, 5763, 1),
+            (4, 5763, 1),
+        ],
+    );
+    let (code, cider) = Client::login(address, "usecider").await;
+    assert_eq!(code, 2, "usecider's login");
+    let mut cider = cider.unwrap();
+    cider
+        .until(Duration::from_secs(10), "usecider's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let patron = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| (1..=5).contains(&n.type_id))
+            .map(|(i, _)| *i as i32)
+    };
+    cider
+        .until(Duration::from_secs(15), "a patron of the pub", |c| {
+            patron(c).is_some()
+        })
+        .await;
+    let read = |c: &Client, from: usize, what: &str| {
+        c.texts[from..].iter().any(|(_, _, t)| t.contains(what))
+    };
+    let messages = cider.messages.len();
+    for slot in 0..5 {
+        let index = patron(&cider).unwrap();
+        let from = cider.texts.len();
+        cider.send(use_with_npc(5763, slot, index)).await;
+        cider
+            .until_pinging(Duration::from_secs(30), "the patron's first line", |c| {
+                read(c, from, "Ah, a glass of cider, Don't mind if I do!")
+            })
+            .await;
+        assert_eq!(
+            held(&cider, 5763),
+            5 - slot as usize,
+            "the cider is still held"
+        );
+        let from = cider.texts.len();
+        cider.send(continue_option(241, 5)).await;
+        cider
+            .until_pinging(Duration::from_secs(10), "the patron's thanks", |c| {
+                read(c, from, "Thanks!") && held(c, 5763) == 4 - slot as usize
+            })
+            .await;
+        cider.send(continue_option(241, 5)).await;
+        tokio::time::sleep(Duration::from_millis(1300)).await;
+    }
+    cider
+        .until_pinging(Duration::from_secs(10), "the diary's task", |c| {
+            c.messages[messages..]
+                .iter()
+                .any(|(_, m)| m == "Achievement Diary has been updated.")
+        })
+        .await;
+    eprintln!(
+        "usecider gave five ciders to the pub's patrons: walked {start:?} -> {:?}",
+        cider.position()
+    );
+    cider.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// The engine timers: a saved character with 5 of its 10 hitpoints logs in;
