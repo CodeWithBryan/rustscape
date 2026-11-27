@@ -336,10 +336,7 @@ fn objects(landscape: &[u8], flags: &TileFlags, rx: i32, ry: i32) -> Vec<[i32; 4
     let mut out = Vec::new();
     let mut at = 0usize;
     let mut id = -1i32;
-    loop {
-        let Some(offset) = big_smart(landscape, &mut at) else {
-            break;
-        };
+    while let Some(offset) = big_smart(landscape, &mut at) {
         if offset == 0 {
             break;
         }
@@ -1356,7 +1353,9 @@ fn report(output: &Path) -> Result<()> {
             .then(b.hits.cmp(&a.hits))
             .then(an.cmp(bn))
     });
-    let (ambient, ranked): (Vec<_>, Vec<_>) = ranked.into_iter().partition(|(_, e)| e.idle.len() * 2 >= tours.len().max(1));
+    let (ambient, ranked): (Vec<_>, Vec<_>) = ranked
+        .into_iter()
+        .partition(|(_, e)| e.idle.len() * 2 >= tours.len().max(1));
     let seconds = |t: &TourRun| t.ended.saturating_sub(t.started) as f64 / 1000.0;
     let minutes = tours.iter().map(seconds).sum::<f64>().max(1.0) / 60.0;
     let entry_json = |i: usize, name: &str, e: &Entry| {
