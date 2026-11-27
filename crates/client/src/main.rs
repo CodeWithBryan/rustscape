@@ -3539,6 +3539,20 @@ fn saved_samples() -> i32 {
 fn saved_samples() -> i32 {
     4
 }
+/// The region key file: `--world-keys FILE`, else the first that exists of
+/// `runs/player-session/xteas.json` and the local-play world folder's
+/// `runs/play/world-data/data/configs/xteas.json` (docs/play-locally.md).
+#[cfg(not(target_arch = "wasm32"))]
+fn world_keys() -> String {
+    option("--world-keys").unwrap_or_else(|| {
+        let defaults = [
+            "runs/player-session/xteas.json",
+            "runs/play/world-data/data/configs/xteas.json",
+        ];
+        let found = defaults.iter().find(|path| std::path::Path::new(path).is_file());
+        found.unwrap_or(&defaults[0]).to_string()
+    })
+}
 /// The starting scene from the cache alone (`--cache DIR`, else
 /// `assets/cache`), for when no prepared pack exists. Region keys come from
 /// `--world-keys`; a region whose key is not there keeps its terrain and loses
@@ -3554,7 +3568,7 @@ fn native_world_pack() -> Result<Pack, String> {
         .and_then(|lock| lock["server"]["commit"].as_str().map(str::to_owned))
         .unwrap_or_else(|| "unrecorded".into());
     let mut inputs = Inputs::default();
-    let keys = option("--world-keys").unwrap_or_else(|| "runs/player-session/xteas.json".into());
+    let keys = world_keys();
     if let Ok(bytes) = std::fs::read(&keys) {
         inputs.keys = Inputs::parse_keys(&bytes).map_err(|e| format!("{keys}: {e}"))?;
     }
@@ -4281,8 +4295,7 @@ async fn main() {
         // no prepared pack holds: a cache named for it is streamed from.
         .or_else(|| option("--cache").filter(|_| live_mode))
         .map(|path| {
-            let keys =
-                option("--world-keys").unwrap_or_else(|| "runs/player-session/xteas.json".into());
+            let keys = world_keys();
             world_cache::WorldMap::open(path.as_ref(), keys.as_ref(), &mut workbench)
                 .unwrap_or_else(|error| panic!("Open world map: {error}"))
         });
