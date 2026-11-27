@@ -1230,6 +1230,7 @@ impl Game {
     }
 
     pub(super) fn after_interfaces(&mut self) {
+        let ui_nodes = self.take_ui_nodes();
         let mut workbench = &mut self.workbench;
         let ui = &mut self.ui;
         let mut minimap = &mut self.minimap;
@@ -1244,7 +1245,6 @@ impl Game {
         let mut live_npcs = &mut self.live_npcs;
         let mut camera_script = &mut self.camera_script;
         let show_ui = self.show_ui;
-        let ui_nodes = std::mem::take(&mut self.ui_nodes);
         // InterfaceList.resetToLoginScreen: once the title interface's load
         // scripts have placed the camera, the title scene is set up there.
         title_world.after_interfaces(
@@ -1280,6 +1280,7 @@ impl Game {
     }
 
     pub(super) fn build_menu(&mut self) {
+        let ui_nodes = self.take_ui_nodes();
         let workbench = &mut self.workbench;
         let mut ui = &mut self.ui;
         let ui_models = &mut self.ui_models;
@@ -1304,7 +1305,6 @@ impl Game {
         let show_ui = self.show_ui;
         let view_distance = self.view_distance;
         let plane = self.plane;
-        let ui_nodes = std::mem::take(&mut self.ui_nodes);
         let walk = &mut self.walk;
         let menu_click = &mut self.menu_click;
         // The view rectangle is the one laid out for the previous frame.

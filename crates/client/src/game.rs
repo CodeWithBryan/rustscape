@@ -246,6 +246,18 @@ fn display_effects(
 }
 
 impl Game {
+    /// The frame's interface layout, without the nodes of components a
+    /// cycle has discarded since it was laid out (a sub-interface closed,
+    /// or every interface reset when the session ends): the walks over it
+    /// look each node's component up. Put it back in `self.ui_nodes`.
+    pub(super) fn take_ui_nodes(&mut self) -> Vec<DrawNode> {
+        let mut nodes = std::mem::take(&mut self.ui_nodes);
+        if let Some(ui) = &self.ui {
+            ui.retain_current(&mut nodes);
+        }
+        nodes
+    }
+
     /// One drawn frame of `GameShell.run`: the 20 ms cycles it owes, each a
     /// whole `client.mainLoop` (`rs09_client::game_cycle::cycle`), then
     /// `mainInputLoop` and the redraw. False ends the run.
