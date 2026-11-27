@@ -136,7 +136,9 @@ The agent's own report and stderr for each tour are in `runs/census/agents/`.
 | hits | every log line, which favours things called many times per action |
 | e.g. hit by | up to three of the actions |
 
-**Every tick:** refusals that appeared during a tour's idle baseline. They
+**Every tick:** refusals that appeared during the idle baseline of at least
+half the tours. (One baseline alone can catch the previous character's
+logout, which waits until its last fight is over.) They
 happen every tick (or with every update) whatever the player does, such as
 the entity tick hooks or the tick listeners, so counting actions says
 nothing about them. They are listed by hits per minute instead.
