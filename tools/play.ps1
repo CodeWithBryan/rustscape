@@ -24,7 +24,7 @@ param(
     [string]$Cache = "assets/cache",
     [string]$Python = "",
     [switch]$SkipBuild,
-    [switch]$ServerOnly,
+    [Alias("NoClient")][switch]$ServerOnly,
     [switch]$KeepServer,
     [switch]$Sound
 )

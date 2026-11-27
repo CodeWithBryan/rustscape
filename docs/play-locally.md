@@ -40,8 +40,8 @@ straight to the build check and start-up:
 Options: `-Port N` (when 43594 is taken), `-Sound` (start with audio on;
 by default the client gets `--mute`, which sets music, effects and ambient
 sound to volume 0 and leaves the saved volumes as they are), `-KeepServer`
-(leave the server running after the client closes), `-ServerOnly` (no
-client; Ctrl+C stops it), `-Data`, `-Saves`, `-Cache`, `-Python PATH`.
+(leave the server running after the client closes), `-ServerOnly` or
+`-NoClient` (no client window; Ctrl+C stops the server), `-Data`, `-Saves`, `-Cache`, `-Python PATH`.
 
 The region keys matter: without them the client streams the title screen's
 regions with no key and prints `JS5 length exceeds limit` and `negative JS5
