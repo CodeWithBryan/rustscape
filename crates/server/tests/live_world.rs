@@ -4622,6 +4622,8 @@ fn command(line: &str) -> Frame {
 /// player: the configuration's `dev = true` (GameSettings.isDevMode) lets
 /// it run commands too, as `Command.attemptHandling` does; the refusal of a
 /// regular player outside dev mode is `live_world_commands_refuse_*`.
+/// `::getattribute` follows GameAttributes' "/save:" and default rules, and
+/// `::ban` and `::jail` (withheld in the live world) change nothing.
 async fn commands_scenario(
     address: std::net::SocketAddr,
     saves: &std::path::Path,
@@ -4678,6 +4680,39 @@ async fn commands_scenario(
         },
     )
     .await;
+    // `::getattribute` answers with GameAttributes.getAttribute(key, fail):
+    // "/save:" is removed from the key, and an absent key prints the
+    // empty default.
+    one.send(command("setattribute /save:cmdtest 5")).await;
+    let from = one.messages.len();
+    one.send(command("getattribute /save:cmdtest")).await;
+    one.send(command("getattribute cmdtest")).await;
+    one.send(command("getattribute cmdabsent")).await;
+    one.until(Duration::from_secs(5), "three ::getattribute lines", |c| {
+        c.messages[from..]
+            .iter()
+            .filter(|(_, m)| m.contains("Attribute: "))
+            .count()
+            == 3
+    })
+    .await;
+    let lines: Vec<&str> = one.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .filter(|m| m.contains("Attribute: "))
+        .collect();
+    assert!(
+        lines[0].contains("Attribute: /save:cmdtest Value: 5"),
+        "{lines:?}"
+    );
+    assert!(
+        lines[1].contains("Attribute: cmdtest Value: 5"),
+        "{lines:?}"
+    );
+    assert!(
+        lines[2].contains("Attribute: cmdabsent Value: </col>"),
+        "{lines:?}"
+    );
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 
@@ -4693,6 +4728,26 @@ async fn commands_scenario(
         accounts.store(account.shared()).expect("cmdtwo's account");
     }
     let mut two = enter(address, "cmdtwo").await;
+    // ::ban and ::jail are withheld before their bodies: no account write,
+    // no message, and the player stays online (the ::item below still runs).
+    let from = two.messages.len();
+    two.send(command("ban cmdtwo 1d")).await;
+    two.send(command("jail 10 cmdtwo")).await;
+    two.pump(Duration::from_secs(2)).await;
+    let ban_end = accounts
+        .get_account_info("cmdtwo", 0)
+        .expect("cmdtwo's account")
+        .lock()
+        .unwrap()
+        .ban_end_time;
+    assert_eq!(ban_end, 0, "::ban wrote nothing");
+    assert!(
+        !two.messages[from..]
+            .iter()
+            .any(|(_, m)| m.contains("Banned user") || m.contains("jail")),
+        "refused moderation bodies sent nothing: {:?}",
+        &two.messages[from..]
+    );
     two.send(command("item 995 7")).await;
     two.until(
         Duration::from_secs(5),

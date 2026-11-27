@@ -787,7 +787,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   through the registry. Accounts join crate::auth through
   commands::accounts. The decoders run at dispatch (dispatch.rs keeps the
   payload undecoded): see docs/commands.md for that and the other pinned
-  differences. Nothing installs the libraries in the live world.
+  differences. `rs09-server --world` installs the command system
+  (world/live/commands.rs, the live_world `commands` scenario and the
+  non-dev-mode test; ban, ipban and jail are withheld there before their
+  bodies); quick chat and abuse reports are not installed.
 - For the Misc, Spawn and Stats command sets, the system manager or their
   packet writers (world/commands/sets: MiscCommandSet, SpawnCommandSet,
   StatsCommandSet with its book display; world/system_manager:
@@ -815,7 +818,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   world answers ::shutdown's exit_process by running the shutdown hook.
   getItemName is an unrecorded definition read. Quest, Slayer and the
   development sets, MapDumpCommand, oldsys, rottenpotato and DisplayModel
-  are not ported; nothing installs these libraries in the live world. See
+  are not ported; `rs09-server --world` answers sets::Host
+  (world/live/commands.rs) but not the system manager. See
   docs/command-sets.md.
 - For deferred input/BankUtils or object attributes, reproduce input-prompt-oracle
   and affected ownership/attribute/bank/UI/world corpora; run input_prompt,
@@ -1880,7 +1884,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   and Falador teleports from the magic tab; the live_world magic, effects
   and teleport scenarios cover them. Content, NPC spells, the other spell
   listeners and teleports, ForceMovement,
-  commands, quick chat, the Grand Exchange and region unloading remain open.
+  quick chat, the Grand Exchange and region unloading remain open; commands
+  are world/live/commands.rs (`::setlevel` there is ported without a
+  corpus; the refusals and what any player can do under dev = true are in
+  docs/live-world.md).
   The eighth round (world/live/round.rs holds its state): one dialogue
   interpreter per player made when first asked for, the live world itself
   as dialogue::Host/dialogue_dsl::Host/BankHost (talk.rs), Continue through

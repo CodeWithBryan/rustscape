@@ -163,9 +163,17 @@ modes of `rs09-server` are unchanged.
 | teleports | `TeleportManager`, `TeleportPulse` (`pulse`, `stop`), `Entity.isTeleporting`, `SpellListeners.run`, ModernListeners' Varrock, Lumbridge and Falador teleports (`requires`, `sendTeleport`, `removeRunes`, `addXP`, `setDelay`) | `magic.rs`: one `teleport::Manager` per entity; its pulses submitted to `GameWorld.Pulser` and dispatched by identity, their `stop()` override run through the driver's `pulse_stop` hook (`TeleportPulse.stop`: unlock, the `tele-pulse` attribute, the end animation); the destination written to the walking queue's teleport location; the zone monitor's teleport check and `isTeleBlocked`; the magic tab (192) reaches the listeners through the global handlers' `tabs::magic`. The three teleports are ported from the pinned `ModernListeners.kt`/`SpellListener.kt` without a differential corpus of the listeners themselves (the teleport and spell libraries are differentially tested) |
 | eating, drinking | `ConsumableListener`, `Consumable.consume` of every class, the effects, the potion's dose script | `eating.rs`: `world::consumables` with `Eating` as its `Host` for one player (native Skills taken out of the profile for the call, Settings, the player's clocks, the canonical inventory, the animator, `consumables::join` over the engine timers, the combat pulse's `delayNextAttack`, `manualHit`); the dose message is a SOFT script kept by the world and run at the player's tick once due |
 | lobby | `LoginConfiguration.sendLobbyScreen`, `LastLoginInfo`, `LoginInterface` (378), `configureGameWorld` | a returning character with `tutorial:complete`: the login library's lobby with `LastLoginInfo` (164: the IPv4 address, written at once); the welcome screen's play button (140) through the global handlers (`player.locks.lock("login", 2)`, `closeInterface`, `runTask(1, 0)`) and `configure_game_world` over the live world |
-| commands | the `Command` branch of `PacketProcessor.process` (`Decoders530.COMMAND`, `PlayerMonitor.log`, `CommandSystem.parse`), `CommandMapping` from the class scan, `Command.attemptHandling`, the legacy `CommandSet`s, the Moderation, System, Teleport, PlayerAttribute, Misc, Spawn and Stats sets, `DevelopmentCommandSet`'s `setlevel` | `commands.rs`: `world::commands::handle_packet` over the registry `registration::register_all` builds at boot (the class scan's order; `EasterEvent`'s commands only when its `checkActive` is true at boot: April in UTC or `FORCE_EASTER_EVENTS`); `CommandHost` is `commands::Host` and `commands::sets::Host` over the live world. The rights rules are the library's: the account record's rights, `PLAYER_COMMANDS`, `I_AM_A_CHEATER` and `isDevMode` from the configuration (the shipped development configuration has `dev = true`, so every player may run every command, as in the original). Answered natively: messages, the account record and account storage, the location, attributes, `TeleportManager.send` (the live teleporters), `properties.teleportLocation`, `ZoneMonitor.parseCommand`, the canonical inventory, equipment and banks with their listeners, item definitions, the repository's name lookup and players, the saved-data fields the sets read. `setlevel` is ported in `commands.rs` from the pinned `DevelopmentCommandSet.kt` over the native Skills (`setStaticLevel`, `setLevel`, `updateCombatLevel`), without a corpus of its own |
+| commands | the `Command` branch of `PacketProcessor.process` (`Decoders530.COMMAND`, `PlayerMonitor.log`, `CommandSystem.parse`), `CommandMapping` from the class scan, `Command.attemptHandling`, the legacy `CommandSet`s, the Moderation, System, Teleport, PlayerAttribute, Misc, Spawn and Stats sets, `DevelopmentCommandSet`'s `setlevel` | `commands.rs`: `world::commands::handle_packet` over the registry `registration::register_all` builds at boot (the class scan's order; `EasterEvent`'s commands only when its `checkActive` is true at boot: April in UTC or `FORCE_EASTER_EVENTS`); `CommandHost` is `commands::Host` and `commands::sets::Host` over the live world. The rights rules are the library's: the account record's rights, `PLAYER_COMMANDS`, `I_AM_A_CHEATER` and `isDevMode` from the configuration (the shipped development configuration has `dev = true`, so every player may run every command, as in the original). Answered natively: messages, the account record and account storage, the location, attributes, `TeleportManager.send` (the live teleporters), `properties.teleportLocation`, `ZoneMonitor.parseCommand`, the canonical inventory, equipment and banks with their listeners, item definitions, the repository's name lookup and players, the saved-data fields the sets read. `setlevel` is content logic ported in the host (`commands.rs`, `CommandHost::setlevel`) from the pinned `DevelopmentCommandSet.kt` over the native Skills (`setStaticLevel`, `setLevel`, `updateCombatLevel`): ported without a corpus, so it is not differentially verified (only the live_world `commands` scenario runs it). `::ban`, `::ipban` and `::jail` are withheld: at boot their registry entries are re-registered in place with their own origin as a content body, so the rights check runs as in the original and the body is refused before any of it runs |
 
 ## Deviations from the original
+
+- `core.api.getAttribute(player, key, default)` for `::getattribute` answers
+  with `GameAttributes.getAttribute(key, fail)`: "/save:" is removed from the
+  key and a stored null answers the default (so
+  `::getattribute /save:tutorial:complete` prints the stored value). This is
+  the original's rule; the commands oracle's adapter keeps the key as given
+  and prints a stored null as "null", and its corpus pins that (the corpus
+  is not regenerated here).
 
 - Frames from the client are framed by the transport and re-encoded for the
   read event; a malformed size closes the connection in the transport
@@ -492,9 +500,18 @@ legacy `CommandPlugin`s (MapDumpCommand, SimpleDumpingCommands,
 VisualCommand) for the names their `when (name)` handles (any other name
 answers false, as their `parse` does, so an unknown name still reaches
 "command not found"),
-the pulses, tasks, input dialogues and coroutines the ported bodies submit
-(jail, mute, ban's store pulse, `reply`, `ge search`), `Player.clear`
-(`::kick`), `Entity.sendChat` (the silly chat of `::bank` without rights),
+the bodies of `::ban`, `::ipban` and `::jail`, refused before they run
+(each would write part of its effect before a refused call: ban and ipban
+the online account's ban end before `Player.clear` and the store pulse,
+leaving the player online but refused at the next login, and with
+`PlayerDetails.save` returning early for a banned account so that session's
+contact and last-login changes are lost; jail both jailing messages before
+its pulse), the pulses, tasks, input dialogues and coroutines the other
+ported bodies submit (mute's store pulse for an offline name, `reply`,
+`ge search`), `Player.clear` (`::kick`), `Entity.unlock`,
+`PlayerDetails.ipAddress` and `compName`, `core.api.addItemOrDrop`,
+`RulesAndInfo.setBaseRulesAndInfo`, the AWT clipboard (answered with the
+`HeadlessException` the headless original throws), `Entity.sendChat` (the silly chat of `::bank` without rights),
 `sendDialogue`, the system manager (`::update`, `::cancelupdate`,
 `::shutdown`), the authenticator's password calls, `ServerStore`,
 `ChargedItem` and `Item.setCharge` (`::charge`), the data-file read of
@@ -982,6 +999,23 @@ shops runs every tick).
 The world-login, tick-driver and world-trace comparisons of the libraries
 are unchanged (their tests bind the same libraries with replayed
 stand-ins); this test checks the production binding end to end.
+
+## Commands under `dev = true`
+
+The shipped development configuration has `dev = true`, and
+`Command.attemptHandling` lets every player run every command in dev mode,
+as the original does. In the live world that means any connected player
+can, on another online player (or an offline account): mute them
+(`::mute`, the online account's mute end); give or take their items
+(`::giveitem`, `::removeitem`, `::removeitemall`); set any attribute, including a "/save:" key with a value
+of the wrong type that a later load or content read fails on
+(`::setattribute`); add or remove store credits on any existing account,
+online or offline (`::modcr`); set their levels (`::setlevel`); and teleport
+them or to them (`::teleto`, `::teletome`). On their own character any
+player can also empty or fill their inventory and bank (`::empty`,
+`::fillbank`, `::emptybank`) and change the save version
+(`::setsaveversion`). Run a world others can
+reach with `dev = false`.
 
 ## Not covered / still to do
 

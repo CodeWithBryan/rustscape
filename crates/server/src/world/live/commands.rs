@@ -49,8 +49,8 @@ use crate::inventory::{
 use crate::player::attributes::AttributeValue;
 use crate::player::skills::Skills;
 use crate::world::commands::{
-    self as cmd, Container, ContentBody, Error, InputType, ItemRef, LegacyPlugin, Loc, Registry,
-    Result, TeleportType, Value,
+    self as cmd, Body, Container, ContentBody, Error, InputType, ItemRef, LegacyPlugin, Loc,
+    NativeBody, Registry, Result, TeleportType, Value,
     deferred::{InputHandler, Job, Pulse, Task},
     sets::{
         self, Actor, Book, Chunk, Direction, Handler, Input, IronmanMode, Level, Lock, Npc,
@@ -76,7 +76,29 @@ pub struct LiveCommands {
     pub bank_size: i32,
     /// `ServerConstants.NEW_PLAYER_ANNOUNCEMENT`.
     pub new_player_announcement: bool,
+    /// Ported bodies this world does not run: their registry entries carry
+    /// their own `origin` as a content body, so the rights check runs and
+    /// the body is refused before any of it.
+    pub withheld: Vec<(ContentBody, &'static str)>,
 }
+
+/// Native bodies withheld from the live world, with the reason. Each writes
+/// part of its effect (an account field, a message) before reaching a call
+/// this world refuses, so running it would leave a half-applied command.
+const WITHHELD: &[(NativeBody, &str)] = &[
+    (
+        NativeBody::Ban,
+        "::ban (Player.clear and the ban store pulse are not bound; the body          would write the online account's ban end before the refusal)",
+    ),
+    (
+        NativeBody::IpBan,
+        "::ipban (Player.clear, the ban store pulse and ServerStore are not          bound; the body would write ban ends before the refusal)",
+    ),
+    (
+        NativeBody::Jail,
+        "::jail (the jail pulse is not bound; the body would send both          jailing messages before the refusal)",
+    ),
+];
 
 /// The class whose `setlevel` lambda is ported here.
 const DEVELOPMENT: &str = "core.game.system.command.sets.DevelopmentCommandSet";
@@ -206,10 +228,28 @@ impl LiveCommands {
                 .and_then(serde_json::Value::as_bool)
                 .ok_or_else(|| format!("configuration has no {key}"))
         };
-        let easter = april(start_millis) || flag("FORCE_EASTER_EVENTS")?;
-        let registry = cmd::registration::register_all(&|class| {
+        // `month == APRIL || FORCE_EASTER_EVENTS`: reading the static field
+        // has no effect, so it is read in every month and a configuration
+        // without it fails the boot whatever the date.
+        let force_easter = flag("FORCE_EASTER_EVENTS")?;
+        let easter = april(start_millis) || force_easter;
+        let mut registry = cmd::registration::register_all(&|class| {
             class == "core.game.worldevents.holiday.easter.EasterEvent" && easter
         });
+        // Re-registering a name keeps its place in the map's walk order.
+        let mut withheld = Vec::new();
+        for command in registry.commands().into_iter().cloned().collect::<Vec<_>>() {
+            let Body::Native(native) = command.body else {
+                continue;
+            };
+            if let Some((_, why)) = WITHHELD.iter().find(|(body, _)| *body == native) {
+                withheld.push((command.origin, *why));
+                registry.register(cmd::Command {
+                    body: Body::Content(command.origin),
+                    ..command
+                });
+            }
+        }
         Ok(Self {
             registry: Arc::new(registry),
             player_commands: flag("PLAYER_COMMANDS")?,
@@ -225,6 +265,7 @@ impl LiveCommands {
             // A constant of ServerConstants the configuration never sets.
             bank_size: crate::player::core_data::DEFAULT_BANK_SIZE,
             new_player_announcement: flag("NEW_PLAYER_ANNOUNCEMENT")?,
+            withheld,
         })
     }
 }
@@ -542,6 +583,13 @@ impl cmd::Host for CommandHost<'_> {
     }
     fn content_command(&mut self, body: ContentBody, player: &P, args: &[String]) -> Result<()> {
         self.gate()?;
+        if let Some((_, why)) = self.live.commands.withheld.iter().find(|(b, _)| *b == body) {
+            self.live
+                .inner
+                .not_ported
+                .skip("a ported command body withheld from the live world");
+            return refuse(why);
+        }
         if body.class == DEVELOPMENT && body.lambda == SETLEVEL {
             return self.setlevel(player, args);
         }
@@ -578,12 +626,17 @@ impl cmd::Host for CommandHost<'_> {
     fn api_attribute(&mut self, player: &P, key: &str, default: Value) -> Result<Option<Value>> {
         self.gate()?;
         self.player_only(player)?;
+        // GameAttributes.getAttribute(key, fail): "/save:" removed wherever it
+        // occurs, and `fail` for an absent key or a stored null (the native
+        // `get` does both). The commands oracle's adapter answers a stored
+        // null instead; see docs/live-world.md.
         let attributes = self.live.inner.canonical(player).player.attributes();
-        if attributes.contains_key(key) {
-            Ok(attributes.get(key).map(Self::attribute_value))
-        } else {
-            Ok(Some(default))
-        }
+        Ok(Some(
+            attributes
+                .get(key)
+                .map(Self::attribute_value)
+                .unwrap_or(default),
+        ))
     }
     fn set_attribute(&mut self, player: &P, key: &str, value: Option<Value>) -> Result<()> {
         self.gate()?;
@@ -713,7 +766,7 @@ impl cmd::Host for CommandHost<'_> {
         self.gate()?;
         let item = self.item(id, amount);
         self.with_container(player, container, |c, defs, ctx| {
-            c.add_two(Some(&item), true, defs, ctx)
+            c.add(Some(&item), true, -1, defs, ctx)
         })
     }
     fn remove(&mut self, player: &P, container: Container, id: i32, amount: i32) -> Result<bool> {

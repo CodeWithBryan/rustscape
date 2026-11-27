@@ -8,8 +8,10 @@ and `world::command_packets`. The registry (`world::commands::registration`)
 now gives every define of `MiscCommandSet`, `SpawnCommandSet` and
 `StatsCommandSet` a native body (`NativeBody::Set`); dispatch still goes only
 through the registry (`commands::run` hands the body the world as
-`commands::Host::sets`). Nothing installs these libraries in the live world:
-`rs09-server --world` does not route commands (docs/commands.md).
+`commands::Host::sets`). `rs09-server --world` routes commands and answers
+`sets::Host` (world/live/commands.rs); the system manager is not installed
+there, so `::update`, `::cancelupdate` and `::shutdown` are refused, and the
+other refusals are listed in docs/live-world.md.
 
 ## What is ported
 
