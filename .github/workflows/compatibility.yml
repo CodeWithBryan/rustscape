@@ -75,8 +75,19 @@ jobs:
           rustup default 1.97.0
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
-      # Some tests read the pinned original sources, so fetch them first.
+      # Some tests read the pinned original sources. They are fixed by
+      # upstream.lock.json, so a cache keyed on it holds the same checkout.
+      # On a hit the job skips bootstrap: building xtask for it compiles a
+      # server library the test build cannot reuse (about 2.5 minutes). The
+      # oracle job still runs bootstrap, which verifies the checkout.
+      - name: Cache locked original sources
+        id: reference
+        uses: actions/cache@v4
+        with:
+          path: reference
+          key: reference-${{ hashFiles('upstream.lock.json') }}
       - name: Fetch locked original sources
+        if: steps.reference.outputs.cache-hit != 'true'
         run: cargo xtask bootstrap
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
@@ -89,11 +100,13 @@ jobs:
         run: cargo nextest run --locked --workspace
       # The controlled sessions' tests live in examples, which the workspace
       # run does not include. (They ran in the oracle job before; this job
-      # has the server built already.)
+      # has the server built already.) --workspace, not -p rs09-server: it
+      # resolves the same features as the run above, so the libraries it
+      # built are reused instead of compiled again.
       - name: Verify walk/run/rebuild packets reach the shared player consumer
-        run: cargo test --locked -p rs09-server --example movement_session
+        run: cargo test --locked --workspace --example movement_session
       - name: Verify controlled NPC/player stream composition
-        run: cargo test --locked -p rs09-server --example npc_session
+        run: cargo test --locked --workspace --example npc_session
 
   oracles:
     name: JVM oracles and interop
@@ -111,6 +124,13 @@ jobs:
           rustup default 1.97.0
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
+      # Same cache as the test job. Bootstrap still runs here: it builds the
+      # xtask the oracle step needs anyway and verifies a restored checkout.
+      - name: Cache locked original sources
+        uses: actions/cache@v4
+        with:
+          path: reference
+          key: reference-${{ hashFiles('upstream.lock.json') }}
       - name: Fetch locked original sources
         run: cargo xtask bootstrap
       - uses: actions/setup-python@v5
