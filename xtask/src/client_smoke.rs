@@ -18,11 +18,15 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-const USAGE: &str = "cargo xtask client-smoke [--data DIR] [--cache DIR] [--no-build] [--show] [--npc NAME] [--timeout SECS] [--keep-world] [--skip-welcome]";
+const USAGE: &str = "cargo xtask client-smoke [--data DIR] [--cache DIR] [--no-build] [--show] [--npc NAME] [--npc-types ID,ID,...|any] [--timeout SECS] [--keep-world] [--skip-welcome]";
 /// Next to the goblins east of Lumbridge castle (the test-world kit's
 /// goblin scenario starts here too).
 const LOCATION: [i32; 3] = [3250, 3235, 0];
 const CHARACTER: &str = "smokegoblin";
+/// The goblin types the live world fights (the test-world kit's goblin
+/// scenario). Lumbridge also has goblins of type 2278, which it does not:
+/// an attack on one is accepted and never swung.
+const GOBLIN_TYPES: &str = "1769,1770,1771,1772,1773,1774,1775,1776";
 /// The NPC option packets, options 1 to 5 (`ClientAction::NpcAction` in
 /// protocol/game/actions.rs).
 const NPC_OPTION_OPCODES: [u64; 5] = [78, 3, 148, 30, 218];
@@ -43,6 +47,7 @@ pub fn run(root: &Path, args: &[String]) -> Result<()> {
     let mut keep_world = false;
     let mut skip_welcome = false;
     let mut npc = "Goblin".to_owned();
+    let mut types = Some(GOBLIN_TYPES.to_owned());
     let mut timeout = Duration::from_secs(300);
     let mut options = args.iter().skip(1);
     while let Some(option) = options.next() {
@@ -54,7 +59,13 @@ pub fn run(root: &Path, args: &[String]) -> Result<()> {
             "--show" => show = true,
             "--keep-world" => keep_world = true,
             "--skip-welcome" => skip_welcome = true,
-            "--npc" => npc = value()?.clone(),
+            "--npc" => {
+                npc = value()?.clone();
+                types = None;
+            }
+            "--npc-types" => {
+                types = Some(value()?.clone()).filter(|t| t != "any");
+            }
             "--timeout" => timeout = Duration::from_secs(value()?.parse()?),
             other => return Err(format!("unknown client-smoke option {other}\n{USAGE}").into()),
         }
@@ -112,7 +123,18 @@ pub fn run(root: &Path, args: &[String]) -> Result<()> {
         client: None,
         keep_world,
     };
-    let outcome = smoke(&mut run, &world, &out, &npc, show, skip_welcome, timeout);
+    let target = match &types {
+        Some(types) => format!("{npc}:{types}"),
+        None => npc.clone(),
+    };
+    let options = Options {
+        npc: npc.clone(),
+        target,
+        show,
+        skip_welcome,
+        timeout,
+    };
+    let outcome = smoke(&mut run, &world, &out, &options);
     let stopped = run.stop();
     let report = match outcome {
         Ok(report) => report,
@@ -146,10 +168,10 @@ struct Run {
 impl Run {
     fn stop(&mut self) -> Result<()> {
         let mut result = Ok(());
-        if let Some(mut client) = self.client.take() {
-            if let Err(e) = client.stop() {
-                result = Err(e);
-            }
+        if let Some(mut client) = self.client.take()
+            && let Err(e) = client.stop()
+        {
+            result = Err(e);
         }
         if !self.keep_world {
             // Only the world this run started; stopping twice is harmless.
@@ -169,15 +191,25 @@ impl Drop for Run {
     }
 }
 
-fn smoke(
-    run: &mut Run,
-    world: &Value,
-    out: &Path,
-    npc: &str,
+/// What a run points at and how the client is shown.
+struct Options {
+    npc: String,
+    /// `--capture-npc-menu`'s value: the name, with types when kept to some.
+    target: String,
     show: bool,
     skip_welcome: bool,
     timeout: Duration,
-) -> Result<Value> {
+}
+
+fn smoke(run: &mut Run, world: &Value, out: &Path, options: &Options) -> Result<Value> {
+    let Options {
+        npc,
+        target,
+        show,
+        skip_welcome,
+        timeout,
+    } = options;
+    let (show, skip_welcome, timeout) = (*show, *skip_welcome, *timeout);
     let root = run.root.clone();
     let address = world["address"]
         .as_str()
@@ -251,7 +283,7 @@ fn smoke(
         "--capture-frame".into(),
         "1000000".into(),
         "--capture-npc-menu".into(),
-        npc.into(),
+        target.into(),
         "--cache".into(),
         cache.display().to_string(),
     ];

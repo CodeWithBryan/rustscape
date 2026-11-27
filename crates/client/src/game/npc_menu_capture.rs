@@ -59,6 +59,8 @@ enum Stage {
 
 pub(crate) struct Driver {
     name: String,
+    /// When not empty, only NPCs of these types are pointed at.
+    types: Vec<u32>,
     stage: Stage,
     /// When the stage (or the last welcome click, or probe) began.
     since: f64,
@@ -82,16 +84,32 @@ pub(crate) struct Driver {
 
 impl Driver {
     pub(crate) fn from_arguments(capture: bool, live: bool) -> Option<Self> {
-        let name = option("--capture-npc-menu")?;
+        let value = option("--capture-npc-menu")?;
+        // NAME, or NAME:ID,ID,... to keep to those NPC types.
+        let (name, types) = match value.split_once(':') {
+            Some((name, ids)) => (
+                name.to_owned(),
+                ids.split(',')
+                    .map(|id| {
+                        id.trim()
+                            .parse()
+                            .expect("--capture-npc-menu NAME:ID,ID,...")
+                    })
+                    .collect(),
+            ),
+            None => (value, Vec::new()),
+        };
         assert!(
             capture && live,
             "--capture-npc-menu requires a live capture (--connect ... --capture)"
         );
         let mut report = serde_json::Map::new();
         report.insert("npc_name".into(), name.clone().into());
+        report.insert("npc_types".into(), serde_json::json!(types));
         report.insert("stages".into(), serde_json::json!([]));
         Some(Self {
             name,
+            types,
             stage: Stage::Enter,
             since: get_time(),
             pending: VecDeque::new(),
@@ -108,6 +126,16 @@ impl Driver {
             hit_bar_until: None,
             report,
         })
+    }
+
+    /// Whether `npc` is one to point at: its name, and its type when the
+    /// switch names types.
+    fn wanted(&self, world: &Workbench, npc: &NpcActor) -> bool {
+        world
+            .npc_definitions
+            .get(&npc.id)
+            .is_some_and(|d| d.name.eq_ignore_ascii_case(&self.name))
+            && (self.types.is_empty() || self.types.contains(&npc.id))
     }
 
     /// The events to hand the frame's input after the window's own.
@@ -278,12 +306,7 @@ impl Game {
                     .workbench
                     .npcs
                     .iter()
-                    .filter(|npc| {
-                        self.workbench
-                            .npc_definitions
-                            .get(&npc.id)
-                            .is_some_and(|d| d.name.eq_ignore_ascii_case(&name))
-                    })
+                    .filter(|npc| driver.wanted(&self.workbench, npc))
                     .map(|npc| npc.index as u64)
                     .collect();
                 if let Some(probe) = probe {
@@ -375,7 +398,17 @@ impl Game {
                 if menu.menu.open {
                     let bounds = menu.bounds;
                     let size = menu.menu.entries.len();
-                    let attack = menu.menu.entries.iter().position(|e| e.option == "Attack");
+                    // The Attack for a wanted NPC: others may stand at the
+                    // same point.
+                    let attack = menu.menu.entries.iter().position(|e| {
+                        e.option == "Attack"
+                            && self
+                                .workbench
+                                .npcs
+                                .iter()
+                                .find(|npc| npc.index as u64 == e.key)
+                                .is_some_and(|npc| driver.wanted(&self.workbench, npc))
+                    });
                     let detail = serde_json::json!({
                         "bounds": [bounds.x, bounds.y, bounds.width, bounds.height],
                         "entries": entries(&menu.menu),
