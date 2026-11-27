@@ -686,7 +686,11 @@ JVM-verified: `drawShapedTile` (transcribed); the menu open state and the
 tooltip text and refresh (transcription tests; `MiniMenu` cannot be compiled
 alone); menu gating (three transcription tests). `world_pick.rs`, which
 mirrors the workbench into the ported structures, and the dispatch edits have
-no automated test; one capture with `--pick-probe` exercises the former.
+no automated test; one capture with `--pick-probe` exercises the former. The
+probe is taken in `build_menu` right after the frame's mouse pick, from the
+same inputs; a unit test (`world_pick::tests`) checks only that its NPC rows
+are the ones at pick time and not those the draw leaves (the gap that hid
+unclickable live NPCs). It is a diagnostic, not JVM-checked.
 
 ## Camera and viewport
 
