@@ -1101,8 +1101,11 @@ mod tests {
         npc.pick_triangles.push([Vec3::ZERO, Vec3::X, Vec3::Z]);
     }
 
+    /// What the probe's NPC rows must say at the pick. This does not catch
+    /// the probe moving back after the draw: when in the frame it runs rests
+    /// on the call in `build_menu`, which needs a loaded `Workbench` to test.
     #[test]
-    fn probe_rows_are_the_picks_not_the_draws() {
+    fn npc_rows_at_pick_time_leave_an_undrawn_npc_out() {
         let mut npcs = vec![rebuilt(7)];
         // `build_menu`: the frame's mouse pick, then the probe from its inputs.
         let at_pick = npc_rows(&npcs);
