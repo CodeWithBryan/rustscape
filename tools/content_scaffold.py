@@ -445,8 +445,7 @@ def main():
               False, written)
         insert('crates/server/src/world/content/mod.rs', '// content-scaffold: modules', f'pub mod {area};', written)
     insert(f'crates/server/src/world/content/{area}/mod.rs', '// content-scaffold: modules', f'pub mod {module};', written)
-    insert('crates/server/src/world/content/mod.rs', '// content-scaffold: hosts', f'+ {area}::{module}::Host', written)
-    insert('crates/server/src/world/content/mod.rs', '// content-scaffold: host bounds', f'T: {area}::{module}::Host,', written)
+    insert('crates/server/src/world/content/mod.rs', '// content-scaffold: hosts', f'{area}::{module}::Host,', written)
     write(f'docs/{topic}.md', doc_md(topic, relative, found, calls + [f'{c} (content::Services::{s})' for c, s in shared], args.kind),
           args.force, written)
     if args.kind == 'generic':

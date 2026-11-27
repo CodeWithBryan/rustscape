@@ -20,17 +20,19 @@ pub trait Services: dialogue_dsl::Host {
     fn settings_name(&mut self) -> dialogue_dsl::Result<Option<dialogue_dsl::Text>>;
 }
 
-/// Everything the ported content calls: [`Services`] and each port's own
-/// `Host` trait.
-pub trait Host: Services + lumbridge::donie_dialogue::Host // content-scaffold: hosts
-{
+/// Declares [`Host`], everything the ported content calls ([`Services`]
+/// and each port's own `Host` trait), with its blanket implementation.
+macro_rules! hosts {
+    ($($port:path),* $(,)?) => {
+        /// Everything the ported content calls: [`Services`] and each
+        /// port's own `Host` trait.
+        pub trait Host: Services $(+ $port)* {}
+        impl<T: Services $(+ $port)*> Host for T {}
+    };
 }
-impl<T> Host for T
-where
-    T: Services,
-    T: lumbridge::donie_dialogue::Host,
-    // content-scaffold: host bounds
-{
+hosts! {
+    lumbridge::donie_dialogue::Host,
+    // content-scaffold: hosts
 }
 
 /// The native prototype of a ported `DialoguePlugin`, by the scanned class
