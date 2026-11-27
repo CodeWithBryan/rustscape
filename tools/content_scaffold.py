@@ -315,13 +315,11 @@ def recording_host(module, area, calls):
     lines = [f'impl content::{area}::{module}::Host for Model {{']
     for call, name in zip(calls, method_names(calls)):
         lines += [f'    /// `{call}`.', f'    fn {name}(&mut self) -> Result<()> {{', f'        self.emit("{rust_str(call)}", vec![])', '    }']
-    return '
-'.join(lines + ['}', ''])
+    return '\n'.join(lines + ['}', ''])
 
 
 def test_rs(topic, module, area):
-    return '
-'.join([
+    return '\n'.join([
         f'//! Replays the JVM {topic} corpus (oracle/{topic}) against',
         f'//! `world::content::{area}::{module}` over the dialogue-dsl recording host',
         '//! and the dialogue content kit (oracle/content-kit), and pins the fixture.',
