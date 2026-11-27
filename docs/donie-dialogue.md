@@ -14,21 +14,31 @@ It is the kit's first port.
   "shoelace" stage that opens `DonieDialogueShoelaceFile` with `open(player!!, DonieDialogueShoelaceFile(), npc!!)`.
 - `DonieDialogueShoelaceFile`, a DialogueLabeller of four lines.
 
-The live world registers the plugin at boot (`Live::install_ported`, ClassScanner's DIALOGUE branch in the class
-scan's order), so Talk-to on Donie (NPCTalkListener's `DialogueInterpreter.open(2238, npc)`) opens it instead of
-answering false. The live_world `donie` scenario talks to her over the protocol: greeting (241), the options, the
-player's line (64), her two-line answer (242) with the world's name.
+The class is listed in `content::LIVE_DIALOGUES`, so the live world registers the plugin at boot
+(`Live::install_ported`: ClassScanner's DIALOGUE branch, in the class scan's order among the listed classes, after the
+world's other installs), and Talk-to on Donie (NPCTalkListener's `DialogueInterpreter.open(2238, npc)`) opens it
+instead of answering false. The live_world `donie` scenario talks to her over the protocol: the greeting (241), the
+three options (230), the player's line (64), her two-line answer (242) ending in the configuration's SERVER_NAME,
+the rest of the section to its last line (64, 241, 243), and the Continue after it, which closes the chatbox
+(CloseInterface) with nothing more said. The template's SERVER_NAME is "2009Scape", the same text as Donie's own
+default, so the live run cannot tell them apart; the corpus does (`serverName: "Gielinor"`).
 
 ## The corpus
 
 `cargo xtask donie-dialogue-oracle --check` (Python, JDK 11, the pinned reference and ConstLib 1.4.28) compiles the
 source unchanged over the dialogue content kit and reproduces `fixtures/donie-dialogue`; `cargo test -p rs09-server
---test content_donie_dialogue` replays it natively. 399 cases: 16 designed, 383 injected failures (every recorded call
-of each swept action failing once in turn); 1,584 actions, 42,917 recorded calls.
+--test content_donie_dialogue` replays it natively. 322 cases: 15 designed and 307 injected failures (every recorded
+call of each swept action failing once in turn, each distinct failure once); 1,196 actions, 32,154 recorded calls.
 
 The designed cases: the greeting; the options; each of the three branches to the end and past it; the weather line
-with another world name and with no settings; a female player; Talk-to before registration (false); closing at the
-greeting and at the options, then continuing; opening without an NPC; an out-of-range button; registration alone.
+with another world name; no settings; a female player; Talk-to before registration (false); closing at the greeting
+and at the options, then continuing; opening without an NPC; an out-of-range button; registration alone.
+
+What the failures cover: 10 of the 307 fail Donie's own call out of the dialogue library, `GameWorld.settings`
+(recorded under that name; the core's @servername read is `settings`). The other 297 fail calls of the dialogue core
+and DSLs on Donie's path (packet dispatch, the interface manager, attributes, the interpreter, `settings` 7 times):
+they check that the port fails where the original does inside those libraries, not more of Donie herself.
+`coverage.failedEvents` in the provenance has the count per call.
 
 What the original does that the source does not make obvious, kept by the port:
 

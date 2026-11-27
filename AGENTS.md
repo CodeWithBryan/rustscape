@@ -672,12 +672,18 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   runs `cargo xtask <topic>-oracle --check` with Python/JDK 11 and `cargo
   test -p rs09-server --test content_<module>`, plus dialogue_dsl, dialogue,
   plain_dialogue and live_world; a kit change also reruns every content
-  oracle and dialogue-dsl-oracle (its 3,600 cases byte-identical). Content
-  registers in scan.initializable order through ClassScanner's branch for
-  its type (DIALOGUE: init()). Donie (docs/donie-dialogue.md): preserve the
-  399 cases (16 designed, 383 injected failures); keep the settings read on
-  every pass, the shoelace open's arguments evaluated every pass and the
-  call-site null check of the plugin's npc field before openDialogue.
+  oracle and dialogue-dsl-oracle (its 3,600 cases byte-identical) and the
+  content_registry test. --check and the replay refuse a corpus with no
+  designed cases or a TODO scope. A class enters the live world only when
+  listed by hand in content::LIVE_DIALOGUES (content_registry fails while
+  its module keeps a "not ported yet" stub); listed classes register in
+  scan.initializable order after the other installs, through ClassScanner's
+  branch for their type (DIALOGUE: init(), a failure printed, not fatal).
+  Donie (docs/donie-dialogue.md): preserve the 322 cases (15 designed, 307
+  distinct injected failures); keep the settings read on every pass
+  (recorded as GameWorld.settings, apart from the core's "settings"), the
+  shoelace open's arguments evaluated every pass and the call-site null
+  check of the plugin's npc field before openDialogue.
 - For core.api (world/content_api: every ContentAPI.kt function, its
   ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
   SkillDialogueBuilder, and the other core/api files: ApiExtensions,
@@ -868,8 +874,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   back-references are strong and not yet traced by the canonical capture graph.
   `rs09-server --world` binds Host to the live world with one interpreter
   per player and the Continue packet (world/live/talk.rs); the registry holds
-  no content plugin there, and the capture graph join and all content other
-  than the banker conversation remain required. See docs/dialogue.md.
+  only the ported content plugins of content::LIVE_DIALOGUES there (Donie),
+  and the capture graph join and all other content but the banker
+  conversation remain required. See docs/dialogue.md.
 - For the dialogue DSLs (world/dialogue_dsl: DialogueLabeller with
   DialogueOption and DialogueLabeller.open, DialogueBuilder/DialogueBuilderFile
   and every node, SkillDialogueHandler/SkillDialogue/SkillDialoguePlugin,

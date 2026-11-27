@@ -18,12 +18,15 @@ first class's name in kebab case) and module M (snake case) in area A (the sourc
     crates/server/src/world/live/ported/M.rs
                                     the live world's answers to the port's Host (each refuses until written)
     docs/T.md                       the port's document, with the scope and the services to fill in
-and registers the port: `world/content` (module, Host bound, dialogue plugin table), live/ported (module),
-oracle/ci.toml (an entry). It then runs the generator once (unless --no-generate), so the empty corpus exists
-and `cargo xtask T-oracle --check` passes before any behaviour is written. Nothing is overwritten without --force.
+and registers the port: `world/content` (module, Host bound, the replay table `dialogue_plugin`), live/ported
+(module), oracle/ci.toml (an entry). It then runs the generator once (unless --no-generate), which shows the source
+compiles over the kit. The empty corpus is not a port: `--check` and the replay refuse it (no designed cases, a TODO
+scope) until the cases are written. The live world registers the class only once it is added to
+`content::LIVE_DIALOGUES` by hand. Nothing is overwritten without --force.
 
-`generic` (an InteractionListener, an option handler, anything else) writes only the native module, the docs stub
-and a list of the outside calls: the kit has no shared oracle layer for those yet (see the recipe).
+`generic` (an InteractionListener, an option handler, anything else) writes the native module (its `Host` trait is
+not joined to `content::Host`), the area registration and the docs stub, and lists the outside calls: the kit has no
+shared oracle layer, live answers or registration for those yet (see the recipe).
 
 Every generated file is UTF-8 with LF line endings.
 """
@@ -71,33 +74,62 @@ def area_of(relative):
 
 def classes(text):
     """(name, superclass) of each top-level class the source declares."""
-    pattern = (r'(?m)^(?:@\w+\s+)*(?:public\s+|open\s+|final\s+|abstract\s+)*class\s+(\w+)\s*'
+    pattern = (r'(?m)^(?:@\w+\s+)*(?:(?:public|private|internal|protected|open|final|abstract|sealed|data|inner|static)\s+)*'
+               r'class\s+(\w+)\s*'
                r'(?:\([^)]*\))?\s*(?::\s*(\w+)|extends\s+(\w+))?')
     return [(m.group(1), m.group(2) or m.group(3)) for m in re.finditer(pattern, text)]
 
 
+def balanced(text, start):
+    """The text from `start` (an opening bracket) to its matching closing bracket, inclusive."""
+    depth = 0
+    for i in range(start, len(text)):
+        depth += 1 if text[i] in '({[' else -1 if text[i] in ')}]' else 0
+        if depth == 0:
+            return text[start:i + 1]
+    return text[start:]
+
+
 def ids_of(text):
-    """getIds' NPC ids: (constant name, value) for NPCs.X_123, ('', value) for literals."""
-    body = re.search(r'getIds\(\)[^{]*\{(.*?)\n\s*\}', text, re.S)
-    if not body:
+    """getIds' NPC ids: (constant name, value) for NPCs.X_123, ('', value) for literals.
+
+    Both forms: a block body (`getIds(): IntArray { return intArrayOf(...) }`, Java's `int[] getIds() {...}`) and an
+    expression body (`getIds(): IntArray = intArrayOf(...)`)."""
+    head = re.search(r'getIds\s*\(\s*\)[^{=;]*([{=])', text)
+    if not head:
         return []
-    out = [(m.group(1), int(m.group(2))) for m in re.finditer(r'NPCs\.([A-Z0-9_]+?_(\d+))\b', body.group(1))]
-    return out or [('', int(v)) for v in re.findall(r'\b(\d{2,5})\b', body.group(1))]
+    if head.group(1) == '{':
+        body = balanced(text, head.end(1) - 1)
+    else:
+        call = re.compile(r'\s*[\w.]*\s*\(').match(text, head.end(1))
+        body = balanced(text, call.end() - 1) if call else text[head.end(1):text.find('\n', head.end(1))]
+    out = [(m.group(1), int(m.group(2))) for m in re.finditer(r'NPCs\.([A-Z0-9_]+?_(\d+))\b', body)]
+    return out or [('', int(v)) for v in re.findall(r'\b(\d{2,5})\b', body)]
 
 
-def outside_calls(text, local):
-    """Calls and property reads that look like they leave the dialogue library: candidates for Host services."""
+# Reads the dialogue host already answers (the dialogue-dsl Player/NPC stand-ins record them): reported, not services.
+HOST_READS = {'id', 'getId', 'name', 'getName', 'username', 'getUsername', 'isMale', 'male'}
+
+
+def outside_calls(text, local, skipped=None):
+    """Calls and property reads that look like they leave the dialogue library: candidates for Host services.
+
+    A heuristic over the text, not a parse: calls through a local variable, an implicit `it`, an extension receiver
+    or a value returned by another call are missed, and a library member it does not know is reported. `skipped`
+    (a list) receives the player/npc reads the dialogue host already answers."""
     code = re.sub(r'"(?:\\.|[^"\\])*"', '""', text)
     code = re.sub(r'(?s)/\*.*?\*/|//[^\n]*', '', code)
     code = re.sub(r'(?m)^\s*(?:package|import)\s.*$', '', code)
     found = {}
     # Receiver-qualified: GameWorld.settings?.name, player.questRepository.getStage(...)
-    for m in re.finditer(r'(?<![\w.])([A-Za-z_]\w*)((?:\s*[?!]?\.\s*[A-Za-z_]\w*(?:\([^()]*\))?)+)', code):
+    for m in re.finditer(r'(?<![\w.])([A-Za-z_]\w*)((?:\s*[?!]*\.\s*[A-Za-z_]\w*(?:\([^()]*\))?)+)', code):
         receiver, chain = m.group(1), re.sub(r'\s+', '', m.group(2))
         if receiver in CONSTANT_OBJECTS or receiver in local or receiver in KOTLIN_WORDS or receiver in LIBRARY_RECEIVERS:
             continue
         first = re.match(r'[?!]*\.(\w+)', chain).group(1)
-        if receiver in ('player', 'npc') and first in ('id', 'getId', 'name', 'username'):
+        if receiver in ('player', 'npc') and first in HOST_READS:
+            if skipped is not None and receiver + chain not in skipped:
+                skipped.append(receiver + chain)
             continue
         if receiver in ('player', 'npc', 'interpreter') and first in DIALOGUE_VOCABULARY:
             continue
@@ -173,7 +205,12 @@ def native_module(relative, topic, plugin_classes, file_classes, ids, calls, sha
            f'//! Checked against fixtures/{topic} (oracle/{topic}); docs/{topic}.md has',
            '//! the scope and the services. Every call outside the dialogue library is',
            '//! a required [`Host`] or [`content::Services`] service with no default.',
-           '#![allow(unused_imports)]',
+           '//!',
+           '//! Scaffold output: the bodies are stubs ("not ported yet") and the `Host`',
+           '//! list is a text heuristic (it misses calls through locals, `it`, extension',
+           '//! receivers and call results). The class enters the live world only',
+           '//! through `content::LIVE_DIALOGUES`, added by hand once it is ported.',
+           '#![allow(unused_imports)] // the scaffold imports what a port usually needs: trim it',
            'use crate::world::{',
            '    content,',
            '    dialogue::{self as d, Arg, NodeHandle, Plugin, PluginBody, Result, Text},',
@@ -353,8 +390,8 @@ def live_rs(module, area, calls, relative):
            f'//! ({relative}). An answer that needs a system without a port refuses',
            '//! (and is listed in docs/live-world.md); none fabricates a success.',
            'use super::super::host::Live;',
-           '#[allow(unused_imports)]',
-           f'use crate::world::{{content::{area}::{module}, dialogue::{{Error, Result}}}};',
+           (f'use crate::world::{{content::{area}::{module}, dialogue::{{Error, Result}}}};' if calls
+            else f'use crate::world::content::{area}::{module};'),
            '',
            f'impl {module}::Host for Live {{']
     for call, name in zip(calls, method_names(calls)):
@@ -427,7 +464,8 @@ def main():
     topic = args.topic or kebab(found[0][0])
     module = snake(topic)
     area = args.area or area_of(relative)
-    calls, shared = split_shared(outside_calls(text, {n for n, _ in found}))
+    skipped = []
+    calls, shared = split_shared(outside_calls(text, {n for n, _ in found}, skipped))
     ids = ids_of(text)
     package = re.search(r'(?m)^package\s+([\w.]+)', text)
     prefix = package.group(1) + '.' if package else ''
@@ -440,7 +478,6 @@ def main():
               False, written)
         insert('crates/server/src/world/content/mod.rs', '// content-scaffold: modules', f'pub mod {area};', written)
     insert(f'crates/server/src/world/content/{area}/mod.rs', '// content-scaffold: modules', f'pub mod {module};', written)
-    insert('crates/server/src/world/content/mod.rs', '// content-scaffold: hosts', f'{area}::{module}::Host,', written)
     write(f'docs/{topic}.md', doc_md(topic, relative, found, calls + [f'{c} (content::Services::{s})' for c, s in shared], args.kind),
           args.force, written)
     if args.kind == 'generic':
@@ -449,6 +486,10 @@ def main():
         print(f'\nThe generic kind has no shared oracle layer yet: write oracle/{topic}/ from the closest existing corpus '
               '(docs/content-porting.md, "Other content").')
         return
+    # content::Host is the union every content test and the live world implement: only a kind that writes both
+    # answers (live/ported, hosts.rs) joins it, or the build fails (E0277).
+    insert('crates/server/src/world/content/mod.rs', '// content-scaffold: hosts', f'{area}::{module}::Host,', written)
+    # The replay table only: the live world registers a class once it is listed in content::LIVE_DIALOGUES by hand.
     for name, _ in plugin_classes:
         insert('crates/server/src/world/content/mod.rs', '// content-scaffold: dialogue plugins',
                f'"{prefix}{name}" => {area}::{module}::prototype(),', written)
@@ -469,14 +510,19 @@ def main():
     print('\nOutside calls found (now Host methods; fix their signatures):\n' + ('\n'.join('  ' + c for c in calls) or '  none'))
     if shared:
         print('Already shared services:\n' + '\n'.join(f'  {c} -> content::Services::{s}' for c, s in shared))
+    if skipped:
+        print('Not services (the dialogue host answers these player/npc reads):\n' + '\n'.join('  ' + c for c in skipped))
     if not args.no_generate:
         command = [sys.executable, str(ROOT / f'oracle/{topic}/generate.py')]
         if args.java_home:
             command += ['--java-home', args.java_home]
         print('\nGenerating the empty corpus: ' + ' '.join(command), flush=True)
         subprocess.run(command, cwd=ROOT, check=True)
-    print(f'\nNext: fill oracle/{topic}/cases.py, run `cargo xtask {topic}-oracle` (then --check), port the TODOs in '
-          f'world/content/{area}/{module}.rs and run `cargo test -p rs09-server --test content_{module}`.')
+    print(f'\nThe empty corpus is not a port yet: --check and the replay refuse a corpus without designed cases or '
+          f'a scope with TODO in it.\nNext: fill oracle/{topic}/cases.py and SCOPE, run `cargo xtask {topic}-oracle` '
+          f'(then --check), port the stubs in world/content/{area}/{module}.rs and run `cargo test -p rs09-server '
+          f'--test content_{module}`. Then answer live/ported/{module}.rs and list the class in '
+          'content::LIVE_DIALOGUES (docs/content-porting.md, step 6).')
 
 
 if __name__ == '__main__':

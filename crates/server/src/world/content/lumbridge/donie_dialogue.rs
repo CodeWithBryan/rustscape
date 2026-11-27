@@ -20,10 +20,9 @@ use std::sync::Arc;
 /// `NPCs.DONIE_2238`.
 pub const DONIE: i32 = 2238;
 
-/// The calls DonieDialogue.kt makes outside the dialogue library, as the
-/// scaffold found them: give each its original signature, move one that other
-/// content shares to [`content::Services`], delete what is not a service.
-/// `GameWorld.settings?.name` is already [`content::Services::settings_name`].
+/// The calls DonieDialogue.kt makes outside the dialogue library: none of
+/// its own. Its one outside read, `GameWorld.settings?.name`, is the shared
+/// [`content::Services::settings_name`].
 pub trait Host: content::Services {}
 
 /// `DonieDialogue`, the registered prototype (ClassScanner: `DonieDialogue()`, then `init()`).

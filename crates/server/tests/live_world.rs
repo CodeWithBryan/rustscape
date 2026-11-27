@@ -3732,9 +3732,11 @@ async fn bank_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
 /// `DialogueInterpreter.open(2238, npc)`, which finds the DonieDialogue
 /// prototype `Live::install_ported` registered at boot; its handle opens
 /// the DialogueLabeller conversation: the greeting (241), Continue, the
-/// three options, "How are you today?" spoken by the player (64), Continue,
-/// and Donie's two-line answer (242) naming the world (SERVER_NAME through
-/// `GameWorld.settings?.name`).
+/// three options (230), "How are you today?" spoken by the player (64),
+/// Continue, Donie's two-line answer (242) naming the world (the
+/// configuration's SERVER_NAME through `GameWorld.settings?.name`), the rest
+/// of the section to its last line, and the Continue after it that closes
+/// the chatbox (CloseInterface) with nothing more said.
 async fn donie_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
     let players = saves.join("players");
     write_save(&players, "traceone", "donieone", [3221, 3247, 0], &[]);
@@ -3791,6 +3793,7 @@ async fn donie_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
         assert!(said(&one, from, option), "the option {option:?}");
     }
     let how = at(&one, from, "How are you today?");
+    assert_eq!(how >> 16, 230, "three options are chatbox 230");
     // The chosen option: the player speaks it.
     let from = one.texts.len();
     one.send(continue_option(how >> 16, how & 0xffff)).await;
@@ -3822,6 +3825,52 @@ async fn donie_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
         .unwrap();
     assert_eq!(line.0 >> 16, 242, "a two-line NPC dialogue is chatbox 242");
     eprintln!("donieone: Donie said {:?}", line.1);
+    // GameWorld.settings?.name is the configuration's SERVER_NAME (world.name).
+    // The template's name is "2009Scape", Donie's own default too: the corpus
+    // (serverName "Gielinor") is what tells the two apart.
+    let (_, data) = inputs().unwrap();
+    let configuration =
+        rs09_server::config::Configuration::load(&data.join("worldprops/default.conf")).unwrap();
+    let server_name = configuration.constants()["SERVER_NAME"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_eq!(line.1, format!("{server_name} this fine day."));
+    // The rest of the section, one Continue each, to its end.
+    for (said_now, chatbox) in [
+        ("Weather?", 64),
+        ("Yes weather, you know.", 241),
+        ("moisture, wind velocity, and barometric pressure.", 243),
+        ("...", 64),
+        ("Not just a pretty face eh? Ha ha ha.", 241),
+    ] {
+        let last = one.texts.last().map_or(0, |(_, p, _)| *p);
+        let from = one.texts.len();
+        one.send(continue_option(last >> 16, 5)).await;
+        one.until(Duration::from_secs(10), said_now, |c| {
+            c.texts[from..].iter().any(|(_, _, t)| t == said_now)
+        })
+        .await;
+        assert_eq!(
+            at(&one, from, said_now) >> 16,
+            chatbox,
+            "{said_now:?}'s chatbox"
+        );
+    }
+    // The last Continue ends the conversation: the labeller hits no further
+    // stage and the interpreter closes the chatbox; nothing more is said.
+    let (frames, texts) = (one.frames.len(), one.texts.len());
+    one.send(continue_option(241, 5)).await;
+    one.pump(Duration::from_secs(2)).await;
+    let after: Vec<i32> = one.frames[frames..]
+        .iter()
+        .map(|f| i32::from(f.opcode))
+        .collect();
+    assert!(
+        after.contains(&149),
+        "the end closes the chatbox (CloseInterface, 149): frames {after:?}"
+    );
+    assert_eq!(one.texts.len(), texts, "nothing is said after the end");
     one.send(close_interface()).await;
     one.pump(Duration::from_secs(1)).await;
     one.writer.close(1000, "logout").await.unwrap();

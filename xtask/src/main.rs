@@ -354,11 +354,22 @@ fn main() -> Result<()> {
 /// `content-scaffold <kind> <source> [options]`: lays out a content port
 /// (tools/content_scaffold.py; docs/content-porting.md).
 fn content_scaffold(root: &std::path::Path, args: &[String]) -> Result<()> {
-    let python = std::env::var_os("RS09_PYTHON").unwrap_or_else(|| "python".into());
+    // `--python EXE` picks the interpreter, as for the oracle commands; every
+    // other argument is the scaffold's own.
+    let mut python = std::env::var_os("RS09_PYTHON").unwrap_or_else(|| "python".into());
+    let mut forwarded = Vec::new();
+    let mut rest = args[1..].iter();
+    while let Some(arg) = rest.next() {
+        if arg == "--python" {
+            python = rest.next().ok_or("missing Python executable")?.into();
+        } else {
+            forwarded.push(arg.clone());
+        }
+    }
     let status = std::process::Command::new(python)
         .current_dir(root)
         .arg(root.join("tools/content_scaffold.py"))
-        .args(&args[1..])
+        .args(forwarded)
         .status()?;
     if !status.success() {
         return Err(format!("content scaffold failed: {status}").into());

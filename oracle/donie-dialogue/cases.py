@@ -10,8 +10,10 @@ dialogue-dsl actions. `sweep` is the index of an action whose recorded calls eac
 CLASS = 'content.region.misthalin.lumbridge.dialogue.DonieDialogue'
 NPC = 2238
 
-# Recorded call names the corpus must reach (the generator fails without them).
-NEEDED_EVENTS = ['settings']
+# Recorded call names the corpus must reach (the generator fails without them). Donie's own
+# `GameWorld.settings?.name` is "GameWorld.settings" (the kit's stand-in records a read from a content class so); the
+# dialogue core's @servername substitution reads the settings as "settings" on every dialogue it sends.
+NEEDED_EVENTS = ['GameWorld.settings']
 
 REGISTER = {'op': 'register', 'class': CLASS}
 TALK = {'op': 'openId', 'key': NPC, 'npc': 0}
@@ -34,18 +36,21 @@ def case(name, actions, sweep=None, **world):
 
 def cases():
     start = [REGISTER, TALK]
-    # The greeting, then the three options. "Where am I?" falls through every later label (labels do not stop
-    # the conversation) into "How are you" and the shoelace file.
+    # The greeting, then the three options. "Where am I?" ends after its answer (the next stage is the "howareyou"
+    # label, not a hit stage); "How are you today?" runs to the end of its lines; the shoelace option opens
+    # DonieDialogueShoelaceFile. The extra Continue after each end shows what a stale packet does.
     yield case('talk greeting', start, 1)
     yield case('talk options', start + [H(1)], 2)
     yield case('where am i', start + [H(1), H(2)] + [H(1)] * 3, 3)
     yield case('how are you', start + [H(1), H(3)] + [H(1)] * 8, 4)
-    yield case('how are you weather', start + [H(1), H(3), H(1)], 4)
     yield case('shoelace', start + [H(1), H(4)] + [H(1)] * 6, 3)
     yield case('shoelace answer', start + [H(1), H(4), H(1)], 4)
-    # GameWorld.settings?.name: another name, and no settings (the elvis default).
+    # GameWorld.settings?.name: another name, and no settings. Without settings Donie's own read answers null (her
+    # `?: "2009Scape"` default is computed on that pass) but the greeting already fails in the core's @servername
+    # substitution (DialogueInterpreter.doSubstitutions), so the default never reaches a line: no sweep, nothing more
+    # to see past the greeting.
     yield case('how are you named world', start + [H(1), H(3), H(1)], None, serverName='Gielinor')
-    yield case('how are you no settings', start + [H(1), H(3), H(1)], 4, settings=None)
+    yield case('no settings', start, None, settings=None)
     yield case('female player', start + [H(1), H(4), H(1)], None, male=False)
     # Lifecycle around the plugin: not registered yet, closed mid-way, opened without an NPC, another NPC id.
     yield case('not registered', [TALK], 0)

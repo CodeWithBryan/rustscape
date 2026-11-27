@@ -47,9 +47,12 @@ fn open_id(model: &mut Model, a: &J) -> Result<J> {
     Ok(json!(interp.open(model, key, &args)?))
 }
 
-/// The world's `GameWorld.settings?.name` (DialogueOps.java's `settings()`).
+/// The world's `GameWorld.settings?.name` (DialogueOps.java's `settings()`),
+/// read by content: the kit's GameWorld stand-in records a read from a
+/// `content.` class as "GameWorld.settings" (the dialogue core's own read,
+/// native.rs `server_name`, stays "settings").
 pub fn settings_name(model: &mut Model) -> Result<Option<Vec<u16>>> {
-    model.emit("settings", vec![])?;
+    model.emit("GameWorld.settings", vec![])?;
     let source = &model.source;
     if source.get("settings") == Some(&J::Null) {
         return Ok(None);
@@ -88,8 +91,19 @@ pub fn difference(a: &J, b: &J, path: String) -> Option<String> {
 
 /// Replays every case of a corpus (on a thread with a large stack, as the
 /// dialogue-dsl replay does) and checks the case counts against its
-/// provenance. Panics with the first difference.
+/// provenance. Panics with the first difference, and refuses a corpus that
+/// is not a port yet: no designed cases, or a scope that still says TODO
+/// (what the scaffold writes).
 pub fn replay(topic: &'static str, corpus: &'static str, provenance: &str, prototype: Prototype) {
+    let p: J = serde_json::from_str(provenance).unwrap();
+    assert!(
+        p["coverage"]["designedCases"].as_u64().unwrap_or(0) > 0,
+        "{topic}: the corpus has no designed cases (fill oracle/{topic}/cases.py)"
+    );
+    assert!(
+        !p["scope"].as_str().unwrap_or("TODO").contains("TODO"),
+        "{topic}: the provenance scope still says TODO"
+    );
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::Builder::new()
         .stack_size(32 << 20)
@@ -113,7 +127,6 @@ pub fn replay(topic: &'static str, corpus: &'static str, provenance: &str, proto
         .recv_timeout(std::time::Duration::from_secs(300))
         .expect("the replay deadlocked")
         .unwrap();
-    let p: J = serde_json::from_str(provenance).unwrap();
     assert_eq!(p["caseCount"], cases, "{topic}: provenance caseCount");
     assert_eq!(
         p["coverage"]["failureCases"], failures,

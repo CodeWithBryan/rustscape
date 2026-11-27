@@ -91,12 +91,20 @@ def main(topic, unchanged, cases, scope, doc=None):
     lock, classpath, checked = dsl.build()
     planned = list(cases.cases())
     rows = dsl.execute(classpath, [case for case, _ in planned]) if planned else []
-    failing = []
+    # A failure case is the designed case cut after its swept action, with the at-th recorded call of that action
+    # failing. Two designed cases with the same world and prefix give the same failure cases: keep the first only
+    # (`failedEvents` then counts distinct failures).
+    failing, seen, failed_events = [], set(), {}
     for (case, sweep), row in zip(planned, rows):
         if sweep is None:
             continue
-        for at in range(1, len(row['expected'][sweep]['events']) + 1):
+        for at, event in enumerate(row['expected'][sweep]['events'], 1):
             actions = [dict(a, failAt=at) if k == sweep else a for k, a in enumerate(case['actions'][:sweep + 1])]
+            key = json.dumps(dict(case, name=None, actions=actions), sort_keys=True)
+            if key in seen:
+                continue
+            seen.add(key)
+            failed_events[event[0]] = failed_events.get(event[0], 0) + 1
             failing.append(dict(case, name=f"{case['name']} fail {at}", actions=actions))
     if failing:
         rows += dsl.execute(classpath, failing)
@@ -121,7 +129,7 @@ def main(topic, unchanged, cases, scope, doc=None):
         row['expected'] = row['expected'][-1:]
         row['onlyLast'] = True
     data = ''.join(json.dumps(row, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n' for row in rows).encode('utf-8')
-    for path in [pathlib.Path(cases.__file__), KIT / 'dialogue.py', KIT / 'DialogueOps.java', ROOT / 'oracle/dialogue-dsl/generate.py',
+    for path in [ROOT / 'oracle' / topic / 'generate.py', pathlib.Path(cases.__file__), KIT / 'dialogue.py', KIT / 'DialogueOps.java', ROOT / 'oracle/dialogue-dsl/generate.py',
                  ROOT / 'oracle/login/generate.py', *stand_ins().values()]:
         c.read(path)
     for needed in getattr(cases, 'NEEDED_EVENTS', []):
@@ -129,7 +137,7 @@ def main(topic, unchanged, cases, scope, doc=None):
             raise RuntimeError(f'the corpus never reaches {needed}')
     coverage = dict(actions=sum(operations.values()), operations=dict(sorted(operations.items())), recordedCalls=sum(events.values()),
                     events=dict(sorted(events.items())), errors=dict(sorted(errors.items())), designedCases=len(planned),
-                    failureCases=len(failing))
+                    failureCases=len(failing), failedEvents=dict(sorted(failed_events.items())))
     provenance = dict(
         format=1, upstream=lock, sources=dict(sorted(c.SOURCES.items())), caseCount=len(rows), fixtureSha256=hashlib.sha256(data).hexdigest(),
         coverage=coverage, sourceHashAlgorithm='sha256, CR removed', kotlinCompiler='1.8.20', locale='en-US', content=list(unchanged),
@@ -137,6 +145,11 @@ def main(topic, unchanged, cases, scope, doc=None):
     summary = (f'{len(rows)} original {topic} cases ({len(planned)} designed, {len(failing)} failure cases, '
                f'{coverage["actions"]} actions, {coverage["recordedCalls"]} recorded calls)')
     if args.check:
+        # An empty or unfinished corpus is not a port: refuse it here and in the replay (oracle/content-kit/dialogue.rs).
+        if not planned:
+            raise RuntimeError(f'{topic} has no designed cases: write oracle/{topic}/cases.py first')
+        if 'TODO' in scope:
+            raise RuntimeError(f'{topic}: the scope still says TODO: write what the cases cover and what they do not')
         if not (fixtures / 'oracle.jsonl').exists():
             raise RuntimeError(f'fixtures/{topic} has no corpus yet: run the generator without --check first')
         if (fixtures / 'oracle.jsonl').read_bytes() != data or json.loads((fixtures / 'provenance.json').read_text(encoding='utf-8')) != provenance:
@@ -148,3 +161,5 @@ def main(topic, unchanged, cases, scope, doc=None):
         (fixtures / 'provenance.json').write_text(json.dumps(provenance, sort_keys=True, indent=2) + '\n', encoding='utf-8',
                                                      newline='\n')
         print(f'Generated {summary}.')
+        if not planned or 'TODO' in scope:
+            print(f'Not a port yet: --check and the replay refuse it until cases.py has designed cases and SCOPE no TODO.')

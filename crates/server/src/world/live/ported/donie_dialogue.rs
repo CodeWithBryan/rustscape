@@ -1,11 +1,8 @@
 //! The live world's answers to `world::content::lumbridge::donie_dialogue::Host`
-//! (content/region/misthalin/lumbridge/dialogue/DonieDialogue.kt). An answer that needs a system without a port refuses
-//! (and is listed in docs/live-world.md); none fabricates a success.
+//! (content/region/misthalin/lumbridge/dialogue/DonieDialogue.kt). Donie
+//! calls nothing outside the dialogue library but `GameWorld.settings?.name`,
+//! which `content::Services` answers (world/live/ported).
 use super::super::host::Live;
-#[allow(unused_imports)]
-use crate::world::{
-    content::lumbridge::donie_dialogue,
-    dialogue::{Error, Result},
-};
+use crate::world::content::lumbridge::donie_dialogue;
 
 impl donie_dialogue::Host for Live {}
