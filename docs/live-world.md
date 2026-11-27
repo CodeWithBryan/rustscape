@@ -81,9 +81,9 @@ listeners, quests, tutorial, content item, NPC and scenery handlers other
 than the global handlers, content dialogues other than the banker's, the
 bank booths, chests and deposit boxes, the bank PIN, assist sessions), NPC
 timers, the spells and teleports listed below as refused, ForceMovement,
-commands, quick chat, abuse reports, the Grand Exchange and every handler
-listed below as refused are not installed, and every such call is answered
-by name below.
+the command bodies listed below as refused, quick chat, abuse reports, the
+Grand Exchange and every handler listed below as refused are not installed,
+and every such call is answered by name below.
 
 ```powershell
 cargo build --release -p rs09-server
@@ -107,7 +107,7 @@ modes of `rs09-server` are unchanged.
 | login reply | `LoginWriteEvent` | `login::write_response` â†’ `login::Host::write_bytes`, which completes the transport's admission with the same rights and index (the transport writes the identical bytes) |
 | worker | `MajorUpdateWorker` | `server::worker_loop`: admissions, the read event, `Driver::tick`, the hand-offs, the management pump and social flush, delivery, the ping timeout (20 s) and the inactive-player failsafe; sleep to 600 ms |
 | read event | `IoReadEvent`/`GameReadEvent.read` | `Driver::read` on the bytes of the frames the transport framed (re-encoded with the same size table); end of stream is `Driver::close` |
-| packet routes | `PacketProcessor.process` | the driver's table; `Walk` (`player_walk::World::process`, i.e. `world::walk_request`), `Social` (`Social::process`), `DisplayUpdate` (client info and `interfaces::switch_window_mode`), `IfAction` and `CloseIface` (`interface_packets::if_action`/`close_iface`, `buttons.rs`), `GroundItemAction` (`ground_items.rs`), `SceneryAction` (`scenery.rs`), `ItemAction`, `NpcAction`, `PlayerAction`, `UseWith`, `SlotSwitch`, `Examine` and `TrackFinished` (`items.rs`) bound; the rest below |
+| packet routes | `PacketProcessor.process` | the driver's table; `Walk` (`player_walk::World::process`, i.e. `world::walk_request`), `Social` (`Social::process`), `DisplayUpdate` (client info and `interfaces::switch_window_mode`), `IfAction` and `CloseIface` (`interface_packets::if_action`/`close_iface`, `buttons.rs`), `GroundItemAction` (`ground_items.rs`), `SceneryAction` (`scenery.rs`), `ItemAction`, `NpcAction`, `PlayerAction`, `UseWith`, `SlotSwitch`, `Examine` and `TrackFinished` (`items.rs`) and `Command` (`commands.rs`) bound; the rest below |
 | pulses | `GameWorld.Pulser.updateAll` | the driver's runner (login pulses, the combat tab's one-tick pulses), then the canonical state's runner (movement pulses) at the start of the tick-listener phase |
 | `Player.tick` | `Entity.tick`, music, prayer â€¦ | `player_walk::World::entity_before_masks` (script phases through `script_runtime::phase` with `scripts.rs`'s `ScriptHost`, which runs a script's body with the whole world; the walking queue) and `prepare_masks`, then `MusicPlayer.tick`; the queue's entity is projected into the render view and the slot |
 | player tabs | `WeaponInterface`, `LevelUp`, `EmoteManager`/`Emotes`, `MusicPlayer`, `QuestRepository.syncronizeTab` | `world::player_tabs` with `tabs::Tabs` as their host (the world-login test's binding): the weapon tab is created with the tab array (`create_weapon`), opened by `WeaponInterface.open` and refreshed by `updateInterface` from the equipment listener; `LevelUp.sendFlashingIcons` from `Skills.refresh`; the emote, music and quest tabs at login; the persisted emotes, songs and quest stages joined, not copied |
@@ -163,6 +163,7 @@ modes of `rs09-server` are unchanged.
 | teleports | `TeleportManager`, `TeleportPulse` (`pulse`, `stop`), `Entity.isTeleporting`, `SpellListeners.run`, ModernListeners' Varrock, Lumbridge and Falador teleports (`requires`, `sendTeleport`, `removeRunes`, `addXP`, `setDelay`) | `magic.rs`: one `teleport::Manager` per entity; its pulses submitted to `GameWorld.Pulser` and dispatched by identity, their `stop()` override run through the driver's `pulse_stop` hook (`TeleportPulse.stop`: unlock, the `tele-pulse` attribute, the end animation); the destination written to the walking queue's teleport location; the zone monitor's teleport check and `isTeleBlocked`; the magic tab (192) reaches the listeners through the global handlers' `tabs::magic`. The three teleports are ported from the pinned `ModernListeners.kt`/`SpellListener.kt` without a differential corpus of the listeners themselves (the teleport and spell libraries are differentially tested) |
 | eating, drinking | `ConsumableListener`, `Consumable.consume` of every class, the effects, the potion's dose script | `eating.rs`: `world::consumables` with `Eating` as its `Host` for one player (native Skills taken out of the profile for the call, Settings, the player's clocks, the canonical inventory, the animator, `consumables::join` over the engine timers, the combat pulse's `delayNextAttack`, `manualHit`); the dose message is a SOFT script kept by the world and run at the player's tick once due |
 | lobby | `LoginConfiguration.sendLobbyScreen`, `LastLoginInfo`, `LoginInterface` (378), `configureGameWorld` | a returning character with `tutorial:complete`: the login library's lobby with `LastLoginInfo` (164: the IPv4 address, written at once); the welcome screen's play button (140) through the global handlers (`player.locks.lock("login", 2)`, `closeInterface`, `runTask(1, 0)`) and `configure_game_world` over the live world |
+| commands | the `Command` branch of `PacketProcessor.process` (`Decoders530.COMMAND`, `PlayerMonitor.log`, `CommandSystem.parse`), `CommandMapping` from the class scan, `Command.attemptHandling`, the legacy `CommandSet`s, the Moderation, System, Teleport, PlayerAttribute, Misc, Spawn and Stats sets, `DevelopmentCommandSet`'s `setlevel` | `commands.rs`: `world::commands::handle_packet` over the registry `registration::register_all` builds at boot (the class scan's order; `EasterEvent`'s commands only when its `checkActive` is true at boot: April in UTC or `FORCE_EASTER_EVENTS`); `CommandHost` is `commands::Host` and `commands::sets::Host` over the live world. The rights rules are the library's: the account record's rights, `PLAYER_COMMANDS`, `I_AM_A_CHEATER` and `isDevMode` from the configuration (the shipped development configuration has `dev = true`, so every player may run every command, as in the original). Answered natively: messages, the account record and account storage, the location, attributes, `TeleportManager.send` (the live teleporters), `properties.teleportLocation`, `ZoneMonitor.parseCommand`, the canonical inventory, equipment and banks with their listeners, item definitions, the repository's name lookup and players, the saved-data fields the sets read. `setlevel` is ported in `commands.rs` from the pinned `DevelopmentCommandSet.kt` over the native Skills (`setStaticLevel`, `setLevel`, `updateCombatLevel`), without a corpus of its own |
 
 ## Deviations from the original
 
@@ -481,7 +482,33 @@ equipment registered),
 an equip (true).
 
 Refused (an error the caller logs; never a success): the routed packets
-the driver refuses (commands, quick chat, report abuse, GE); content
+the driver refuses (quick chat, report abuse, GE); in the command system
+(`commands.rs`, each refusal named "not ported in the live world: ..."
+and logged as "Command refused or failed"): every `Body::Content` command
+body (the commands of the classes the commands-oracle registry names as
+content: Development other than `setlevel`, Fun, Quest, Slayer, Animation,
+Camera, Config, Music, the content classes' commands), the bodies of the
+legacy `CommandPlugin`s (MapDumpCommand, SimpleDumpingCommands,
+VisualCommand) for the names their `when (name)` handles (any other name
+answers false, as their `parse` does, so an unknown name still reaches
+"command not found"),
+the pulses, tasks, input dialogues and coroutines the ported bodies submit
+(jail, mute, ban's store pulse, `reply`, `ge search`), `Player.clear`
+(`::kick`), `Entity.sendChat` (the silly chat of `::bank` without rights),
+`sendDialogue`, the system manager (`::update`, `::cancelupdate`,
+`::shutdown`), the authenticator's password calls, `ServerStore`,
+`ChargedItem` and `Item.setCharge` (`::charge`), the data-file read of
+`::modcr`, Castle Wars' `::to` row, and from the Misc, Spawn and Stats sets:
+NPC creation (`::npc`), scenery and region queries (`::object`,
+`::objects`, `::loc` and the like), varps, varbits and varcs, interfaces and
+books (`::stats`), action locks, the swing handlers' calculations, skills
+reads, diaries, quests, ironman, slayer, clue and stats counters, farming,
+compost and brewing, cutscenes, permadeath, trawler loot, news, the Grand
+Exchange queries, private messages and the bot repository. A field read of
+those sets without a result (`direction`, the diaries, a chunk's static
+objects, an NPC's fields) refuses the whole command: every later call fails
+before it acts. `PlayerMonitor.log` of a command is skipped (logged only);
+content
 item and NPC option handlers and listeners (`InteractionListeners`
 functions other than DropListener, EquipHandler, AttackListener,
 GraveController's, ConsumableListener, NPCTalkListener's, BankerNPC's,
@@ -993,7 +1020,7 @@ stand-ins); this test checks the production binding end to end.
   of its own, and its Lost City stage is read from the save (no quest
   content sets it).
 
-- The remaining routed handlers: the driver's refused packets (commands, quick chat, abuse reports, the GE packet);
+- The remaining routed handlers: the driver's refused packets (quick chat, abuse reports, the GE packet); the command bodies refused above;
   the global handlers' dialogue services (ClimbDialogue, `send_options`,
   the dialogue senders) are still refused although the interpreter is
   installed; `ZoneMonitor.interact` for items inside a zone,
@@ -1030,8 +1057,8 @@ stand-ins); this test checks the production binding end to end.
 - The rest of the install round (in order): the rest of spells and
   teleports (above), the teleport jewellery and tablets, the everyday item handlers
   other than the four use-with listeners installed (`items/everyday.rs`), zone overlays
-  and `ZoneMonitor.interact` for an item inside a zone; commands, quick
-  chat, abuse reports and the Grand Exchange; the equipment registers and
+  and `ZoneMonitor.interact` for an item inside a zone; the command bodies
+  without a port, quick chat, abuse reports and the Grand Exchange; the equipment registers and
   the creatures.
 - This round's bindings have no corpus of their own: the libraries are the
   differentially tested ports (dialogue-oracle, dialogue-dsl-oracle,

@@ -35,6 +35,7 @@ pub mod bank;
 pub mod boot;
 pub mod buttons;
 pub mod combat;
+pub mod commands;
 pub mod content;
 pub mod destination;
 pub mod dragons;
