@@ -79,7 +79,7 @@
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
     "oracle/content-kit/DialogueOps.java": "065d734a30dd54f073df76b1294498ea00251259d6545b9d153c607563d52bc7",
-    "oracle/content-kit/dialogue.py": "4f74c350a61e30fd8c60a20dac48f3596e2d462d48a49a6859065f118f7c6390",
+    "oracle/content-kit/dialogue.py": "41efa7853b88d1721319316085cda8e35c1c074d99b7487a1d67c36586358347",
     "oracle/content-kit/stand-ins/core/game/world/GameWorld.kt": "5ee4b01db59e69257e49a28018aae4615e5d8ff42f7ea2345d919376d1d1bbf0",
     "oracle/dialogue-dsl/Adapters.kt": "824c25a62d5d0da1bc21b6eca444c6ec14f96b590fb7d1dd222bd3cec4e4b916",
     "oracle/dialogue-dsl/Harness.java": "b429cafe0e1a5cda9f30411544b3ecb59072902f58748e0e4ff8297ec18fea0a",
