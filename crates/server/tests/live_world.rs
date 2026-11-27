@@ -274,11 +274,12 @@ impl Client {
                         ) = (self.base, updates::ServerUpdate::decode(&frame))
                         {
                             for child in frames.iter().filter(|f| matches!(f.opcode, 179 | 195)) {
-                                let at = |x: i32, y: i32| [base[0] + zx + x, base[1] + zy + y, base[2]];
+                                let at =
+                                    |x: i32, y: i32| [base[0] + zx + x, base[1] + zy + y, base[2]];
                                 match updates::ServerUpdate::decode(child) {
-                                    Ok(Some(updates::ServerUpdate::LocAdd { x, y, id, .. })) => {
-                                        self.locs.push((n, at(x, y), Some(id)))
-                                    }
+                                    Ok(Some(updates::ServerUpdate::LocAdd {
+                                        x, y, id, ..
+                                    })) => self.locs.push((n, at(x, y), Some(id))),
                                     Ok(Some(updates::ServerUpdate::LocDel { x, y, .. })) => {
                                         self.locs.push((n, at(x, y), None))
                                     }
@@ -2402,8 +2403,10 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
             .iter()
             .any(|(_, tile, id)| *tile == opened_at && *id == Some(OPEN))
     };
-    one.until(Duration::from_secs(10), "the open door", |c| saw_open(c, one_from))
-        .await;
+    one.until(Duration::from_secs(10), "the open door", |c| {
+        saw_open(c, one_from)
+    })
+    .await;
     two.until(Duration::from_secs(5), "doortwo sees the open door", |c| {
         saw_open(c, two_from)
     })
@@ -2453,9 +2456,11 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
         saw_closed(c, one_from)
     })
     .await;
-    two.until(Duration::from_secs(5), "doortwo sees the door closed", |c| {
-        saw_closed(c, two_from)
-    })
+    two.until(
+        Duration::from_secs(5),
+        "doortwo sees the door closed",
+        |c| saw_closed(c, two_from),
+    )
     .await;
     let sounds: Vec<i32> = one.frames[frames_from..]
         .iter()
@@ -2464,7 +2469,10 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
             _ => None,
         })
         .collect();
-    assert!(sounds.contains(&60), "the door's close sound 60: {sounds:?}");
+    assert!(
+        sounds.contains(&60),
+        "the door's close sound 60: {sounds:?}"
+    );
     eprintln!(
         "doorone closed the door: doortwo saw {:?}",
         &two.locs[two_from..]
@@ -2501,9 +2509,11 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
         opened(c, one_from)
     })
     .await;
-    two.until(Duration::from_secs(5), "bigtwo sees the double door open", |c| {
-        opened(c, two_from)
-    })
+    two.until(
+        Duration::from_secs(5),
+        "bigtwo sees the double door open",
+        |c| opened(c, two_from),
+    )
     .await;
     let inside = [3211, 3221, 0];
     one.send(actions::worldspace_walk(inside[0], inside[1], false))
@@ -2587,7 +2597,11 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
         "the toll gate did not open: {:?}",
         &one.locs[from..]
     );
-    assert_eq!(one.position(), [3267, 3227, 0], "tollone stays west of the gate");
+    assert_eq!(
+        one.position(),
+        [3267, 3227, 0],
+        "tollone stays west of the gate"
+    );
     eprintln!("tollone: the toll gate's Open is refused (TollGateOptionPlugin not ported)");
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;

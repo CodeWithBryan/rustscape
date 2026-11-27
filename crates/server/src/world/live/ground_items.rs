@@ -760,7 +760,9 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
             // it (super::doors).
             let object = state.scenery(target_node).map_err(lerror)?;
             return self
-                .with_doors(state, |ctx| door.handle(ctx, p, Some(&object), Some(option)))
+                .with_doors(state, |ctx| {
+                    door.handle(ctx, p, Some(&object), Some(option))
+                })
                 .map_err(lerror);
         }
         if state.ground(target_node).is_err() {
