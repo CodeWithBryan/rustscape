@@ -2502,6 +2502,7 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     use_content_scenario(address, saves).await;
     use_cook_scenario(address, saves).await;
     use_milk_scenario(address, saves).await;
+    use_chest_scenario(address, saves).await;
 }
 
 /// Cooking (`world::cooking`, docs/cooking.md) at the fire 5631 west of
@@ -2509,6 +2510,76 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
 /// burnt meat), then three raw shrimps through the "How many would you like
 /// to cook?" chatbox (307) with "All" (each shrimp is cooked or burnt by
 /// its roll at cooking level 1).
+/// ChestKeyListener: the chest key on the pirate chest 2079 upstairs in the
+/// Blue Moon Inn (`SceneryBuilder.replace` for three ticks).
+async fn use_chest_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let start = [3218, 3395, 1];
+    write_save(&players, "traceone", "usechest", start, &[(0, 432, 1)]);
+    let (code, chest) = Client::login(address, "usechest").await;
+    assert_eq!(code, 2, "usechest's login");
+    let mut chest = chest.unwrap();
+    chest
+        .until(Duration::from_secs(10), "usechest's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = chest.messages.len();
+    let frames = chest.frames.len();
+    chest.send(use_with_scenery(432, 0, 2079, 3219, 3396)).await;
+    chest
+        .until_pinging(Duration::from_secs(20), "the pirate message", |c| {
+            held(c, 433) == 1 && held(c, 432) == 0
+        })
+        .await;
+    let lines: Vec<&str> = chest.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .filter(|m| m.contains("chest"))
+        .collect();
+    assert_eq!(
+        lines,
+        [
+            "You unlock the chest.",
+            "All that's in the chest is a message...",
+            "You take the message from the chest."
+        ],
+        "usechest's messages"
+    );
+    // The open chest 2080 for three ticks, then the closed one again: two
+    // chunk update batches (230), the replacement and the restoration.
+    chest
+        .until_pinging(Duration::from_secs(20), "the chest closes again", |c| {
+            c.frames[frames..]
+                .iter()
+                .filter(|f| f.opcode == 230)
+                .count()
+                >= 2
+        })
+        .await;
+    // Each batch deletes the object (195) and adds one (179), whose id is
+    // the last two bytes (`p2add`): 2080, then 2079 again.
+    let added: Vec<i32> = chest.frames[frames..]
+        .iter()
+        .filter(|f| f.opcode == 230)
+        .map(|f| {
+            let n = f.payload.len();
+            assert!(f.payload.contains(&195) && f.payload.contains(&179));
+            (i32::from(f.payload[n - 2]) << 8) | i32::from(f.payload[n - 1].wrapping_sub(128))
+        })
+        .collect();
+    assert_eq!(added[..2], [2080, 2079], "usechest's object updates");
+    eprintln!("usechest opened the chest 2079 (2080 for three ticks) and took the message");
+    chest.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
 /// on it (BucketHandler through `UseWithHandler.HANDLERS`).
 async fn use_milk_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {

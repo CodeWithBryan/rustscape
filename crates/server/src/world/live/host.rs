@@ -1573,6 +1573,16 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.cooking_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // SceneryBuilder's pulses (the scene submitted them to this runner).
+        if self.walk.scene.owns_pulse(pulse) {
+            let walk = &mut self.walk;
+            let done = crate::world::scenery::Context::pulse_direct(
+                &mut walk.scene.context(&mut walk.maps),
+                pulse,
+            );
+            walk.scene.collect_pulses();
+            return done.map_err(fail);
+        }
         // CowMilkingPlugin's milking pulses (super::items::milking).
         if let Some(result) = self.milking_pulse_body(pulse) {
             return result.map_err(fail);
