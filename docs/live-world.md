@@ -553,7 +553,8 @@ registered: `SpellBook.MODERN`, `setAutocastSpell`,
 `combatPulse.setStyle`), `IdleAbstractNPC` (none registered), `reTransform`,
 `setDirection`, a player's `sendChat`/`faceLocation` from a class body,
 the diary interface (`open`, its tab and script) and diary rewards
-(containers); the dragonfire shield's own handler and listener
+(their container writes and free slots; the read-only `contains` and `get`
+are joined for the reward checks smelting reaches); the dragonfire shield's own handler and listener
 (`updateBonuses` after a charge, its varp, locks, `delayEntity`,
 `replaceSlot`, the item plugin and listener) and `Projectile.transform` of
 a switching attack; runtime NPC construction from a class body,
