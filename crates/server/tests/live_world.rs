@@ -2607,32 +2607,37 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
-/// A door's restoration: `restoreone` opens the castle's east door (36846
-/// at 3226,3223, a wall on the tile's east side) and waits: the open form
-/// (36848 one tile east) is a temporary replacement whose restoration pulse
+/// A door's restoration: `restoreone` opens the castle's north-east door
+/// (36846 at 3230,3235, a wall on the tile's north side; away from the
+/// other scenarios' players, whom it would otherwise stand beside for five
+/// minutes) and waits: the open form is a temporary replacement whose restoration pulse
 /// (`SceneryBuilder.replace(..., 500)`) runs on GameWorld.Pulser (the
 /// scene's pulses on the canonical runner here). About 500 ticks later the
 /// closed door is back in the client's chunk updates. It runs beside the
 /// other scenarios and sends PING (93) while it waits.
 async fn door_restore_scenario(address: std::net::SocketAddr, saves: PathBuf) {
     let players = saves.join("players");
-    write_save(&players, "traceone", "restoreone", [3227, 3223, 0], &[]);
+    write_save(&players, "traceone", "restoreone", [3230, 3234, 0], &[]);
     let mut one = enter(address, "restoreone").await;
     let from = one.locs.len();
-    one.send(scenery_option1(36846, 3226, 3223)).await;
-    one.until(Duration::from_secs(10), "the east door opened", |c| {
+    one.send(scenery_option1(36846, 3230, 3235)).await;
+    one.until(Duration::from_secs(10), "the north-east door opened", |c| {
         c.locs[from..]
             .iter()
-            .any(|(_, t, id)| *t == [3226, 3223, 0] && id.is_none())
+            .any(|(_, t, id)| *t == [3230, 3235, 0] && id.is_none())
     })
     .await;
     let opened = Instant::now();
     let from = one.locs.len();
-    one.until_pinging(Duration::from_secs(360), "the east door restored", |c| {
-        c.locs[from..]
-            .iter()
-            .any(|(_, t, id)| *t == [3226, 3223, 0] && *id == Some(36846))
-    })
+    one.until_pinging(
+        Duration::from_secs(360),
+        "the north-east door restored",
+        |c| {
+            c.locs[from..]
+                .iter()
+                .any(|(_, t, id)| *t == [3230, 3235, 0] && *id == Some(36846))
+        },
+    )
     .await;
     eprintln!(
         "restoreone: the door 36846 came back after {:.1} s: {:?}",

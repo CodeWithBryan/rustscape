@@ -866,7 +866,7 @@ the client-side player and NPC update decoders):
   open (36848 at 3233,3203): sound 62 and its closed form 36847 one tile
   east. `tollone` uses Open on the Al Kharid toll gate (35549): refused by
   name (TollGateOptionPlugin), nothing changes and the player stays west of
-  it. `restoreone` opens the castle's east door (36846 at 3226,3223) and
+  it. `restoreone` opens the castle's north-east door (36846 at 3230,3235) and
   sees it come back about 500 ticks later: the restoration pulse on the
   canonical runner. DoorActionHandler's autowalk (unconfigured doors), the
   fence and the trapdoor branches, the wardrobe animation and the autowalk
