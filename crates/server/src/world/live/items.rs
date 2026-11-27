@@ -42,6 +42,7 @@ use rs09_protocol::game::{ClientAction, Frame, updates};
 use std::collections::HashMap;
 
 mod component_use;
+pub mod everyday;
 mod slots;
 pub mod use_with;
 
@@ -1379,8 +1380,18 @@ impl listeners::Context for Ctx<'_> {
             None => lrefused("a content interaction listener"),
         }
     }
-    fn invoke_use(&mut self, _: Function, _: &Node, _: &Node, _: &Node) -> listeners::Result<bool> {
-        lrefused("content use-with listeners")
+    fn invoke_use(
+        &mut self,
+        f: Function,
+        p: &Node,
+        used: &Node,
+        with: &Node,
+    ) -> listeners::Result<bool> {
+        // The installed content use-with lambdas (everyday).
+        match self.0.content_use(&f, p, used, with) {
+            Some(result) => result.map_err(lerr),
+            None => lrefused("a content use-with listener this world did not register"),
+        }
     }
     fn predicate(&mut self, _: Function, _: i32, _: i32) -> listeners::Result<bool> {
         lrefused("content use-with predicates")
@@ -1414,14 +1425,23 @@ impl listeners::Context for Ctx<'_> {
             _ => Err(listeners::Error::Type),
         }
     }
-    fn zone_use(&mut self, _: Node, _: &Node, _: &Node) -> listeners::Result<bool> {
-        lrefused("ZoneMonitor in use-with listeners")
+    fn zone_use(&mut self, z: Node, _: &Node, _: &Node) -> listeners::Result<bool> {
+        let p = self.player_of(&z).map_err(lerr)?;
+        let monitor = self.0.monitor(&p.0);
+        if monitor.zones().is_empty() {
+            // ZoneMonitor.useWith with no zone: false.
+            return Ok(false);
+        }
+        lrefused(
+            "ZoneMonitor.useWith inside a region zone (an inventory item is not a canonical node)",
+        )
     }
     fn location(&mut self, n: &Node) -> listeners::Result<Option<crate::world::doors::Location>> {
         match n {
             Node::Npc(h) | Node::Player(h) => {
                 self.0.inner.state.node_location(h.node).map_err(lerr)
             }
+            Node::Scenery(s) => Ok(Some(s.read().location.clone())),
             _ => lrefused("the location of an item in listeners"),
         }
     }

@@ -231,5 +231,8 @@ the same order in tables of 16 and 32, so no reachable state tells them apart.
   StrongholdNotes) and BookInterface are `world/books` (docs/books.md).
 - The content services named above (quest tables, slayer, POH storage,
   random reachable locations, the content's dig callbacks).
-- Nothing installs the library in `rs09-server --world` yet (see above for
-  how).
+- `rs09-server --world` installs four classes only: WaterSourceListener,
+  SandSourceListener, SackOnHay and HatStand (`registry::define` for each,
+  `world/live/items/everyday.rs`; docs/live-world.md lists the services
+  bound and refused). ChestKeyListener and every item option, plugin,
+  dialogue and login listener of the library are not installed there.

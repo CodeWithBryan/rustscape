@@ -63,6 +63,9 @@ pub struct Walk {
     pub player_dispatch: bool,
     /// The follow pulses' option handles with their mover (super::follow).
     pub follows: Vec<(crate::world::interaction::OptionHandle, Node)>,
+    /// The content pulses running in a pulse manager (super::items::everyday):
+    /// base `Pulse`s, whose `stop()` only clears `running`.
+    pub content_pulses: Vec<crate::pulses::Handle>,
 }
 
 /// `scene::Services` for collision queries. The scenery services (doors,
@@ -241,6 +244,11 @@ impl player_walk::Services for WalkHost<'_> {
                 self.deferred.push(Deferred::CombatStop(node));
                 Ok(())
             }
+            _ if self.walk.content_pulses.iter().any(|h| h.same(pulse)) => {
+                // A content listener's base Pulse: Pulse.stop().
+                crate::pulses::stop_base(pulse);
+                Ok(())
+            }
             _ => Err(crate::pulses::Error::Binding(
                 "unregistered external stop".into(),
             )),
@@ -262,6 +270,8 @@ impl player_walk::Services for WalkHost<'_> {
                 .map(|s| s.active)
                 .or_else(|| self.npcs.rows.get(&node).map(|r| r.active))
                 .unwrap_or(false)),
+            // A content listener's base Pulse checks no node.
+            _ if self.walk.content_pulses.iter().any(|h| h.same(pulse)) => Ok(false),
             _ => Err(crate::pulses::Error::Binding(
                 "unregistered external checks".into(),
             )),
