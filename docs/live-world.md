@@ -514,11 +514,28 @@ plugins' `createDrop`/`getItem`, loot share (clan, points,
 chunk moves, the return pulse and `removeRenderableNPC` outside the NPC
 tick.
 
-Spells and teleports refused by name (`magic.rs`): the `fireEffect` of the
-spell classes with an effect (binds, curses, the god spells, Teleblock and
-every ancient spell: Ice, Blood, Shadow, Smoke and Miasmic), refused when a
-cast or an autocast would select them; NPC casters' `DefaultCombatSpell`
-(`Projectile.magic`); multi-target spells (`findMultihitTargets`); the
+The spell effects (`fireEffect` of BindSpell, CurseSpells, GodSpells,
+TeleblockSpell and the ancient IceSpells, BloodSpells, ShadowSpells,
+SmokeSpells and MiasmicSpells) run through `spells::effects`
+(docs/spells.md), ported from the pinned classes without a JVM corpus:
+`SpellHost` answers its services from the action locks (the binds'
+movement lock), the walking queue, the native Skills of a player or the
+levels and lifepoints of an NPC's row (drains, Shadow's Attack, Blood's
+heal), the MAGIC handler's `isAccurateImpact`, the prayers, the timer
+managers of a player or an NPC (`registerTimer(spawnTimer(...))` for
+Teleblock, Frozen and Miasmic) and `applyPoison`. The ancient spells'
+multi-target `getTargets` answers through `findMultihitTargets`
+(`special_attacks::multihit`). Two limits: an NPC's prayer points are not
+kept in its row, so Saradomin Strike's `decrementPrayerPoints` of an NPC is
+a named skip; and no player reaches the ancient book here, because the
+login puts a character without Desert Treasure back on the standard book
+(no quest is installed) and neither the altar nor `::spellbook` is ported,
+so the ancient effects are exercised in process only
+(`live_spell_effects`), never from a client. Teleblock on a player is
+covered by the recording-host test only.
+
+Spells and teleports refused by name (`magic.rs`): NPC casters'
+`DefaultCombatSpell` (`Projectile.magic`); the
 non-combat `MagicSpell` plugins (EnchantSpell, EnchantCrossbowSpell,
 TelekineticGrabSpell, TeleotherSpells, ChargeSpell, BountyLocateSpell,
 AncientTeleportPlugin, and the lunar MagicImbue, Vengeance, StatBoost,
@@ -702,6 +719,14 @@ the client-side player and NPC update decoders):
   added; a second press after the magic delay gets "You don't have enough
   law runes to cast this spell." (`hasRunes` walks its cost map in Java
   HashMap order) and no teleport.
+- `hexone` (magic 99, water, earth, body and nature runes) casts Confuse
+  (192, button 2) on a chicken: projectile 103, a body, three water and two
+  earth runes gone and exactly 13 experience; then Bind (button 12):
+  projectile 178, and a second Bind inside `entangleDelay` gets "You have
+  recently cast a binding spell." and takes no runes. `godone` (a Guthix
+  staff worn, a hundred saved casts) casts Claws of Guthix (button 42): the
+  swing reaches its hit mark through `GodSpells.fireEffect`, with its runes
+  and experience. The scenario is `effects`.
 - `RS09_LIVE_COMBAT_ONLY` runs only the combat scenarios (fight, aggression,
   death, grave, subclass, dragon, ranged, magic, special) after the first
   character's save (a shortcut while working on combat);
@@ -733,7 +758,8 @@ stand-ins); this test checks the production binding end to end.
   installed; `ZoneMonitor.interact`/`useWith` for items inside a zone,
   hint icons and warning messages, the DarkZone's overlay and light sources
   and the multiway overlay.
-- The rest of combat: the spells with effects, multi-target and NPC spells,
+- The rest of combat: NPC spells, a way onto the ancient book (quest
+  requirements, the altar or the command), an NPC's prayer points,
   autocast selection from the weapon tab, and the spell listeners refused
   above, the specials' services listed as refused, the ancient,
   home, diary- and quest-gated teleports,

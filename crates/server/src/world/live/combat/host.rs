@@ -1073,18 +1073,25 @@ impl cp::Host for Live {
     fn spell_fire_effect(
         &mut self,
         spell: &Self::Spell,
-        _: &P,
-        _: Option<&P>,
-        _: &mut BattleState<Self>,
+        entity: &P,
+        victim: Option<&P>,
+        state: &mut BattleState<Self>,
     ) -> Result<()> {
-        // The empty CombatSpell.fireEffect of the elemental, crumble undead,
-        // Iban, magic dart and sonic wave classes; the others are refused
-        // before a cast or an autocast selects them (super::magic).
-        let class = self.round.magic.registry[spell].class;
-        match Live::fire_effect_ported(class) {
-            Ok(()) => Ok(()),
-            Err(name) => refuse(&format!("{name}.fireEffect")),
-        }
+        // The class's fireEffect (spells::effects) over the state's
+        // estimated hit, frozen flag, spell and style; what it wrote before
+        // a failure stays in the state.
+        let mut view = crate::world::spells::effects::EffectState {
+            estimated_hit: state.estimated_hit,
+            frozen: state.frozen,
+            spell: state.spell,
+            style: state.style,
+        };
+        let result = self.with_spells(|h| {
+            crate::world::spells::effects::fire_effect(h, spell, entity, victim, &mut view)
+        });
+        state.estimated_hit = view.estimated_hit;
+        state.frozen = view.frozen;
+        Ok(result?)
     }
     fn spell_visualize(
         &mut self,

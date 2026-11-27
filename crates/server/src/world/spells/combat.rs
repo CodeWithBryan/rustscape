@@ -16,9 +16,10 @@
 //! | `spell_visualize_impact` | [`visualize_impact`] |
 //! | `select_auto_spell` | [`select_auto_spell`] |
 //!
-//! `spell_fire_effect` (each spell's `fireEffect`) is content and stays a
-//! required service of the combat host. The manual spell, the autocast spell
-//! and `same_spell` are the combat host's own state.
+//! `spell_fire_effect` (each spell's `fireEffect`) is a required service of
+//! the combat host, which can answer it with [`super::effects::fire_effect`].
+//! The manual spell, the autocast spell and `same_spell` are the combat
+//! host's own state.
 use super::{Host, SpellType, StateView};
 use crate::world::combat_swing::{self as cs, BattleState, Types};
 

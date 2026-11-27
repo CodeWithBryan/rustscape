@@ -912,6 +912,7 @@ async fn drive(
                 "eat" => eat_scenario(address, saves).await,
                 "magic" => magic_scenario(address, saves).await,
                 "teleport" => teleport_scenario(address, saves).await,
+                "effects" => effects_scenario(address, saves).await,
                 other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
             }
         }
@@ -963,6 +964,7 @@ async fn drive(
     eat_scenario(address, saves).await;
     magic_scenario(address, saves).await;
     teleport_scenario(address, saves).await;
+    effects_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
 }
 
@@ -1521,6 +1523,269 @@ async fn magic_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
     one.until(Duration::from_secs(5), "magic experience", |c| {
         c.skills.get(&6).is_some_and(|s| s.1 > 37224)
     })
+    .await;
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A saved mage for the effect spells: magic 99, the tutorial complete (so
+/// experience is not capped), those runes and a further edit of the save;
+/// logged in past the welcome screen with its NPCs in view.
+async fn mage(
+    address: std::net::SocketAddr,
+    saves: &std::path::Path,
+    name: &str,
+    at: [i32; 3],
+    runes: &[(i32, i32, i32)],
+    edit: impl FnOnce(&mut Value),
+) -> Client {
+    write_save_with(
+        &saves.join("players"),
+        "traceone",
+        name,
+        at,
+        runes,
+        |save| {
+            save["skills"][6]["static"] = Value::String("99".into());
+            save["skills"][6]["dynamic"] = Value::String("99".into());
+            save["skills"][6]["experience"] = Value::String("13034431.0".into());
+            save.as_object_mut()
+                .unwrap()
+                .entry("attributes")
+                .or_insert_with(|| Value::Array(vec![]))
+                .as_array_mut()
+                .unwrap()
+                .push(
+                    serde_json::json!({"key": "tutorial:complete", "type": "bool", "value": true}),
+                );
+            edit(save);
+        },
+    );
+    let (code, one) = Client::login(address, name).await;
+    assert_eq!(code, 2, "{name}'s login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "the mage's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    one.send(button(378, 140)).await;
+    let count = runes.len();
+    one.until(Duration::from_secs(10), "the mage's rebuild", |c| {
+        c.base.is_some()
+            && !c.updates.is_empty()
+            && !c.npcs.actors.is_empty()
+            && c.containers.get(&93).is_some_and(|c| c.len() == count)
+    })
+    .await;
+    one
+}
+
+/// The NPCs of those types in view, nearest first: (index, tile).
+fn nearest_npcs(one: &Client, ids: &[i32]) -> Vec<(usize, [i32; 3])> {
+    let base = one.base.unwrap();
+    let here = one.position();
+    let mut found: Vec<(usize, [i32; 3])> = one
+        .npcs
+        .actors
+        .iter()
+        .filter(|(_, n)| ids.contains(&n.type_id))
+        .map(|(i, n)| (*i, [base[0] + n.tile[0], base[1] + n.tile[1], base[2]]))
+        .collect();
+    found.sort_by_key(|(_, t)| (t[0] - here[0]).abs() + (t[1] - here[1]).abs());
+    found
+}
+
+/// The spell-on-NPC packet (239): the spell's button, the spell book's
+/// interface, a short the server skips, the NPC index.
+fn spell_on_npc(interface: i32, child: i32, index: usize) -> Frame {
+    frame(
+        239,
+        &[
+            &le16(child),
+            &le16(interface),
+            &sa16(0),
+            &la16(index as i32),
+        ],
+    )
+}
+
+/// Casts a spell on the nearest NPCs of those types in turn until its
+/// projectile flies toward one; that NPC's index.
+async fn cast_until_projectile(
+    one: &mut Client,
+    ids: &[i32],
+    interface: i32,
+    child: i32,
+    spot: i32,
+    what: &str,
+) -> usize {
+    for (index, tile) in nearest_npcs(one, ids).into_iter().take(5) {
+        eprintln!("{}: {what} on NPC {index} at {tile:?}", one.name);
+        let from = one.projectiles.len();
+        one.send(spell_on_npc(interface, child, index)).await;
+        let flown = |c: &Client| {
+            c.projectiles[from..]
+                .iter()
+                .any(|(_, p)| p.spot == spot && p.target == index as i32 + 1)
+        };
+        let end = Instant::now() + Duration::from_secs(12);
+        while Instant::now() < end && !flown(one) {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if flown(one) {
+            return index;
+        }
+        eprintln!(
+            "{}: no projectile in 12 s (messages {:?})",
+            one.name,
+            one.messages.iter().rev().take(3).collect::<Vec<_>>()
+        );
+    }
+    panic!(
+        "{what}'s projectile ({spot}) toward an NPC (messages {:?})",
+        one.messages
+    );
+}
+
+/// The effect spells (`spells::effects`, world/live/magic.rs), each cast
+/// with the spell-on-NPC packet by a saved mage with magic 99 beside
+/// Lumbridge's chickens:
+///
+/// - Confuse (button 2): its projectile (103), its runes gone and exactly
+///   its 13 experience (`CurseSpells` gives none for the hit, which its
+///   `fireEffect` hides).
+/// - Bind (button 12): its projectile (178); `fireEffect` writes
+///   `entangleDelay`, so another Bind in the next ticks is answered "You
+///   have recently cast a binding spell." and takes no runes.
+/// - Claws of Guthix (button 42) with a Guthix staff and a hundred saved
+///   casts: the swing runs through `GodSpells.fireEffect` to its hit mark,
+///   with its runes and experience.
+///
+/// What the effects leave in an NPC's levels and timers is checked in
+/// process by `live_spell_effects`. The ancient spells are not cast here: a
+/// login puts a character without Desert Treasure back on the standard
+/// book, and no quest is installed in this world. Teleblock needs a player
+/// target.
+async fn effects_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    const CHICKENS: [i32; 2] = [41, 1017];
+    let coop = [3232, 3294, 0];
+    let amount = |c: &Client, slot: i32| {
+        c.containers
+            .get(&93)
+            .and_then(|c| c.get(&slot))
+            .map_or(0, |i| i.1)
+    };
+    let said =
+        |c: &Client, from: usize, text: &str| c.messages[from..].iter().any(|(_, m)| m == text);
+
+    // Water, earth, body and nature runes.
+    let mut one = mage(
+        address,
+        saves,
+        "hexone",
+        coop,
+        &[(0, 555, 100), (1, 557, 100), (2, 559, 100), (3, 561, 100)],
+        |_| {},
+    )
+    .await;
+    cast_until_projectile(&mut one, &CHICKENS, 192, 2, 103, "Confuse").await;
+    one.until(
+        Duration::from_secs(5),
+        "Confuse's runes and experience",
+        |c| amount(c, 2) == 99 && c.skills.get(&6).is_some_and(|s| s.1 == 13_034_431 + 13),
+    )
+    .await;
+    assert_eq!(
+        (amount(&one, 0), amount(&one, 1)),
+        (97, 98),
+        "Confuse's water and earth runes"
+    );
+    // Bind, then Bind again while entangleDelay runs (tick + 9 + 2). A
+    // splash writes no delay, so the next cast is a cast: tried a few times.
+    let binding = "You have recently cast a binding spell.";
+    let mut refused = false;
+    for attempt in 0..5 {
+        // The last cast's magic delay, and a binding delay still running.
+        one.pump(Duration::from_secs(8)).await;
+        let index = cast_until_projectile(&mut one, &CHICKENS, 192, 12, 178, "Bind").await;
+        let nature = amount(&one, 3);
+        let from = one.messages.len();
+        // Past the cast's magic delay, inside the binding delay.
+        one.pump(Duration::from_millis(3600)).await;
+        one.send(spell_on_npc(192, 12, index)).await;
+        let end = Instant::now() + Duration::from_secs(3);
+        while Instant::now() < end && !said(&one, from, binding) {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if said(&one, from, binding) {
+            assert_eq!(amount(&one, 3), nature, "the refused Bind took no runes");
+            refused = true;
+            eprintln!("hexone: the binding delay answered on attempt {attempt}");
+            break;
+        }
+    }
+    assert!(
+        refused,
+        "a Bind inside entangleDelay is refused (messages {:?})",
+        one.messages
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Claws of Guthix: blood, fire and air runes, the Guthix staff worn
+    // and the hundred casts that let it be cast outside the Mage Arena.
+    let mut one = mage(
+        address,
+        saves,
+        "godone",
+        coop,
+        &[(0, 565, 100), (1, 554, 100), (2, 556, 100)],
+        |save| {
+            save["core_data"]["equipment"] = serde_json::json!([
+                {"slot": "3", "id": "2416", "amount": "1", "charge": "1000"}
+            ]);
+            save["activityData"]["godCasts"] = serde_json::json!(["100", "100", "100"]);
+        },
+    )
+    .await;
+    // A chicken can still be in someone else's fight ("Someone else is
+    // already fighting this."): the cast that went out is the one that
+    // took its runes.
+    let mut struck = None;
+    for (index, tile) in nearest_npcs(&one, &CHICKENS).into_iter().take(6) {
+        eprintln!("godone: Claws of Guthix on chicken {index} at {tile:?}");
+        let hits_from = one.npc_hits.len();
+        one.send(spell_on_npc(192, 42, index)).await;
+        let end = Instant::now() + Duration::from_secs(8);
+        while Instant::now() < end && amount(&one, 0) == 100 {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if amount(&one, 0) < 100 {
+            struck = Some((index, hits_from));
+            break;
+        }
+    }
+    let (index, hits_from) = struck.unwrap_or_else(|| {
+        panic!(
+            "a Claws of Guthix cast on a chicken (messages {:?})",
+            one.messages
+        )
+    });
+    assert_eq!(
+        (amount(&one, 0), amount(&one, 1), amount(&one, 2)),
+        (98, 99, 96),
+        "Claws of Guthix's blood, fire and air runes"
+    );
+    // The hit mark comes after adjustBattleState, where fireEffect runs.
+    one.until(Duration::from_secs(8), "Claws of Guthix's hit mark", |c| {
+        c.npc_hits[hits_from..].iter().any(|(i, _, _)| *i == index)
+    })
+    .await;
+    one.until(
+        Duration::from_secs(5),
+        "Claws of Guthix's experience",
+        |c| c.skills.get(&6).is_some_and(|s| s.1 >= 13_034_431 + 35),
+    )
     .await;
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
