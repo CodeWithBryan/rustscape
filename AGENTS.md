@@ -2231,6 +2231,14 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   rendering-height placeholder as measured terrain or infer live drops/Take
   behavior from an empty old-server smoke. Keep original self teleport queue
   behavior during rebuilds, including the non-discard near-distance branch.
+- `cargo xtask client-smoke` (docs/client-smoke.md) drives the real visual
+  client against a test world with the capture-only scripted pointer
+  `--capture-npc-menu` (game/npc_menu_capture.rs): it feeds synthetic events
+  to the input translator and reads the frame's own pick and menus. It opens
+  a window (minimized, not activated, on Windows): run it only when asked or
+  when checking a client-facing change, always muted, never on 43594. Its
+  checks rest on JSON capture files, not pixels; it establishes one path
+  (login, Lumbridge scene, NPC pick, menus, attack), not the client.
 - Headless agent actions (`headless/agent.rs`) build packets only through the
   shared writers in protocol/game/menu.rs (the visual client re-exports them;
   keep one implementation). The View reads authoritative frames only; never

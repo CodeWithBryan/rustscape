@@ -10,12 +10,17 @@ broken: live NPCs could not be clicked (CodeWithBryan/rustscape#11) and only
 a person clicking found it. This test finds that bug (below).
 
 **It opens a window.** Run it only when you mean to. The client is always
-started with `--mute` (and `--no-music`). On Windows the window is created
-minimized and is never activated, so it does not take focus or cover what
-you are doing: it shows only as a taskbar button for the run. `--show`
-starts it in a normal window, still without taking focus. Other systems
-start it normally (unverified there). The client and the world the command
-started are stopped when it ends, on failure and on a time-out too.
+started with `--mute` (and `--no-music`). On Windows the command starts it
+with CreateProcess and `STARTUPINFO.wShowWindow = SW_SHOWMINNOACTIVE`, which
+the first `ShowWindow` of the process (miniquad's) takes in place of its
+own: the window should start minimized and never be activated, showing only
+as a taskbar button. The runs so far passed that way (the scripted pointer
+does not need the system cursor), but nobody has watched the screen during
+one to confirm it. `--show` starts it with `SW_SHOWNOACTIVATE` instead (a
+normal window that does not take focus). Other systems start it normally
+(untested there). The client (held by its process handle, so no other
+process can be reached) and the world the command started are stopped when
+it ends, on failure and on a time-out too.
 
 ## Running it
 
@@ -34,6 +39,8 @@ It needs `assets/cache` and a world folder (see
 | `--no-build` | skip `cargo build --release` of the server, the client and `agent_run` |
 | `--show` | show the window (not activated) instead of minimizing it |
 | `--npc NAME` | the NPC to point at; default `Goblin` |
+| `--npc-types ID,...` or `any` | keep to those NPC types; default for `Goblin`, the types the live world fights (1769 to 1776), and none after `--npc` |
+| `--skip-welcome` | seed the character without `tutorial:complete`, so the login skips the welcome screen (see below) |
 | `--timeout SECS` | the limit for the client's whole run; default 300 |
 | `--keep-world` | leave the test world running afterwards (`cargo xtask test-world stop --name ...`) |
 
@@ -57,16 +64,21 @@ report.
    client (`crates/client/src/game/npc_menu_capture.rs`). Its mouse events
    enter the client's input translator the way a window event on the canvas
    would, so the pick, the menus and the click handling are the frame's own:
-   - on the welcome screen it clicks Play (378, child 140);
+   - on the welcome screen it clicks Play (378, child 140), a second after
+     it is laid out, and again every five seconds, four times at most;
    - in the world, once a goblin is in the frame's NPC list, it asks for the
      pick probe (`--pick-probe`'s grid of picks), taken in `build_menu` right
-     after the frame's own mouse pick and from the same inputs, and chooses a
-     pixel where the probe hit a goblin;
-   - it moves the mouse there and keeps the menu that frame builds;
+     after the frame's own mouse pick and from the same inputs, and chooses
+     the probe's hit on a goblin nearest the middle of its hits (the probe's
+     new `middle_pixel`);
+   - it moves the mouse there and keeps the menu that frame builds once it
+     has an Attack for a wanted goblin; when the goblin walked off the point
+     it searches again, five times at most;
    - it right-clicks there and keeps the menu that opened, with its bounds;
-   - it left-clicks that menu's `Attack` row, keeps the packets the client
-     queued, waits up to 30 seconds for the server's combat experience in the
-     stats it sends, and ends the capture.
+   - it left-clicks that menu's `Attack` row for a wanted goblin, keeps the
+     packets the client queued, waits up to 30 seconds for the server's hit
+     on that goblin (its health bar) and combat experience, and ends the
+     capture.
 
    Each stage is written to `npc-menu-capture.json` as it ends; a stage that
    cannot finish is recorded with its reason and the capture ends there.
@@ -86,21 +98,49 @@ report.
 ## Catching the unclickable NPCs
 
 Before #11 the live NPC list was rebuilt every frame with empty pick
-triangles, so the frame's pick skipped every live NPC. Without #11 the
-probe's rows say `enters_pick: false` with zero triangles for every goblin,
-the probe hits none, and the run fails at the search stage: check c (and d,
-e) fail with "the pick probe never hit an NPC named Goblin". With #11 merged
-the same run passes. (The probe has to be taken at the frame's pick, as
-#13 does; taken after the draw, it saw the meshes the draw had just made
-and called the NPCs pickable.)
+triangles, so the frame's pick skipped every live NPC. On 2026-11-27, with
+`--skip-welcome` (next section):
+
+| client | result |
+| --- | --- |
+| this branch (with #13, without #11) | FAIL at search: 19 goblins in the frame's list, every one with 0 pick triangles and `enters_pick: false`; the probe hit no NPC. a and b pass; c, d and e fail |
+| the same with #11 merged | PASS: the probe hit goblin 6204, the hover and right-click menus had Attack for it, the click sent NPC option 1 (opcode 3) for 6204, and its hit and hitpoints experience came back |
+
+The probe has to be taken at the frame's pick, as #13 does: taken after the
+draw, it saw the meshes the draw had just made and called the NPCs
+pickable.
+
+## Server gaps it found
+
+- **The welcome screen's Play does nothing for the visual client.** The
+  client, like the original, sends `CLOSE_IFACE` (184) and then the button
+  (155, 378:140). The original's `LoginInterface.kt` refuses that close with
+  `onClose(378) { player.locks.isLocked("login") }`; the live world answers
+  `InterfaceListeners.runClose` with the "no content listener: true" default,
+  so the close removes the welcome screen on the server and the button that
+  follows is refused. The headless agent passes only because it sends 155
+  alone (with a 184 first, its login times out too). Until that listener is
+  ported the default run fails check a; `--skip-welcome` avoids the screen.
+- **Goblins of type 2278** (also in Lumbridge) accept an Attack and are never
+  swung at, from the visual client and the headless agent alike, with or
+  without `tutorial:complete`. The default `--npc-types` keeps to the types
+  that fight.
+- A character without `tutorial:complete` (`--skip-welcome`) is under the
+  tutorial's rules: its attack experience dropped from 4,470 to 175 at the
+  first hit. Check e needs only the hit.
+- Lobby players are not reset by the update sequence, so their per-tick
+  packet counts never clear: after about ten keep-alives on the welcome
+  screen, reads that hold one more are cut short ("Skipping packet 93
+  because already received more than 10"). Whether the original does the
+  same was not checked.
 
 ## Scope
 
 This checks the running client against the running server for one path:
-login through the welcome screen, the Lumbridge scene, pointing at an NPC,
-its menus and an attack. It says nothing of rendering quality (no pixels are
+login (through the welcome screen, or past it with `--skip-welcome`), the
+Lumbridge scene, pointing at an NPC, its menus and an attack. It says nothing of rendering quality (no pixels are
 compared), of input from the window system (the scripted events start at
 the translator), of other screens or interactions, or of other systems than
-Windows, where it was developed. The goblins wander, and a miss gives no
-experience, so check e waits for a hit within 30 seconds; a run where every
-swing in that time misses fails e.
+Windows, where it was developed. The goblins wander: a goblin that walks off
+the probe's point is searched for again, and a run can still fail c if that
+happens five times. Check e waits 30 seconds for the hit.
