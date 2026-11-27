@@ -2740,9 +2740,26 @@ async fn climb_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
         // nowhere.
         let plane = one.players.plane;
         let [x, y, _] = one.position();
+        let late = one.frames.len();
+        let texts = one.texts.len();
         one.send(continue_option(228, 2)).await;
         one.pump(Duration::from_secs(2)).await;
         let [x2, y2, _] = one.position();
+        eprintln!(
+            "{name}: after the late Continue: closes {:?}, scripts {:?}",
+            closes_from(&one, late),
+            scripts_from(&one, late)
+        );
+        // A ClimbDialogue left behind would run `end()` again (its close and
+        // script 101) and could offer the options again.
+        assert!(
+            chatbox_restored(&one, late).is_none(),
+            "{name}: no dialogue left to end"
+        );
+        assert!(
+            !offered(&one, texts),
+            "{name}: the options are not offered again"
+        );
         assert_eq!(
             [x2, y2, one.players.plane],
             [x, y, plane],

@@ -144,7 +144,7 @@ pub const CLIMB_DIALOGUE_ID: i32 = 8 << 16;
 
 impl PluginBody<Live> for ClimbPlugin {
     fn class_name(&self) -> &str {
-        "ClimbDialogue"
+        "core.game.global.action.ClimbActionHandler$ClimbDialogue"
     }
     fn ids(&self, _: &mut Live, _: &Plugin<Live>) -> d::Result<Vec<i32>> {
         Ok(vec![CLIMB_DIALOGUE_ID])
