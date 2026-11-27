@@ -1569,6 +1569,11 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.everyday_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // The small item-on-object listeners' pulses
+        // (super::items::withobject).
+        if let Some(result) = self.with_object_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // The cooking pulses (super::items::cooking).
         if let Some(result) = self.cooking_pulse_body(pulse) {
             return result.map_err(fail);

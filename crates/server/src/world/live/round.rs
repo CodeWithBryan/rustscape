@@ -58,6 +58,8 @@ pub struct Round {
     pub magic: super::magic::MagicWorld,
     /// The content use-with handlers (super::items::everyday).
     pub everyday: super::items::everyday::EverydayWorld,
+    /// Five small item-on-object listeners (super::items::withobject).
+    pub with_object: super::items::withobject::WithObjectWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).
@@ -118,6 +120,12 @@ impl super::host::Live {
         // The player's content pulses stop with it (the runner drops a
         // pulse that is not running).
         self.round.everyday.pulses.retain(|(handle, owner, _)| {
+            if *owner == node {
+                crate::pulses::stop_base(handle);
+            }
+            *owner != node
+        });
+        self.round.with_object.pulses.retain(|(handle, owner, _)| {
             if *owner == node {
                 crate::pulses::stop_base(handle);
             }

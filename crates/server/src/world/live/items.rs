@@ -49,6 +49,7 @@ mod slots;
 pub mod smelting;
 pub mod smithing;
 pub mod use_with;
+pub mod withobject;
 
 /// A node the handlers see: `==` is identity.
 #[derive(Clone)]
@@ -1370,6 +1371,16 @@ impl listeners::Context for Ctx<'_> {
         }
         if f.value::<AttackListener>().is_some() {
             return attack_listener(self, p, n).map_err(lerr);
+        }
+        // SapCollectListener's "empty" (super::withobject).
+        if let Some(interaction) = f.value::<crate::world::item_on_object::Interaction>() {
+            return crate::world::item_on_object::run_option(
+                &mut withobject::WithObject(everyday::Everyday(Ctx(self.0))),
+                *interaction,
+                p,
+                n,
+            )
+            .map_err(lerr);
         }
         if let Some(option) = f.value::<GraveListener>().map(|g| g.0) {
             let (Node::Player(player), Node::Npc(npc)) = (p, n) else {
