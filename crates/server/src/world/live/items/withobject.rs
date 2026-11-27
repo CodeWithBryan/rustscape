@@ -21,7 +21,7 @@ use crate::{
         action_locks,
         global_items::Anim,
         item_on_object::{self, Error, Kind, Pulse, Result},
-        packet_handlers::Container as Held,
+        packet_handlers::{Base, Container as Held},
         player_managers::diary,
     },
 };
@@ -42,6 +42,8 @@ fn bind(e: impl std::fmt::Debug) -> Error {
 
 /// `DiaryType.FALADOR`'s ordinal.
 const FALADOR: usize = 3;
+/// `DiaryType.SEERS_VILLAGE`'s ordinal.
+const SEERS_VILLAGE: usize = 5;
 
 /// `world::item_on_object`'s host over the live world.
 pub struct WithObject<'a>(pub Everyday<'a>);
@@ -135,6 +137,85 @@ impl item_on_object::Host for WithObject<'_> {
     fn set_varbit(&mut self, player: &Node, id: i32, value: i32, save: bool) -> Result<()> {
         let p = self.player(player)?;
         crate::world::login::Host::set_varbit(self.0.0.0, &p, id, value, save).map_err(bind)
+    }
+    fn id(&mut self, node: &Node) -> Result<i32> {
+        Base::id(&mut self.0.0, node).map_err(bind)
+    }
+    fn location(&mut self, node: &Node) -> Result<[i32; 3]> {
+        match node {
+            Node::Scenery(object) => Ok(object.read().location.coordinates()),
+            _ => Err(Error::Cast),
+        }
+    }
+    fn attribute_int(&mut self, player: &Node, key: &str, default: i32) -> Result<i32> {
+        let p = self.player(player)?;
+        let attributes = self.0.0.0.inner.canonical(&p).player.attributes();
+        // A value of another type is the generic read's ClassCastException.
+        attributes.integer(key, default).map_err(|_| Error::Cast)
+    }
+    fn set_attribute_int(&mut self, player: &Node, key: &str, value: i32) -> Result<()> {
+        let p = self.player(player)?;
+        let attributes = self.0.0.0.inner.canonical(&p).player.attributes();
+        attributes.set_integer(key, value);
+        // `Entity.setAttribute` dispatches an AttributeSetEvent: of the
+        // event hooks only SeersVillageAchievementDiary.onAttributeSet's
+        // coal truck case is ported.
+        item_on_object::seers_attribute_set(self, player, key, value)
+    }
+    fn remove_attribute(&mut self, player: &Node, key: &str) -> Result<()> {
+        let p = self.player(player)?;
+        let attributes = self.0.0.0.inner.canonical(&p).player.attributes();
+        attributes.remove(key);
+        Ok(())
+    }
+    fn send_dialogue(&mut self, player: &Node, text: &str) -> Result<()> {
+        self.0.dialogue(player, text)
+    }
+    fn free_slots(&mut self, player: &Node) -> Result<i32> {
+        let inventory = self.0.0.container(player, Held::Inventory).map_err(bind)?;
+        Ok(inventory.free_slots())
+    }
+    fn amount_in_inventory(&mut self, player: &Node, id: i32) -> Result<i32> {
+        let inventory = self.0.0.container(player, Held::Inventory).map_err(bind)?;
+        Ok(inventory.amount_id(id, &self.0.0.0.inner.items))
+    }
+    fn add_items(&mut self, player: &Node, id: i32, amount: i32) -> Result<bool> {
+        self.0.add_to_inventory(player, id, amount)
+    }
+    fn remove_items(&mut self, player: &Node, id: i32, amount: i32) -> Result<bool> {
+        let item = self.0.native(id, amount);
+        self.0.remove_from_inventory(player, &item)
+    }
+    fn seers_task_complete(&mut self, player: &Node, level: i32, index: i32) -> Result<bool> {
+        let p = self.player(player)?;
+        super::super::subclasses::with_diaries(self.0.0.0, &p, |h, owner| {
+            diary::has_completed_task(h, owner, Some(SEERS_VILLAGE), level, index)
+        })
+        .map_err(bind)
+    }
+    fn seers_update_task(
+        &mut self,
+        player: &Node,
+        level: i32,
+        index: i32,
+        complete: bool,
+    ) -> Result<()> {
+        let p = self.player(player)?;
+        let updated = super::super::subclasses::with_diaries(self.0.0.0, &p, |h, owner| {
+            diary::manager_update_task(h, owner, owner, Some(SEERS_VILLAGE), level, index, complete)
+        })
+        .map_err(bind);
+        self.0.0.0.inner.drain(&p);
+        updated
+    }
+    fn finish_seers_task(&mut self, player: &Node, level: i32, index: i32) -> Result<()> {
+        let p = self.player(player)?;
+        let finished = super::super::subclasses::with_diaries(self.0.0.0, &p, |h, owner| {
+            diary::finish_task(h, owner, owner, Some(SEERS_VILLAGE), level, index)
+        })
+        .map_err(bind);
+        self.0.0.0.inner.drain(&p);
+        finished
     }
     fn run_woodcutting_pulse(&mut self, player: &Node, scenery: &Node) -> Result<()> {
         let p = self.player(player)?;

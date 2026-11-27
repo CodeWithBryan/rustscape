@@ -245,6 +245,15 @@ impl Live {
                     self.listener_arrival(&option)
                         .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
                 ),
+                Deferred::SceneryListener {
+                    player,
+                    id,
+                    option,
+                    object,
+                } => Some(
+                    self.scenery_listener_run(player, id, &option, object)
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
+                ),
                 Deferred::CloseDialogue(node) => self.player_of(node).map(|p| {
                     self.close_dialogue_of(&p)
                         .map(|_| ())

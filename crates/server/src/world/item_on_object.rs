@@ -4,7 +4,11 @@
 //! (`HairdresserCheeseListener`), the herring jokes (`FishEasterEgg`), the
 //! rope on the God Wars entrance hole (`GWDEntranceRopeListener`) and an axe
 //! on a tree (`AxeOnTree`, which only starts `WoodcuttingSkillPulse`: the
-//! pulse is `world::gathering::woodcutting`'s).
+//! pulse is `world::gathering::woodcutting`'s); and the coal trucks
+//! (`CoalTruckListener`: coal used on a truck and the truck's "remove-coal"
+//! and "investigate" options) with the two pieces of
+//! `SeersVillageAchievementDiary` they reach ([`coal_removed_from_seers_truck`]
+//! and the `AttributeSet` hook [`seers_attribute_set`]).
 //!
 //! Each lambda is a typed native value ([`Interaction`]) whose body is a
 //! function over [`Host`]; the pulses the lambdas submit are [`Pulse`]
@@ -58,6 +62,25 @@ pub const ROPE: i32 = 954;
 pub const GWD_HOLE: i32 = 26340;
 /// The varbit the rope sets to 1 (saved).
 pub const GWD_ROPE_VARBIT: i32 = 3932;
+
+/// `Items.COAL_453`.
+pub const COAL: i32 = 453;
+/// `Scenery.COAL_TRUCK_2114`.
+pub const COAL_TRUCK: i32 = 2114;
+/// CoalTruckListener's `ATTRIBUTE_COAL_TRUCK_INVENTORY`.
+pub const COAL_TRUCK_INVENTORY: &str = "coal-truck-inventory";
+/// The key the listener writes (the same attribute, saved).
+pub const COAL_TRUCK_INVENTORY_SAVED: &str = "/save:coal-truck-inventory";
+/// A truck's capacity.
+pub const COAL_TRUCK_CAPACITY: i32 = 120;
+/// SeersVillageAchievementDiary's `ATTRIBUTE_COAL_TRUCK_FULL`.
+pub const SEERS_COAL_TRUCK_FULL: &str = "diary:seers:coal-truck-full";
+/// SeersVillageAchievementDiary's `SEERS_COAL_TRUCK_LOCATIONS`.
+pub const SEERS_COAL_TRUCKS: [[i32; 3]; 2] = [[2696, 3504, 0], [2698, 3507, 0]];
+/// `DiaryLevel.MEDIUM`'s index in the Seers' Village diary.
+pub const SEERS_MEDIUM: i32 = 1;
+/// `MediumTasks.TRANSPORT_FULL_LOAD_OF_COAL`.
+pub const SEERS_TRANSPORT_COAL: i32 = 2;
 
 /// AxeOnTree's `axes`, in declaration order: bronze, mithril, iron, black,
 /// steel, adamant, rune, dragon, the inferno adze.
@@ -144,6 +167,44 @@ pub trait Host {
     /// `entity.pulseManager.run(pulse)` of a new `Pulse(delay)`
     /// (`submitIndividualPulse` and `runTask`).
     fn run_pulse(&mut self, pulse: Pulse<Self::Node>, delay: i32) -> Result<()>;
+    /// `node.getId()`.
+    fn id(&mut self, node: &Self::Node) -> Result<i32>;
+    /// `node.getLocation()`.
+    fn location(&mut self, node: &Self::Node) -> Result<[i32; 3]>;
+    /// ContentAPI `getAttribute(player, key, default)` as an Int.
+    fn attribute_int(&mut self, player: &Self::Node, key: &str, default: i32) -> Result<i32>;
+    /// ContentAPI `setAttribute(player, key, value)` of an Int.
+    /// `Entity.setAttribute` dispatches an AttributeSetEvent: an owner with
+    /// the Seers' Village diary hooked runs [`seers_attribute_set`] for it.
+    fn set_attribute_int(&mut self, player: &Self::Node, key: &str, value: i32) -> Result<()>;
+    /// ContentAPI `removeAttribute(player, key)`.
+    fn remove_attribute(&mut self, player: &Self::Node, key: &str) -> Result<()>;
+    /// ContentAPI `sendDialogue(player, message)`.
+    fn send_dialogue(&mut self, player: &Self::Node, text: &str) -> Result<()>;
+    /// ContentAPI `freeSlots(player)`.
+    fn free_slots(&mut self, player: &Self::Node) -> Result<i32>;
+    /// ContentAPI `amountInInventory(player, id)`.
+    fn amount_in_inventory(&mut self, player: &Self::Node, id: i32) -> Result<i32>;
+    /// ContentAPI `addItem(player, id, amount)`: `inventory.add(Item(id,
+    /// amount))`.
+    fn add_items(&mut self, player: &Self::Node, id: i32, amount: i32) -> Result<bool>;
+    /// ContentAPI `removeItem(player, Item(id, amount))`.
+    fn remove_items(&mut self, player: &Self::Node, id: i32, amount: i32) -> Result<bool>;
+    /// `achievementDiaryManager.hasCompletedTask(SEERS_VILLAGE, level,
+    /// index)`.
+    fn seers_task_complete(&mut self, player: &Self::Node, level: i32, index: i32) -> Result<bool>;
+    /// `achievementDiaryManager.updateTask(player, SEERS_VILLAGE, level,
+    /// index, complete)`.
+    fn seers_update_task(
+        &mut self,
+        player: &Self::Node,
+        level: i32,
+        index: i32,
+        complete: bool,
+    ) -> Result<()>;
+    /// `achievementDiaryManager.finishTask(player, SEERS_VILLAGE, level,
+    /// index)`.
+    fn finish_seers_task(&mut self, player: &Self::Node, level: i32, index: i32) -> Result<()>;
     /// `submitIndividualPulse(player, WoodcuttingSkillPulse(player,
     /// scenery))`: the pulse is constructed, then run in the player's pulse
     /// manager.
@@ -171,6 +232,12 @@ pub enum Interaction {
     GwdRope,
     /// AxeOnTree's `onUseWith(SCENERY, axes, *trees)`.
     AxeOnTree,
+    /// CoalTruckListener's `on(COAL_TRUCK_2114, SCENERY, "remove-coal")`.
+    CoalRemove,
+    /// CoalTruckListener's `on(COAL_TRUCK_2114, SCENERY, "investigate")`.
+    CoalInvestigate,
+    /// CoalTruckListener's `onUseWith(SCENERY, COAL_453, COAL_TRUCK_2114)`.
+    CoalDeposit,
 }
 impl crate::world::component_objects::NativeObject for Interaction {}
 impl Interaction {
@@ -201,18 +268,31 @@ impl Interaction {
             Self::AxeOnTree => {
                 "content.global.handlers.item.withobject.AxeOnTree$defineListeners$1"
             }
+            Self::CoalRemove => {
+                "content.global.handlers.item.withobject.CoalTruckListener$defineListeners$1"
+            }
+            Self::CoalInvestigate => {
+                "content.global.handlers.item.withobject.CoalTruckListener$defineListeners$2"
+            }
+            Self::CoalDeposit => {
+                "content.global.handlers.item.withobject.CoalTruckListener$defineListeners$3"
+            }
         }
     }
     /// Whether the lambda is an `on` listener (the others are use-with).
     pub fn is_option(self) -> bool {
-        self == Self::SapEmpty
+        matches!(
+            self,
+            Self::SapEmpty | Self::CoalRemove | Self::CoalInvestigate
+        )
     }
 }
 
-/// The six listener classes, by their scanned names.
+/// The seven listener classes, by their scanned names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
     AxeOnTree,
+    CoalTruck,
     FishEasterEgg,
     GwdEntranceRope,
     HairdresserCheese,
@@ -220,8 +300,9 @@ pub enum Class {
     SapCollect,
 }
 impl Class {
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 7] = [
         Self::AxeOnTree,
+        Self::CoalTruck,
         Self::FishEasterEgg,
         Self::GwdEntranceRope,
         Self::HairdresserCheese,
@@ -231,6 +312,7 @@ impl Class {
     pub fn name(self) -> &'static str {
         match self {
             Self::AxeOnTree => "content.global.handlers.item.withobject.AxeOnTree",
+            Self::CoalTruck => "content.global.handlers.item.withobject.CoalTruckListener",
             Self::FishEasterEgg => "content.global.handlers.item.withobject.FishEasterEgg",
             Self::GwdEntranceRope => {
                 "content.global.handlers.item.withobject.GWDEntranceRopeListener"
@@ -272,6 +354,30 @@ pub fn define(registry: &interactions::Registry, casing: &impl Casing, class: Cl
                 function(Interaction::AxeOnTree),
             )
             .map_err(binding),
+        Class::CoalTruck => {
+            for (option, f) in [
+                ("remove-coal", Interaction::CoalRemove),
+                ("investigate", Interaction::CoalInvestigate),
+            ] {
+                registry
+                    .add(
+                        casing,
+                        COAL_TRUCK,
+                        scenery,
+                        &[option.encode_utf16().collect()],
+                        function(f),
+                    )
+                    .map_err(binding)?;
+            }
+            registry
+                .add_use(
+                    COAL,
+                    COAL_TRUCK,
+                    scenery,
+                    function(Interaction::CoalDeposit),
+                )
+                .map_err(binding)
+        }
         Class::SapCollect => {
             registry
                 .add_use_ids(
@@ -361,8 +467,11 @@ pub fn run<H: Host + ?Sized>(
             Ok(true)
         }
         Interaction::GwdRope => gwd_rope(h, player, used),
+        Interaction::CoalDeposit => coal_deposit(h, player),
         // An `on` lambda takes two arguments.
-        Interaction::SapEmpty => Err(Error::Cast),
+        Interaction::SapEmpty | Interaction::CoalRemove | Interaction::CoalInvestigate => {
+            Err(Error::Cast)
+        }
     }
 }
 
@@ -375,6 +484,8 @@ pub fn run_option<H: Host + ?Sized>(
 ) -> Result<bool> {
     match f {
         Interaction::SapEmpty => sap_empty(h, player, node),
+        Interaction::CoalRemove => coal_remove(h, player, node),
+        Interaction::CoalInvestigate => coal_investigate(h, player),
         _ => Err(Error::Cast),
     }
 }
@@ -512,4 +623,101 @@ pub fn pulse<H: Host + ?Sized>(h: &mut H, pulse: &mut Pulse<H::Node>) -> Result<
             Ok(*cycles <= 0)
         }
     }
+}
+
+/// CoalTruckListener's "remove-coal" lambda: as much coal as fits, the
+/// attribute, and the Seers' Village diary when any was taken.
+pub fn coal_remove<H: Host + ?Sized>(h: &mut H, player: &H::Node, node: &H::Node) -> Result<bool> {
+    let mut in_truck = h.attribute_int(player, COAL_TRUCK_INVENTORY, 0)?;
+    if in_truck == 0 {
+        h.send_dialogue(player, "The coal truck is empty.")?;
+        return Ok(true);
+    }
+    let full = in_truck == COAL_TRUCK_CAPACITY;
+    let mut to_remove = h.free_slots(player)?;
+    if to_remove > in_truck {
+        to_remove = in_truck;
+    }
+    if h.add_items(player, COAL, to_remove)? {
+        in_truck = in_truck.wrapping_sub(to_remove);
+        h.set_attribute_int(player, COAL_TRUCK_INVENTORY_SAVED, in_truck)?;
+        if to_remove > 0 {
+            coal_removed_from_seers_truck(h, player, node, full)?;
+        }
+    }
+    Ok(true)
+}
+
+/// CoalTruckListener's "investigate" lambda.
+pub fn coal_investigate<H: Host + ?Sized>(h: &mut H, player: &H::Node) -> Result<bool> {
+    let in_truck = h.attribute_int(player, COAL_TRUCK_INVENTORY, 0)?;
+    let text = format!(
+        "There is currently {in_truck} coal in the truck. The truck has space for {} more coal.",
+        COAL_TRUCK_CAPACITY.wrapping_sub(in_truck)
+    );
+    h.send_dialogue(player, &text)?;
+    Ok(true)
+}
+
+/// CoalTruckListener's use-with lambda: all the coal held, or what fills
+/// the truck (with its message).
+pub fn coal_deposit<H: Host + ?Sized>(h: &mut H, player: &H::Node) -> Result<bool> {
+    let mut in_truck = h.attribute_int(player, COAL_TRUCK_INVENTORY, 0)?;
+    let mut held = h.amount_in_inventory(player, COAL)?;
+    if held.wrapping_add(in_truck) >= COAL_TRUCK_CAPACITY {
+        held = COAL_TRUCK_CAPACITY.wrapping_sub(in_truck);
+        h.send_message(player, "You have filled up the coal truck.")?;
+    }
+    if h.remove_items(player, COAL, held)? {
+        in_truck = in_truck.wrapping_add(held);
+        h.set_attribute_int(player, COAL_TRUCK_INVENTORY_SAVED, in_truck)?;
+    }
+    Ok(true)
+}
+
+/// `SeersVillageAchievementDiary.onCoalRemovedFromSeersTruck`: coal taken
+/// from a truck that was full, at one of the two Seers' Village trucks,
+/// finishes the task once its requirement attribute is set
+/// (`whenTaskRequirementFulfilled`).
+pub fn coal_removed_from_seers_truck<H: Host + ?Sized>(
+    h: &mut H,
+    player: &H::Node,
+    node: &H::Node,
+    full: bool,
+) -> Result<()> {
+    if !full {
+        return Ok(());
+    }
+    if h.id(node)? != COAL_TRUCK {
+        return Ok(());
+    }
+    if !SEERS_COAL_TRUCKS.contains(&h.location(node)?) {
+        return Ok(());
+    }
+    if h.attribute(player, SEERS_COAL_TRUCK_FULL, false)? {
+        h.finish_seers_task(player, SEERS_MEDIUM, SEERS_TRANSPORT_COAL)?;
+        h.remove_attribute(player, SEERS_COAL_TRUCK_FULL)?;
+    }
+    Ok(())
+}
+
+/// `SeersVillageAchievementDiary.onAttributeSet` for an Int value: the
+/// truck's attribute reaching 120 fulfils the task's requirement
+/// (`fulfillTaskRequirement`). Every other key is ignored.
+pub fn seers_attribute_set<H: Host + ?Sized>(
+    h: &mut H,
+    player: &H::Node,
+    key: &str,
+    value: i32,
+) -> Result<()> {
+    if key != COAL_TRUCK_INVENTORY_SAVED || value < COAL_TRUCK_CAPACITY {
+        return Ok(());
+    }
+    if h.seers_task_complete(player, SEERS_MEDIUM, SEERS_TRANSPORT_COAL)?
+        || h.attribute(player, SEERS_COAL_TRUCK_FULL, false)?
+    {
+        return Ok(());
+    }
+    h.seers_update_task(player, SEERS_MEDIUM, SEERS_TRANSPORT_COAL, false)?;
+    h.set_attribute(player, &format!("/save:{SEERS_COAL_TRUCK_FULL}"), true)
 }

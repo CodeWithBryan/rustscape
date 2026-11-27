@@ -190,16 +190,21 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
     }
     fn scenery_listeners(
         &mut self,
-        _: &mut State,
+        state: &mut State,
         id: i32,
         option: Option<String>,
-        _: Node,
-        _: &Handle,
+        player: Node,
+        object: &Handle,
     ) -> Result<bool> {
-        // InteractionListeners.run(id, SCENERY, option, player, node): the
-        // registered functions are the global handlers' bank booth, chest
-        // and deposit box listeners, whose bodies need the bank (not
-        // installed here): refused. With none registered the answer is false.
+        // InteractionListeners.run(id, SCENERY, option, player, node) of an
+        // `on` listener: the run itself (the weak scripts, the lock check,
+        // the option, the walk and the arrival's lambda) needs the whole
+        // world, so it is deferred to right after this packet's kernel
+        // returns (`Live::scenery_listener_run`); its answer, false only
+        // for an interaction-locked player, is computed here. The global
+        // handlers' bank chest and deposit box lambdas are refused by name
+        // where they are invoked (super::items `invoke_on`). With no
+        // listener registered the answer is false.
         let registry = self.walk.interactions.clone().ok_or(Error::Null)?;
         let text: Vec<u16> = option.as_deref().unwrap_or("null").encode_utf16().collect();
         let kind = crate::world::interaction_listeners::Kind::Scenery.ordinal();
@@ -207,9 +212,22 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
         if registry.get(&casing, id, kind, &text).is_some()
             || registry.get_generic(&casing, &text, kind).is_some()
         {
-            return Err(Error::Binding(
-                "not ported in the live world: InteractionListeners on listeners for scenery (the bank chest and deposit box listeners: the walk to scenery for a content listener)".into(),
-            ));
+            let owner = state.retain_node(player).map_err(binding)?;
+            let locks = state.locks(&owner).map_err(binding)?;
+            let locked = locks
+                .is_kind_locked(
+                    crate::world::action_locks::Kind::Interaction,
+                    state,
+                    &mut crate::world::action_locks::Clock,
+                )
+                .map_err(binding)?;
+            self.deferred.push(super::walk::Deferred::SceneryListener {
+                player: owner,
+                id,
+                option: text,
+                object: object.clone(),
+            });
+            return Ok(!locked);
         }
         // defineInteraction's metadata (the bank booths): an interaction
         // script in the player's script queue, which is content script

@@ -17,6 +17,8 @@ enum Node {
     Scenery(i32),
     /// An item with its id and slot.
     Item(i32, i32),
+    /// A coal truck (2114) at x, y on plane 0.
+    Truck(i32, i32),
 }
 
 #[derive(Default)]
@@ -28,6 +30,13 @@ struct Recorder {
     /// `addItem` answers false.
     full: bool,
     killed: bool,
+    /// The coal truck attribute, free slots and coal held.
+    truck: i32,
+    free: i32,
+    coal: i32,
+    /// The Seers task is complete; its requirement attribute is set.
+    task_complete: bool,
+    truck_full: bool,
 }
 
 impl Host for Recorder {
@@ -35,7 +44,7 @@ impl Host for Recorder {
     fn kind(&self, node: &Node) -> Kind {
         match node {
             Node::Player => Kind::Player,
-            Node::Scenery(_) => Kind::Scenery,
+            Node::Scenery(_) | Node::Truck(..) => Kind::Scenery,
             Node::Item(..) => Kind::Item,
         }
     }
@@ -78,7 +87,68 @@ impl Host for Recorder {
     }
     fn attribute(&mut self, _: &Node, key: &str, default: bool) -> Result<bool> {
         self.calls.push(format!("attribute {key} {default}"));
-        Ok(self.killed)
+        Ok(if key == item_on_object::SEERS_COAL_TRUCK_FULL {
+            self.truck_full
+        } else {
+            self.killed
+        })
+    }
+    fn id(&mut self, node: &Node) -> Result<i32> {
+        match node {
+            Node::Scenery(id) | Node::Item(id, _) => Ok(*id),
+            Node::Truck(..) => Ok(2114),
+            Node::Player => Err(Error::Cast),
+        }
+    }
+    fn location(&mut self, node: &Node) -> Result<[i32; 3]> {
+        match node {
+            Node::Truck(x, y) => Ok([*x, *y, 0]),
+            _ => Ok([0, 0, 0]),
+        }
+    }
+    fn attribute_int(&mut self, _: &Node, key: &str, default: i32) -> Result<i32> {
+        self.calls.push(format!("attribute {key} {default}"));
+        Ok(self.truck)
+    }
+    fn set_attribute_int(&mut self, _: &Node, key: &str, value: i32) -> Result<()> {
+        self.calls.push(format!("set attribute {key} {value}"));
+        Ok(())
+    }
+    fn remove_attribute(&mut self, _: &Node, key: &str) -> Result<()> {
+        self.calls.push(format!("remove attribute {key}"));
+        Ok(())
+    }
+    fn send_dialogue(&mut self, _: &Node, text: &str) -> Result<()> {
+        self.calls.push(format!("dialogue {text}"));
+        Ok(())
+    }
+    fn free_slots(&mut self, _: &Node) -> Result<i32> {
+        Ok(self.free)
+    }
+    fn amount_in_inventory(&mut self, _: &Node, id: i32) -> Result<i32> {
+        self.calls.push(format!("amount {id}"));
+        Ok(self.coal)
+    }
+    fn add_items(&mut self, _: &Node, id: i32, amount: i32) -> Result<bool> {
+        self.calls.push(format!("add {id} x{amount}"));
+        Ok(!self.full)
+    }
+    fn remove_items(&mut self, _: &Node, id: i32, amount: i32) -> Result<bool> {
+        self.calls.push(format!("remove {id} x{amount}"));
+        Ok(!self.full)
+    }
+    fn seers_task_complete(&mut self, _: &Node, level: i32, index: i32) -> Result<bool> {
+        self.calls.push(format!("seers complete {level} {index}"));
+        Ok(self.task_complete)
+    }
+    fn seers_update_task(&mut self, _: &Node, level: i32, index: i32, done: bool) -> Result<()> {
+        self.calls
+            .push(format!("seers update {level} {index} {done}"));
+        Ok(())
+    }
+    fn finish_seers_task(&mut self, _: &Node, level: i32, index: i32) -> Result<()> {
+        self.calls.push(format!("finish seers {level} {index}"));
+        Ok(())
     }
     fn set_attribute(&mut self, _: &Node, key: &str, value: bool) -> Result<()> {
         self.calls.push(format!("set attribute {key} {value}"));
@@ -375,6 +445,166 @@ fn an_axe_on_a_tree_starts_the_woodcutting_pulse() {
     assert!(take(&mut h).is_empty());
 }
 
+#[test]
+fn coal_goes_into_the_truck_up_to_its_capacity() {
+    let truck = Node::Truck(2696, 3504);
+    let coal = Node::Item(453, 0);
+    let deposit = |h: &mut Recorder| {
+        item_on_object::run(h, Interaction::CoalDeposit, &Node::Player, &coal, &truck)
+    };
+    // 10 in the truck, 5 held: all five, no message.
+    let mut h = recorder(&[]);
+    (h.truck, h.coal) = (10, 5);
+    assert_eq!(deposit(&mut h), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "amount 453",
+            "remove 453 x5",
+            "set attribute /save:coal-truck-inventory 15",
+        ]
+    );
+    // 110 in the truck, 27 held: ten, with the message first.
+    (h.truck, h.coal) = (110, 27);
+    assert_eq!(deposit(&mut h), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "amount 453",
+            "message You have filled up the coal truck.",
+            "remove 453 x10",
+            "set attribute /save:coal-truck-inventory 120",
+        ]
+    );
+    // A refused removal leaves the attribute.
+    (h.truck, h.coal, h.full) = (0, 3, true);
+    assert_eq!(deposit(&mut h), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "amount 453",
+            "remove 453 x3"
+        ]
+    );
+}
+
+#[test]
+fn coal_comes_out_of_the_truck_and_the_truck_reports_its_load() {
+    let seers = Node::Truck(2698, 3507);
+    let mine = Node::Truck(2581, 3481);
+    let remove = |h: &mut Recorder, truck: &Node| {
+        item_on_object::run_option(h, Interaction::CoalRemove, &Node::Player, truck)
+    };
+    // Empty.
+    let mut h = recorder(&[]);
+    assert_eq!(remove(&mut h, &seers), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "dialogue The coal truck is empty."
+        ]
+    );
+    // 30 in the truck, 28 free slots: 28 leave; the truck was not full, so
+    // the diary reads nothing.
+    (h.truck, h.free) = (30, 28);
+    assert_eq!(remove(&mut h, &seers), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "add 453 x28",
+            "set attribute /save:coal-truck-inventory 2",
+        ]
+    );
+    // A full truck at Seers' Village with the requirement set: the task.
+    (h.truck, h.free, h.truck_full) = (120, 5, true);
+    assert_eq!(remove(&mut h, &seers), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "add 453 x5",
+            "set attribute /save:coal-truck-inventory 115",
+            "attribute diary:seers:coal-truck-full false",
+            "finish seers 1 2",
+            "remove attribute diary:seers:coal-truck-full",
+        ]
+    );
+    // The same at the mine's truck: not a Seers' Village truck.
+    assert_eq!(remove(&mut h, &mine), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "add 453 x5",
+            "set attribute /save:coal-truck-inventory 115",
+        ]
+    );
+    // No free slot: `addItem` of nothing still writes the attribute, and
+    // the diary is not asked.
+    (h.truck, h.free) = (120, 0);
+    assert_eq!(remove(&mut h, &seers), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "add 453 x0",
+            "set attribute /save:coal-truck-inventory 120",
+        ]
+    );
+    // Investigate.
+    h.truck = 37;
+    let run =
+        item_on_object::run_option(&mut h, Interaction::CoalInvestigate, &Node::Player, &seers);
+    assert_eq!(run, Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "attribute coal-truck-inventory 0",
+            "dialogue There is currently 37 coal in the truck. The truck has space for 83 more coal.",
+        ]
+    );
+}
+
+#[test]
+fn a_full_truck_fulfils_the_seers_requirement_once() {
+    let set = |h: &mut Recorder, key: &str, value: i32| {
+        item_on_object::seers_attribute_set(h, &Node::Player, key, value)
+    };
+    let mut h = recorder(&[]);
+    // Another key, or fewer than 120: nothing.
+    assert_eq!(set(&mut h, "/save:piranhas-killed", 120), Ok(()));
+    assert_eq!(set(&mut h, "/save:coal-truck-inventory", 119), Ok(()));
+    assert!(take(&mut h).is_empty());
+    assert_eq!(set(&mut h, "/save:coal-truck-inventory", 120), Ok(()));
+    assert_eq!(
+        take(&mut h),
+        [
+            "seers complete 1 2",
+            "attribute diary:seers:coal-truck-full false",
+            "seers update 1 2 false",
+            "set attribute /save:diary:seers:coal-truck-full true",
+        ]
+    );
+    // Already fulfilled, or the task complete: nothing more.
+    h.truck_full = true;
+    assert_eq!(set(&mut h, "/save:coal-truck-inventory", 120), Ok(()));
+    assert_eq!(
+        take(&mut h),
+        [
+            "seers complete 1 2",
+            "attribute diary:seers:coal-truck-full false"
+        ]
+    );
+    h.task_complete = true;
+    assert_eq!(set(&mut h, "/save:coal-truck-inventory", 120), Ok(()));
+    assert_eq!(take(&mut h), ["seers complete 1 2"]);
+}
+
 struct Lower;
 impl Casing for Lower {
     fn lowercase_default(&self, s: &[u16]) -> Text {
@@ -396,7 +626,7 @@ fn define_listeners_registers_the_rows() {
         item_on_object::define(&registry, &Lower, class).unwrap();
     }
     assert_eq!(
-        Class::named("content.global.handlers.item.withobject.CoalTruckListener"),
+        Class::named("content.global.handlers.item.withobject.KaramjaBananaCrateListener"),
         None
     );
     let tables = registry.inspect();
@@ -422,9 +652,21 @@ fn define_listeners_registers_the_rows() {
     let scenery = interactions::Kind::Scenery.ordinal();
     let item = interactions::Kind::Item.ordinal();
     // on(BUCKET_OF_SAP_4687, ITEM, "empty"): "id:type:option".
+    let mut options = table("listeners");
+    options.sort_by(|a, b| a.0.cmp(&b.0));
     assert_eq!(
-        table("listeners"),
-        [(format!("4687:{item}:empty"), Interaction::SapEmpty)]
+        options,
+        [
+            (
+                format!("2114:{scenery}:investigate"),
+                Interaction::CoalInvestigate
+            ),
+            (
+                format!("2114:{scenery}:remove-coal"),
+                Interaction::CoalRemove
+            ),
+            (format!("4687:{item}:empty"), Interaction::SapEmpty),
+        ]
     );
     let uses = table("useWithListeners");
     let class_of = |used: i32, with: i32| -> Option<Interaction> {
@@ -437,6 +679,7 @@ fn define_listeners_registers_the_rows() {
     assert_eq!(class_of(274, 153), Some(Interaction::PoisonFountain));
     assert_eq!(class_of(1985, 11677), Some(Interaction::HairdresserCheese));
     assert_eq!(class_of(954, 26340), Some(Interaction::GwdRope));
+    assert_eq!(class_of(453, 2114), Some(Interaction::CoalDeposit));
     let trees = item_on_object::woodcutting_ids();
     assert!(trees.contains(&1276) && trees.len() > 50);
     for axe in item_on_object::AXES {
@@ -457,7 +700,7 @@ fn define_listeners_registers_the_rows() {
     distinct.dedup();
     assert_eq!(
         uses.len(),
-        27 + 3 + 2 * (distinct.len() + 2) + 9 * distinct.len()
+        27 + 4 + 2 * (distinct.len() + 2) + 9 * distinct.len()
     );
     // A second SapCollectListener is the original's IllegalStateException.
     assert!(matches!(
