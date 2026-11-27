@@ -392,3 +392,7 @@ xtask = ["auth-interop"]
 [[check]]
 name = "Verify SQL provider against original on isolated MariaDB, plaintext and TLS"
 xtask = ["sql-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original DonieDialogue, DonieDialogueFile, DonieDialogueShoelaceFile content (donie-dialogue)"
+xtask = ["donie-dialogue-oracle", "--check"]

@@ -18,6 +18,7 @@ pub mod command_packets;
 pub mod commands;
 pub mod component_objects;
 pub mod consumables;
+pub mod content;
 pub mod content_api;
 pub mod cooking;
 pub mod creatures;

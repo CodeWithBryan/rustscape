@@ -598,15 +598,15 @@ impl nc::Host for Classes<'_, '_> {
         self.live.inner.message(player, text).map_err(bind)
     }
     fn open_dialogue_id(&mut self, player: &P, id: i32, args: &[Arg<P>]) -> nc::Result<bool> {
-        // player.getDialogueInterpreter().open(id, args...): no content
-        // dialogue plugin is registered, so an NPC's key answers false after
-        // the NPC is stopped (super::talk).
+        // player.getDialogueInterpreter().open(id, args...): only the
+        // ported content plugins are registered (super::ported), so another
+        // NPC's key answers false after the NPC is stopped (super::talk).
         let args = dialogue_args(args)?;
         let interpreter = self.live.interpreter_of(player);
         let opened = interpreter.open(self.live, id, &args).map_err(bind)?;
         if !opened {
             self.live.inner.not_ported.default_answer(
-                "DialogueInterpreter.open of an NPC key (no content dialogue plugin registered: false)",
+                "DialogueInterpreter.open of an NPC key with no ported dialogue plugin (false)",
             );
         }
         Ok(opened)

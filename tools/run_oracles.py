@@ -57,6 +57,13 @@ def generator_folders(folder, seen):
     return folders
 
 
+def fallback_topic(command):
+    """The topic of xtask's fallback arm: `<topic>-oracle` runs oracle/<topic>/generate.py
+    (content ports laid out by tools/content_scaffold.py), or None."""
+    topic = command[: -len("-oracle")] if command.endswith("-oracle") else None
+    return topic if topic and (ROOT / "oracle" / topic / "generate.py").is_file() else None
+
+
 def command_folders(command, main_rs):
     """Folders an xtask command touches, or None if unknown."""
     arm = re.search(
@@ -64,7 +71,8 @@ def command_folders(command, main_rs):
         main_rs,
     )
     if not arm:
-        return None
+        topic = fallback_topic(command)
+        return generator_folders(topic, set()) if topic else None
     module, args = arm.groups()
     if module == "profile_oracle":
         folder = re.search(r'"([a-z0-9-]+)"', args)
@@ -83,7 +91,7 @@ def load(manifest):
         for tool in entry.get("tools", []):
             if not (ROOT / tool).is_file():
                 raise SystemExit(f"{manifest}: {entry['name']}: missing tool {tool}")
-        if f'Some("{entry["xtask"][0]}")' not in main_rs:
+        if f'Some("{entry["xtask"][0]}")' not in main_rs and not fallback_topic(entry["xtask"][0]):
             raise SystemExit(f"{manifest}: {entry['name']}: unknown xtask command {entry['xtask'][0]}")
         entry["folders"] = None if entry.get("exclusive") else command_folders(entry["xtask"][0], main_rs)
     for i, entry in enumerate(entries):
