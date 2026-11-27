@@ -34,12 +34,14 @@ straight to the build check and start-up:
 5. The server, in the background, with its log in `runs/play/server.log`:
    `rs09-server --world --cache assets/cache --saves runs/play/saves --data runs/play/world-data --tcp 127.0.0.1:43594`.
 6. Once the port answers, the client in the foreground:
-   `rs09-client --connect 127.0.0.1:43594 --cache assets/cache --world-keys runs/play/world-data/data/configs/xteas.json`.
+   `rs09-client --connect 127.0.0.1:43594 --cache assets/cache --world-keys runs/play/world-data/data/configs/xteas.json --mute`.
    Closing the client stops the server.
 
-Options: `-Port N` (when 43594 is taken), `-KeepServer` (leave the server
-running after the client closes), `-ServerOnly` (no client; Ctrl+C stops
-it), `-Data`, `-Saves`, `-Cache`, `-Python PATH`.
+Options: `-Port N` (when 43594 is taken), `-Sound` (start with audio on;
+by default the client gets `--mute`, which sets music, effects and ambient
+sound to volume 0 and leaves the saved volumes as they are), `-KeepServer`
+(leave the server running after the client closes), `-ServerOnly` (no
+client; Ctrl+C stops it), `-Data`, `-Saves`, `-Cache`, `-Python PATH`.
 
 The region keys matter: without them the client streams the title screen's
 regions with no key and prints `JS5 length exceeds limit` and `negative JS5

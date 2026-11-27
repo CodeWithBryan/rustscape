@@ -9,8 +9,8 @@ Each step is skipped when its result already exists:
   3. cargo xtask play-world    world folder (pinned Server/data + worldprops/default.conf)
   4. cargo build --release     rs09-server and rs09-client
 Then it starts the server in the background (log in runs/play/server.log), waits for its
-port, and runs the client in the foreground. Closing the client stops the server unless
--KeepServer is given. See docs/play-locally.md.
+port, and runs the client in the foreground with audio off (--mute; -Sound keeps it on).
+Closing the client stops the server unless -KeepServer is given. See docs/play-locally.md.
 
 .EXAMPLE
 pwsh tools/play.ps1
@@ -25,7 +25,8 @@ param(
     [string]$Python = "",
     [switch]$SkipBuild,
     [switch]$ServerOnly,
-    [switch]$KeepServer
+    [switch]$KeepServer,
+    [switch]$Sound
 )
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
@@ -98,7 +99,10 @@ try {
     }
     $keys = Join-Path $Data "data/configs/xteas.json"
     Write-Host "==> Client" -ForegroundColor Cyan
-    & $Client --connect $address --cache $Cache --world-keys $keys
+    $clientArgs = @("--connect", $address, "--cache", $Cache, "--world-keys", $keys)
+    # Audio starts off (the client's --mute development switch); -Sound keeps it.
+    if (-not $Sound) { $clientArgs += "--mute" }
+    & $Client @clientArgs
 }
 finally {
     if ($KeepServer -and -not $serverProcess.HasExited) {

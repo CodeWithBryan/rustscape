@@ -4249,7 +4249,9 @@ async fn main() {
     }
     println!("Loaded {} synthesized sound effects", sounds.len());
     let sound_index = 0;
-    let muted = false;
+    // --mute: start with music, effects and ambient sound off, as the M key
+    // does in the workbench view. A development switch: no preference changes.
+    let muted = std::env::args().any(|arg| arg == "--mute");
     let audio_played = false;
     let material = render::material(&workbench.textures, true).expect("world shader");
     let static_renderer = if std::env::args().any(|arg| arg == "--cpu-static-mesh") {
