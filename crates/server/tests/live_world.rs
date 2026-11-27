@@ -2505,6 +2505,7 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     use_chest_scenario(address, saves).await;
     use_smelt_scenario(address, saves).await;
     use_smith_scenario(address, saves).await;
+    use_object_scenario(address, saves).await;
 }
 
 /// Cooking (`world::cooking`, docs/cooking.md) at the fire 5631 west of
@@ -2792,6 +2793,195 @@ async fn use_smith_scenario(address: std::net::SocketAddr, saves: &std::path::Pa
         smith.position()
     );
     smith.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Five small item-on-object listeners (`world::item_on_object`,
+/// docs/item-on-object.md): `usesap` by the tree 1278 east of Lumbridge
+/// castle (a herring on it, the knife for a bucket of sap, the sap's
+/// "empty"), `usepoison` at the Draynor Manor fountain 153 (the poisoned
+/// fish food once, then "dead already") and `usecheese` at the Falador
+/// hairdresser's treadmill 11677.
+async fn use_object_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let slot_of = |c: &Client, id: i32| {
+        c.containers[&93]
+            .iter()
+            .find(|(_, (item, _))| *item == id)
+            .map(|(slot, _)| *slot)
+            .expect("the item is held")
+    };
+
+    let start = [3223, 3232, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usesap",
+        start,
+        &[(0, 946, 1), (1, 1925, 1), (2, 347, 1)],
+    );
+    let (code, sap) = Client::login(address, "usesap").await;
+    assert_eq!(code, 2, "usesap's login");
+    let mut sap = sap.unwrap();
+    sap.until(Duration::from_secs(10), "usesap's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = sap.messages.len();
+    sap.send(use_with_scenery(347, 2, 1278, 3225, 3232)).await;
+    sap.until(Duration::from_secs(20), "the herring joke", |c| {
+        said(c, from, "This is not the mightiest tree in the forest.")
+    })
+    .await;
+    sap.send(use_with_scenery(946, 0, 1278, 3225, 3232)).await;
+    sap.until_pinging(Duration::from_secs(20), "the bucket of sap", |c| {
+        held(c, 4687) == 1 && held(c, 1925) == 0
+    })
+    .await;
+    assert!(
+        said(
+            &sap,
+            from,
+            "You cut the tree and allow its sap to drip down into your bucket."
+        ),
+        "usesap's messages: {:?}",
+        &sap.messages[from..]
+    );
+    let slot = slot_of(&sap, 4687);
+    sap.send(item_option4(4687, slot)).await;
+    sap.until(Duration::from_secs(10), "the emptied bucket", |c| {
+        held(c, 1925) == 1 && held(c, 4687) == 0
+    })
+    .await;
+    assert_eq!(slot_of(&sap, 1925), slot, "the bucket is in the sap's slot");
+    assert!(
+        said(
+            &sap,
+            from,
+            "You empty the contents of the bucket on the floor."
+        ),
+        "usesap's messages: {:?}",
+        &sap.messages[from..]
+    );
+    assert!(
+        !said(&sap, from, "You need a bucket to do that."),
+        "a bucket was held"
+    );
+    eprintln!(
+        "usesap collected sap from the tree 1278 at [3225, 3232, 0] and emptied it: walked {start:?} -> {:?}",
+        sap.position()
+    );
+    sap.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let start = [3085, 3332, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usepoison",
+        start,
+        &[(0, 274, 1), (1, 274, 1)],
+    );
+    let (code, poison) = Client::login(address, "usepoison").await;
+    assert_eq!(code, 2, "usepoison's login");
+    let mut poison = poison.unwrap();
+    poison
+        .until(Duration::from_secs(10), "usepoison's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = poison.messages.len();
+    poison.send(use_with_scenery(274, 0, 153, 3087, 3334)).await;
+    poison
+        .until_pinging(Duration::from_secs(30), "the dead piranhas", |c| {
+            said(c, from, "... then die and float to the surface.")
+        })
+        .await;
+    let lines: Vec<&str> = poison.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .filter(|m| !m.starts_with("Handler="))
+        .collect();
+    assert_eq!(
+        lines,
+        [
+            "You pour the poisoned fish food into the fountain.",
+            "The piranhas start eating the food...",
+            "... then die and float to the surface.",
+        ],
+        "usepoison's messages"
+    );
+    assert_eq!(held(&poison, 274), 1, "one fish food is gone");
+    let from = poison.messages.len();
+    poison.send(use_with_scenery(274, 1, 153, 3087, 3334)).await;
+    poison
+        .until_pinging(Duration::from_secs(20), "the second pour's answer", |c| {
+            said(c, from, "The piranhas are dead already.")
+        })
+        .await;
+    assert_eq!(held(&poison, 274), 1, "the second fish food stays");
+    eprintln!(
+        "usepoison poisoned the fountain 153 at [3087, 3334, 0] once: walked {start:?} -> {:?}",
+        poison.position()
+    );
+    poison.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    // `/save:piranhas-killed` went into the save.
+    let saved = std::fs::read_to_string(players.join("usepoison.json")).expect("usepoison's save");
+    assert!(
+        saved.contains("piranhas-killed"),
+        "the saved attribute is in usepoison's save"
+    );
+
+    let start = [2946, 3379, 0];
+    write_save(&players, "traceone", "usecheese", start, &[(0, 1985, 1)]);
+    let (code, cheese) = Client::login(address, "usecheese").await;
+    assert_eq!(code, 2, "usecheese's login");
+    let mut cheese = cheese.unwrap();
+    cheese
+        .until(Duration::from_secs(10), "usecheese's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = cheese.messages.len();
+    cheese
+        .send(use_with_scenery(1985, 0, 11677, 2948, 3380))
+        .await;
+    cheese
+        .until_pinging(Duration::from_secs(30), "the thrown cheese", |c| {
+            said(
+                c,
+                from,
+                "You throw the cheese to Ridgeley, for which he appears grateful.",
+            )
+        })
+        .await;
+    assert_eq!(held(&cheese, 1985), 0, "the cheese is gone");
+    // The lambda answers false before its task runs; the scenery path of
+    // `InteractionListeners.run` ignores the answer, so nothing else is said.
+    assert!(
+        !said(&cheese, from, "Nothing interesting happens."),
+        "usecheese's messages: {:?}",
+        &cheese.messages[from..]
+    );
+    assert!(
+        said(&cheese, from, "Achievement Diary has been updated."),
+        "the Falador task is finished: {:?}",
+        &cheese.messages[from..]
+    );
+    eprintln!(
+        "usecheese threw cheese at the treadmill 11677 at [2948, 3380, 0]: walked {start:?} -> {:?}",
+        cheese.position()
+    );
+    cheese.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
@@ -4023,6 +4213,10 @@ async fn follow_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     one.writer.close(1000, "logout").await.unwrap();
     two.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+}
+/// ITEM_ACTION_4 (161): an inventory item's fourth option (Empty).
+fn item_option4(id: i32, slot: i32) -> Frame {
+    frame(161, &[&li32(149 << 16), &la16(id), &la16(slot)])
 }
 /// ITEM_ACTION_1 (156): an inventory item's first option (Eat, Drink).
 fn item_option1(id: i32, slot: i32) -> Frame {

@@ -29,7 +29,7 @@ use crate::{
             self as gi, Container, Definition, Dialogue, Diary, Error, Expression, Result, Speaker,
             Statics, Task, Value, random, registry,
         },
-        interaction_listeners as listeners, item_on_npc,
+        interaction_listeners as listeners, item_on_npc, item_on_object,
         packet_handlers::{Base, Container as Held},
     },
 };
@@ -119,10 +119,10 @@ impl random::Random for crate::startup::generators::WorldGenerators {
 pub struct Everyday<'a>(pub Ctx<'a>);
 
 impl Everyday<'_> {
-    fn player(&self, node: &Node) -> Result<super::P> {
+    pub(super) fn player(&self, node: &Node) -> Result<super::P> {
         self.0.player_of(node).map_err(|_| Error::Cast)
     }
-    fn native(&self, id: i32, amount: i32) -> crate::inventory::item::Handle {
+    pub(super) fn native(&self, id: i32, amount: i32) -> crate::inventory::item::Handle {
         Shared::new(NativeItem::new(id, amount, 1000, &self.0.0.inner.items))
     }
     fn node_name(&mut self, node: &Node) -> Result<Option<String>> {
@@ -144,7 +144,7 @@ impl Everyday<'_> {
         }
     }
     /// ContentAPI `sendMessage`: `player.sendMessages(*splitLines(message, 86))`.
-    fn message(&mut self, player: &Node, text: &str) -> Result<()> {
+    pub(super) fn message(&mut self, player: &Node, text: &str) -> Result<()> {
         let p = self.player(player)?;
         let units: Vec<u16> = text.encode_utf16().collect();
         let lines = crate::world::plain_dialogue::split_lines(&units, 86).map_err(bind)?;
@@ -172,7 +172,7 @@ impl Everyday<'_> {
     }
     /// ContentAPI `animate(entity, animation)`: `animator.animate(animation)`
     /// of a player or an NPC.
-    fn animate_entity(&mut self, entity: &Node, animation: Anim) -> Result<()> {
+    pub(super) fn animate_entity(&mut self, entity: &Node, animation: Anim) -> Result<()> {
         let (Node::Player(h) | Node::Npc(h)) = entity else {
             return Err(Error::Cast);
         };
@@ -203,7 +203,7 @@ impl Everyday<'_> {
     }
     /// ContentAPI `removeItem(player, item)` in the inventory:
     /// `player.inventory.remove(item)`.
-    fn remove_from_inventory(
+    pub(super) fn remove_from_inventory(
         &mut self,
         player: &Node,
         item: &crate::inventory::item::Handle,
@@ -215,7 +215,7 @@ impl Everyday<'_> {
             .map_err(bind)
     }
     /// `player.inventory.add(Item(id, amount))`.
-    fn add_to_inventory(&mut self, player: &Node, id: i32, amount: i32) -> Result<bool> {
+    pub(super) fn add_to_inventory(&mut self, player: &Node, id: i32, amount: i32) -> Result<bool> {
         let item = self.native(id, amount);
         self.0
             .with_container(player, Held::Inventory, |c, defs, ctx| {
@@ -879,6 +879,7 @@ impl super::super::host::Live {
         );
         let mut registered = Vec::new();
         let mut npc_registered = Vec::new();
+        let mut object_registered = Vec::new();
         let mut cooking = false;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -890,6 +891,12 @@ impl super::super::host::Live {
                 item_on_npc::define(&registry, class).map_err(|e| format!("{name}: {e:?}"))?;
                 npc_registered.push(class);
             }
+            if let Some(class) = item_on_object::Class::named(name) {
+                // super::withobject.
+                item_on_object::define(&registry, &casing, class)
+                    .map_err(|e| format!("{name}: {e:?}"))?;
+                object_registered.push(class);
+            }
             if let Some(class) = registry::Class::named(name)
                 && INSTALLED.contains(&class)
             {
@@ -899,6 +906,7 @@ impl super::super::host::Live {
         }
         self.round.everyday.registered = registered;
         self.round.everyday.npc_registered = npc_registered;
+        self.round.with_object.registered = object_registered;
         self.round.cooking.registered = cooking;
         Ok(())
     }
@@ -985,6 +993,16 @@ impl super::super::host::Live {
         if let Some(interaction) = f.value::<item_on_npc::Interaction>() {
             let mut host = Everyday(Ctx(self));
             return Some(item_on_npc::run(
+                &mut host,
+                *interaction,
+                player,
+                used,
+                with,
+            ));
+        }
+        if let Some(interaction) = f.value::<item_on_object::Interaction>() {
+            let mut host = super::withobject::WithObject(Everyday(Ctx(self)));
+            return Some(item_on_object::run(
                 &mut host,
                 *interaction,
                 player,

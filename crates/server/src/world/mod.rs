@@ -59,6 +59,7 @@ pub mod interface_listeners;
 pub mod interface_packets;
 pub mod interfaces;
 pub mod item_on_npc;
+pub mod item_on_object;
 pub mod landscape;
 pub mod legacy_interaction;
 pub mod legacy_runtime;

@@ -611,6 +611,15 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (docs/live-world.md). Every other global_items2::Host service stays a
   refusal by name there; join a service before installing a class that
   reaches it. See docs/item-on-npc.md.
+- For the five small item-on-object listeners (world/item_on_object:
+  SapCollectListener, PoisonFountainListener, HairdresserCheeseListener,
+  FishEasterEgg, GWDEntranceRopeListener), run `cargo test -p rs09-server
+  --test item_on_object`. There is no JVM corpus: the test is a recording
+  host written from the pinned sources, so do not call the module
+  differentially verified. Keep the quirks docs/item-on-object.md lists
+  (the sap pulse submitted without a bucket, the cheese lambda's false
+  answer). The live binding is world/live/items/withobject.rs; after
+  touching it run the live_world `usewith` scenario.
 - For cooking (world/cooking: CookingRewrite's use-with listener, the
   Standard/Pie/Pizza/IntentionalBurn pulses, CookingDialogue and
   CookableItems), run `cargo test -p rs09-server --test cooking`. There is no
