@@ -83,6 +83,7 @@ impl<'a> Eating<'a> {
                 live,
                 p,
                 disabled: false,
+                npc: false,
             },
             skills,
             clocks,
