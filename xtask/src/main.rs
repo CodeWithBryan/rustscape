@@ -383,7 +383,10 @@ fn play_world(root: &Path, args: &[String]) -> Result<()> {
         .iter()
         .all(|file| output.join(file).is_file());
     if complete && !force {
-        println!("World folder {} exists; --force rewrites it.", output.display());
+        println!(
+            "World folder {} exists; --force rewrites it.",
+            output.display()
+        );
         return Ok(());
     }
     verify_reference(root)?;

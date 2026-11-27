@@ -3549,7 +3549,9 @@ fn world_keys() -> String {
             "runs/player-session/xteas.json",
             "runs/play/world-data/data/configs/xteas.json",
         ];
-        let found = defaults.iter().find(|path| std::path::Path::new(path).is_file());
+        let found = defaults
+            .iter()
+            .find(|path| std::path::Path::new(path).is_file());
         found.unwrap_or(&defaults[0]).to_string()
     })
 }
