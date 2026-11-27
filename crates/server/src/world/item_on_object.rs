@@ -1,8 +1,10 @@
-//! Five small listeners of `content/global/handlers/item/withobject`:
+//! Six small listeners of `content/global/handlers/item/withobject`:
 //! collecting sap (`SapCollectListener`, with its "empty" item option), the
 //! Draynor Manor fountain (`PoisonFountainListener`), cheese for Ridgeley
-//! (`HairdresserCheeseListener`), the herring jokes (`FishEasterEgg`) and
-//! the rope on the God Wars entrance hole (`GWDEntranceRopeListener`).
+//! (`HairdresserCheeseListener`), the herring jokes (`FishEasterEgg`), the
+//! rope on the God Wars entrance hole (`GWDEntranceRopeListener`) and an axe
+//! on a tree (`AxeOnTree`, which only starts `WoodcuttingSkillPulse`: the
+//! pulse is `world::gathering::woodcutting`'s).
 //!
 //! Each lambda is a typed native value ([`Interaction`]) whose body is a
 //! function over [`Host`]; the pulses the lambdas submit are [`Pulse`]
@@ -57,7 +59,12 @@ pub const GWD_HOLE: i32 = 26340;
 /// The varbit the rope sets to 1 (saved).
 pub const GWD_ROPE_VARBIT: i32 = 3932;
 
-/// FishEasterEgg's `TREE_IDs`: `WoodcuttingNode.values().map { it.id }`.
+/// AxeOnTree's `axes`, in declaration order: bronze, mithril, iron, black,
+/// steel, adamant, rune, dragon, the inferno adze.
+pub const AXES: [i32; 9] = [1351, 1355, 1349, 1361, 1353, 1357, 1359, 6739, 13661];
+
+/// FishEasterEgg's `TREE_IDs` and AxeOnTree's `trees`:
+/// `WoodcuttingNode.values().map { it.id }`.
 pub fn woodcutting_ids() -> Vec<i32> {
     crate::world::gathering::nodes::WoodcuttingNode::values()
         .iter()
@@ -137,6 +144,10 @@ pub trait Host {
     /// `entity.pulseManager.run(pulse)` of a new `Pulse(delay)`
     /// (`submitIndividualPulse` and `runTask`).
     fn run_pulse(&mut self, pulse: Pulse<Self::Node>, delay: i32) -> Result<()>;
+    /// `submitIndividualPulse(player, WoodcuttingSkillPulse(player,
+    /// scenery))`: the pulse is constructed, then run in the player's pulse
+    /// manager.
+    fn run_woodcutting_pulse(&mut self, player: &Self::Node, scenery: &Self::Node) -> Result<()>;
 }
 
 /// The lambdas.
@@ -158,6 +169,8 @@ pub enum Interaction {
     FishOnDoor,
     /// GWDEntranceRopeListener's `onUseWith(SCENERY, ROPE_954, HOLE_26340)`.
     GwdRope,
+    /// AxeOnTree's `onUseWith(SCENERY, axes, *trees)`.
+    AxeOnTree,
 }
 impl crate::world::component_objects::NativeObject for Interaction {}
 impl Interaction {
@@ -185,6 +198,9 @@ impl Interaction {
             Self::GwdRope => {
                 "content.global.handlers.item.withobject.GWDEntranceRopeListener$defineListeners$1"
             }
+            Self::AxeOnTree => {
+                "content.global.handlers.item.withobject.AxeOnTree$defineListeners$1"
+            }
         }
     }
     /// Whether the lambda is an `on` listener (the others are use-with).
@@ -193,9 +209,10 @@ impl Interaction {
     }
 }
 
-/// The five listener classes, by their scanned names.
+/// The six listener classes, by their scanned names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
+    AxeOnTree,
     FishEasterEgg,
     GwdEntranceRope,
     HairdresserCheese,
@@ -203,7 +220,8 @@ pub enum Class {
     SapCollect,
 }
 impl Class {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
+        Self::AxeOnTree,
         Self::FishEasterEgg,
         Self::GwdEntranceRope,
         Self::HairdresserCheese,
@@ -212,6 +230,7 @@ impl Class {
     ];
     pub fn name(self) -> &'static str {
         match self {
+            Self::AxeOnTree => "content.global.handlers.item.withobject.AxeOnTree",
             Self::FishEasterEgg => "content.global.handlers.item.withobject.FishEasterEgg",
             Self::GwdEntranceRope => {
                 "content.global.handlers.item.withobject.GWDEntranceRopeListener"
@@ -231,8 +250,8 @@ impl Class {
 }
 
 /// A class's `defineListeners` over the native InteractionListeners
-/// registry. The vararg overloads validate each pair; FishEasterEgg's array
-/// overload overwrites.
+/// registry. The vararg overloads validate each pair; the array overload of
+/// FishEasterEgg and AxeOnTree overwrites.
 pub fn define(registry: &interactions::Registry, casing: &impl Casing, class: Class) -> Result<()> {
     let scenery = interactions::Kind::Scenery.ordinal();
     let binding = |e: interactions::Error| Error::Binding(Some(format!("{e:?}")));
@@ -245,6 +264,14 @@ pub fn define(registry: &interactions::Registry, casing: &impl Casing, class: Cl
         interactions::Function::new(kind, f.class(), f)
     };
     match class {
+        Class::AxeOnTree => registry
+            .add_use_arrays(
+                scenery,
+                &AXES,
+                &woodcutting_ids(),
+                function(Interaction::AxeOnTree),
+            )
+            .map_err(binding),
         Class::SapCollect => {
             registry
                 .add_use_ids(
@@ -311,9 +338,17 @@ pub fn run<H: Host + ?Sized>(
     f: Interaction,
     player: &H::Node,
     used: &H::Node,
-    _with: &H::Node,
+    with: &H::Node,
 ) -> Result<bool> {
     match f {
+        Interaction::AxeOnTree => {
+            // `with.asScenery()`.
+            if h.kind(with) != Kind::Scenery {
+                return Err(Error::Cast);
+            }
+            h.run_woodcutting_pulse(player, with)?;
+            Ok(true)
+        }
         Interaction::SapCollect => sap_collect(h, player),
         Interaction::PoisonFountain => poison_fountain(h, player, used),
         Interaction::HairdresserCheese => hairdresser_cheese(h, player, used),

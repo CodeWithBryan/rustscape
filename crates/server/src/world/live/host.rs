@@ -1600,6 +1600,10 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.smithing_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // WoodcuttingSkillPulse (super::items::woodcutting).
+        if let Some(result) = self.woodcutting_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // PulseManager.runUnhandledAction's pulse of a use-with.
         if let Some(result) = self.use_pulse(pulse) {
             return result.map_err(fail);

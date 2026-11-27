@@ -50,6 +50,7 @@ pub mod smelting;
 pub mod smithing;
 pub mod use_with;
 pub mod withobject;
+pub mod woodcutting;
 
 /// A node the handlers see: `==` is identity.
 #[derive(Clone)]
