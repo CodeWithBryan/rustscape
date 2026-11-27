@@ -1,4 +1,4 @@
-//! Six small listeners of `content/global/handlers/item/withobject`:
+//! Nine small listeners of `content/global/handlers/item/withobject`:
 //! collecting sap (`SapCollectListener`, with its "empty" item option), the
 //! Draynor Manor fountain (`PoisonFountainListener`), cheese for Ridgeley
 //! (`HairdresserCheeseListener`), the herring jokes (`FishEasterEgg`), the
