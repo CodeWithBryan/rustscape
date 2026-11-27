@@ -23,8 +23,9 @@ const USAGE: &str = "cargo xtask client-smoke [--data DIR] [--cache DIR] [--no-b
 /// goblin scenario starts here too).
 const LOCATION: [i32; 3] = [3250, 3235, 0];
 const CHARACTER: &str = "smokegoblin";
-/// The NPC option packets (`protocol::game::menu::npc_option`).
-const NPC_OPTION_OPCODES: [u64; 5] = [17, 16, 4, 19, 2];
+/// The NPC option packets, options 1 to 5 (`ClientAction::NpcAction` in
+/// protocol/game/actions.rs).
+const NPC_OPTION_OPCODES: [u64; 5] = [78, 3, 148, 30, 218];
 /// The capture files the checks read, from the client's `runs/visual`.
 const CAPTURE_FILES: [&str; 5] = [
     "npc-menu-capture.json",

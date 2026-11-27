@@ -382,6 +382,9 @@ impl Game {
                     });
                     match attack {
                         Some(index) => {
+                            // The NPC under the point may not be the one the
+                            // probe hit first: watch the one Attack names.
+                            driver.npc_index = Some(menu.menu.entries[index].key as usize);
                             let row = [
                                 bounds.x + bounds.width / 2,
                                 bounds.row_baseline(size, index) - 5,

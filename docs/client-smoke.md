@@ -81,7 +81,7 @@ report.
 | b | the player's tile is within 20 tiles of the seeded one, `loaded.json` has placed meshes, and the probe's NPC list has a goblin |
 | c | the probe hit a goblin whose row says it `enters_pick` (a model and pick triangles at the frame's pick), and the menu built with the mouse on it has `Attack` naming it |
 | d | the right-click menu opened there lists `Attack` naming it |
-| e | choosing it queued an NPC option packet (opcodes 17, 16, 4, 19 or 2) and the client then received a rise in attack, strength, defence or hitpoints experience |
+| e | choosing it queued an NPC option packet (opcodes 78, 3, 148, 30 or 218) and a hit on the NPC the Attack entry names (its health bar) then reached the client |
 
 ## Catching the unclickable NPCs
 
