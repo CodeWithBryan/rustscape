@@ -135,7 +135,7 @@ def insert(path, marker, line, written):
     """Puts `line` before the marker line, once, at the marker's indentation."""
     path = ROOT / path
     text = path.read_text(encoding='utf-8')
-    if line in text:
+    if re.sub(r'\s', '', line) in re.sub(r'\s', '', text):  # already there, perhaps reformatted
         return
     lines = text.split('\n')
     at = next((i for i, l in enumerate(lines) if l.strip() == marker), None)
@@ -400,6 +400,15 @@ TODO: what the corpus and the live binding do not establish.
 '''
 
 
+def rustfmt(written):
+    """Formats the Rust files written or registered in, so a fresh scaffold passes `cargo fmt --check`."""
+    paths = sorted({str(ROOT / w.split(' ')[0]) for w in written if w.split(' ')[0].endswith('.rs')})
+    try:
+        subprocess.run(['rustfmt', '--edition', '2024', *paths], cwd=ROOT, check=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        print(f'rustfmt did not run ({error}): run cargo fmt')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('kind', choices=['dialogue', 'generic'])
@@ -441,6 +450,7 @@ def main():
     write(f'docs/{topic}.md', doc_md(topic, relative, found, calls + [f'{c} (content::Services::{s})' for c, s in shared], args.kind),
           args.force, written)
     if args.kind == 'generic':
+        rustfmt(written)
         print('Wrote:\n' + '\n'.join('  ' + w for w in written))
         print(f'\nThe generic kind has no shared oracle layer yet: write oracle/{topic}/ from the closest existing corpus '
               '(docs/content-porting.md, "Other content").')
@@ -459,6 +469,7 @@ def main():
         with ci.open('a', encoding='utf-8', newline='\n') as f:
             f.write(f'\n[[check]]\nname = "Reproduce original {names} content ({topic})"\nxtask = ["{topic}-oracle", "--check"]\n')
         written.append('oracle/ci.toml (registered)')
+    rustfmt(written)
     print('Wrote:\n' + '\n'.join('  ' + w for w in written))
     print('\nOutside calls found (now Host methods; fix their signatures):\n' + ('\n'.join('  ' + c for c in calls) or '  none'))
     if shared:

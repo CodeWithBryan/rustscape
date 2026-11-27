@@ -145,5 +145,6 @@ def main(topic, unchanged, cases, scope, doc=None):
     else:
         fixtures.mkdir(parents=True, exist_ok=True)
         (fixtures / 'oracle.jsonl').write_bytes(data)
-        (fixtures / 'provenance.json').write_text(json.dumps(provenance, sort_keys=True, indent=2) + '\n', encoding='utf-8')
+        (fixtures / 'provenance.json').write_text(json.dumps(provenance, sort_keys=True, indent=2) + '\n', encoding='utf-8',
+                                                     newline='\n')
         print(f'Generated {summary}.')
