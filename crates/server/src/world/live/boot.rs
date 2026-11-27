@@ -431,6 +431,10 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             .collect()
     };
     let driver = Driver::new(repository.clone());
+    // SceneryBuilder's pulses go to GameWorld.Pulser: the scene's runner is
+    // the driver's (their bodies: `Live::pulse_body`).
+    let mut scene = scene;
+    scene.runner = driver.pulser().clone();
     let ground = super::ground_items::Grounds::new(
         ground_items.manager,
         ground_items.spawns,
@@ -526,6 +530,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     // The content use-with listeners (super::items::everyday).
     live.install_content_use()?;
     live.install_cow_milking()?;
+    live.install_smelting()?;
     Ok(Booted {
         live,
         configuration,

@@ -2502,6 +2502,8 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     use_content_scenario(address, saves).await;
     use_cook_scenario(address, saves).await;
     use_milk_scenario(address, saves).await;
+    use_chest_scenario(address, saves).await;
+    use_smelt_scenario(address, saves).await;
 }
 
 /// Cooking (`world::cooking`, docs/cooking.md) at the fire 5631 west of
@@ -2509,6 +2511,179 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
 /// burnt meat), then three raw shrimps through the "How many would you like
 /// to cook?" chatbox (307) with "All" (each shrimp is cooked or burnt by
 /// its roll at cooking level 1).
+/// ChestKeyListener: the chest key on the pirate chest 2079 upstairs in the
+/// Blue Moon Inn (`SceneryBuilder.replace` for three ticks).
+async fn use_chest_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let start = [3218, 3395, 1];
+    write_save(&players, "traceone", "usechest", start, &[(0, 432, 1)]);
+    let (code, chest) = Client::login(address, "usechest").await;
+    assert_eq!(code, 2, "usechest's login");
+    let mut chest = chest.unwrap();
+    chest
+        .until(Duration::from_secs(10), "usechest's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = chest.messages.len();
+    let frames = chest.frames.len();
+    chest.send(use_with_scenery(432, 0, 2079, 3219, 3396)).await;
+    chest
+        .until_pinging(Duration::from_secs(20), "the pirate message", |c| {
+            held(c, 433) == 1 && held(c, 432) == 0
+        })
+        .await;
+    let lines: Vec<&str> = chest.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .filter(|m| m.contains("chest"))
+        .collect();
+    assert_eq!(
+        lines,
+        [
+            "You unlock the chest.",
+            "All that's in the chest is a message...",
+            "You take the message from the chest."
+        ],
+        "usechest's messages"
+    );
+    // The open chest 2080 for three ticks, then the closed one again: two
+    // chunk update batches (230), the replacement and the restoration.
+    chest
+        .until_pinging(Duration::from_secs(20), "the chest closes again", |c| {
+            c.frames[frames..]
+                .iter()
+                .filter(|f| f.opcode == 230)
+                .count()
+                >= 2
+        })
+        .await;
+    // Each batch deletes the object (195) and adds one (179), whose id is
+    // the last two bytes (`p2add`): 2080, then 2079 again.
+    let added: Vec<i32> = chest.frames[frames..]
+        .iter()
+        .filter(|f| f.opcode == 230)
+        .map(|f| {
+            let n = f.payload.len();
+            assert!(f.payload.contains(&195) && f.payload.contains(&179));
+            (i32::from(f.payload[n - 2]) << 8) | i32::from(f.payload[n - 1].wrapping_sub(128))
+        })
+        .collect();
+    assert_eq!(added[..2], [2080, 2079], "usechest's object updates");
+    eprintln!("usechest opened the chest 2079 (2080 for three ticks) and took the message");
+    chest.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// FurnaceOptionPlugin, SmeltingInterface and SmeltingPulse at the Al
+/// Kharid furnace 11666: an ore used on it (SmeltUseWithHandler through
+/// `UseWithHandler.HANDLERS`), then its "Smelt" option, each followed by a
+/// bronze button of the chatbox 311.
+async fn use_smelt_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let start = [3274, 3187, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usesmelt",
+        start,
+        &[(0, 436, 1), (1, 438, 1), (2, 436, 1), (3, 438, 1)],
+    );
+    let (code, smelt) = Client::login(address, "usesmelt").await;
+    assert_eq!(code, 2, "usesmelt's login");
+    let mut smelt = smelt.unwrap();
+    smelt
+        .until(Duration::from_secs(10), "usesmelt's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = smelt.messages.len();
+    // Tin ore on the furnace: the chatbox, then bronze's "1" (button 16).
+    let opened = smelt.opened.len();
+    smelt
+        .send(use_with_scenery(438, 1, 11666, 3272, 3185))
+        .await;
+    smelt
+        .until(Duration::from_secs(20), "the smelting chatbox", |c| {
+            c.opened[opened..].iter().any(|(_, id)| *id == 311)
+        })
+        .await;
+    smelt.send(button(311, 16)).await;
+    smelt
+        .until_pinging(Duration::from_secs(30), "the first bronze bar", |c| {
+            held(c, 2349) == 1
+        })
+        .await;
+    assert_eq!(
+        (held(&smelt, 436), held(&smelt, 438)),
+        (1, 1),
+        "one bar's ores are gone"
+    );
+    // The option, then bronze's "5" (button 15): the pulse smelts the one
+    // bar the ores are for and stops.
+    let opened = smelt.opened.len();
+    smelt.send(scenery_option2(11666, 3272, 3185)).await;
+    smelt
+        .until(Duration::from_secs(20), "the smelting chatbox again", |c| {
+            c.opened[opened..].iter().any(|(_, id)| *id == 311)
+        })
+        .await;
+    smelt.send(button(311, 15)).await;
+    smelt
+        .until_pinging(Duration::from_secs(30), "the second bronze bar", |c| {
+            held(c, 2349) == 2 && held(c, 436) == 0 && held(c, 438) == 0
+        })
+        .await;
+    smelt
+        .until_pinging(Duration::from_secs(30), "the ores ran out", |c| {
+            c.messages[from..]
+                .iter()
+                .any(|(_, m)| m == "You do not have the required ores to make this bar.")
+        })
+        .await;
+    let lines: Vec<&str> = smelt.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .collect();
+    for (line, count) in [
+        (
+            "You place the required ores and attempt to create a bar of Bronze.",
+            2,
+        ),
+        ("You retrieve a bar of bronze.", 2),
+    ] {
+        assert_eq!(
+            lines.iter().filter(|m| **m == line).count(),
+            count,
+            "usesmelt's messages: {lines:?}"
+        );
+    }
+    assert!(
+        lines
+            .iter()
+            .any(|m| m.starts_with("Handler=SmeltUseWithHandler, used item=")),
+        "the smelt handler's debug line: {lines:?}"
+    );
+    eprintln!(
+        "usesmelt smelted two bronze bars at the furnace 11666 from {:?}",
+        smelt.position()
+    );
+    smelt.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
 /// on it (BucketHandler through `UseWithHandler.HANDLERS`).
 async fn use_milk_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
@@ -2981,6 +3156,10 @@ fn use_item_on_item(used: i32, used_slot: i32, with: i32, with_slot: i32) -> Fra
 /// OBJECT_ACTION_1 (254): a scenery's first option.
 fn scenery_option1(id: i32, x: i32, y: i32) -> Frame {
     frame(254, &[&le16(x), &sa16(id), &be16(y)])
+}
+/// OBJECT_ACTION_2 (194): a scenery's second option.
+fn scenery_option2(id: i32, x: i32, y: i32) -> Frame {
+    frame(194, &[&la16(y), &le16(x), &be16(id)])
 }
 /// OPLOCU (115): an inventory item (interface 149) used on an NPC.
 fn use_with_npc(item: i32, slot: i32, npc_index: i32) -> Frame {

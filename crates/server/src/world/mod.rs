@@ -110,6 +110,7 @@ pub mod script_runtime;
 pub mod session;
 pub mod shops;
 pub mod slayer_tasks;
+pub mod smelting;
 pub mod social;
 pub mod special_attacks;
 pub mod spells;

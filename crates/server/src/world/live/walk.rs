@@ -616,6 +616,10 @@ impl player_walk::Services for WalkHost<'_> {
                 // A content plugin without a getDestination override:
                 // OptionHandler's null.
                 super::scenery::SceneryPlugin::CowMilking => return Ok(None),
+                // FurnaceOptionPlugin.getDestination answers a tile only
+                // inside the "Donator Zone", a zone no class of the pinned
+                // source registers: null (docs/smelting.md).
+                super::scenery::SceneryPlugin::Furnace => return Ok(None),
             };
             let mut geometry = super::destination::Geometry {
                 walk: &mut *self.walk,

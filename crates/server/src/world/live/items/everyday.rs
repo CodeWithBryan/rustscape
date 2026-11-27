@@ -55,9 +55,10 @@ pub struct EverydayWorld {
 }
 
 /// The `global_items2` classes this world installs: the use-with listeners
-/// whose every service is joined. ChestKeyListener needs
-/// `SceneryBuilder.replace` (not joined) and stays out.
-pub const INSTALLED: [registry::Class; 4] = [
+/// whose every service is joined (ChestKeyListener's `replaceScenery` is
+/// `SceneryBuilder.replace` over the scene).
+pub const INSTALLED: [registry::Class; 5] = [
+    registry::Class::ChestKey,
     registry::Class::HatStand,
     registry::Class::SackOnHay,
     registry::Class::SandSource,
@@ -614,12 +615,44 @@ impl gi::Host for Everyday<'_> {
     }
     fn replace_scenery(
         &mut self,
-        _: &Self::Node,
-        _: i32,
-        _: i32,
-        _: Option<[i32; 3]>,
+        to: &Self::Node,
+        with: i32,
+        ticks: i32,
+        at: Option<[i32; 3]>,
     ) -> Result<()> {
-        refuse("replace_scenery")
+        // ContentAPI replaceScenery(toReplace, with, forTicks, loc):
+        // SceneryBuilder.replace(toReplace, toReplace.transform(with,
+        // toReplace.rotation, newLoc)[, forTicks]) over the scene, then
+        // `toReplace.isActive = false`.
+        use crate::world::scenery::{self as builder, ReplaceMode};
+        let Node::Scenery(object) = to else {
+            return Err(Error::Cast);
+        };
+        let (location, shape, rotation) = {
+            let object = object.read();
+            (object.location.clone(), object.shape, object.rotation)
+        };
+        let location = at.map_or(location, |[x, y, z]| {
+            crate::world::doors::Location::new(x, y, z)
+        });
+        let walk = &mut self.0.0.walk;
+        let construct = crate::world::scenery_node::construct(
+            &mut walk.scene.definitions,
+            with,
+            location,
+            shape,
+            rotation,
+            false,
+        )
+        .map_err(bind)?;
+        let mode = if ticks == -1 {
+            ReplaceMode::default()
+        } else {
+            ReplaceMode::Temporary { clip: true, ticks }
+        };
+        let mut world = walk.scene.context(&mut walk.maps);
+        builder::replace(&mut world, Some(object), Some(&construct), mode).map_err(bind)?;
+        builder::set_active(&mut world, object, false).map_err(bind)
     }
     fn static_level(&mut self, _: &Self::Node, _: i32) -> Result<i32> {
         refuse("static_level")

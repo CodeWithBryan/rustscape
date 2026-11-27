@@ -88,11 +88,18 @@ impl Live {
     }
 
     /// `UseWithHandler.handle(event)` of a handler of this world.
-    pub fn use_handler_handle(&mut self, handler: usize, player: &P) -> Option<Result<bool>> {
+    pub fn use_handler_handle(
+        &mut self,
+        handler: usize,
+        player: &P,
+        with: &Node,
+    ) -> Option<Result<bool>> {
         match handler {
             // BucketHandler.handle: `(Scenery) event.getUsedWith()` holds,
             // the handler is keyed by OBJECT_TYPE.
             BUCKET_HANDLER => Some(cow_milking::bucket_handle(self, player)),
+            // SmeltUseWithHandler.handle: FurnaceOptionPlugin's handle.
+            super::smelting::SMELT_HANDLER => Some(self.furnace_handle(player, with).map_err(bind)),
             _ => None,
         }
     }
@@ -117,7 +124,11 @@ impl Live {
     pub fn content_pulse_stopped(&mut self, pulse: &pulses::Handle) -> Result<()> {
         let pulses = &mut self.round.milking.pulses;
         let Some(at) = pulses.iter().position(|(h, _)| h.same(pulse)) else {
-            return Ok(());
+            // SmeltingPulse: SkillPulse.stop().
+            return match self.smelting_pulse_stopped(pulse) {
+                Some(result) => result.map_err(bind),
+                None => Ok(()),
+            };
         };
         let (_, mut task) = pulses.remove(at);
         task.stop(self)
