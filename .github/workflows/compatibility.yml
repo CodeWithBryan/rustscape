@@ -1,9 +1,21 @@
 name: Rust and JVM compatibility
 
+# Push runs only on main: a branch with a pull request is tested once, by the
+# pull_request run (which tests it merged with main). Changes that touch only
+# documentation skip CI; nothing a test or oracle runs reads Markdown.
 on:
   push:
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
   workflow_dispatch:
+
+# A new commit on a pull request cancels the run for its previous commit.
+# Runs on main and manual runs are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -19,12 +31,37 @@ env:
   CARGO_PROFILE_TEST_DEBUG: '0'
   CARGO_PROFILE_DEV_OPT_LEVEL: '1'
 
-# Two jobs run side by side: formatting, lints and the Rust tests in one, the
-# JVM oracles and interop checks in the other. Neither reads what the other
-# writes (the tests ran before every oracle when they were one job).
+# Three jobs run side by side: formatting and lints, the Rust tests, and the
+# JVM oracles with the interop checks. None reads what another writes (they
+# ran in that order in one job before). Clippy's checking shares nothing with
+# the test build, so it gets its own runner.
 jobs:
+  lint:
+    name: Rust formatting and lints
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
+          rustup default 1.97.0
+          rustup target add wasm32-unknown-unknown
+      # Caches ~/.cargo and the compiled dependencies in target/; the
+      # workspace crates are rebuilt every run. The key includes the job,
+      # the toolchain and Cargo.lock.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+      - name: Formatting
+        run: cargo fmt --check
+      - name: Verify pinned Macroquad atlas texture lifetime patch
+        run: python tools/check_macroquad_vendor.py
+      - name: Lints
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - name: Browser protocol and visual build checks
+        run: cargo check --locked --target wasm32-unknown-unknown -p rs09-protocol -p rs09-client -p rs09-audio-worklet
+
   tests:
-    name: Rust formatting, lints and tests
+    name: Rust tests
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,20 +71,10 @@ jobs:
           java-version: '25'
       - name: Install pinned Rust toolchain
         run: |
-          rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
+          rustup toolchain install 1.97.0 --profile minimal
           rustup default 1.97.0
-          rustup target add wasm32-unknown-unknown
-      # Caches ~/.cargo and the compiled dependencies in target/; the
-      # workspace crates are rebuilt every run. The key includes the
-      # toolchain and Cargo.lock.
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
-      - name: Formatting
-        run: cargo fmt --check
-      - name: Verify pinned Macroquad atlas texture lifetime patch
-        run: python tools/check_macroquad_vendor.py
-      - name: Lints
-        run: cargo clippy --locked --workspace --all-targets -- -D warnings
       # Some tests read the pinned original sources, so fetch them first.
       - name: Fetch locked original sources
         run: cargo xtask bootstrap
@@ -67,8 +94,6 @@ jobs:
         run: cargo test --locked -p rs09-server --example movement_session
       - name: Verify controlled NPC/player stream composition
         run: cargo test --locked -p rs09-server --example npc_session
-      - name: Browser protocol and visual build checks
-        run: cargo check --locked --target wasm32-unknown-unknown -p rs09-protocol -p rs09-client -p rs09-audio-worklet
 
   oracles:
     name: JVM oracles and interop
