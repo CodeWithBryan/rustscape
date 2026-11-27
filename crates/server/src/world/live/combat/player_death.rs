@@ -501,22 +501,17 @@ impl pd::Host for Live {
             .map_err(binding)
     }
     fn open_component(&mut self, player: &NodeHandle, id: i32) -> Result<()> {
+        // With the world's interface context (super::super::global_ui):
+        // the open closes what is open, whose close listener may be a
+        // global handler's.
         let p = self.dp(player)?;
-        let manager = self.death_ui(&p);
-        let result = interfaces::open_id(&mut self.inner, &manager, id)
-            .map(|_| ())
-            .map_err(binding);
-        self.inner.drain(&p);
-        result
+        self.with_world_ui(&p, |ui, m| interfaces::open_id(ui, m, id).map(|_| ()))
+            .map_err(binding)
     }
     fn close_interface(&mut self, player: &NodeHandle) -> Result<()> {
         let p = self.dp(player)?;
-        let manager = self.death_ui(&p);
-        let result = interfaces::close(&mut self.inner, &manager)
-            .map(|_| ())
-            .map_err(binding);
-        self.inner.drain(&p);
-        result
+        self.with_world_ui(&p, |ui, m| interfaces::close(ui, m).map(|_| ()))
+            .map_err(binding)
     }
 
     // Graves (world/live/graves.rs): the grave is an NPC made at runtime

@@ -383,19 +383,15 @@ impl shops::Host for ShopHost<'_> {
         _: Option<Button>,
     ) -> Result<bool> {
         // An open or close listener of another class reached through the
-        // shop's interface context: BankInterface's runs; the global
-        // handlers' stay skipped (super::inner's listener_open).
-
-        self.ui(p, |inner| {
-            match inner.bank_open_listener(&callback, component) {
-                Some(result) => result,
-                None => {
-                    inner
-                        .not_ported
-                        .skip("InterfaceListeners.runOpen (content interface listeners)");
-                    Ok(true)
-                }
-            }
+        // shop's interface context: BankInterface's runs; any other (a
+        // global handler's needs the whole world, super::global_ui, which
+        // this context does not hold) is refused, never skipped.
+        self.ui(p, |inner| match inner.bank_open_listener(&callback, component) {
+            Some(result) => result,
+            None => Err(interfaces::Error::Binding(format!(
+                "not ported in the live world: an interface listener of {} through the shop's interface context",
+                component.read().id
+            ))),
         })
     }
     fn ui_validate(&mut self, p: &NodeHandle, m: &Manager) -> Result<()> {

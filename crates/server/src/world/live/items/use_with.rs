@@ -109,11 +109,12 @@ impl use_with::Context for Ctx<'_> {
     }
     fn close_interface(&mut self, player: &Node) -> Result<()> {
         let p = self.player_of(player)?;
-        self.0.inner.current = Some(p.clone());
-        let manager = self.0.inner.canonical(&p).player.manager();
-        crate::world::interfaces::close(&mut self.0.inner, &manager).map_err(err)?;
-        self.0.inner.drain(&p);
-        Ok(())
+        // With the world's interface context (super::super::global_ui).
+        self.0
+            .with_world_ui(&p, |ui, m| {
+                crate::world::interfaces::close(ui, m).map(|_| ())
+            })
+            .map_err(err)
     }
     fn unhandled(&mut self, player: &Node) -> Result<()> {
         // PulseManager.runUnhandledAction(player, STANDARD): a Pulse(1)

@@ -27,6 +27,7 @@ use super::{
 use crate::world::{
     dialogue::{self as d, Arg, Plugin, PluginBody},
     global_handlers::{self as gh, climb, registry},
+    interface_listeners::{self, Button, Callback},
     interfaces::{self, Handle as Component, Manager},
     player_walk::NodeHandle,
     trade,
@@ -64,22 +65,24 @@ impl Live {
         component: &Component,
         close: bool,
     ) -> Option<interfaces::Result<bool>> {
-        let id = component.read().id;
-        let callback = if close {
-            self.listeners.get_close(id)
+        // InterfaceListeners.runOpen/runClose (the registry's own lookup);
+        // the callback is run here only when it is a global handler's.
+        let registry = self.listeners.clone();
+        let mut ctx = GlobalListeners {
+            live: self,
+            handled: false,
+        };
+        let result = if close {
+            registry.run_close(&mut ctx, Some(p), Some(component))
         } else {
-            self.listeners.get_open(id)
+            registry.run_open(&mut ctx, Some(p), Some(component))
         };
-        let callback = match callback {
-            Ok(Some(callback)) => callback,
-            Ok(None) => return None,
-            Err(e) => return Some(Err(e)),
-        };
-        let listener = callback.value::<registry::Listener>().map(|l| *l)?;
-        Some(
-            self.global_open(listener, p, id)
-                .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
-        )
+        // A failed lookup (a listener of the wrong arity) fails here too.
+        if ctx.handled || result.is_err() {
+            Some(result)
+        } else {
+            None
+        }
     }
 
     /// `player.getDialogueInterpreter().setDialogue(dialogue)` for the climb
@@ -92,6 +95,42 @@ impl Live {
         let plugin = Plugin::new(self, Some(p.0.clone()), ClimbPlugin(Some(dialogue)))?;
         self.interpreter_of(p).set_dialogue(Some(plugin));
         Ok(())
+    }
+}
+
+/// The InterfaceListeners context of [`Live::global_interface_listener`]:
+/// runs a global handler's open or close listener and marks it handled;
+/// any other listener is left to the caller's interface context.
+struct GlobalListeners<'a> {
+    live: &'a mut Live,
+    handled: bool,
+}
+impl interface_listeners::Context for GlobalListeners<'_> {
+    fn invoke_open(
+        &mut self,
+        callback: Callback,
+        player: &NodeHandle,
+        component: &Component,
+    ) -> interfaces::Result<bool> {
+        let Some(listener) = callback.value::<registry::Listener>().map(|l| *l) else {
+            return Ok(false);
+        };
+        self.handled = true;
+        let id = component.read().id;
+        self.live
+            .global_open(listener, player, id)
+            .map_err(|e| interfaces::Error::Binding(format!("{e:?}")))
+    }
+    fn invoke_button(
+        &mut self,
+        _: Callback,
+        _: &NodeHandle,
+        _: &Component,
+        _: Button,
+    ) -> interfaces::Result<bool> {
+        Err(interfaces::Error::Binding(
+            "a button listener through the open/close listener context".into(),
+        ))
     }
 }
 

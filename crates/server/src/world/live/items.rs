@@ -968,9 +968,16 @@ impl drop::Context for Ctx<'_> {
     }
     fn close_all_interfaces(&mut self, player: &Node) -> Result<()> {
         let p = self.player_of(player)?;
+        // interfaceManager.close() with the world's interface context (the
+        // global handlers' close listeners, super::global_ui), then
+        // closeChatbox().
+        self.0
+            .with_world_ui(&p, |ui, m| {
+                crate::world::interfaces::close(ui, m).map(|_| ())
+            })
+            .map_err(err)?;
         self.0.inner.current = Some(p.clone());
         let manager = self.0.inner.canonical(&p).player.manager();
-        crate::world::interfaces::close(&mut self.0.inner, &manager).map_err(err)?;
         crate::world::interfaces::close_chatbox(&mut self.0.inner, &manager).map_err(err)
     }
     fn queue_soft_script(&mut self, _: &Node, script: drop::DropScript<Node>) -> Result<()> {

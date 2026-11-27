@@ -751,6 +751,14 @@ impl gh::Host for GHost<'_> {
                 "content.global.handlers.iface.tabs.CombatTabInterface$handle$2"
             }
             Task::Climb { .. } => "core.game.global.action.ClimbActionHandler$climb$1",
+            // ClimbDialogue.handle's two anonymous pulses: case 1 (climb-up)
+            // is $1, case 2 (climb-down) is $2.
+            Task::ClimbChoice { option, .. } if *option == "climb-up" => {
+                "core.game.global.action.ClimbActionHandler$ClimbDialogue$1"
+            }
+            Task::ClimbChoice { .. } => {
+                "core.game.global.action.ClimbActionHandler$ClimbDialogue$2"
+            }
             _ => "content.global.handlers (a deferred body)",
         };
         let handle = Shared::new(pulses::Pulse::new(
