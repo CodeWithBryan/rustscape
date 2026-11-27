@@ -30,6 +30,7 @@
 //! This is a playable engine slice, not a complete server: content (login
 //! listeners, plugins, quests, music, emotes, NPC behaviour, tutorial) is not
 //! ported and is answered by name. See docs/live-world.md.
+pub mod appearance;
 pub mod bank;
 pub mod boot;
 pub mod buttons;

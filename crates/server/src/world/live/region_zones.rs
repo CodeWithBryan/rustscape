@@ -125,7 +125,6 @@ impl skull::Host for Live {
             .map_err(|e| skull_lib::Error::Binding(format!("{e:?}")))?;
         let canonical = self.inner.canonical(&p).player.clone();
         canonical.appearance().set_skull_icon(icon);
-        canonical.masks().body().write().skull_icon = icon;
         Ok(())
     }
     fn update_appearance(&mut self, player: &NodeHandle) -> skull_lib::Result<()> {

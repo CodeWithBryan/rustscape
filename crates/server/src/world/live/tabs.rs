@@ -459,9 +459,7 @@ impl tab_weapon::Host for Tabs<'_> {
         Ok(())
     }
     fn is_npc(&mut self) -> player_tabs::Result<bool> {
-        let masks = self.inner.canonical(&self.p).player.masks();
-        let npc = masks.body().read().npc_id != -1;
-        Ok(npc)
+        Ok(self.inner.canonical(&self.p).player.appearance().is_npc())
     }
     fn spell_book(&mut self) -> player_tabs::Result<i32> {
         self.profile(|profile| profile.spell_book)
