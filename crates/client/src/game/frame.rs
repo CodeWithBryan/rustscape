@@ -1106,6 +1106,10 @@ impl Game {
         let live_base = self.live_base;
         let ui_time = self.ui_time;
         if npc_packet_mode {
+            let mut previous = std::mem::take(&mut workbench.npcs)
+                .into_iter()
+                .map(|npc| (npc.index, npc))
+                .collect::<BTreeMap<_, _>>();
             workbench.npcs = live_npcs
                 .local_ids
                 .iter()
@@ -1116,18 +1120,14 @@ impl Game {
                     workbench
                         .npc_bases
                         .contains_key(&npc.metadata.bas)
-                        .then(|| NpcActor {
-                            index,
-                            id: npc.type_id as u32,
-                            render_id: None,
-                            motion: npc.motion.clone(),
-                            animation: Some(npc.animation.clone()),
-                            home: npc.motion.head,
-                            walks: false,
-                            phase: 0,
-                            pick_triangles: Vec::new(),
-                            model_height: 200,
-                            terrain: Default::default(),
+                        .then(|| {
+                            NpcActor::live(
+                                index,
+                                npc.type_id as u32,
+                                npc.motion.clone(),
+                                npc.animation.clone(),
+                                previous.remove(&index),
+                            )
                         })
                 })
                 .collect();
