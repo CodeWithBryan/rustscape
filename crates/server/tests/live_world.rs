@@ -1650,6 +1650,8 @@ async fn cast_until_projectile(
     for (index, tile) in nearest_npcs(one, ids).into_iter().take(5) {
         eprintln!("{}: {what} on NPC {index} at {tile:?}", one.name);
         let from = one.projectiles.len();
+        // Only a PING (93) refreshes the 20-second timeout.
+        one.send(frame(93, &[])).await;
         one.send(spell_on_npc(interface, child, index)).await;
         let flown = |c: &Client| {
             c.projectiles[from..]
@@ -1734,11 +1736,13 @@ async fn effects_scenario(address: std::net::SocketAddr, saves: &std::path::Path
     let mut refused = false;
     for attempt in 0..5 {
         // The last cast's magic delay, and a binding delay still running.
+        one.send(frame(93, &[])).await;
         one.pump(Duration::from_secs(8)).await;
         let index = cast_until_projectile(&mut one, &CHICKENS, 192, 12, 178, "Bind").await;
         let nature = amount(&one, 3);
         let from = one.messages.len();
         // Past the cast's magic delay, inside the binding delay.
+        one.send(frame(93, &[])).await;
         one.pump(Duration::from_millis(3600)).await;
         one.send(spell_on_npc(192, 12, index)).await;
         let end = Instant::now() + Duration::from_secs(3);
@@ -1789,6 +1793,7 @@ async fn effects_scenario(address: std::net::SocketAddr, saves: &std::path::Path
         for (index, tile) in nearest_npcs(&one, &CHICKENS).into_iter().take(6) {
             eprintln!("godone: Claws of Guthix on chicken {index} at {tile:?}");
             let hits_from = one.npc_hits.len();
+            one.send(frame(93, &[])).await;
             one.send(spell_on_npc(192, 42, index)).await;
             let end = Instant::now() + Duration::from_secs(8);
             while Instant::now() < end && amount(&one, 0) == blood {
