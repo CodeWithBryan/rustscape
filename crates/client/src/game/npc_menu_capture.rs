@@ -32,6 +32,9 @@ use std::collections::VecDeque;
 const ENTER_SECONDS: f64 = 60.0;
 const SEARCH_SECONDS: f64 = 30.0;
 const STEP_SECONDS: f64 = 5.0;
+/// Probes and hovers before the script gives up on finding the NPC under
+/// the mouse (it may walk off the probe's point).
+const HOVER_ATTEMPTS: u32 = 5;
 /// Between a pointer event and reading what it did: several of the 20 ms
 /// cycles that copy the listener's state into `Mouse`.
 const SETTLE_SECONDS: f64 = 0.15;
@@ -70,6 +73,7 @@ pub(crate) struct Driver {
     pub(super) done: bool,
     point: [i32; 2],
     welcome_clicks: u32,
+    hover_misses: u32,
     /// When the welcome screen's Play button was first laid out.
     welcome_seen: Option<f64>,
     /// A probe was asked for and has not come back yet.
@@ -117,6 +121,7 @@ impl Driver {
             done: false,
             point: [0, 0],
             welcome_clicks: 0,
+            hover_misses: 0,
             welcome_seen: None,
             probe_asked: false,
             last_probe: 0.0,
@@ -136,6 +141,16 @@ impl Driver {
             .get(&npc.id)
             .is_some_and(|d| d.name.eq_ignore_ascii_case(&self.name))
             && (self.types.is_empty() || self.types.contains(&npc.id))
+    }
+
+    /// Whether the NPC of local index `index` (a menu entry's key) is one to
+    /// point at.
+    fn wanted_index(&self, world: &Workbench, index: u64) -> bool {
+        world
+            .npcs
+            .iter()
+            .find(|npc| npc.index as u64 == index)
+            .is_some_and(|npc| self.wanted(world, npc))
     }
 
     /// The events to hand the frame's input after the window's own.
@@ -187,8 +202,8 @@ impl Driver {
     }
 }
 
-/// A pixel where the probe's mouse hit the NPC `index` with the player on
-/// `plane`.
+/// The middle pixel where the probe's mouse hit the NPC `index` with the
+/// player on `plane`.
 fn probe_point(probe: &serde_json::Value, plane: usize, index: u64) -> Option<[i32; 2]> {
     let level = probe["levels"]
         .as_array()?
@@ -197,7 +212,7 @@ fn probe_point(probe: &serde_json::Value, plane: usize, index: u64) -> Option<[i
     let actor = level["actors"].as_array()?.iter().find(|actor| {
         actor["npc"].as_bool() == Some(true) && actor["index"].as_u64() == Some(index)
     })?;
-    let pixel = actor["first_pixel"].as_array()?;
+    let pixel = actor["middle_pixel"].as_array()?;
     Some([
         pixel.first()?.as_i64()? as i32,
         pixel.get(1)?.as_i64()? as i32,
@@ -368,13 +383,11 @@ impl Game {
                 }
             }
             Stage::Hover => {
-                let name = driver.name.to_lowercase();
-                let names_npc = self
-                    .hover_menu
-                    .entries
-                    .iter()
-                    .any(|e| e.target.to_lowercase().contains(&name));
-                if elapsed >= SETTLE_SECONDS && names_npc {
+                let wanted_here =
+                    self.hover_menu.entries.iter().any(|e| {
+                        e.option == "Attack" && driver.wanted_index(&self.workbench, e.key)
+                    });
+                if elapsed >= SETTLE_SECONDS && wanted_here {
                     let detail = serde_json::json!({
                         "point": driver.point,
                         "entries": entries(&self.hover_menu),
@@ -382,15 +395,39 @@ impl Game {
                     let point = driver.point;
                     driver.click(MouseButton::Right, point);
                     driver.stage_done(frame, Stage::Open, detail);
-                } else if elapsed > STEP_SECONDS {
-                    driver
+                } else if elapsed > SETTLE_SECONDS * 4.0 {
+                    // The NPC walked off the point, or another stands in
+                    // front: look again from a new probe.
+                    let miss = serde_json::json!({
+                        "frame": frame,
+                        "point": driver.point,
+                        "entries": entries(&self.hover_menu),
+                    });
+                    if let Some(misses) = driver
                         .report
-                        .insert("hover_entries".into(), entries(&self.hover_menu));
-                    let point = driver.point;
-                    driver.fail(
-                        frame,
-                        format!("the menu built at {point:?} names no {:?}", driver.name),
-                    );
+                        .entry("hover_misses")
+                        .or_insert_with(|| serde_json::json!([]))
+                        .as_array_mut()
+                    {
+                        misses.push(miss);
+                    }
+                    driver.hover_misses += 1;
+                    if driver.hover_misses >= HOVER_ATTEMPTS {
+                        let point = driver.point;
+                        driver.fail(
+                            frame,
+                            format!(
+                                "{HOVER_ATTEMPTS} times the menu built at the probe's point ({point:?} last) had no Attack for a wanted {:?}",
+                                driver.name
+                            ),
+                        );
+                    } else {
+                        driver.stage = Stage::Search;
+                        driver.since = get_time();
+                        driver.probe_asked = false;
+                        driver.last_probe = 0.0;
+                        driver.write();
+                    }
                 }
             }
             Stage::Open => {
@@ -401,13 +438,7 @@ impl Game {
                     // The Attack for a wanted NPC: others may stand at the
                     // same point.
                     let attack = menu.menu.entries.iter().position(|e| {
-                        e.option == "Attack"
-                            && self
-                                .workbench
-                                .npcs
-                                .iter()
-                                .find(|npc| npc.index as u64 == e.key)
-                                .is_some_and(|npc| driver.wanted(&self.workbench, npc))
+                        e.option == "Attack" && driver.wanted_index(&self.workbench, e.key)
                     });
                     let detail = serde_json::json!({
                         "bounds": [bounds.x, bounds.y, bounds.width, bounds.height],

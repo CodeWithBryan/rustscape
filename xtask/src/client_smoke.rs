@@ -328,9 +328,11 @@ fn read(out: &Path, file: &str) -> Value {
 }
 
 fn stage<'a>(capture: &'a Value, name: &str) -> Option<&'a Value> {
+    // The last: a search is repeated when its NPC walked away.
     capture["stages"]
         .as_array()?
         .iter()
+        .rev()
         .find(|s| s["stage"] == name)
 }
 

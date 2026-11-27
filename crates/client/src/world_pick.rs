@@ -981,6 +981,21 @@ impl Picker {
     }
 }
 
+/// Of the points that hit an actor, the one nearest their mean: well inside
+/// its picked shape, where a moving actor is still found a moment later.
+#[cfg(not(target_arch = "wasm32"))]
+fn middle(points: &[[i32; 2]]) -> Option<[i32; 2]> {
+    let n = points.len() as i64;
+    let sum = points.iter().fold([0i64; 2], |s, p| {
+        [s[0] + i64::from(p[0]), s[1] + i64::from(p[1])]
+    });
+    let mean = [sum[0] / n.max(1), sum[1] / n.max(1)];
+    points.iter().copied().min_by_key(|p| {
+        let d = [i64::from(p[0]) - mean[0], i64::from(p[1]) - mean[1]];
+        d[0] * d[0] + d[1] * d[1]
+    })
+}
+
 /// `--pick-probe`: what a mouse at each point of a grid over the view would
 /// pick, as if the local player stood on each level in turn. Written with a
 /// capture so a run can show which locations are offered where.
@@ -1006,9 +1021,9 @@ pub(crate) fn probe(
         let (mut points, mut walkable, mut deepest) = (0, 0, 0);
         let mut found = std::collections::BTreeMap::new();
         let mut actors = std::collections::BTreeMap::<u64, [i32; 4]>::new();
-        // The first grid point that hit each actor: a point a mouse can be
-        // put on to point at it (the area's corners may miss it).
-        let mut first_hits = std::collections::BTreeMap::<u64, [i32; 2]>::new();
+        // The grid points that hit each actor: points a mouse can be put
+        // on to point at it (the area's corners may miss it).
+        let mut hits = std::collections::BTreeMap::<u64, Vec<[i32; 2]>>::new();
         let mut samples = Vec::new();
         let mut y = rect[1] + 4.0;
         while y < rect[1] + rect[3] {
@@ -1022,7 +1037,7 @@ pub(crate) fn probe(
                 points += 1;
                 walkable += usize::from(steps.iter().any(|s| s.walk().flatten().is_some()));
                 for key in steps.iter().flat_map(Step::actor_keys) {
-                    first_hits.entry(key).or_insert([x as i32, y as i32]);
+                    hits.entry(key).or_default().push([x as i32, y as i32]);
                     let area = actors.entry(key).or_insert([i32::MAX, i32::MAX, 0, 0]);
                     *area = [
                         area[0].min(x as i32),
@@ -1069,7 +1084,8 @@ pub(crate) fn probe(
             })).collect::<Vec<_>>(),
             "actors": actors.iter().map(|(key, area)| serde_json::json!({
                 "npc": key >> 29 & 3 == 1, "index": key >> 32, "pixels": area,
-                "first_pixel": first_hits.get(key),
+                "first_pixel": hits.get(key).and_then(|h| h.first()),
+                "middle_pixel": hits.get(key).and_then(|h| middle(h)),
             })).collect::<Vec<_>>(),
             "samples": samples,
         }));
