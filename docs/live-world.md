@@ -297,6 +297,14 @@ modes of `rs09-server` are unchanged.
   interface listener of ID through the shop's interface context".
   With no listener registered, runOpen does nothing and
   runClose answers true, as the original does.
+- `processWalkPacket`'s interface tests (walk.rs `interfaces`) read the
+  opened and chatbox components' definitions' `isWalkable`, as
+  PacketProcessor.kt does (lines 491 and 493); a missing definition is the
+  original's null. Before PR #20's last round the chatbox answer was always
+  null, so a walk with a dialogue chatbox up (the climb options 228) failed
+  before closing anything, and the opened answer was
+  InterfaceManager.isWalkable() (true but for 389), so a walk never closed a
+  non-walkable main interface.
 - `ClimbPlugin::open` is refused ("ClimbDialogue.open through the
   interpreter is not reached"): ClimbActionHandler opens the climb options
   itself before `setDialogue`, and no live path opens the plugin through
@@ -900,7 +908,7 @@ the client-side player and NPC update decoders):
   Lumbridge swamp's giant rats) opens the equipment stats until a rat's
   attack closes them: `CombatPulse.setCombatFlags`' close through the
   world's context runs 667's onClose (670 closed, then 667).
-- `stairup`, `stairdown` and `stairleave` (saves on Lumbridge castle's
+- `stairup`, `stairdown`, `stairleave` and `stairwalk` (saves on Lumbridge castle's
   middle floor at 3206,3229,1) use the north staircase 36777's first
   option, Climb (opcode 254 at 3204,3229): ClimbActionHandler finds a
   staircase above and below, sends the options (chatbox 228: "What would
@@ -910,7 +918,10 @@ the client-side player and NPC update decoders):
   pulse, `end()`: the options closed, 149 to child 12, and script 101 for
   chatbox 137). `stairleave` clicks the settings tab's 261:16 instead:
   IfAction closes the dialogue first (the same close and script 101),
-  then 742 opens. For each, a later Continue on 228:2 moves nothing, runs
+  then 742 opens. `stairwalk` walks to 3206,3226,1 instead:
+  `processWalkPacket` closes the options chatbox (228's definition is not
+  walkable) and the dialogue (the same close and script 101), then walks.
+  For each, a later Continue on 228:2 moves nothing, runs
   no second `end()` (no chatbox close followed by script 101) and offers
   no options again: the dialogue is cleared. The landing tiles are the native ClimbActionHandler
   over the cache (the library is global-handlers-oracle's), not a JVM run

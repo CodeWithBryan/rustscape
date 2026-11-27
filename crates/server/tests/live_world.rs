@@ -2649,7 +2649,9 @@ async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::
 /// clicks a settings button while the options are up: IfAction closes the
 /// dialogue first (PacketProcessor.processIfAction), the chatbox goes back
 /// to 137, the button still opens 742, and a late Continue on the options
-/// climbs nowhere.
+/// climbs nowhere. A fourth walks away while the options are up:
+/// processWalkPacket closes the options chatbox (228 is not walkable) and
+/// the dialogue, then walks.
 async fn climb_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
     let players = saves.join("players");
     let at = [3206, 3229, 1];
@@ -2665,6 +2667,7 @@ async fn climb_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
         ("stairup", 2, CLIMBED_UP),
         ("stairdown", 3, CLIMBED_DOWN),
         ("stairleave", 0, at),
+        ("stairwalk", -1, WALKED_OFF),
     ] {
         write_save(&players, "traceone", name, at, &[]);
         let (code, one) = Client::login(address, name).await;
@@ -2717,6 +2720,31 @@ async fn climb_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
                 "IfAction closes the dialogue before the button runs"
             );
             one.send(close_interface()).await;
+        } else if child < 0 {
+            // Interrupted by a walk: processWalkPacket closes the options
+            // chatbox (not walkable) and the dialogue, then walks.
+            one.send(actions::worldspace_walk(
+                destination[0],
+                destination[1],
+                false,
+            ))
+            .await;
+            one.until(Duration::from_secs(10), "the walk off the stairs", |c| {
+                c.position() != at
+            })
+            .await;
+            one.pump(Duration::from_secs(3)).await;
+            let closes = closes_from(&one, frames);
+            eprintln!(
+                "stairwalk: at {:?}, closes {closes:?}, scripts {:?}",
+                one.position(),
+                scripts_from(&one, frames)
+            );
+            assert!(
+                chatbox_restored(&one, frames).is_some(),
+                "the walk closed the options and the dialogue: {closes:?}"
+            );
+            assert_eq!(one.position(), destination, "stairwalk walked off");
         } else {
             one.send(continue_option(228, child)).await;
             one.until(Duration::from_secs(10), "the chosen floor", |c| {
@@ -2769,6 +2797,7 @@ async fn climb_scenario(address: std::net::SocketAddr, saves: &std::path::Path) 
             "{name}: Climb on the staircase 36777 offered Climb Up./Climb Down.; {} at {:?} on plane {}",
             match child {
                 0 => "a settings button closed the dialogue; stayed".to_owned(),
+                -1 => "a walk closed the dialogue and walked off".to_owned(),
                 c => format!("option {c} climbed"),
             },
             [x2, y2],
@@ -2794,6 +2823,8 @@ fn chatbox_restored(c: &Client, from: usize) -> Option<usize> {
 }
 /// The staircase 36777 on Lumbridge castle's middle floor.
 const STAIRS: [i32; 2] = [3204, 3229];
+/// Where `stairwalk` walks while the options are up (three tiles south).
+const WALKED_OFF: [i32; 3] = [3206, 3226, 1];
 /// Where its Climb Up. and Climb Down. choices land.
 const CLIMBED_UP: [i32; 3] = [3206, 3229, 2];
 const CLIMBED_DOWN: [i32; 3] = [3206, 3229, 0];
