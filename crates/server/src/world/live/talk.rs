@@ -743,6 +743,8 @@ pub enum Script {
     Shop(crate::world::shops::shop::AmountScript),
     /// A trade's Offer-X/Remove-X handler (`trade::plugin::run_amount`).
     Trade(crate::world::trade::AmountScript<NodeHandle>),
+    /// CookingDialogue's amount handler (`cooking::AmountInput::run`).
+    Cook(super::items::cooking::CookScript),
 }
 
 struct Prompt<'a> {
@@ -859,6 +861,15 @@ impl input::Context for Prompt<'_> {
                     crate::world::trade::Error::ClassCast => input::Error::Type,
                     other => ierror(other),
                 }),
+            Script::Cook(script) => {
+                let value = match &value {
+                    Response::Int(n) => crate::world::cooking::Input::Int(*n),
+                    Response::Text(text) => {
+                        crate::world::cooking::Input::Text(String::from_utf16_lossy(text))
+                    }
+                };
+                self.live.cooking_amount(&script, &value).map_err(ierror)
+            }
             Script::Shop(script) => self
                 .live
                 .shop_call(None, |host| {
@@ -1027,6 +1038,25 @@ impl Live {
             InputType::Amount,
             utf16(prompt),
             Script::Shop(script),
+        );
+        self.inner.drain(p);
+        result
+    }
+    /// `sendInputDialogue(player, true, prompt, handler)` of
+    /// CookingDialogue's Cook-X.
+    pub fn cook_prompt(
+        &mut self,
+        p: &P,
+        prompt: &str,
+        script: super::items::cooking::CookScript,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::send(
+            &mut Prompt { live: self },
+            &owner,
+            InputType::Numeric,
+            utf16(prompt),
+            Script::Cook(script),
         );
         self.inner.drain(p);
         result

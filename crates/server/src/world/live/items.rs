@@ -42,6 +42,7 @@ use rs09_protocol::game::{ClientAction, Frame, updates};
 use std::collections::HashMap;
 
 mod component_use;
+pub mod cooking;
 pub mod everyday;
 mod slots;
 pub mod use_with;

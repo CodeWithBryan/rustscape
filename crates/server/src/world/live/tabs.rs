@@ -509,37 +509,37 @@ impl level_up::Host for Tabs<'_> {
         Tabs::set_attribute(self, key, value)
     }
     fn static_level(&mut self, _: i32) -> player_tabs::Result<i32> {
-        refused("LevelUp.levelup (no experience is gained in this world)")
+        refused("LevelUp.levelup (outside Skills.addExperience)")
     }
     fn increment_prayer_points(&mut self, _: f64) -> player_tabs::Result<()> {
-        refused("LevelUp.levelup (no experience is gained in this world)")
+        refused("LevelUp.levelup (outside Skills.addExperience)")
     }
     fn total_level(&mut self) -> player_tabs::Result<i32> {
-        refused("LevelUp milestones (no experience is gained in this world)")
+        refused("LevelUp milestones (outside Skills.addExperience)")
     }
     fn combat_milestone(&mut self) -> player_tabs::Result<i32> {
-        refused("LevelUp milestones (no experience is gained in this world)")
+        refused("LevelUp milestones (outside Skills.addExperience)")
     }
     fn set_combat_milestone(&mut self, _: i32) -> player_tabs::Result<()> {
-        refused("LevelUp milestones (no experience is gained in this world)")
+        refused("LevelUp milestones (outside Skills.addExperience)")
     }
     fn skill_milestone(&mut self) -> player_tabs::Result<i32> {
-        refused("LevelUp milestones (no experience is gained in this world)")
+        refused("LevelUp milestones (outside Skills.addExperience)")
     }
     fn set_skill_milestone(&mut self, _: i32) -> player_tabs::Result<()> {
-        refused("LevelUp milestones (no experience is gained in this world)")
+        refused("LevelUp milestones (outside Skills.addExperience)")
     }
     fn combat_level(&mut self) -> player_tabs::Result<i32> {
         self.profile(|profile| profile.properties.combat_level)
     }
     fn jingle(&mut self, _: i32) -> player_tabs::Result<()> {
-        refused("level-up jingles (no experience is gained in this world)")
+        refused("level-up jingles (outside Skills.addExperience)")
     }
     fn varp(&mut self, id: i32, value: i32, save: bool) -> player_tabs::Result<()> {
         Tabs::varp(self, id, value, save)
     }
     fn graphic(&mut self, _: i32) -> player_tabs::Result<()> {
-        refused("level-up graphics (no experience is gained in this world)")
+        refused("level-up graphics (outside Skills.addExperience)")
     }
     fn send_string(&mut self, text: &str, interface: i32, child: i32) -> player_tabs::Result<()> {
         Tabs::send_string(self, text, interface, child)
@@ -566,6 +566,119 @@ impl level_up::Host for Tabs<'_> {
         let manager = self.manager();
         let component = self.inner.registry.component(id);
         interfaces::open_chatbox(&mut *self.inner, &manager, &component).map_err(binding)
+    }
+}
+
+/// `LevelUp.levelup` from `Skills.addExperience`: the tabs with the player's
+/// `Skills`, which the caller holds while the gain runs (the profile's own
+/// are out of it for that time).
+pub struct LevelUpTabs<'a, 'b> {
+    pub tabs: Tabs<'a>,
+    pub skills: &'b mut crate::player::skills::Skills,
+}
+
+impl level_up::Host for LevelUpTabs<'_, '_> {
+    fn get_attribute(&mut self, key: &str, default: Value) -> player_tabs::Result<Value> {
+        Tabs::get_attribute(&mut self.tabs, key, default)
+    }
+    fn set_attribute(&mut self, key: &str, value: Value) -> player_tabs::Result<()> {
+        Tabs::set_attribute(&mut self.tabs, key, value)
+    }
+    fn static_level(&mut self, slot: i32) -> player_tabs::Result<i32> {
+        // skills.getStaticLevel(slot).
+        usize::try_from(slot)
+            .ok()
+            .and_then(|slot| self.skills.static_levels.get(slot).copied())
+            .ok_or(player_tabs::Error::Index)
+    }
+    fn increment_prayer_points(&mut self, amount: f64) -> player_tabs::Result<()> {
+        // Skills.incrementPrayerPoints: clamped to [0, static], then the
+        // SkillLevel packet, whose prayer level is ceil(prayerPoints).
+        let skills = &mut *self.skills;
+        let limit = f64::from(skills.static_levels[5]);
+        skills.prayer_points = (skills.prayer_points + amount).max(0.0);
+        if skills.prayer_points > limit {
+            skills.prayer_points = limit;
+        }
+        let frame =
+            updates::skill_level(5, skills.prayer_points.ceil() as i32, skills.experience[5]);
+        self.tabs.inner.queue_native(&self.tabs.p, frame);
+        Ok(())
+    }
+    fn total_level(&mut self) -> player_tabs::Result<i32> {
+        Ok(self.skills.total_level())
+    }
+    fn combat_milestone(&mut self) -> player_tabs::Result<i32> {
+        Ok(self.skills.combat_milestone)
+    }
+    fn set_combat_milestone(&mut self, value: i32) -> player_tabs::Result<()> {
+        self.skills.combat_milestone = value;
+        Ok(())
+    }
+    fn skill_milestone(&mut self) -> player_tabs::Result<i32> {
+        Ok(self.skills.skill_milestone)
+    }
+    fn set_skill_milestone(&mut self, value: i32) -> player_tabs::Result<()> {
+        self.skills.skill_milestone = value;
+        Ok(())
+    }
+    fn combat_level(&mut self) -> player_tabs::Result<i32> {
+        level_up::Host::combat_level(&mut self.tabs)
+    }
+    fn jingle(&mut self, id: i32) -> player_tabs::Result<()> {
+        // ContentAPI.playJingle: the secondary MusicPacket.
+        self.tabs
+            .inner
+            .queue_native(&self.tabs.p, music_frame(id, true));
+        Ok(())
+    }
+    fn varp(&mut self, id: i32, value: i32, save: bool) -> player_tabs::Result<()> {
+        Tabs::varp(&mut self.tabs, id, value, save)
+    }
+    fn graphic(&mut self, id: i32) -> player_tabs::Result<()> {
+        // packetDispatch.sendGraphic(id): the SpotAnim mask, registered on
+        // the update masks directly (not through the animator).
+        let masks = self.tabs.inner.canonical(&self.tabs.p).player.masks();
+        masks
+            .spot(crate::world::appearance::SpotAnimation {
+                id,
+                height: 0,
+                delay: 0,
+            })
+            .map(|_| ())
+            .map_err(binding)
+    }
+    fn send_string(&mut self, text: &str, interface: i32, child: i32) -> player_tabs::Result<()> {
+        Tabs::send_string(&mut self.tabs, text, interface, child)
+    }
+    fn message(&mut self, text: &str) -> player_tabs::Result<()> {
+        Tabs::message(&mut self.tabs, text)
+    }
+    fn is_artificial(&mut self) -> bool {
+        false
+    }
+    fn username(&mut self) -> String {
+        level_up::Host::username(&mut self.tabs)
+    }
+    fn news(&mut self, _: &str, _: Option<(i32, &str)>) -> player_tabs::Result<()> {
+        self.tabs
+            .inner
+            .not_ported
+            .skip("Repository.sendNews (level 99 news)");
+        Ok(())
+    }
+    fn skillcape_trim(&mut self) -> player_tabs::Result<()> {
+        self.tabs
+            .inner
+            .not_ported
+            .skip("Skillcape.trim (content: a worn or carried skillcape is not trimmed)");
+        Ok(())
+    }
+    fn emote_unlock(&mut self, emote: tab_emotes::Emote) -> player_tabs::Result<bool> {
+        level_up::Host::emote_unlock(&mut self.tabs, emote)
+    }
+    fn open_chatbox(&mut self, id: i32) -> player_tabs::Result<()> {
+        level_up::Host::open_chatbox(&mut self.tabs, id)
     }
 }
 
