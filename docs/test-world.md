@@ -18,8 +18,13 @@ agent code beyond these entry points. What it establishes is server
 behaviour: the packets the server sent in answer to the original client's
 packets. It does not show rendering, click picking or menus (the headless
 agent has no renderer and no cache definitions; see
-[headless-agent.md](headless-agent.md)). Those need the visual client; test
-runs of the visual client pass `--mute`.
+[headless-agent.md](headless-agent.md)).
+
+**Test runs never open a window.** The kit is the server plus the
+`rs09-headless` agent only; nothing in it starts `rs09-client`, and it does
+not use `tools/play.ps1` (whose server-only mode is `-NoClient`). A
+visual-client check is a separate, deliberate step that someone chooses to
+take, and it runs the client with `--mute`.
 
 ## 1. A disposable world
 

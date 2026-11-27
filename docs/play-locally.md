@@ -81,4 +81,5 @@ To check a change with no one at the keyboard, use the test-world kit
 disposable world on a free port with its own saves, a script's `character`
 seeds a save (location, items, skills; not on Tutorial Island) before login,
 and the `agent_run` example drives it with the headless agent and prints
-what the server sent as JSON.
+what the server sent as JSON. Test runs never open a window; a visual-client
+check is a separate step, run with `--mute`.

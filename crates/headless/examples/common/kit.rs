@@ -259,10 +259,10 @@ pub fn button(interface: i32, child: i32) -> Frame {
 async fn wait_for_save(path: &Path) -> io::Result<String> {
     let end = Instant::now() + Duration::from_secs(20);
     loop {
-        if let Ok(text) = std::fs::read_to_string(path) {
-            if rs09_server::player::save::parser::parse_text(&text).is_ok() {
-                return Ok(text);
-            }
+        if let Ok(text) = std::fs::read_to_string(path)
+            && rs09_server::player::save::parser::parse_text(&text).is_ok()
+        {
+            return Ok(text);
         }
         if Instant::now() > end {
             return Err(io::Error::new(
