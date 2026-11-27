@@ -1,0 +1,394 @@
+# The oracle checks CI runs on every push and pull request, in this order.
+#
+# `cargo xtask oracles --check` (tools/run_oracles.py) runs them in parallel.
+# An entry waits for every earlier entry that touches one of the same runs/
+# folders (its own, the ones its generator names, and those of the
+# generators it imports, which usually re-run their compile there), so the
+# result is the same as running them one at a time in this order. An entry
+# whose folders cannot be worked out waits for everything before it, and
+# everything after waits for it; `exclusive = true` forces that.
+#
+#   name      the label printed in the CI log
+#   xtask     the arguments of `cargo xtask`
+#   tools     scripts run as `python <tool> --check` after the xtask command
+#
+# Checks that need the complete pinned cache stay as manual-only steps in
+# .github/workflows/compatibility.yml.
+
+[[check]]
+name = "Reproduce original JVM outputs and source hashes"
+xtask = ["oracle", "--check"]
+
+[[check]]
+name = "Reproduce original cache reader and extraction fixtures"
+xtask = ["cache-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original network and lobby fixtures"
+xtask = ["network-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original RT4 game connection liveness boundaries"
+xtask = ["headless-lifecycle-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original Java and Kotlin login cases"
+xtask = ["login-oracle", "--check"]
+# Downloads the pinned Kotlin compiler every later Kotlin oracle uses.
+exclusive = true
+
+[[check]]
+name = "Reproduce original item instances, containers, events and callbacks"
+xtask = ["inventory-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original inventory listener, container packet bytes and pouch keys"
+xtask = ["inventory-listener-oracle", "--check"]
+tools = ["tools/port_summoning_pouch_ids.py"]
+
+[[check]]
+name = "Reproduce original interaction dispatch and captured arrival bodies"
+xtask = ["legacy-interaction-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original interface metadata and gameframe orchestration"
+xtask = ["interfaces-oracle", "--check"]
+
+[[check]]
+name = "Reproduce complete server animation records, definitions and controller"
+xtask = ["animator-oracle", "--check"]
+
+[[check]]
+name = "Verify original and Rust login codecs over real sockets"
+xtask = ["login-interop"]
+
+[[check]]
+name = "Reproduce original account and password rules"
+xtask = ["auth-oracle", "--check"]
+
+[[check]]
+name = "Reproduce complete original configuration parser and settings"
+xtask = ["config-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original player metadata and communication data behavior"
+xtask = ["player-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original character saved records and numeric strings"
+xtask = ["saved-data-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original attribute store, JSON save/load and legacy XML files"
+xtask = ["attributes-oracle", "--check"]
+
+[[check]]
+name = "Reproduce complete original Ironman mode, manager and callback behavior"
+xtask = ["ironman-oracle", "--check"]
+
+[[check]]
+name = "Reproduce complete original bank container, listener and item ownership"
+xtask = ["bank-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original bank interface, callback registries and interface packet bodies"
+xtask = ["bank-interface-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original input parser, prompt cleanup and bank transfer callback"
+xtask = ["input-prompt-oracle", "--check"]
+
+[[check]]
+name = "Original plain dialogue and Continue behavior"
+xtask = ["plain-dialogue-oracle", "--check"]
+
+[[check]]
+name = "Original modern interaction listeners and scheduling"
+xtask = ["interaction-listeners-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original player variables, definitions, loader and packets"
+xtask = ["variables-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original bank PIN manager, status and interface handler"
+xtask = ["bank-pin-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original skill rules, callbacks and profile sections"
+xtask = ["skills-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original item definitions, templates and JDK case comparison"
+xtask = ["item-oracle", "--check"]
+tools = ["tools/port_jdk_case.py"]
+
+[[check]]
+name = "Reproduce shared container receivers and exposed listener references"
+xtask = ["container-ownership-oracle", "--check"]
+
+[[check]]
+name = "Reproduce distinct native listener objects, aliases and callback rebinding"
+xtask = ["container-listeners-oracle", "--check"]
+
+[[check]]
+name = "Reproduce canonical distinct-player listener fields and wire recipients"
+xtask = ["owned-player-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original equipment container, listener and bonus methods"
+xtask = ["equipment-oracle", "--check"]
+
+[[check]]
+name = "Reproduce full player appearance, shared defaults and retained receivers"
+xtask = ["player-appearance-oracle", "--check"]
+
+[[check]]
+name = "Reproduce late appearance receivers, shared output and failed byte prefixes"
+xtask = ["appearance-writer-oracle", "--check"]
+
+[[check]]
+name = "Reproduce joined player inventory, weight and packet effects"
+xtask = ["player-inventory-oracle", "--check"]
+
+[[check]]
+name = "Reproduce complete original item configuration loader and typed values"
+xtask = ["item-config-oracle", "--check"]
+tools = ["tools/port_item_config.py"]
+
+[[check]]
+name = "Reproduce original timer manager, persistence and core player profiles"
+xtask = ["core-profile-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original timer registry, factories and automatic installation"
+xtask = ["timer-registry-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original pulses, entity manager and world queue"
+xtask = ["pulses-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original script processor, movement phases and script APIs"
+xtask = ["scripts-oracle", "--check"]
+
+[[check]]
+name = "Reproduce revision-530 actions, state fields and outgoing game packets"
+xtask = ["game-packets-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original ground item lists, packet updates and pile selection"
+xtask = ["ground-items-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original door rules, configuration and autowalk pulse bodies"
+xtask = ["doors-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original scenery replacement, restoration and object updates"
+xtask = ["scenery-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original server chunk collision flags and mutation order"
+xtask = ["clipping-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original chunk scenery storage, copies and rebasing"
+xtask = ["chunk-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original landscape decoding, storage and collision application"
+xtask = ["landscape-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original terrain parsing and floor clipping over native chunks"
+xtask = ["mapscape-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original scenery constructors, morph families and geometry"
+xtask = ["scenery-node-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original Region.load ordering and failure prefixes"
+xtask = ["region-load-oracle", "--check"]
+
+[[check]]
+name = "Reproduce joined region, door, collision, packets and restoration"
+xtask = ["scene-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original player renderer and normal scene rebuild"
+xtask = ["player-render-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original appearance fields and naked-body preparation"
+xtask = ["appearance-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original walking queue, energy, teleports and zone vetoes"
+xtask = ["walking-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original pathfinding, heap ties and interaction reach"
+xtask = ["pathfinding-oracle", "--check"]
+tools = ["tools/port_reach.py"]
+
+[[check]]
+name = "Reproduce original movement pulses and destination geometry"
+xtask = ["movement-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original node destination and collision supplier dispatch"
+xtask = ["path-dispatch-oracle", "--check"]
+
+[[check]]
+name = "Reproduce joined movement pulses, smart routes and walking queues"
+xtask = ["navigation-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original walk requests and arrival pulses"
+xtask = ["walk-request-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original scenery click dispatch and retained interactions"
+xtask = ["scenery-action-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original option tables, defaults and retained aliases"
+xtask = ["interaction-options-oracle", "--check"]
+
+[[check]]
+name = "Reproduce ground click lookup and ordered interaction dispatch"
+xtask = ["ground-action-oracle", "--check"]
+
+[[check]]
+name = "Reproduce canonical ground targets joined to original walking"
+xtask = ["ground-target-oracle", "--check"]
+
+[[check]]
+name = "Reproduce native item option registration and definition precedence"
+xtask = ["item-option-registry-oracle", "--check"]
+
+[[check]]
+name = "Reproduce landscape, clipping, water and teleport predicates"
+xtask = ["region-queries-oracle", "--check"]
+
+[[check]]
+name = "Reproduce ground defaults joined to native item option lookup"
+xtask = ["ground-options-oracle", "--check"]
+
+[[check]]
+name = "Reproduce scenery defaults joined to native scenery option lookup"
+xtask = ["scenery-options-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original major and entity tick phase order"
+xtask = ["tick-oracle", "--check"]
+
+[[check]]
+name = "Reproduce joined player walk requests, scheduling and movement"
+xtask = ["player-walk-oracle", "--check"]
+
+[[check]]
+name = "Reproduce joined legacy arrivals and canonical plain/movement scheduling"
+xtask = ["interaction-runtime-oracle", "--check"]
+
+[[check]]
+name = "Reproduce shared entity/scenery pulse ordering and restoration"
+xtask = ["world-pulses-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original map viewport traversal and retained chunk identities"
+xtask = ["map-chunk-render-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original chunk rebuilds, item visibility and dirty reset"
+xtask = ["chunk-sync-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original viewport chunk clearing and packet boundaries"
+xtask = ["clear-chunk-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original ground-item management and owner packet delivery"
+xtask = ["ground-manager-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original ground-spawn subtype and respawn scheduler"
+xtask = ["ground-spawn-oracle", "--check"]
+
+[[check]]
+name = "Reproduce complete ground-spawn loader and pinned world spawn data"
+xtask = ["ground-spawn-loader-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original pickup restrictions and ordered item transfer"
+xtask = ["pickup-oracle", "--check"]
+
+[[check]]
+name = "Reproduce packet queues, entity lifecycle and joined update sequence"
+xtask = ["world-update-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original NPC renderer"
+xtask = ["npc-render-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original NPC definitions and configuration"
+xtask = ["npc-definition-oracle", "--check"]
+tools = ["tools/port_npc_schema.py"]
+
+[[check]]
+name = "Reproduce original NPC tick and wandering"
+xtask = ["npc-tick-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original NPC factory and initialization"
+xtask = ["npc-init-oracle", "--check"]
+
+[[check]]
+name = "Reproduce entity chunk membership and ordered local queries"
+xtask = ["entity-regions-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original player settings and captured service ordering"
+xtask = ["settings-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original update-mask lifecycle and live encoder traversal"
+xtask = ["update-masks-oracle", "--check"]
+
+[[check]]
+name = "Reproduce joined entity facing and prepared player mask bytes"
+xtask = ["prepared-masks-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original full NPC spawn data and loader"
+xtask = ["npc-spawns-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original NPC drop tables, shared tables and seeded rolls"
+xtask = ["drop-tables-oracle", "--check"]
+
+[[check]]
+name = "Reproduce original DUMB pathfinder"
+xtask = ["dumb-path-oracle", "--check"]
+tools = ["tools/port_dumb.py"]
+
+[[check]]
+name = "Reproduce original server scenery definitions, aliases and child queries"
+xtask = ["scenery-definition-oracle", "--check"]
+tools = ["tools/port_scenery_schema.py"]
+
+[[check]]
+name = "Reproduce JDK ROOT casing and authored Unicode/word data"
+xtask = ["string-case-oracle", "--check"]
+tools = ["tools/port_jdk_lower.py"]
+
+[[check]]
+name = "Verify default-cost password hashes in both runtimes"
+xtask = ["auth-interop"]
+
+[[check]]
+name = "Verify SQL provider against original on isolated MariaDB, plaintext and TLS"
+xtask = ["sql-oracle", "--check"]

@@ -10,7 +10,20 @@
 use super::{Error, Host, Result};
 use crate::world::repository::hash_map::JavaHashMap;
 use rusqlite::types::Value;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
+
+static SYNCHRONOUS_OFF: AtomicBool = AtomicBool::new(false);
+
+/// A switch for tests and tools, not part of the ported classes: when on,
+/// databases opened afterwards use `PRAGMA synchronous = OFF`, so a commit
+/// does not wait for the disk. Rows and statement results are unchanged;
+/// only durability after a crash is lost. Off by default, which is what the
+/// original's JDBC driver uses. The replay tests turn it on: on Windows every
+/// autocommitted statement otherwise waits on a flush.
+pub fn set_synchronous_off(on: bool) {
+    SYNCHRONOUS_OFF.store(on, Ordering::Relaxed);
+}
 
 /// `TABLE_CHECK` of SQLiteProvider.
 pub const TABLE_CHECK: &str = "SELECT name FROM sqlite_master WHERE type='table' AND name=?;";
@@ -228,6 +241,11 @@ impl Db {
             std::fs::create_dir_all(parent).map_err(|e| Error::Sql(e.to_string()))?;
         }
         let connection = rusqlite::Connection::open(&absolute).map_err(sql_error)?;
+        if SYNCHRONOUS_OFF.load(Ordering::Relaxed) {
+            connection
+                .execute_batch("PRAGMA synchronous = OFF;")
+                .map_err(sql_error)?;
+        }
         Ok(Self(Arc::new(Inner {
             path: absolute.to_string_lossy().into_owned(),
             connection: Mutex::new(connection),

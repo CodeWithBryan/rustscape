@@ -184,7 +184,7 @@
     "oracle/grand-exchange/adapters/core/tools/SystemLogger.java": "56f445d8e7bfd10ebca4372eaa1dd8fa184fdbea6f4035d792b10c233033d6d6",
     "oracle/grand-exchange/cases.py": "d4858d858f19b353dae4a7d0c40a00812fdaa3d3b46b3e878cf762ebec47c80f",
     "oracle/grand-exchange/generate.py": "b6a7e6094e5cc76c058621b5fa1725dde6d0be92c1a4a35db21a4cc28f7ca40b",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/world-trace/artifacts.lock.json": "236c9fbda37fa74ad98a14f90037a306e64a7f45e42b5c8e5b3b59a1f6210748",
     "reference/server/Server/src/main/content/global/handlers/iface/ge/ExchangeItemSets.kt": "b1ea915c04c79ef5b321e81e115a212d92e723e4804e261d6eb81aed55c02e06",

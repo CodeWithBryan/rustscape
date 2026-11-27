@@ -183,7 +183,7 @@
     "oracle/dynamic-regions/adapters.py": "a8c2f6574ec5c53c66a72ce1bbda8a291f6766a5827b829f292c375bc00a0430",
     "oracle/dynamic-regions/generate.py": "c68b3f5141604ca53addc27060e9c16468d8d0b8cb3f9250350a71bf6c6ff789",
     "oracle/global-items2/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
     "reference/server/Server/src/main/core/api/utils/CameraUtils.kt": "bf35d1b3c09909058e06d5f05f2d10719856e9acb85040460ffa469630936522",

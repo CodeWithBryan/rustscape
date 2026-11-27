@@ -316,7 +316,7 @@
     "oracle/commands/generate.py": "55b7458cb235611a46fe7e27f08c3138d5f2120ae219a69d121b4b1c7a40a642",
     "oracle/commands/harness/oracle/worldtrace/CommandRegistry.java": "b15a0181747fd7bf5b8c970a1d985aab53595e877877f763e8a8f4a4e990ec9f",
     "oracle/commands/registry.py": "c5c936918e54a8925529ba53306b4c84228fc250a2b1950f20df8cd5e5704bff",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/social/Launcher.java": "b6dedafacbd62143b2f86b400ce5c521bf23f968fa0b146763e411297a49acee",
     "oracle/social/tool/Rewrite.java": "be0c6298f56a1343adc06db82b88bba06eb168b68e5c653e3945fa0c7245d475",

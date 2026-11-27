@@ -17,7 +17,7 @@
     "oracle/doors/adapters/core/game/node/item/Item.java": "be94485362af8494485cda78935e982fcfbd87c0c0c2840f8fb60e926578416a",
     "oracle/doors/adapters/core/tools/Log.java": "5a330951934f2c6a37a832ddec702cc202b40f86d02fdd0e23762114f3dbb042",
     "oracle/doors/adapters/org/jetbrains/annotations/NotNull.java": "3055e8f32cc2cc38728cd541a8ca9380bbc020584b1661629e3e01b287197e8d",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/node/scenery/Constructed.java": "ff1fe253c5e8d8b22da7a97bf5f9aa4ca4b130ea3c637039043f0340c5548b24",
     "reference/server/Server/src/main/core/game/node/scenery/Scenery.java": "eaba60d20ec9e0e2953907641c5cc0ef366bde1ea0ce84c4af1609d474364e93",

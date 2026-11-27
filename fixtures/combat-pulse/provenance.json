@@ -22,7 +22,7 @@
     "oracle/combat-pulse/corpus.py": "3fe387a3657483ccc4c274a338ee80d79fdaef9c0e8126cce0cdc26ddd04004b",
     "oracle/combat-pulse/generate.py": "5cd399be45bb81bd748c7aee60f6546fe5f34ed25e0f176e35497bc1fabdd85f",
     "oracle/combat-swing/adapters.txt": "2bd2e6e0446de9c92b9225958bbc6e2b3e66713b7565ca61037d675ef92c60a8",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/pickup/consts-evidence.json": "566e5164c0ef785d71d6502a1b663ebf100ebebf20c7d02f4f986f5f87177b39",
     "reference/server/Server/src/main/content/global/skill/summoning/SummoningPouch.java": "96d8399675d529cbf0dd1b24b6002718cb6410e6b9afd7e73ac1f2ff09f2cc21",

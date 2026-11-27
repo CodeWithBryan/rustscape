@@ -202,7 +202,7 @@
     "root": "reference/server/Server/src/main"
   },
   "sources": {
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/startup-draws/generate.py": "cdb56ee4aef9a02f9b70409ec32b8ff2a7833e9854624902dff06174afdd443e",
     "oracle/startup-draws/harness/oracle/worldtrace/StartupDraws.java": "df23a2f61fb33d0d84ac72702918ef797b993d7abf52c062ad43a15ff2650897",

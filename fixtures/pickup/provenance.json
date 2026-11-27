@@ -18,7 +18,7 @@
     "oracle/ground-manager/generate.py": "348145358db7a3f1f5bb213256273dde6ad357c072d333a1396c191e66d40f86",
     "oracle/ground-spawn/SpawnSupport.java": "c0075e5d90bb4a635b48c2e58edb93d8fb306510e88aa4e4d96e85bc3f8170db",
     "oracle/ground-spawn/generate.py": "0876b296b9b137c2b6b8b5213ee33610780bd2697a02c9469439cbef3510da12",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/pickup/PickupSupport.java": "3a959b0b9881378fa2235c5c5b684215fe79942ee3e1f154de239762c5ebd3f2",
     "oracle/pickup/consts-evidence.json": "566e5164c0ef785d71d6502a1b663ebf100ebebf20c7d02f4f986f5f87177b39",

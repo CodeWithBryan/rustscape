@@ -6,7 +6,7 @@
   "sourceHashAlgorithm": "sha256, CR removed",
   "sources": {
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/walk-request/Support.java": "b5d6e69b18ca56ea0552c28384dddd66e98527e568f6c1cf18b6c7b7a80196d2",
     "oracle/walk-request/generate.py": "c50f0d947bdc4f2142cc676605ed5b34ce41e2e29852d1a06f7dd49af4c50697",

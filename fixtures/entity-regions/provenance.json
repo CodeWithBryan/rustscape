@@ -8,7 +8,7 @@
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/entity-regions/Support.java": "be7d717ee6a6267a1fb1913733cc170f60e65a06f3642d6789d48c1efccf229a",
     "oracle/entity-regions/generate.py": "6312eda73c1a01566e9f39b2dfa5824baa8056be25f503416036e99b01d78a6e",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
     "reference/server/Server/src/main/core/game/world/map/Region.java": "511a3824b5c6098388aaa49ddc2812d17e656e1f5eada8f5383a5d6057d84810",

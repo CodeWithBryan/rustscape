@@ -149,6 +149,12 @@ InterfaceManager services listed in `ui.rs`.
   compares every row.
 - Column reads of REAL and TEXT values follow SQLite's conversions only for
   the values these classes can meet.
+- The replay test turns on `db::set_synchronous_off`, so its databases use
+  `PRAGMA synchronous = OFF` (a test/tool switch, off by default; the original
+  and the native default keep SQLite's FULL). This changes durability after a
+  crash only, not rows or statement results; on Windows it cuts the replay
+  from about 123 to 16 seconds, since every autocommitted statement otherwise
+  waits on a disk flush. The JVM side of the corpus is unchanged.
 
 ## Not covered
 

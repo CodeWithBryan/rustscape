@@ -221,7 +221,7 @@
   "sources": {
     "oracle/canonical-player/generate.py": "c21f996267b42932ec8f90c486374e17a5dc2e5243c858dee7e08b1016e40350",
     "oracle/canonical-player/harness/oracle/worldtrace/FreshPlayer.java": "0c1424d87e01b49bad5dcbf00d2f52057143fe84e345ee298b516c421a39367f",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/startup-loaders/generate.py": "5e9843cd42937a2abd32e55e676de5398291df0b2fc3a69f6748b3eb93c3c4c7",
     "oracle/world-trace/artifacts.lock.json": "236c9fbda37fa74ad98a14f90037a306e64a7f45e42b5c8e5b3b59a1f6210748",

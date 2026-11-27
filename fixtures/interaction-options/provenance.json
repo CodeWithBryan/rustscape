@@ -9,7 +9,7 @@
     "oracle/interaction-options/Support.java": "a77b7f9b0df66e2b450867839055728deda5604281e1f2528406fc0b3dcdb259",
     "oracle/interaction-options/generate.py": "09378158b19949cf6eddd4202f0b2604b65a4fed8d165c3f0a0353f500282e16",
     "oracle/legacy-interaction/generate.py": "9ae180071d00c686f76bf9d8e1eeb0c37552bde3250cc05f92968ccf13d59fa1",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",
     "reference/server/Server/src/main/core/game/interaction/InteractPlugin.java": "4bb74609996f0518f35facfaab454a3d963cfc4028302ce384874fc863dab31f",

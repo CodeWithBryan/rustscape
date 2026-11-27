@@ -272,7 +272,7 @@
     "oracle/global-items/adapters.py": "7f289d742ee84fca48a180afa833ac56b9c10cbc49052174daf0307b01b2caab",
     "oracle/global-items/cases.py": "833bc47278d7722ff493d6c7c6e2f3325fd2d9c20f65ff92850c1eb3a81e6b11",
     "oracle/global-items/generate.py": "c2370501b99e1a18a57f2dcc680aa80832eb383f7f1252188162e1b197e3e455",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/data/EnchantedJewellery.kt": "7f22bbdcbc22e81880611de8f79a1911bfd0acabbb7e4b82f5bcf6d85f936b0b",
     "reference/server/Server/src/main/content/global/handlers/item/EctophialListener.kt": "b145b1196bd2c99bb8bc50929692aeff9e627d352a3d8bdc053b05a67224bdc2",

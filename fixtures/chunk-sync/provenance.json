@@ -14,7 +14,7 @@
     "oracle/chunk-sync/adapters/core/game/world/map/RegionManager.java": "95e63b6a425c4585aea32d9291f4ac458115f12747d6a6d628831f041a9e5e36",
     "oracle/chunk-sync/adapters/org/rs09/consts/Items.java": "522531ad65ed3589eb26e4dee5938a6f77b6e36ea89d1143464516c5124fdfb4",
     "oracle/chunk-sync/generate.py": "3ec1c4125e796a25624cf197e919b7bb9fc2f0b658f79bcf7c0596755362d4cd",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/node/item/GroundItem.java": "5191834bbb8e596dce48e2ec884796352ec179d42489181dd20f37afb8fa447a",
     "reference/server/Server/src/main/core/game/node/scenery/Scenery.java": "eaba60d20ec9e0e2953907641c5cc0ef366bde1ea0ce84c4af1609d474364e93",

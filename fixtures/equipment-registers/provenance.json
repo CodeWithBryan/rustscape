@@ -442,7 +442,7 @@
     "oracle/equipment-registers/adapters.txt": "bbf2064a662029224deaa08e93ef3a775d866c8b0b4ff90bc4bd64fab14b07f5",
     "oracle/equipment-registers/corpus.py": "b5f4cfe5455714ed250978af667678f5ab1d2b4d81fec47f05c28ab6c45d68b4",
     "oracle/equipment-registers/generate.py": "f802b878f9f1565eb0af1e043bf99758104730cc747778afdee8e56cd10d3ba4",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/special-attacks/adapters.txt": "f634df89df570eedf1599eb7609bde039e516ea33932e1c9fbad39585caa0281",
     "reference/server/Server/src/main/content/data/Quests.kt": "20cc6078a5456cb36433518a2b9f0e7a0a37588040b5e1e151bc6fe6bfe12554",

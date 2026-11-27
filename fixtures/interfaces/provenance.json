@@ -21,7 +21,7 @@
     "oracle/interfaces/manager_cases.py": "68302cac67ee3e5858ae1e6c819dd5ff8f1304d38ac508f57da95c6565575a49",
     "oracle/interfaces/object_cases.py": "b95d2a5b68f655ef7b7fea83ab3e77b76f5ed3e66615fb55f8ecdf4388b314ca",
     "oracle/interfaces/objects.lock.json": "24702862c8bca4781ef8c6652095c14c7ba1b7d4eb630ec240a3db9a32fb2a5b",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/component/CloseEvent.java": "72a0b410dfa627379ba08e6bbd16845073bfed2c8ab3931c6176dd8d5a5f6227",
     "reference/server/Server/src/main/core/game/component/Component.java": "08ef31c0d364de267f5ae664402ed0375eeacfc9bc3ce1dcac2a52cde86c2a33",

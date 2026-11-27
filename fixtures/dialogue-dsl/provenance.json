@@ -135,7 +135,7 @@
     "oracle/dialogue-dsl/Standins.java": "ae9d74dfd31172c6db2d7412e3358a52816ac0c0b7035dc0453006631a60eb1a",
     "oracle/dialogue-dsl/cases.py": "3fe648c1f6993d94ee8285f00ea63ca1291c7965703e686d3f12978abf53a76a",
     "oracle/dialogue-dsl/generate.py": "9537d6488f6aecd8516d5373d2faeda27a800b58e6fd83b5e5042305d78bd820",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/global/handlers/npc/BankerNPC.kt": "997e873d2b6a8fc227569dc8e8972e4339fe90de00cd41aaf6bccd802d6698ef",
     "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",

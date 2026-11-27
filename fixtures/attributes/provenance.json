@@ -8,7 +8,7 @@
     "oracle/attributes/AttributeOracle.java": "ab65f7cc774e6db5348d1349847b9442dea1b9fb9e8268ace06b7f8056d77be5",
     "oracle/attributes/generate.py": "cc070978db8f98ff22f19b88c2097885d1d5fe84690b57ae65e6764f2c0c4196",
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/node/entity/impl/GameAttributes.java": "23aaa3f00f9a2992a200ffdf642930a9612a3377d2ff4466177e989557ac6b7f",
     "reference/server/Server/src/main/core/game/node/entity/player/info/login/PlayerSaveParser.kt": "e9f41217991cbf7c2fe80e3a75666183fcc9d271ca54b3e07f0a95ab4a44159c",

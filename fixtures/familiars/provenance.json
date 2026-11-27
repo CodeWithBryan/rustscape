@@ -258,7 +258,7 @@
     "oracle/familiars/adapters.py": "64bd18313cda2eda5adeda1f237a7b2e28f487a47319c07918d6f110b1075a10",
     "oracle/familiars/cases.py": "c25b6e5aadf5f2cc5a8004307757563a3352ff662615d2c4126ca5107d0df33d",
     "oracle/familiars/generate.py": "7d846b220bf6210c67a0c5a8dd8418271750b8118fc288eb9dae428fbfe9e8af",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/global/skill/summoning/familiar/BurdenBeast.java": "b729ca3008cfa2501b86b665f05913e9b4007b10ba53fa0338581710c3ace051",
     "reference/server/Server/src/main/content/global/skill/summoning/familiar/BurdenContainerListener.java": "3c99c9f9f2c6909fec88037ad2ca27b30f8e37751cc1109a8037b6f22787e859",

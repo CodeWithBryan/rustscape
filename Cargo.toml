@@ -30,6 +30,14 @@ sha2 = "0.10"
 [profile.dev.package.rs09-audio]
 opt-level = 3
 
+# Optimize third-party crates in development and test builds. They change
+# rarely (and are cached in CI), and fixture parsing (serde_json), SQLite and
+# hashing dominate several long tests. Workspace crates keep opt-level 0
+# locally (CI raises them to 1) and all their debug assertions and overflow
+# checks.
+[profile.dev.package."*"]
+opt-level = 2
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

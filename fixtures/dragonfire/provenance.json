@@ -220,7 +220,7 @@
     "oracle/dragonfire/adapters.txt": "6f14e7a28c3feda6f2678bbf3b1cc6301e9103a0f1f2221aea508002c7599daf",
     "oracle/dragonfire/corpus.py": "b0e0cd98eb62b44a23aede657649591cf9dec958cc3c0409fa1e550aa670c57d",
     "oracle/dragonfire/generate.py": "d9a8a868b2daf36640688d9cfb8d64a69caa7ff35d18a2ad9983f2f9b27e6baa",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/special-attacks/adapters.txt": "f634df89df570eedf1599eb7609bde039e516ea33932e1c9fbad39585caa0281",
     "reference/server/Server/src/main/content/global/handlers/item/DragonfireShieldListener.kt": "532c9e590543b17cca024f421cdc32468e9fe843b7192368a82bee30fc98e1fe",

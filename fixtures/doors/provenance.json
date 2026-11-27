@@ -30,7 +30,7 @@
     "oracle/doors/adapters/org/jetbrains/annotations/NotNull.java": "3055e8f32cc2cc38728cd541a8ca9380bbc020584b1661629e3e01b287197e8d",
     "oracle/doors/adapters/org/rs09/consts/Sounds.java": "b86dd661a73bda934a706f92f791b616dd5e40ab6016e6879bbabf555277f2f7",
     "oracle/doors/generate.py": "55d58bedc912cd58bcb3f69c677cf5550d4c2b9962b98cdd16cca3552bb03a06",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/global/action/DoorActionHandler.java": "1f7dc3811743b13feb09fc1ce0d61556b7aeced3db1bd2fc513a196e02a895c7",
     "reference/server/Server/src/main/core/game/node/scenery/Constructed.java": "ff1fe253c5e8d8b22da7a97bf5f9aa4ca4b130ea3c637039043f0340c5548b24",

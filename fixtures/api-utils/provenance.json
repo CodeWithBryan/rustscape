@@ -47,7 +47,7 @@
     "oracle/api-utils/generate.py": "73e1ff64cada13ae1db5a1c506089e0ac39682d2b1f49dbb09818c1223dd852a",
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/api/utils/CameraUtils.kt": "bf35d1b3c09909058e06d5f05f2d10719856e9acb85040460ffa469630936522",
     "reference/server/Server/src/main/core/api/utils/PlayerCamera.kt": "8eb95d7cec2176190c1bc3936b5f571aa1c27b18ccc903a3b9e6f148954fdae6",

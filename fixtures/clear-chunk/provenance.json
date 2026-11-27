@@ -17,7 +17,7 @@
     "oracle/clear-chunk/generate.py": "a2addef26c9b4215aa044e7814c74db63fd663370a7cdd00b6e7ae135a353d0a",
     "oracle/ground-manager/ManagerSupport.java": "8c2f92ad23099550c65058b9791f2012d501e03e9548eecace594a5d0d29b978",
     "oracle/ground-manager/generate.py": "348145358db7a3f1f5bb213256273dde6ad357c072d333a1396c191e66d40f86",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
     "reference/server/Server/src/main/core/game/node/item/GroundItem.java": "5191834bbb8e596dce48e2ec884796352ec179d42489181dd20f37afb8fa447a",

@@ -215,7 +215,7 @@
     "root": "reference/server/Server/src/main"
   },
   "sources": {
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/startup-loaders/generate.py": "5e9843cd42937a2abd32e55e676de5398291df0b2fc3a69f6748b3eb93c3c4c7",
     "oracle/startup-loaders/harness/oracle/worldtrace/BootRecord.java": "cd5ac43541f72be944d5fe8d09b39c93e0e52887dbb9251fb2f37e1d49716c35",

@@ -70,7 +70,7 @@
     "oracle/force-movement/adapters.py": "19035b5eee00c94c74595d2a932e7929762f45ec7f8b636ff34800c4551814ac",
     "oracle/force-movement/cases.py": "7aab1fc353cfe53e0d9c8d1502bd0814da1e6563891db8d556fe0f6475f182ec",
     "oracle/force-movement/generate.py": "7e9fa6de5e86b7037edb34d739d4d54a43050a8196f2566a12fc5398204a108c",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
     "reference/server/Server/src/main/core/game/node/entity/impl/ForceMovement.java": "654dd8044c43d9047199fc5c7120390307ea20228cb585da927f184c76079bbd",

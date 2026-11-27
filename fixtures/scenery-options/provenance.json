@@ -7,7 +7,7 @@
   "sources": {
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/legacy-interaction/generate.py": "9ae180071d00c686f76bf9d8e1eeb0c37552bde3250cc05f92968ccf13d59fa1",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/scenery-options/Support.java": "8f1ae8eba9b7a0359d3ca0d70904d1ef2a5e6f3ec5cad364edad9257233b53c3",
     "oracle/scenery-options/generate.py": "fb4d2ad063f98acbb10a3464e5de4b8ba583ec07e0c71108d76eb0a382f5d081",

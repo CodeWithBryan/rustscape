@@ -21,7 +21,7 @@
     "oracle/ground-spawn-loader/generate.py": "8ddebdb0ffd949c734ebd69c8d21e235e4857ff26fdfe5f227b3328d2ddf5074",
     "oracle/ground-spawn/SpawnSupport.java": "c0075e5d90bb4a635b48c2e58edb93d8fb306510e88aa4e4d96e85bc3f8170db",
     "oracle/ground-spawn/generate.py": "0876b296b9b137c2b6b8b5213ee33610780bd2697a02c9469439cbef3510da12",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
     "reference/server/Server/src/main/core/game/node/item/GroundItem.java": "5191834bbb8e596dce48e2ec884796352ec179d42489181dd20f37afb8fa447a",

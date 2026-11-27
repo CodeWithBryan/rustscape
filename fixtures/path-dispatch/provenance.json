@@ -6,7 +6,7 @@
   "sourceHashAlgorithm": "sha256, CR removed",
   "sources": {
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/path-dispatch/Support.java": "d9f49fb535cf442e482f6695c75ec6bb1cb0555ff28694eca243cbfc1101ad45",
     "oracle/path-dispatch/generate.py": "4356e1855d71c1817856f9f35e25a2e5ea54577d018a75727bcd3ffe1eb8f980",
     "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",

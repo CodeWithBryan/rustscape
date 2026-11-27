@@ -9,7 +9,7 @@
     "oracle/items/ItemOracle.java": "475648a01ba9be790ca466ad3634fa1578e00c508444aaf045997b8674984b5b",
     "oracle/items/cache-samples.json": "99f126cbf45d4f4becb9400ec7dbcab3cce3846d4c1973ec593cf7b4e9c7efaf",
     "oracle/items/generate.py": "1fa9cecf84d5df640a3f4a54c24e731d34f3ca52197a66e3837545fbb9badb66",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/cache/Cache.java": "9d117d2f703f030fbcb02f294674a00d2671f311d50e0c226ba658825739d57a",
     "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",

@@ -8,7 +8,7 @@
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/ironman/Support.java": "9f9e728e06f1108913edf7ef6bf396ca8eaed3693a5a910ee36f604e513ed80d",
     "oracle/ironman/generate.py": "ac837793bd7dc36c9297d8b80239ab8e9720c4b35d1af77f639deef618c5e1da",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "reference/server/Server/src/main/core/game/node/entity/player/link/IronmanManager.java": "fd4373aea99012e39b8c7ed03598832acd84f67705ff58c6393f2eb630d38bc1",
     "reference/server/Server/src/main/core/game/node/entity/player/link/IronmanMode.java": "b54c6ef4272bedfc1de3bd5581a042d0e0bc082c7bb71cc0675173c37ef63a2c",
     "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
