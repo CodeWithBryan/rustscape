@@ -377,7 +377,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   is a required service with no default; fireEffect is content and stays the
   combat host's service. spells::combat answers the combat slices' spell
   services and is replayed against the same corpus; no corpus runs the real
-  MagicSwingHandler with these spells and nothing installs the library.
+  MagicSwingHandler with these spells. The live world installs the library
+  for the spells whose fireEffect is the empty base (world/live/magic.rs);
+  every other spell class and listener is refused there by name.
   Non-combat and lunar spells are not ported. See docs/spells.md.
 - For the player tab systems (world/player_tabs: WeaponInterface, LevelUp and
   getSkillJingle, EmoteManager/Emotes, MusicPlayer/MusicZone.enter,
@@ -1780,8 +1782,15 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   original's virtual calls are (subclasses.rs; quest and diary reads from
   the persisted state, quest content refused); dragon and MonkNPC handler
   instances are handler slots whose subclass answers Host::overrides
-  (dragons.rs). LoginValidationPlugin runs as the login plugin. Content, NPC
-  timers, spells, teleports, component use-with (spells), ForceMovement,
+  (dragons.rs). LoginValidationPlugin runs as the login plugin. Spells and
+  teleports (world/live/magic.rs): the combat spells with an empty
+  fireEffect through MagicSpell.castSpell and the combat pulse, the
+  spell-on-entity packets (items/component_use.rs), a TeleportManager per
+  entity whose pulses run on the world runner with their stop override
+  through driver::Host::pulse_stop, and ModernListeners' Varrock, Lumbridge
+  and Falador teleports from the magic tab; the live_world magic and
+  teleport scenarios cover them. Content, NPC timers, the other spells and
+  teleports, ForceMovement,
   commands, quick chat, the Grand Exchange and region unloading remain open.
   The eighth round (world/live/round.rs holds its state): one dialogue
   interpreter per player made when first asked for, the live world itself

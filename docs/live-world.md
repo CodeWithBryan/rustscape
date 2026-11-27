@@ -69,13 +69,14 @@ uses a weapon's special attack, passes the lobby of a returning character,
 talks to a banker and continues the conversation, opens the bank, deposits
 and withdraws, buys from and sells to a shop (also by amount), trades with
 another player, follows another player, eats food and drinks a potion,
+casts Wind Strike on an NPC, teleports to Varrock from the magic tab,
 logs out, and its character is saved and loaded again.
 
 This is a playable engine slice, **not a complete server**: content (login
 listeners, quests, tutorial, content item, NPC and scenery handlers other
 than the global handlers, content dialogues other than the banker's, the
 bank booths, chests and deposit boxes, the bank PIN, assist sessions), NPC
-timers, spells, teleports, component use-with (spells), ForceMovement,
+timers, the spells and teleports listed below as refused, ForceMovement,
 commands, quick chat, abuse reports, the Grand Exchange and every handler
 listed below as refused are not installed, and every such call is answered
 by name below.
@@ -147,6 +148,8 @@ modes of `rs09-server` are unchanged.
 | shops | `Shops` (start-up, `tick`, the NPC listeners, the destination override, the 620/621 listeners), `Shop`, `ShopListener` | `shopping.rs`: `shops::World` built by `controller::startup` at boot from `shops.json`; `ShopHost` (`shops::Host` over the interface context's state, so the shop's open and close listeners run wherever the interface manager is used); `Shops.tick` after `GraveController.tick` in the tick listeners; Buy-X/Sell-X through the input prompts |
 | requests, trade | `RequestManager`, `RequestType`, `TradeModule`, `TradeContainer`, `TradeCloseEvent`, `TradeInterfacePlugin` | `trading.rs`: `world::trade` with `TradeHost` over the whole world; the global handlers' RequestOption listeners ("trade with", "req assist") through the native InteractionListeners; TradeInterfacePlugin on 334/335/336 from IfAction; `trade::ui::Ui<TradeHost>` is the interface context of the Close packet and of a walk's interface close; the alert pulse on `GameWorld.Pulser`, dispatched by identity |
 | player options | `Option._P_ATTACK`/`_P_FOLLOW.setHandler`, `AttackOptionPlugin`, `FollowOptionPlugin` | `follow.rs`: the handlers bound into the option constants (ids of a player handler arena the legacy runtime resolves for a player target); the legacy walk and arrival, the handler run with the whole world right after; FollowOptionPlugin's `MovementPulse(player, target, FOLLOW_ENTITY)` is a movement of the canonical state whose body (`follow_pulse`: face the target, never finish) runs right after the walking call that reached it |
+| spells | `SpellBook.register` of the combat spells, `MagicSpell.castSpell`, `CombatSpell.cast`/`visualize`/`visualizeImpact`/`getMaximumImpact`/`getTargets`/`addExperience`, `meetsRequirements`, `SpellUtils.hasRunes`, `processComponentUseWith`, the magic swing's spell services | `magic.rs`, `items/component_use.rs`: the 53 combat spells of `world::spells::table` in a registry the world owns (`MagicWorld`); `SpellHost` is `world::spells::Host` over the canonical player (skills, inventory, equipment, attributes, the spell book, the persisted autocast spell), the NPC rows, the animators, the live projectiles (`Projectile.transform(...).send()`) and the combat pulse; the combat hosts' spell services answer through `spells::combat`; the spell-on-NPC/player/item/ground item packet (239 and the others of `ComponentUseWith`) runs `world::packet_handlers::component` with the item handlers' context; `WeaponInterface.selectAutoSpell`/`updateInterface` and the weapon tab's `SpellBook.getSpell` lookup answer from the same table. Only spells whose `fireEffect` is the empty base are cast: the strikes, bolts, blasts and waves, Crumble Undead, Iban Blast, Magic Dart and Sonic Wave; no ancient spell (see refused) |
+| teleports | `TeleportManager`, `TeleportPulse` (`pulse`, `stop`), `Entity.isTeleporting`, `SpellListeners.run`, ModernListeners' Varrock, Lumbridge and Falador teleports (`requires`, `sendTeleport`, `removeRunes`, `addXP`, `setDelay`) | `magic.rs`: one `teleport::Manager` per entity; its pulses submitted to `GameWorld.Pulser` and dispatched by identity, their `stop()` override run through the driver's `pulse_stop` hook (`TeleportPulse.stop`: unlock, the `tele-pulse` attribute, the end animation); the destination written to the walking queue's teleport location; the zone monitor's teleport check and `isTeleBlocked`; the magic tab (192) reaches the listeners through the global handlers' `tabs::magic`. The three teleports are ported from the pinned `ModernListeners.kt`/`SpellListener.kt` without a differential corpus of the listeners themselves (the teleport and spell libraries are differentially tested) |
 | eating, drinking | `ConsumableListener`, `Consumable.consume` of every class, the effects, the potion's dose script | `eating.rs`: `world::consumables` with `Eating` as its `Host` for one player (native Skills taken out of the profile for the call, Settings, the player's clocks, the canonical inventory, the animator, `consumables::join` over the engine timers, the combat pulse's `delayNextAttack`, `manualHit`); the dose message is a SOFT script kept by the world and run at the player's tick once due |
 | lobby | `LoginConfiguration.sendLobbyScreen`, `LastLoginInfo`, `LoginInterface` (378), `configureGameWorld` | a returning character with `tutorial:complete`: the login library's lobby with `LastLoginInfo` (164: the IPv4 address, written at once); the welcome screen's play button (140) through the global handlers (`player.locks.lock("login", 2)`, `closeInterface`, `runTask(1, 0)`) and `configure_game_world` over the live world |
 
@@ -351,6 +354,10 @@ modes of `rs09-server` are unchanged.
 - A potion's dose script is kept by the world, not in the canonical script
   queue: it runs at the start of the player's `Player.tick` once due, and
   `getActiveScript()` answers none for it.
+- A teleport pulse still running when its player logs out is stopped with
+  the base stop at the logout (no `TeleportPulse.stop` override, no ending
+  animation); the original's pulse would run on against the stale Player
+  object, which the live world no longer holds.
 - `ShopHost` keeps the "shop", "shop-cont" and "shop-main" attributes, the
   trade world the `lastRequest` attribute, the RequestManager target and the
   TradeModule extension, by player (they hold objects).
@@ -407,7 +414,6 @@ Poison's `onRegister` reads `Tasks.forId(id).levelReq` from
 `world::slayer_tasks`), `DegradableEquipment.checkWeaponDegrades`/`checkArmourDegrades`/
 `degrade` (nothing: no degradable equipment registered),
 `ClueScrollPlugin.ORGANIZED` in a drop roll (none registered),
-`Entity.isTeleporting` (false: no teleport pulse runs),
 `FamiliarManager.hasFamiliar` (false), `FamiliarManager.dismiss` after a
 death (nothing), `InterfaceListeners.runClose` (true),
 the Marathon perk (false), `Player.logoutListeners` (empty),
@@ -427,9 +433,8 @@ equipment registered),
 `SlayerEquipmentFlags.isSlayerEq` (false), `DialogueInterpreter.close` after
 an equip (true).
 
-Refused (an error the caller logs; never a success): routed packets whose
-library is ported but not installed here (component actions (spells)) and
-those the driver refuses (commands, quick chat, report abuse, GE); content
+Refused (an error the caller logs; never a success): the routed packets
+the driver refuses (commands, quick chat, report abuse, GE); content
 item and NPC option handlers and listeners (`InteractionListeners`
 functions other than DropListener, EquipHandler, AttackListener,
 GraveController's, ConsumableListener, NPCTalkListener's, BankerNPC's,
@@ -507,8 +512,7 @@ a switching attack; runtime NPC construction from a class body,
 `AbstractNPC` subclass `init` of a dragon or an unregistered class at
 runtime, a familiar's hp attribute; combat's services without a port:
 `Permadeath.permadeath`, equipment plugins' `fireEvent("unequip")`
-and item plugins' `getDeathItem` in a death, spells (a selected or autocast spell, `selectAutoSpell`, the combat
-spell members), the specials' services without a port (`Repository.findNPC`
+and item plugins' `getDeathItem` in a death, the specials' services without a port (`Repository.findNPC`
 for Chainhit's door supports, the anonymous RSTimers of Hamstring and
 Phantom strike, `Clocks.STUN`, Shove's dumb path and `addPath`, a player's
 `sendChat`, prayer points of an NPC), the chinchompa and
@@ -524,6 +528,28 @@ plugins' `createDrop`/`getItem`, loot share (clan, points,
 `AIRepository.addItem`, `KillerwattBehavior.aggressUponKillerwatt`, NPC
 chunk moves, the return pulse and `removeRenderableNPC` outside the NPC
 tick.
+
+Spells and teleports refused by name (`magic.rs`): the `fireEffect` of the
+spell classes with an effect (binds, curses, the god spells, Teleblock and
+every ancient spell: Ice, Blood, Shadow, Smoke and Miasmic), refused when a
+cast or an autocast would select them; NPC casters' `DefaultCombatSpell`
+(`Projectile.magic`); multi-target spells (`findMultihitTargets`); the
+non-combat `MagicSpell` plugins (EnchantSpell, EnchantCrossbowSpell,
+TelekineticGrabSpell, TeleotherSpells, ChargeSpell, BountyLocateSpell,
+AncientTeleportPlugin, and the lunar MagicImbue, Vengeance, StatBoost,
+StatRestore and Heal spells); every other `SpellListener` (home teleport,
+Camelot (diary task), Ardougne, Watchtower, Trollheim and Ape Atoll (quest
+requirements), house teleport, alchemy (and MTA's), superheat, bones to
+bananas/peaches, charge orb, the whole lunar book); a combat spell cast on
+an item or ground item; spells on scenery (charge orbs: scenery is not a
+node of the item handlers); familiar specials; the autocast selection tab
+(`openAutocastSelect`'s `openTab`) and the combat pulse's autocast
+component close (`interfaceManager.close`, `openTab(weaponInterface)`);
+`playAudio` with a location; the spell classes' `openTab`, `setVarbit`,
+`setComponentVisibility` and `setAttackStyle`. Skipped by name:
+`SpellCastEvent`, `TeleportEvent`, `AttributeSetEvent` and
+`AttributeRemoveEvent` dispatch (entity event hooks are not ported) and
+`removeWeakScripts` in `SpellListeners.run`.
 
 ## Verification
 
@@ -681,6 +707,16 @@ the client-side player and NPC update decoders):
   health.", hitpoints 7, animation 829; it drinks the potion: "You drink
   some of your strength potion.", a three-dose potion (115) in the slot,
   Strength raised, and two ticks later "You have 3 doses of potion left.".
+- `mageone` (magic 40, the tutorial complete, 100 air and mind runes) casts
+  Wind Strike (192, button 1) on the nearest chicken with the spell-on-NPC
+  packet (239): the spell's projectile (91) toward it, its hit mark, one
+  air and one mind rune gone and magic experience added.
+- `teleone` (magic 40, the tutorial complete, a fire, three air and a law
+  rune) presses Varrock Teleport on the magic tab (192:15): it arrives at
+  (3213,3424) four ticks later, the runes are gone and 35 experience is
+  added; a second press after the magic delay gets "You don't have enough
+  law runes to cast this spell." (`hasRunes` walks its cost map in Java
+  HashMap order) and no teleport.
 - `lookone` (saved female, body colours 5/3/7/2/4, 40 Attack, Strength and
   Defence, a bronze two-handed sword 1307) and `looktwo`: `looktwo` reads
   `lookone`'s appearance block with the gender bit, the body slots of the
@@ -694,7 +730,7 @@ the client-side player and NPC update decoders):
   run), is rebuilt where it stood, receives its own appearance block, and
   walks; `recontwo`, online throughout, sees it return with its appearance.
 - `RS09_LIVE_COMBAT_ONLY` runs only the combat scenarios (fight, aggression,
-  death, grave, subclass, dragon, ranged, special) after the first
+  death, grave, subclass, dragon, ranged, magic, special) after the first
   character's save (a shortcut while working on combat);
   `RS09_LIVE_SCENARIOS=a,b` runs only the named ones.
 - At least ten ticks, a mean interval between 590 and 700 ms.
@@ -718,16 +754,17 @@ stand-ins); this test checks the production binding end to end.
 
 ## Not covered / still to do
 
-- The remaining routed handlers: component use-with (spells), the driver's
-  refused packets (commands, quick chat, abuse reports, the GE packet);
+- The remaining routed handlers: the driver's refused packets (commands, quick chat, abuse reports, the GE packet);
   the global handlers' dialogue services (ClimbDialogue, `send_options`,
   the dialogue senders) are still refused although the interpreter is
   installed; `ZoneMonitor.interact`/`useWith` for items inside a zone,
   hint icons and warning messages, the DarkZone's overlay and light sources
   and the multiway overlay.
-- The rest of combat: spells (magic swings stop at the spell services), the
-  specials' services listed as refused, teleports
-  (`teleport::Manager`, the spell book teleports, the wilderness rule),
+- The rest of combat: the spells with effects, multi-target and NPC spells,
+  autocast selection from the weapon tab, and the spell listeners refused
+  above (the next step of spells: the binds' and ancients' `fireEffect`
+  over the NPC timers), the specials' services listed as refused, the
+  ancient, home, diary- and quest-gated teleports,
   graves in the server store, the equipment registers (chinchompa and salamander handlers, the
   degrader; docs/equipment-registers.md) and the creature behaviours.
 - The special attacks, the player's death, graves, the NPC class overrides
@@ -750,8 +787,8 @@ stand-ins); this test checks the production binding end to end.
   AssistSession), the global handlers' dialogue services, and ForceMovement
   (`world::force_movement`: its Host, its pulses by identity and the
   ForceMove mask encoder, which is not ported; nothing installed calls it).
-- The rest of the install round (in order): spells and teleports, the
-  teleport jewellery and tablets, the everyday item handlers, zone overlays
+- The rest of the install round (in order): the rest of spells and
+  teleports (above), the teleport jewellery and tablets, the everyday item handlers, zone overlays
   and `ZoneMonitor.interact`/`useWith` inside a zone; commands, quick
   chat, abuse reports and the Grand Exchange; the equipment registers and
   the creatures.

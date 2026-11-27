@@ -718,6 +718,9 @@ pub fn handle(
                 )),
             }
         }
+        (Handler::ComponentUseWith, dispatch::Packet::Action { player, action, .. }) => live
+            .component_use_with(player, action)
+            .map_err(super::host::fail),
         (Handler::SlotSwitch, dispatch::Packet::Action { player, action, .. }) => {
             match crate::world::packet_handlers::slot_switch::SlotSwitch::from_action(action) {
                 Some(request) => live.slot_switch(player, request).map_err(super::host::fail),

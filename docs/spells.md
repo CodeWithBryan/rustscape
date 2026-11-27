@@ -3,8 +3,12 @@
 `world::spells` ports the framework that magic combat and spell casting run
 on: rune requirements with combination runes and elemental staves, the cast
 pipeline, the spell books with their registered combat spells, spell blocks
-and autocast selection. It is a library. Nothing in the controlled sessions
-calls it, no packet handler reaches it, and nothing installs it in a world.
+and autocast selection. It is a library. The live world (`--world`)
+installs it for the combat spells whose `fireEffect` is the empty base (the
+standard book's strikes, bolts, blasts and waves, Crumble Undead, Iban
+Blast, Magic Dart and Sonic Wave), cast with the spell-on-entity packets and
+from the combat pulse; the rest is refused there by name
+(docs/live-world.md). Nothing in the controlled sessions calls it.
 
 The sources are the pinned `MagicSpell.java`, `CombatSpell.java`,
 `DefaultCombatSpell.java`, `SpellType.java`, `Runes.java`,

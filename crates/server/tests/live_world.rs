@@ -934,6 +934,8 @@ async fn drive(
                 "trade" => trade_scenario(address, saves).await,
                 "follow" => follow_scenario(address, saves).await,
                 "eat" => eat_scenario(address, saves).await,
+                "magic" => magic_scenario(address, saves).await,
+                "teleport" => teleport_scenario(address, saves).await,
                 "appearance" => appearance_scenario(address, saves).await,
                 "reconnect" => reconnect_scenario(address, saves).await,
                 other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
@@ -949,6 +951,7 @@ async fn drive(
         subclass_scenario(address, saves).await;
         dragon_scenario(address, saves).await;
         ranged_scenario(address, saves).await;
+        magic_scenario(address, saves).await;
         special_scenario(address, saves).await;
         return;
     }
@@ -984,6 +987,8 @@ async fn drive(
     trade_scenario(address, saves).await;
     follow_scenario(address, saves).await;
     eat_scenario(address, saves).await;
+    magic_scenario(address, saves).await;
+    teleport_scenario(address, saves).await;
     appearance_scenario(address, saves).await;
     reconnect_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
@@ -1417,6 +1422,252 @@ async fn ranged_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
         "useAmmo took arrows from the quiver"
     );
     one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A combat spell on an NPC: a saved character in the Lumbridge chicken pen
+/// with magic 40 and air and mind runes casts Wind Strike (standard book
+/// 192, button 1) on the nearest chicken with the spell-on-NPC packet (239):
+/// processComponentUseWith, MagicSpell.castSpell, CombatSpell.cast (the
+/// spell set on the properties, the combat pulse started), the magic swing
+/// handler (meetsRequirements removes one air and one mind rune), the
+/// spell's projectile (91) toward the chicken, its hit mark and the magic
+/// experience.
+async fn magic_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3232, 3294, 0];
+    write_save_with(
+        &players,
+        "traceone",
+        "mageone",
+        at,
+        &[(0, 556, 100), (1, 558, 100)],
+        |save| {
+            save["skills"][6]["static"] = Value::String("40".into());
+            save["skills"][6]["dynamic"] = Value::String("40".into());
+            save["skills"][6]["experience"] = Value::String("37224.0".into());
+            // Before the tutorial is complete addExperience caps a skill
+            // at 175 experience.
+            save.as_object_mut()
+                .unwrap()
+                .entry("attributes")
+                .or_insert_with(|| Value::Array(vec![]))
+                .as_array_mut()
+                .unwrap()
+                .push(
+                    serde_json::json!({"key": "tutorial:complete", "type": "bool", "value": true}),
+                );
+        },
+    );
+    let (code, one) = Client::login(address, "mageone").await;
+    assert_eq!(code, 2, "mageone's login");
+    let mut one = one.unwrap();
+    // tutorial:complete: the welcome screen (378) first; its play button.
+    one.until(Duration::from_secs(10), "mageone's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    one.send(button(378, 140)).await;
+    one.until(Duration::from_secs(10), "mageone's rebuild", |c| {
+        c.base.is_some()
+            && !c.updates.is_empty()
+            && !c.npcs.actors.is_empty()
+            && c.containers.get(&93).is_some_and(|c| c.len() == 2)
+    })
+    .await;
+    let base = one.base.unwrap();
+    let here = one.position();
+    let mut chickens: Vec<(usize, [i32; 3])> = one
+        .npcs
+        .actors
+        .iter()
+        .filter(|(_, n)| n.type_id == 41 || n.type_id == 1017)
+        .map(|(i, n)| (*i, [base[0] + n.tile[0], base[1] + n.tile[1], base[2]]))
+        .collect();
+    chickens.sort_by_key(|(_, t)| (t[0] - here[0]).abs() + (t[1] - here[1]).abs());
+    let started = Instant::now();
+    let hits_from = one.npc_hits.len();
+    let shots_from = one.projectiles.len();
+    let mut chosen = None;
+    for (index, tile) in chickens.into_iter().take(4) {
+        eprintln!("mageone at {here:?} casts Wind Strike on chicken {index} at {tile:?}");
+        // Spell on NPC (239): child, interface, a short the server skips,
+        // the NPC index.
+        one.send(frame(
+            239,
+            &[&le16(1), &le16(192), &sa16(0), &la16(index as i32)],
+        ))
+        .await;
+        let end = Instant::now() + Duration::from_secs(20);
+        while Instant::now() < end
+            && !one.npc_hits[hits_from..]
+                .iter()
+                .any(|(i, _, _)| *i == index)
+        {
+            one.pump(Duration::from_millis(200)).await;
+        }
+        if one.npc_hits[hits_from..]
+            .iter()
+            .any(|(i, _, _)| *i == index)
+        {
+            chosen = Some(index);
+            break;
+        }
+        one.send(frame(93, &[])).await;
+    }
+    let index = chosen.unwrap_or_else(|| {
+        panic!(
+            "a Wind Strike hit mark on a chicken (messages {:?})",
+            one.messages
+        )
+    });
+    let runes = |c: &Client, slot: i32| {
+        c.containers
+            .get(&93)
+            .and_then(|c| c.get(&slot))
+            .map_or(0, |i| i.1)
+    };
+    let shots: Vec<_> = one.projectiles[shots_from..]
+        .iter()
+        .map(|(_, p)| (p.spot, p.target, p.start_height, p.end_height))
+        .collect();
+    eprintln!(
+        "mageone: hit mark on chicken {index} after {:.1} s; projectiles {shots:?}; air {} mind {}; magic {:?}",
+        started.elapsed().as_secs_f64(),
+        runes(&one, 0),
+        runes(&one, 1),
+        one.skills.get(&6)
+    );
+    assert!(
+        one.projectiles[shots_from..]
+            .iter()
+            .any(|(_, p)| p.spot == 91 && p.target == index as i32 + 1),
+        "Wind Strike's projectile (91) toward the chicken"
+    );
+    assert!(runes(&one, 0) < 100, "the cast took air runes");
+    assert!(runes(&one, 1) < 100, "the cast took mind runes");
+    one.until(Duration::from_secs(5), "magic experience", |c| {
+        c.skills.get(&6).is_some_and(|s| s.1 > 37224)
+    })
+    .await;
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A standard teleport: a saved character in Lumbridge with magic 40 and
+/// the runes for Varrock Teleport presses it on the magic tab (192, button
+/// 15): the magic tab's handler, SpellListeners.run with ModernListeners'
+/// Varrock teleport (requires, sendTeleport), TeleportManager.send with the
+/// NORMAL teleport pulse (sounds, the animations, the move at its fourth
+/// tick); the character arrives at Varrock's square (3213,3424), the runes
+/// are gone and 35 magic experience is added.
+async fn teleport_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3222, 3218, 0];
+    write_save_with(
+        &players,
+        "traceone",
+        "teleone",
+        at,
+        &[(0, 554, 1), (1, 556, 3), (2, 563, 1)],
+        |save| {
+            save["skills"][6]["static"] = Value::String("40".into());
+            save["skills"][6]["dynamic"] = Value::String("40".into());
+            save["skills"][6]["experience"] = Value::String("37224.0".into());
+            // Before the tutorial is complete addExperience caps a skill
+            // at 175 experience.
+            save.as_object_mut()
+                .unwrap()
+                .entry("attributes")
+                .or_insert_with(|| Value::Array(vec![]))
+                .as_array_mut()
+                .unwrap()
+                .push(
+                    serde_json::json!({"key": "tutorial:complete", "type": "bool", "value": true}),
+                );
+        },
+    );
+    let (code, one) = Client::login(address, "teleone").await;
+    assert_eq!(code, 2, "teleone's login");
+    let mut one = one.unwrap();
+    // tutorial:complete: the welcome screen (378) first; its play button.
+    one.until(Duration::from_secs(10), "teleone's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    one.send(button(378, 140)).await;
+    one.until(Duration::from_secs(10), "teleone's rebuild", |c| {
+        c.base.is_some()
+            && !c.updates.is_empty()
+            && c.containers.get(&93).is_some_and(|c| c.len() == 3)
+    })
+    .await;
+    assert_eq!(one.position(), at, "teleone's saved location");
+    let started = Instant::now();
+    one.send(button(192, 15)).await;
+    one.until(Duration::from_secs(10), "the arrival in Varrock", |c| {
+        c.position() == [3213, 3424, 0]
+    })
+    .await;
+    eprintln!(
+        "teleone: in Varrock after {:.1} s; magic {:?}",
+        started.elapsed().as_secs_f64(),
+        one.skills.get(&6)
+    );
+    one.until(
+        Duration::from_secs(5),
+        "the runes gone and the experience",
+        |c| {
+            c.containers.get(&93).is_some_and(|c| c.is_empty())
+                && c.skills.get(&6).is_some_and(|s| s.1 == 37224 + 35)
+        },
+    )
+    .await;
+    // A second press with no runes, after the magic delay (five ticks):
+    // the rune message, no teleport. SpellUtils.hasRunes walks its cost
+    // HashMap in bucket order (563 before 554 and 556): the law rune.
+    one.pump(Duration::from_secs(4)).await;
+    let from = one.messages.len();
+    one.send(button(192, 15)).await;
+    one.until(Duration::from_secs(5), "the missing rune message", |c| {
+        c.messages[from..]
+            .iter()
+            .any(|(_, m)| m == "You don't have enough law runes to cast this spell.")
+    })
+    .await;
+    assert_eq!(one.position(), [3213, 3424, 0], "no second teleport");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    // A teleport cut short by a disconnection: the pulse is stopped at the
+    // logout and never runs against the removed player; the world goes on
+    // (a later login is served).
+    write_save_with(
+        &players,
+        "teleone",
+        "teletwo",
+        at,
+        &[(0, 554, 1), (1, 556, 3), (2, 563, 1)],
+        |_| {},
+    );
+    let (code, two) = Client::login(address, "teletwo").await;
+    assert_eq!(code, 2, "teletwo's login");
+    let mut two = two.unwrap();
+    two.until(Duration::from_secs(10), "teletwo's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    two.send(button(378, 140)).await;
+    two.until(Duration::from_secs(10), "teletwo's rebuild", |c| {
+        !c.updates.is_empty() && c.containers.get(&93).is_some_and(|c| c.len() == 3)
+    })
+    .await;
+    two.send(button(192, 15)).await;
+    two.pump(Duration::from_millis(300)).await;
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(4)).await;
+    let (code, three) = Client::login(address, "teleone").await;
+    assert_eq!(code, 2, "a login after the cut-short teleport");
+    three.unwrap().writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

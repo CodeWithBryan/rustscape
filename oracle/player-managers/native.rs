@@ -170,6 +170,10 @@ pub struct Model {
     completed_levels: Vec<i32>,
     labels: HashMap<(char, usize), String>,
     counters: HashMap<&'static str, usize>,
+    /// Every labelled listener's allocation, held weakly: a label is keyed
+    /// by the object's address, so a dropped listener's address must not be
+    /// handed to a later one (it would take the old label).
+    labelled: Vec<rs09_server::inventory::container_listener::WeakHandle>,
 }
 
 fn container_index(kind: Kind) -> usize {
@@ -226,6 +230,7 @@ impl Model {
         self.label("session", session.identity())
     }
     fn listener_label(&mut self, listener: &Listener) -> Value {
+        self.labelled.push(listener.downgrade());
         self.label("listener", listener.identity())
     }
     fn timer_label(&mut self, timer: usize) -> Value {
@@ -1709,6 +1714,7 @@ pub fn evaluate(input: &Value) -> Value {
         timers: Vec::new(),
         completed_levels: Vec::new(),
         labels: HashMap::new(),
+        labelled: Vec::new(),
         counters: HashMap::new(),
     };
     for spec in input["nodes"].as_array().into_iter().flatten() {
