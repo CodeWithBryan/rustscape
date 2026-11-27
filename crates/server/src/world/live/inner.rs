@@ -379,19 +379,13 @@ impl Inner {
         }
         result
     }
-    /// `Appearance.sync()`: `prepareBodyData` over the canonical appearance
-    /// and the worn equipment (`player::appearance`), the prepared body
-    /// copied into the appearance block's data, then the appearance mask.
+    /// `Appearance.sync()`: `player.updateAppearance()`, the appearance mask
+    /// registered. The body is prepared and the field written by the flag
+    /// writer when the update phase writes the mask (super::appearance).
     pub fn appearance_sync(&mut self, p: &P) -> Result<bool, String> {
-        let player = self.canonical(p).player.clone();
-        player.render_info().write().prepared_appearance = false;
-        player
-            .prepare_body(&self.state)
-            .map_err(|e| format!("{e:?}"))?;
-        let body = *player.appearance().body().read();
-        let masks = player.masks();
-        masks.body().write().body_parts.copy_from_slice(&body[..12]);
-        masks
+        self.canonical(p)
+            .player
+            .masks()
             .sync_appearance(now_millis)
             .map_err(|e| format!("{e:?}"))
     }
@@ -1676,10 +1670,10 @@ impl equipment::Context for EquipmentContext<'_> {
         Ok(())
     }
     fn set_animations(&mut self, _: ()) -> inventory::Result<()> {
-        self.inner
-            .not_ported
-            .skip("Appearance.setAnimations (equipment render animations not joined)");
-        Ok(())
+        // Appearance.setAnimations(): the weapon's stance and movement
+        // animations on the canonical appearance.
+        super::appearance::set_animations(self.inner, &self.p)
+            .map_err(|e| inventory::Error::Binding(format!("{e:?}")))
     }
     fn update_appearance(&mut self, _: &NodeHandle) -> inventory::Result<()> {
         // Appearance.sync(): the body with the worn equipment.
