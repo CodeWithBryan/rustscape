@@ -1339,6 +1339,11 @@ impl listeners::Context for Ctx<'_> {
         // assist") and their other on listeners (super::global).
         if let Some(interaction) = f.value::<crate::world::global_handlers::registry::Interaction>()
         {
+            if matches!(n, Node::Scenery(_)) {
+                return lrefused(
+                    "the global handlers' scenery listeners (the bank chest and deposit box)",
+                );
+            }
             let entity = |n: &Node| match n {
                 Node::Player(h) | Node::Npc(h) => Ok(super::global::GNode::Entity(P(h.clone()))),
                 _ => Err(listeners::Error::Type),
@@ -1373,7 +1378,8 @@ impl listeners::Context for Ctx<'_> {
         if f.value::<AttackListener>().is_some() {
             return attack_listener(self, p, n).map_err(lerr);
         }
-        // SapCollectListener's "empty" (super::withobject).
+        // SapCollectListener's "empty" and CoalTruckListener's options
+        // (super::withobject).
         if let Some(interaction) = f.value::<crate::world::item_on_object::Interaction>() {
             return crate::world::item_on_object::run_option(
                 &mut withobject::WithObject(everyday::Everyday(Ctx(self.0))),
@@ -1428,11 +1434,18 @@ impl listeners::Context for Ctx<'_> {
         // player is in (none of the installed zones takes an entity option
         // but the wilderness' and the multiway zone's own checks).
         let p = self.player_of(&z).map_err(lerr)?;
+        let monitor = self.0.monitor(&p.0);
         let target = match n {
             Node::Npc(h) | Node::Player(h) => h.clone(),
-            _ => return lrefused("ZoneMonitor.interact for an item from a listener"),
+            // An item or a scenery is not a zone target here: with no zone
+            // the answer is false, and inside one the call is refused.
+            _ if monitor.zones().is_empty() => return Ok(false),
+            _ => {
+                return lrefused(
+                    "ZoneMonitor.interact for an item or a scenery from a listener inside a region zone",
+                );
+            }
         };
-        let monitor = self.0.monitor(&p.0);
         monitor
             .interact(self.0, Some(&target), Some(&()))
             .map_err(lerr)
@@ -1598,4 +1611,31 @@ pub fn has_requirement(
         inner.message(p, &text).map_err(|e| format!("{e:?}"))?;
     }
     Ok(result)
+}
+
+impl Live {
+    /// `InteractionListeners.run(id, SCENERY, option, player, node)` of an
+    /// `on` listener, deferred from a scenery option packet
+    /// (super::scenery): the walk to the object and, at the arrival, the
+    /// lambda.
+    pub fn scenery_listener_run(
+        &mut self,
+        player: NodeHandle,
+        id: i32,
+        option: &[u16],
+        object: crate::world::doors::Handle,
+    ) -> Result<()> {
+        let registry = self.item_actions.listeners.clone();
+        registry
+            .run(
+                &mut Ctx(self),
+                id,
+                Kind::Scenery,
+                option,
+                Node::Player(player),
+                Node::Scenery(object),
+            )
+            .map(|_| ())
+            .map_err(err)
+    }
 }

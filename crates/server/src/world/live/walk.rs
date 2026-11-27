@@ -184,6 +184,14 @@ pub enum Deferred {
     /// The `stop()` override of a content pulse a pulse manager stopped
     /// (super::items::milking).
     ContentStop(crate::pulses::Handle),
+    /// `InteractionListeners.run(id, SCENERY, option, player, node)` of an
+    /// `on` listener reached by a scenery option packet (super::scenery).
+    SceneryListener {
+        player: NodeHandle,
+        id: i32,
+        option: Vec<u16>,
+        object: crate::world::doors::Handle,
+    },
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts

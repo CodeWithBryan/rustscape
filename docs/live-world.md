@@ -130,7 +130,7 @@ modes of `rs09-server` are unchanged.
 | scenery options | `processSceneryAction`, scenery `InteractPlugin` | `scenery.rs`: `world::scenery_runtime` (the legacy walk and arrival, `world::scenery_action`) over the cache scene's objects, `scenery_options::Registry` (the scenery tables and handler arena with the global handlers' defaults), `Scenery.getChild` over the scene's definitions, the InteractionListeners lookup for scenery |
 | use-with, slot switch | `processUseWith`, `processSlotSwitch` | `items/use_with.rs`, `items/slots.rs`: `world::packet_handlers::use_with` (zone monitor, `InteractionListeners.run_use`, PluginInteractionManager, `UseWithHandler.HANDLERS`, `runUnhandledAction`) and `slot_switch` over the canonical inventory |
 | content use-with listeners | `WaterSourceListener`, `SandSourceListener`, `SackOnHay`, `HatStand`, `ChestKeyListener`, `FeedOnStrayDog`, `FeedFaladorSheepdog`; `InteractionListeners.run`'s use-with path; `PulseManager.run(pulse)` and ContentAPI `runTask` for their pulses | `items/everyday.rs`: the five `global_items2` classes (`registry::define`) and the two `item_on_npc` classes registered in the native InteractionListeners at boot, in the class scan's order; `run_use` walks to the scene object (`DestinationFlag.OBJECT`) or the NPC and the arrival runs the lambda (`registry::run_interaction`, `item_on_npc::run`) with `Everyday` as both libraries' `Host` (the canonical inventory, the animators, messages, the synth sound, the ground manager for what does not fit, the dialogue interpreter, the Falador diary, an NPC's force chat); the fill pulse and the sand task are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity. ChestKeyListener's `replaceScenery` is `world::scenery::replace` (SceneryBuilder) over the cache scene, then `setActive(false)`: the scene's pulse runner is `GameWorld.Pulser` (the driver's), so the restore pulse runs there and its body is the scene's (`Live::pulse_body`); the object updates reach viewers through the chunk synchronisation |
-| small item-on-object listeners | `SapCollectListener`, `PoisonFountainListener`, `HairdresserCheeseListener`, `FishEasterEgg`, `GWDEntranceRopeListener` | `items/withobject.rs`: `world::item_on_object` (ported without a JVM corpus, docs/item-on-object.md), registered at boot by `install_content_use` when the class scan names the class, with `WithObject` as its `Host` over `Everyday`'s services (the canonical inventory with its listeners, the animator, messages) plus `Container.replace` on the inventory, the action locks (`lock`, `unlock`), the player's attributes (a `/save:` key is saved), the persisted Falador diary (`finishTask`) and `setVarbit`. The use-with lambdas run at the arrival of `run_use`; the sap bucket's "empty" is an `on` listener run from the item option path (`items.rs` `invoke_on`). The three pulses are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity (`WithObjectWorld`) |
+| small item-on-object listeners | `SapCollectListener`, `PoisonFountainListener`, `HairdresserCheeseListener`, `FishEasterEgg`, `GWDEntranceRopeListener`, `CoalTruckListener` | `items/withobject.rs`: `world::item_on_object` (ported without a JVM corpus, docs/item-on-object.md), registered at boot by `install_content_use` when the class scan names the class, with `WithObject` as its `Host` over `Everyday`'s services (the canonical inventory with its listeners, the animator, messages) plus `Container.replace` on the inventory, the action locks (`lock`, `unlock`), the player's attributes (a `/save:` key is saved), the persisted Falador diary (`finishTask`), `setVarbit`, and for the coal truck `sendDialogue`, the inventory's free slots and amounts, and the persisted Seers' Village diary (`isComplete`, `updateTask`, `finishTask`; an Int `setAttribute` runs the diary's coal truck `onAttributeSet` branch only, not the other diaries' attribute hooks). The truck's two options are scenery `on` listeners: `scenery.rs` defers `InteractionListeners.run` to `Live::scenery_listener_run` (the walk and the arrival's lambda); its `ZoneMonitor.interact` for a scenery answers false outside region zones and is refused inside one. The use-with lambdas run at the arrival of `run_use`; the sap bucket's "empty" is an `on` listener run from the item option path (`items.rs` `invoke_on`). The three pulses are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity (`WithObjectWorld`) |
 | woodcutting pulse | `AxeOnTree`, `WoodcuttingSkillPulse` | `items/woodcutting.rs`: AxeOnTree (registered with the listeners above) runs `gathering::woodcutting::Pulse` (verified by the gathering corpus) as a STANDARD pulse of the player's canonical pulse manager, dispatched by identity (`WoodcuttingWorld`); `Pulse.update`'s inactive-node check reads the tree's active flag, and `stop()` (the animation reset) also runs when the manager stops it. `Chop` is its `service::Context` over the live world, written without a corpus of its own: the tree's id and active flag, `Scenery.transform` and `SceneryBuilder.replace` (the stump for the respawn duration, restored by the scene's pulse), the player's location, animator, messages, attributes, Skills, the canonical inventory and equipment, the Seers' Village diary, the interpreter's plain dialogue, item names, the local players, the player count, the synth sound, `RandomFunction.RANDOM` and `ThreadLocalRandom`. Skipped or defaulted by name: the familiar boost, skillcape perks, bird nests, the ResourceProducedEvent, the adze's projectile, farming patches |
 | cooking | `CookingRewrite` (the use-with listener, `cook`), `StandardCookingPulse`, `PieCookingPulse`, `PizzaCookingPulse`, `IntentionalBurnPulse`, `CookingDialogue`, `CookableItems` | `items/cooking.rs`: `world::cooking` with `Cook` as its `Host` (the canonical inventory and equipment, the native Skills for the level and the experience, `RandomFunction.RANDOM` for the burn roll and the spit, messages, the synth sound, the animator at HIGH priority, the ground manager for a spit or cake tin that does not fit, the `stats_manager:food_cooked` attribute); registered in the native InteractionListeners at boot with the other content use-with classes; a cooking pulse is a STANDARD pulse of the player's canonical pulse manager on `GameWorld.Pulser` (`start()` runs inside `PulseManager.run`; `reward`'s `setDelay` is copied to the pulse object), dispatched by identity; CookingDialogue is a DialogueFile of the player's native interpreter (the chatbox 307 with its item, text and child positions, the sinew options) and Cook-X is an input prompt (`world::input_prompt`) whose script is the dialogue's handler |
 | cow milking | `CowMilkingPlugin`, its `BucketHandler`; `UseWithHandler.HANDLERS`, `UseWithHandler$3` | `items/milking.rs`: `world::creatures::cow_milking` (replayed against the equipment-registers oracle) with the live world as `equipment_registers::Host` and `creatures::Host`, joined for this class only (the canonical inventory, the animator, the synth sound, messages; every service of the other creature and equipment-register classes refuses by name). `newInstance` runs at boot when the class scan names the plugin: "option:milk" on the definitions of the dairy cows 8689 and 12111 and "steal-cowbell" on scenery's option handlers (a `scenery::SceneryPlugin` beside the global handlers', run after the legacy walk and arrival), and the BucketHandler for the two cows in the world's `use_with::Registry`, which `processUseWith` now reads: its MovementPulse is the two-argument one (no `getDestination` override), its arrival faces the cow (`Node.getFaceLocation`) and runs `handle`. The milking pulse is a `CreaturePulse` run by the player's pulse manager (STANDARD), updated every tick by the world's runner; its `stop()` override (the animation reset) also runs when the manager stops it (`Deferred::ContentStop`) |
@@ -455,7 +455,8 @@ the Marathon perk (false), `Player.logoutListeners` (empty),
 zone (false), `ItemDefinition.getItemPlugin`
 (null: no item plugin is registered), `PluginInteractionManager` for ground
 items, NPCs, scenery and use-with (false), `InteractionListeners` for ground
-items (false) and for a scenery option nothing registers (false),
+items (false) and for a scenery option nothing registers (false; a
+registered scenery `on` listener runs, see the coal truck),
 `UseWithHandler.HANDLERS` for a key no installed handler registered (null: only
 CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's SmeltUseWithHandler
 and SmithingPlugin are installed),
@@ -529,8 +530,8 @@ teleport, diary tasks, queued scripts other than the dose message; scenery:
 the hardcoded constructed scenery of `processSceneryAction`, varbit- and
 varp-configured scenery (morphs) and their debug lookup, the bank booths'
 `defineInteraction` scripts (interaction scripts in the player's script
-queue) and the bank chest and deposit box listeners (the walk to scenery
-for a content listener), scenery option handlers that are not global handlers (doors and other
+queue) and the bank chest and deposit box listeners (the global handlers'
+scenery lambdas are refused by name where they are invoked), scenery option handlers that are not global handlers (doors and other
 content, CowMilkingPlugin, FurnaceOptionPlugin and SmithingPlugin's aside); the use-with MovementPulse to a ground item, a UseWithHandler's
 MovementPulse with a `getDestination` override and item-on-item Pulse (no such handler class is installed),
 the dialogue plugins CowMilkingPlugin opens (3807 without a bucket or a pail, 70099 for "steal-cowbell"),
@@ -756,7 +757,12 @@ the client-side player and NPC update decoders):
   `usecheese` (a save by the Falador hairdresser's treadmill 11677 at
   2948,3380 with a cheese) uses it on the treadmill: three ticks later the
   cheese is gone with its message and the Falador diary's task line, and no
-  "Nothing interesting happens.". The knife without a bucket, the herring
+  "Nothing interesting happens.". `usecoal` (a save by the Seers' Village
+  coal truck 2114 at 2696,3504 with three coal) reads "Investigate" (0
+  coal), uses one coal on the truck (all three go in), reads 3 coal, takes
+  them back with "Remove-coal", reads "The coal truck is empty.", deposits
+  again, and the save holds `coal-truck-inventory`. The truck's fill at
+  120 and its diary task are not exercised through a socket. The knife without a bucket, the herring
   on a door and the God Wars rope are not exercised through a socket.
 - `usechop` (a save by the tree 1276 at 3226,3248 with a bronze axe) uses
   the axe on the tree: "You swing your axe at the tree...", then, on a
@@ -921,8 +927,8 @@ stand-ins); this test checks the production binding end to end.
 
 - Content use-with: of the pinned source's 157 listener files that call
   `onUseWith`/`onUseAnyWith`/`onUseWithWildcard` and 36 `UseWithHandler`
-  classes, fourteen listener classes are installed (above; CookingRewrite
-  and the six of docs/item-on-object.md are ported without a JVM corpus).
+  classes, fifteen listener classes are installed (above; CookingRewrite
+  and the seven of docs/item-on-object.md are ported without a JVM corpus).
   Not installed:
   the `UseWithHandler` classes
   other than CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's
@@ -935,7 +941,7 @@ stand-ins); this test checks the production binding end to end.
   by firemaking,
   the other furnace uses (AmmoMouldOnFurnace, jewellery and silver
   crafting), the shield and godsword dialogues of the anvils, the rest of `withobject`
-  (CauldronOfThunder, CoalTruck, DragonPlatebody,
+  (CauldronOfThunder, DragonPlatebody,
   KaramjaBananaCrate, SpiritShieldBless, SwampHoleRope; the God Wars hole
   the rope listener's varbit belongs to is not ported either), the rest of
   `withnpc`
@@ -976,8 +982,9 @@ stand-ins); this test checks the production binding end to end.
 - Left of the install round's first two items: the bank booths
   (`defineInteraction` scripts: the interaction script of the player's
   script queue with its distance, line-of-sight and face services), bank
-  chests and deposit boxes (the walk to scenery for a content listener; the
-  deposit box's item rendering), the bank PIN (the entry interface and the
+  chests and deposit boxes (their scenery listener lambdas; the walk to
+  scenery for a content listener is joined; the deposit box's item
+  rendering), the bank PIN (the entry interface and the
   PIN settings; a character with a PIN cannot open its bank here), the
   secondary bank purchase, assist sessions (`world::player_managers`'
   AssistSession), the global handlers' dialogue services, and ForceMovement

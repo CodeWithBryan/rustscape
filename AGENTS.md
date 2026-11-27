@@ -16,8 +16,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   Array identity hashes are explicit platform inputs. Canonical shared processor
   ownership/native objects and a real actor-clock/tick phase bridge exist;
   `rs09-server --world` runs `run` with the listener movement and arrival
-  for NPC and player targets (world/live/talk.rs); defineInteraction
-  scripts, scenery on-listeners, content use-with listener bodies, events
+  for NPC, player and scenery targets (world/live/talk.rs,
+  world/live/scenery.rs); defineInteraction
+  scripts, content use-with listener bodies, events
   and booth content are still required runtime joins (only the unhandled
   use-with MovementPulse to NPCs, players and scenery is joined:
   world/live/items/use_with.rs). See docs/interaction-listeners.md.
@@ -611,9 +612,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (docs/live-world.md). Every other global_items2::Host service stays a
   refusal by name there; join a service before installing a class that
   reaches it. See docs/item-on-npc.md.
-- For the six small item-on-object listeners (world/item_on_object:
+- For the seven small item-on-object listeners (world/item_on_object:
   SapCollectListener, PoisonFountainListener, HairdresserCheeseListener,
-  FishEasterEgg, GWDEntranceRopeListener, AxeOnTree), run `cargo test -p rs09-server
+  FishEasterEgg, GWDEntranceRopeListener, AxeOnTree, CoalTruckListener
+  with the Seers' Village diary's coal truck hooks), run `cargo test -p rs09-server
   --test item_on_object`. There is no JVM corpus: the test is a recording
   host written from the pinned sources, so do not call the module
   differentially verified. Keep the quirks docs/item-on-object.md lists

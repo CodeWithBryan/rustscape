@@ -2984,6 +2984,75 @@ async fn use_object_scenario(address: std::net::SocketAddr, saves: &std::path::P
     );
     cheese.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // CoalTruckListener: the Seers' Village truck 2114 at [2696, 3504, 0],
+    // its two scenery options and coal used on it.
+    let read = |c: &Client, from: usize, what: &str| {
+        c.texts[from..].iter().any(|(_, _, t)| t.contains(what))
+    };
+    let start = [2694, 3505, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usecoal",
+        start,
+        &[(0, 453, 1), (1, 453, 1), (2, 453, 1)],
+    );
+    let (code, coal) = Client::login(address, "usecoal").await;
+    assert_eq!(code, 2, "usecoal's login");
+    let mut coal = coal.unwrap();
+    coal.until(Duration::from_secs(10), "usecoal's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = coal.texts.len();
+    coal.send(scenery_option2(2114, 2696, 3504)).await;
+    coal.until_pinging(Duration::from_secs(20), "the empty truck's load", |c| {
+        read(c, from, "There is currently 0 coal in the truck.")
+    })
+    .await;
+    // Every coal held goes in, not only the one used.
+    coal.send(use_with_scenery(453, 0, 2114, 2696, 3504)).await;
+    coal.until_pinging(Duration::from_secs(20), "the deposited coal", |c| {
+        held(c, 453) == 0
+    })
+    .await;
+    let from = coal.texts.len();
+    coal.send(scenery_option2(2114, 2696, 3504)).await;
+    coal.until_pinging(Duration::from_secs(20), "the truck's load", |c| {
+        read(c, from, "There is currently 3 coal in the truck.")
+    })
+    .await;
+    coal.send(scenery_option1(2114, 2696, 3504)).await;
+    coal.until_pinging(Duration::from_secs(20), "the removed coal", |c| {
+        held(c, 453) == 3
+    })
+    .await;
+    let from = coal.texts.len();
+    coal.send(scenery_option1(2114, 2696, 3504)).await;
+    coal.until_pinging(Duration::from_secs(20), "the empty truck", |c| {
+        read(c, from, "The coal truck is empty.")
+    })
+    .await;
+    let slot = slot_of(&coal, 453);
+    coal.send(use_with_scenery(453, slot, 2114, 2696, 3504))
+        .await;
+    coal.until_pinging(Duration::from_secs(20), "the second deposit", |c| {
+        held(c, 453) == 0
+    })
+    .await;
+    eprintln!(
+        "usecoal filled and emptied the coal truck 2114 at [2696, 3504, 0]: walked {start:?} -> {:?}",
+        coal.position()
+    );
+    coal.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    // `/save:coal-truck-inventory` went into the save.
+    let saved = std::fs::read_to_string(players.join("usecoal.json")).expect("usecoal's save");
+    assert!(
+        saved.contains("coal-truck-inventory"),
+        "the saved attribute is in usecoal's save"
+    );
 }
 
 /// AxeOnTree and WoodcuttingSkillPulse (`world::gathering::woodcutting`

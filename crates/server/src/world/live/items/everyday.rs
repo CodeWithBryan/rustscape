@@ -158,7 +158,7 @@ impl Everyday<'_> {
         Ok(())
     }
     /// ContentAPI `sendDialogue`: `dialogueInterpreter.sendDialogue(*splitLines(message))`.
-    fn dialogue(&mut self, player: &Node, text: &str) -> Result<()> {
+    pub(super) fn dialogue(&mut self, player: &Node, text: &str) -> Result<()> {
         let p = self.player(player)?;
         let units: Vec<u16> = text.encode_utf16().collect();
         let lines = crate::world::plain_dialogue::split_lines(&units, 54).map_err(bind)?;
