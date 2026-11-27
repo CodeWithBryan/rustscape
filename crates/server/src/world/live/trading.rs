@@ -402,9 +402,20 @@ impl trade::Host for TradeHost<'_> {
         self.ui(p, |inner| interfaces::Context::log(inner, text))
     }
     fn ui_listener_open(&mut self, p: &NodeHandle, c: &Component) -> Result<()> {
+        // A global handler's onOpen runs with the whole world
+        // (super::global_ui); every other listener through the interface
+        // context.
+        self.p(p)?;
+        if let Some(result) = self.live.global_interface_listener(p, c, false) {
+            return result.map(|_| ()).map_err(Into::into);
+        }
         self.ui(p, |inner| interfaces::Context::listener_open(inner, c))
     }
     fn ui_listener_close(&mut self, p: &NodeHandle, c: &Component) -> Result<bool> {
+        self.p(p)?;
+        if let Some(result) = self.live.global_interface_listener(p, c, true) {
+            return result.map_err(Into::into);
+        }
         self.ui(p, |inner| interfaces::Context::listener_close(inner, c))
     }
     fn ui_plugin_open(&mut self, p: &NodeHandle, plugin: Plugin, c: &Component) -> Result<()> {

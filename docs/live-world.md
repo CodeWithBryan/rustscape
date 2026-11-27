@@ -126,7 +126,7 @@ modes of `rs09-server` are unchanged.
 | drop, equip | `DropListener`, `EquipHandler`, `EquipmentContainer` | the drop's soft queued script (due a tick later), `Item.getDropItem`, `GroundItemManager.create`, `droppedItem:ID`, the save task; `EquipHandler.handleEquip` with `EquipmentContainer.add` (`inventory::equipment::add_at` over the live equipment context: `ItemDefinition.hasRequirement` (`items::has_requirement`, JDK HashMap key order), the EquipmentListener and the InventoryListener of the canonical containers); the canonical equipment container is an `EquipmentContainer` bound to its player with its listener |
 | appearance | `Appearance.sync`, `Appearance.setAnimations`, `PlayerFlags530.Appearance` | `Inner::appearance_sync` registers the mask (`player.updateAppearance()`) at login and from the EquipmentListener; `live/appearance.rs` runs `player::appearance_writer` when the update phase writes the mask, over the live receivers (the canonical Appearance, equipment, render info and attributes, the profile's Properties and Skills, the SkullManager, the node's size, the configuration's `pvp` and `wild_pvp_enabled`); `prepareBodyData` runs inside the writer; `setAnimations` from the EquipmentListener sets the weapon's animations and render animation |
 | engine timers | `TimerRegistry` (the class scan's timers), `addAutoTimers`, `TimerManager.processTimers`, `saveTimers`/`parseTimers`, `Entity.hook`/`unhook`/`dispatch`, `hasTimerActive` | `timers.rs`: the fourteen `timers::content` prototypes in the world's registry (registered at the first timer operation, in scan order); `addAutoTimers` at `Entity.init` (AntiMacro, SkillRestore); `processTimers` for every player at the end of `Entity.tick`, the timer manager of the canonical profile (its three lists aliased); `timers::content::Natives` over `timers::Host` (the live world: native Skills through the live skills and settings contexts, the shared generator, messages, audio, equipment, rights, uids, the zone monitor's random-event restriction, the SkullManager, the per-entity hook lists) and over `timers::Saving` while a save is written or parsed (uids, ticks, the generator, the log; the messages and skull calls of a timer the parse registers are made right after the parse); `hasTimerActive` answers the walking queue (`frozen`), the zones (`teleblock`), the dragons (`dragonfire:immunity`), combat (`miasmic`) and `isPoisonImmune`; the SkullManager's `removeTimer`, `spawnTimer` and `registerTimer` go through the registry. NPCs: `processTimers` at the end of an NPC's `Entity.tick` over its own manager (the start-up's), `SkillRestore` joined at its first timer operation, `GrandExchangeTimer`'s NPC branch, NPC skills from the NPC row, NPC names from the definition, `NPC.task` from `world::slayer_tasks`, `applyPoison`, the specials' timers, `onEntityDeath`, `fullRestore`'s removals and the NPC behaviours' `removeTimer`; `Entity.scripts.removeWeakScripts` from a timer is the canonical script processor's |
-| global handlers | `ClassScanner` of the global handler classes, `InterfaceListeners`, `ComponentDefinition` plugins, OptionHandlers, `ClimbActionHandler` | `global.rs`: `registry::register_scanned` over the live InterfaceListeners, the interface definitions' plugins, the native InteractionListeners and the scenery option defaults at boot; the per-definition scenery handlers bound into the scenery definitions; buttons, open and close listeners and component plugins dispatched through `run_button`, `run_open` and `run_plugin` (`buttons.rs`); scenery OptionHandlers through `run_handler` and `handler_destination` (`destination.rs`, over the scene); the bodies' `Task`s submitted to `GameWorld.Pulser` and run with `run_task`; `GHost` is the handlers' `Host` (attributes, messages, interface text, the weapon, emote and music tabs, settings toggles, locks, the animator, the teleport location, scenery geometry, SpecialLadders) |
+| global handlers | `ClassScanner` of the global handler classes, `InterfaceListeners`, `ComponentDefinition` plugins, OptionHandlers, `ClimbActionHandler` | `global.rs`: `registry::register_scanned` over the live InterfaceListeners, the interface definitions' plugins, the native InteractionListeners and the scenery option defaults at boot; the per-definition scenery handlers bound into the scenery definitions; buttons, open and close listeners and component plugins dispatched through `run_button`, `run_open` and `run_plugin` (`buttons.rs`); scenery OptionHandlers through `run_handler` and `handler_destination` (`destination.rs`, over the scene); the bodies' `Task`s submitted to `GameWorld.Pulser` and run with `run_task`; `GHost` is the handlers' `Host` (attributes, messages, interface text, the weapon, emote and music tabs, settings toggles, locks, the animator, the teleport location, scenery geometry, SpecialLadders); `global_ui.rs`: ContentAPI `openInterface`/`openSingleTab`/`closeTabInterface`/`closeInterface` and the handlers' `interfaceManager.open`/`close`/`closeSingleTab` over the native InterfaceManager with `trade::ui::Ui<TradeHost>` as the interface context, whose `runOpen`/`runClose` run the handlers' open and close listeners (equipment screen 667 and its inventory side 670, items kept on death 102, the item select, rules and deposit box listeners); `sendIfaceSettings`, `sendRunScript`, `sendInterfaceConfig`, `EquipmentContainer.update`, `InterfaceContainer.generateItems` with a key, `DeathTask.getContainers`, the zone type, `isSkulled`, `setVarbit` and `LevelUp.sendFlashingIcons`; the dialogue senders (`sendDialogue`, `sendNPCDialogue`, `sendItemDialogue`, `sendDoubleItemDialogue`, `interpreter.sendOptions`) through the player's DialogueInterpreter, and `ClimbActionHandler.ClimbDialogue` as a native DialoguePlugin (`ClimbPlugin`) set as the player's dialogue |
 | scenery options | `processSceneryAction`, scenery `InteractPlugin` | `scenery.rs`: `world::scenery_runtime` (the legacy walk and arrival, `world::scenery_action`) over the cache scene's objects, `scenery_options::Registry` (the scenery tables and handler arena with the global handlers' defaults), `Scenery.getChild` over the scene's definitions, the InteractionListeners lookup for scenery |
 | use-with, slot switch | `processUseWith`, `processSlotSwitch` | `items/use_with.rs`, `items/slots.rs`: `world::packet_handlers::use_with` (zone monitor, `InteractionListeners.run_use`, PluginInteractionManager, `UseWithHandler.HANDLERS`, `runUnhandledAction`) and `slot_switch` over the canonical inventory |
 | content use-with listeners | `WaterSourceListener`, `SandSourceListener`, `SackOnHay`, `HatStand`, `ChestKeyListener`, `FeedOnStrayDog`, `FeedFaladorSheepdog`, `CiderOnForester` (its `CiderOnForesterDialogue` is a native DialogueFile, `items/withnpc.rs`, over `inBorders`, `sendNPCDialogue`, the player's attributes and the Seers' Village diary); `InteractionListeners.run`'s use-with path; `PulseManager.run(pulse)` and ContentAPI `runTask` for their pulses | `items/everyday.rs`: the five `global_items2` classes (`registry::define`) and the two `item_on_npc` classes registered in the native InteractionListeners at boot, in the class scan's order; `run_use` walks to the scene object (`DestinationFlag.OBJECT`) or the NPC and the arrival runs the lambda (`registry::run_interaction`, `item_on_npc::run`) with `Everyday` as both libraries' `Host` (the canonical inventory, the animators, messages, the synth sound, the ground manager for what does not fit, the dialogue interpreter, the Falador diary, an NPC's force chat); the fill pulse and the sand task are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity. ChestKeyListener's `replaceScenery` is `world::scenery::replace` (SceneryBuilder) over the cache scene, then `setActive(false)`: the scene's pulse runner is `GameWorld.Pulser` (the driver's), so the restore pulse runs there and its body is the scene's (`Live::pulse_body`); the object updates reach viewers through the chunk synchronisation |
@@ -271,6 +271,22 @@ modes of `rs09-server` are unchanged.
   `Entity.tick` returns (it is that call's last step), before the masks are
   prepared; the timers' messages and skull calls of a timer registered by a
   save's parse are made right after the parse returns.
+- The global handlers' open and close listeners run only where the
+  interface manager runs with the world's context (`trade::ui::Ui<TradeHost>`:
+  the handlers' own ContentAPI interface calls, the Close packet and a
+  walk's close). An interface the bank, the shops, the death screen or the
+  login opens or closes through the plain interface context (`Inner`) still
+  skips them (`InterfaceListeners.runOpen (content interface listeners)`).
+  The handlers' `closeInterface` now closes through the world's context
+  too, so its close listeners and a trade's close event run.
+- `InterfaceContainer.index` (the static set index, 600 to 6999) is one
+  value per live world, kept by the global handlers' state; the Grand
+  Exchange library's copy of the same static is separate (the GE is not
+  installed). Only the keyed `generateItems` is bound (the equipment
+  screen's inventory side, key 93); it still advances the index, as the
+  original's `generate` does.
+- `FamiliarManager.hasFamiliar` answers false for the global handlers as
+  for the interface context (named default: summoning is not installed).
 - The global handlers' scenery OptionHandlers (LadderManagingPlugin,
   look-at, search) run right after the walking call that reached them
   returns (they need the whole world); a handler answering false sends
@@ -516,12 +532,16 @@ spell book tab and varbit (Lunar spells are not ported), the random event
 content of AntiMacro's run (`RandomEvents`), and while a save is written or
 parsed every service but uids, ticks, the generator and the log; the global
 handlers' services without a binding (each `GHost` method named "global
-handler service NAME": the dialogue senders, deposit boxes and the
-collection box, quests and diaries, clans, assist sessions, bot info,
-familiars, activities, spells and special attacks, interfaces the tabs
-open other than through the tab libraries, pulse bodies other than
-FollowOptionPlugin's, the settings toggles other than retaliate and the
-special bar, item containers' other calls); talking and banking: the bank
+handler service NAME": `openDialogue` and `DialogueInterpreter.contains`
+(the bank booth's banker dialogue), deposit boxes and the collection box,
+quests and diaries, clans, assist sessions, bot info, familiars beyond
+`hasFamiliar` (burden beasts), activities, spells and special attacks,
+`open_tab`/`open_default_tabs`/`remove_tabs`/`open_windows_pane`/
+`component_open` (the friends list and tab rebuilds), `generateItems`
+without a key, `scriptConfigs`, pulse bodies other than
+FollowOptionPlugin's and the climbing ones, the settings toggles other
+than retaliate and the special bar, item examine and item containers'
+other calls (`get`, `add`, `refresh`, `getAmount`)); talking and banking: the bank
 PIN entry interface and PIN settings, the deposit box's item rendering,
 BankInterface's help and deposit dialogues, a transfer's after callback,
 buying the secondary bank account, the Grand Exchange collection box,
@@ -840,6 +860,22 @@ the client-side player and NPC update decoders):
   legacy walk and arrival, the global handlers' LadderManagingPlugin and
   `ClimbActionHandler` (lock, the one-tick pulse, the teleport location);
   the client's plane becomes 1.
+- `ifaceone` (a save in Lumbridge with a bronze dagger) clicks worn
+  items' "Show equipment stats" (387:55): 667's onOpen opens the single tab
+  670 (its onOpen's script 150 with key 93) and sends the bonus texts
+  ("Attack bonus" at 667:34, "Stab: ..." at 667:36) before 667's own
+  interface packet; Close (184) runs 667's onClose, which closes 670
+  (149 to child 80 or 76). "Items kept on death" (387:52) opens 102 after
+  its onOpen's script 118. The settings tab's 261:16 and 261:18 open 742
+  and 743; the stats tab's Attack (320:125) opens the skill guide 499 and
+  sends varp 965 = 1.
+- `stairup` and `stairdown` (saves on Lumbridge castle's middle floor at
+  3206,3229,1) use the north staircase 36777's first option, Climb (opcode
+  254 at 3204,3229): ClimbActionHandler finds a staircase above and below,
+  sends the options (chatbox 228: "What would you like to do?", "Climb
+  Up.", "Climb Down.") and sets ClimbDialogue; Continue (132) on 228:2
+  takes `stairup` to plane 2, on 228:3 takes `stairdown` to plane 0
+  (`ClimbDialogue.handle`: lock, the one-tick pulse, `end()`).
 - `healone` (a save with 5 of its 10 hitpoints) regains one hitpoint about
   100 ticks after login (SkillRestore from `addAutoTimers`; the client's
   hitpoints skill packet goes from 5 to 6; measured 61.3 to 61.9 s); it runs
@@ -1028,9 +1064,9 @@ stand-ins); this test checks the production binding end to end.
   content sets it).
 
 - The remaining routed handlers: the driver's refused packets (commands, quick chat, abuse reports, the GE packet);
-  the global handlers' dialogue services (ClimbDialogue, `send_options`,
-  the dialogue senders) are still refused although the interpreter is
-  installed; `ZoneMonitor.interact` for items inside a zone,
+  the global handlers' `openDialogue` and `DialogueInterpreter.contains`
+  (the bank booth's banker dialogue) are still refused;
+  `ZoneMonitor.interact` for items inside a zone,
   hint icons and warning messages, the DarkZone's overlay and light sources
   and the multiway overlay.
 - The rest of combat: NPC spells, a way onto the ancient book (quest
@@ -1058,7 +1094,7 @@ stand-ins); this test checks the production binding end to end.
   rendering), the bank PIN (the entry interface and the
   PIN settings; a character with a PIN cannot open its bank here), the
   secondary bank purchase, assist sessions (`world::player_managers`'
-  AssistSession), the global handlers' dialogue services, and ForceMovement
+  AssistSession), the global handlers' `openDialogue`, and ForceMovement
   (`world::force_movement`: its Host, its pulses by identity and the
   ForceMove mask encoder, which is not ported; nothing installed calls it).
 - The rest of the install round (in order): the rest of spells and
