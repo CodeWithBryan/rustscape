@@ -95,10 +95,10 @@ fn main() -> ExitCode {
         Ok(outcome) => {
             let text = serde_json::to_string_pretty(&outcome.report).unwrap();
             println!("{text}");
-            if let Some(path) = output {
-                if let Err(e) = std::fs::write(&path, &text) {
-                    eprintln!("{}: {e}", path.display());
-                }
+            if let Some(path) = output
+                && let Err(e) = std::fs::write(&path, &text)
+            {
+                eprintln!("{}: {e}", path.display());
             }
             if outcome.ok {
                 ExitCode::SUCCESS

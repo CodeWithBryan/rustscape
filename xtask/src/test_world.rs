@@ -89,14 +89,14 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
         );
     }
     let dir = worlds(root).join(&name);
-    if let Some(world) = read_world(&dir)? {
-        if alive(&world)? {
-            return Err(format!(
-                "test world {name} is running (pid {}); stop it first",
-                world["pid"]
-            )
-            .into());
-        }
+    if let Some(world) = read_world(&dir)?
+        && alive(&world)?
+    {
+        return Err(format!(
+            "test world {name} is running (pid {}); stop it first",
+            world["pid"]
+        )
+        .into());
     }
     if !cache.join("main_file_cache.dat2").is_file() {
         return Err(format!("no cache in {} (cargo xtask cache-fetch)", cache.display()).into());
