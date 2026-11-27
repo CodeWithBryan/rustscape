@@ -665,7 +665,11 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
             return self.player_handler(id).map(|h| h.is_walk());
         }
         if self.walk.scenery_dispatch {
-            // A global handler's OptionHandler (super::scenery).
+            // DoorManagingPlugin (super::doors) or a global handler's
+            // OptionHandler (super::scenery).
+            if let Some(door) = self.door_program(id) {
+                return Ok(door.is_walk());
+            }
             return self.scenery_handler(id).map(|h| h.is_walk());
         }
         // PickupPlugin is an OptionHandler: isWalk() is true.
@@ -682,6 +686,11 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
             return self.player_handler(id).map(|h| h.is_walk_for());
         }
         if self.walk.scenery_dispatch {
+            // DoorManagingPlugin (super::doors) or a global handler's
+            // OptionHandler (super::scenery).
+            if let Some(door) = self.door_program(id) {
+                return Ok(door.is_walk_for());
+            }
             return self.scenery_handler(id).map(|h| h.is_walk_for());
         }
         self.pickup_program(id).map(|_| false)
@@ -696,6 +705,11 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
             return self.player_handler(id).map(|h| h.is_delayed());
         }
         if self.walk.scenery_dispatch {
+            // DoorManagingPlugin (super::doors) or a global handler's
+            // OptionHandler (super::scenery).
+            if let Some(door) = self.door_program(id) {
+                return Ok(door.is_delayed());
+            }
             return self.scenery_handler(id).map(|h| h.is_delayed());
         }
         self.pickup_program(id).map(|_| true)
@@ -705,6 +719,9 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
             return self.player_handler(id).map(|h| h.class().into());
         }
         if self.walk.scenery_dispatch {
+            if self.door_program(id).is_some() {
+                return Ok("content.global.handlers.scenery.DoorManagingPlugin".into());
+            }
             return self.scenery_handler(id).map(|h| h.class().into());
         }
         self.pickup_program(id).map(|_| "PickupPlugin".into())
@@ -735,6 +752,16 @@ impl legacy_runtime::Bindings for WalkHost<'_> {
                 },
             ));
             return Ok(true);
+        }
+        if state.ground(target_node).is_err()
+            && let Some(door) = self.door_program(id)
+        {
+            // Scenery: DoorManagingPlugin.handle, in the pulse that reached
+            // it (super::doors).
+            let object = state.scenery(target_node).map_err(lerror)?;
+            return self
+                .with_doors(state, |ctx| door.handle(ctx, p, Some(&object), Some(option)))
+                .map_err(lerror);
         }
         if state.ground(target_node).is_err() {
             // Scenery: a global handler's OptionHandler, run with the whole

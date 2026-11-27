@@ -1099,6 +1099,12 @@ impl<S: Services> World<'_, S> {
         }
         Ok(())
     }
+    /// `walkingQueue.addPath(x, y)` alone: no lock check and no reset (the
+    /// caller makes those calls itself, as DoorActionHandler's pulse does).
+    pub fn queue_add_path(&mut self, node: Node, x: i32, y: i32) -> Result<()> {
+        let q = self.queue(node)?;
+        navigation::add(&mut Walking { world: self, node }, &q, x, y).map_err(Error::Movement)
+    }
     pub fn find_path(
         &mut self,
         node: Node,

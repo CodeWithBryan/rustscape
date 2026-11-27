@@ -20,7 +20,10 @@ the zones and the SkullManager), the global handlers
 (`world::global_handlers`, registered by `register_scanned`: the tab
 interfaces, the game-frame interfaces, the ladder, look-at and search option
 handlers), the scenery option packet (`world::scenery_action` through
-`world::scenery_runtime`), use-with (`processUseWith`) and the slot switch
+`world::scenery_runtime`), doors and gates (DoorManagingPlugin and
+DoorActionHandler, `world::door_option` and `world::doors` over the live
+scene through `world::door_runtime`, with the scene's replacement and
+restoration pulses delivered to every viewer by the chunk updates), use-with (`processUseWith`) and the slot switch
 (`processSlotSwitch`), the first content use-with listeners (water sources,
 sand pits, the hay sack and the hat stand of `world::global_items2`, the
 stray dogs and the Falador sheepdog of `world::item_on_npc`, cooking on
@@ -128,6 +131,7 @@ modes of `rs09-server` are unchanged.
 | engine timers | `TimerRegistry` (the class scan's timers), `addAutoTimers`, `TimerManager.processTimers`, `saveTimers`/`parseTimers`, `Entity.hook`/`unhook`/`dispatch`, `hasTimerActive` | `timers.rs`: the fourteen `timers::content` prototypes in the world's registry (registered at the first timer operation, in scan order); `addAutoTimers` at `Entity.init` (AntiMacro, SkillRestore); `processTimers` for every player at the end of `Entity.tick`, the timer manager of the canonical profile (its three lists aliased); `timers::content::Natives` over `timers::Host` (the live world: native Skills through the live skills and settings contexts, the shared generator, messages, audio, equipment, rights, uids, the zone monitor's random-event restriction, the SkullManager, the per-entity hook lists) and over `timers::Saving` while a save is written or parsed (uids, ticks, the generator, the log; the messages and skull calls of a timer the parse registers are made right after the parse); `hasTimerActive` answers the walking queue (`frozen`), the zones (`teleblock`), the dragons (`dragonfire:immunity`), combat (`miasmic`) and `isPoisonImmune`; the SkullManager's `removeTimer`, `spawnTimer` and `registerTimer` go through the registry. NPCs: `processTimers` at the end of an NPC's `Entity.tick` over its own manager (the start-up's), `SkillRestore` joined at its first timer operation, `GrandExchangeTimer`'s NPC branch, NPC skills from the NPC row, NPC names from the definition, `NPC.task` from `world::slayer_tasks`, `applyPoison`, the specials' timers, `onEntityDeath`, `fullRestore`'s removals and the NPC behaviours' `removeTimer`; `Entity.scripts.removeWeakScripts` from a timer is the canonical script processor's |
 | global handlers | `ClassScanner` of the global handler classes, `InterfaceListeners`, `ComponentDefinition` plugins, OptionHandlers, `ClimbActionHandler` | `global.rs`: `registry::register_scanned` over the live InterfaceListeners, the interface definitions' plugins, the native InteractionListeners and the scenery option defaults at boot; the per-definition scenery handlers bound into the scenery definitions; buttons, open and close listeners and component plugins dispatched through `run_button`, `run_open` and `run_plugin` (`buttons.rs`); scenery OptionHandlers through `run_handler` and `handler_destination` (`destination.rs`, over the scene); the bodies' `Task`s submitted to `GameWorld.Pulser` and run with `run_task`; `GHost` is the handlers' `Host` (attributes, messages, interface text, the weapon, emote and music tabs, settings toggles, locks, the animator, the teleport location, scenery geometry, SpecialLadders) |
 | scenery options | `processSceneryAction`, scenery `InteractPlugin` | `scenery.rs`: `world::scenery_runtime` (the legacy walk and arrival, `world::scenery_action`) over the cache scene's objects, `scenery_options::Registry` (the scenery tables and handler arena with the global handlers' defaults), `Scenery.getChild` over the scene's definitions, the InteractionListeners lookup for scenery |
+| doors and gates | `DoorManagingPlugin` (`newInstance`, `handle`, `getDestination`), `DoorActionHandler` (`handle`, `open`, `autowalk`, `getDestination`, the anonymous pulses), `SceneryBuilder.replace` with its restoration pulse, `DestinationFlag.OBJECT`'s door destination | `doors.rs`: `door_option::register_options` into the scenery option defaults at boot ("open", "close", "shut", "go-through"); the scenery arena's handler is the native `door_option::Program`, dispatched by identity in `handler_walk`/`handler_delayed`/`handler_handle`/`destination`; `door_runtime::Context` over the live scene with `DoorWorld` as `scene::Services` (actor locations, action locks, sounds and messages in the player's frames, the autowalk logout listener, the walking queue, the Smart finder for the destination, the walking queue's teleport location for trapdoors, the canonical animator for wardrobes); scenery flags reach every viewer through the chunk updates (`chunk_sync::update`); the scene's pulses (restorations, autowalk) run on the canonical state's runner, routed by `Scene::owns_pulse` in the walk host's external pulse calls |
 | use-with, slot switch | `processUseWith`, `processSlotSwitch` | `items/use_with.rs`, `items/slots.rs`: `world::packet_handlers::use_with` (zone monitor, `InteractionListeners.run_use`, PluginInteractionManager, `UseWithHandler.HANDLERS`, `runUnhandledAction`) and `slot_switch` over the canonical inventory |
 | content use-with listeners | `WaterSourceListener`, `SandSourceListener`, `SackOnHay`, `HatStand`, `ChestKeyListener`, `FeedOnStrayDog`, `FeedFaladorSheepdog`, `CiderOnForester` (its `CiderOnForesterDialogue` is a native DialogueFile, `items/withnpc.rs`, over `inBorders`, `sendNPCDialogue`, the player's attributes and the Seers' Village diary); `InteractionListeners.run`'s use-with path; `PulseManager.run(pulse)` and ContentAPI `runTask` for their pulses | `items/everyday.rs`: the five `global_items2` classes (`registry::define`) and the two `item_on_npc` classes registered in the native InteractionListeners at boot, in the class scan's order; `run_use` walks to the scene object (`DestinationFlag.OBJECT`) or the NPC and the arrival runs the lambda (`registry::run_interaction`, `item_on_npc::run`) with `Everyday` as both libraries' `Host` (the canonical inventory, the animators, messages, the synth sound, the ground manager for what does not fit, the dialogue interpreter, the Falador diary, an NPC's force chat); the fill pulse and the sand task are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity. ChestKeyListener's `replaceScenery` is `world::scenery::replace` (SceneryBuilder) over the cache scene, then `setActive(false)`: the scene's pulse runner is `GameWorld.Pulser` (the driver's), so the restore pulse runs there and its body is the scene's (`Live::pulse_body`); the object updates reach viewers through the chunk synchronisation |
 | small item-on-object listeners | `SapCollectListener`, `PoisonFountainListener`, `HairdresserCheeseListener`, `FishEasterEgg`, `GWDEntranceRopeListener`, `CoalTruckListener`, `KaramjaBananaCrateListener`, `SwampHoleRopeListener` | `items/withobject.rs`: `world::item_on_object` (ported without a JVM corpus, docs/item-on-object.md), registered at boot by `install_content_use` when the class scan names the class, with `WithObject` as its `Host` over `Everyday`'s services (the canonical inventory with its listeners, the animator, messages) plus `Container.replace` on the inventory, the action locks (`lock`, `unlock`), the player's attributes (a `/save:` key is saved), the persisted Falador diary (`finishTask`), `setVarbit`, and for the coal truck `sendDialogue`, the inventory's free slots and amounts, and the persisted Seers' Village diary (`isComplete`, `updateTask`, `finishTask`; an Int `setAttribute` runs the diary's coal truck `onAttributeSet` branch only, not the other diaries' attribute hooks). The truck's two options are scenery `on` listeners: `scenery.rs` defers `InteractionListeners.run` to `Live::scenery_listener_run` (the walk and the arrival's lambda); its `ZoneMonitor.interact` for a scenery answers false (of `ZoneBuilder.startup`'s six zones only WildernessZone and DarkZone override `interact`, for a Revenant NPC and for an Item). The banana crate and the swamp rope read and write the canonical player's `savedData.globalData` (`luthasTask`, `karamjaBananas`, `lumbridgeRope`), and the rope's `sendItemDialogue` is the interpreter's `sendItemMessage`. The use-with lambdas run at the arrival of `run_use`; the sap bucket's "empty" is an `on` listener run from the item option path (`items.rs` `invoke_on`). The three pulses are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity (`WithObjectWorld`) |
@@ -276,6 +280,22 @@ modes of `rs09-server` are unchanged.
   returns (they need the whole world); a handler answering false sends
   `Nothing interesting happens.` then. `getDestination` runs inside the
   movement over the scene only.
+- Doors (`doors.rs`): DoorManagingPlugin's handle runs inside the pulse that
+  reached it, as the original's. `Scene.runner` is the canonical state's
+  runner at boot: the scene's restoration and autowalk pulses run in the
+  second half of `GameWorld.Pulser.updateAll` (after the driver's world
+  runner), as the movement pulses do. The autowalk pulse's
+  `walkingQueue.reset()` and `addPath(x, y)` are made right after the pulse
+  body returns (the scene call holds the scene they would walk through),
+  in their order; nothing between them and the end of the body reads the
+  queue. `AchievementDiaryManager.finishTask` from that pulse (four door
+  ids, Lumbridge and Falador) runs right after the walking call returns,
+  with the whole world. The "autowalk" logout listener is kept per player
+  (`Walk.door_logouts`) and is the only `Player.logoutListeners` entry
+  this world runs. A door option content claims (`door_claims.rs`) is
+  refused at the InteractionListeners step, before the plugin and option
+  handler steps the original would reach for a per-definition handler; the
+  click is refused either way.
 - `PulseManager.runUnhandledAction` of an unhandled use-with is a world pulse
   (the canonical pulse manager does not take content bodies).
 - The content use-with listeners (`items/everyday.rs`) are registered after
@@ -454,7 +474,7 @@ Poison's `onRegister` reads `Tasks.forId(id).levelReq` from
 `ClueScrollPlugin.ORGANIZED` in a drop roll (none registered),
 `FamiliarManager.hasFamiliar` (false), `FamiliarManager.dismiss` after a
 death (nothing), `InterfaceListeners.runClose` (true),
-the Marathon perk (false), `Player.logoutListeners` (empty),
+the Marathon perk (false), `Player.logoutListeners` (empty but for the doors' autowalk listener),
 `QuestRequirements.hasRequirement` (false), ServerStore `daily-accounts`
 (empty: the account limit counts nothing across logins) and `flagged-ips`
 (empty), skillcape perks (false, `skillcape_perks` off),
@@ -539,8 +559,24 @@ the hardcoded constructed scenery of `processSceneryAction`, varbit- and
 varp-configured scenery (morphs) and their debug lookup, the bank booths'
 `defineInteraction` scripts (interaction scripts in the player's script
 queue) and the bank chest and deposit box listeners (the global handlers'
-scenery lambdas are refused by name where they are invoked), scenery option handlers that are not global handlers (doors and other
-content, CowMilkingPlugin, FurnaceOptionPlugin and SmithingPlugin's aside); the use-with MovementPulse to a ground item, a UseWithHandler's
+scenery lambdas are refused by name where they are invoked), scenery option handlers that are neither global handlers nor DoorManagingPlugin (content,
+CowMilkingPlugin, FurnaceOptionPlugin and SmithingPlugin's aside); the doors' scene services
+without a port (refused by name: `ground_create`, the ground items of an
+expiring scenery, and a `pulse` or `stop` of a pulse the scene did not
+submit; a door's walk through on a varp- or varbit-configured door, which
+`Scene.getChild` refuses as a morph); a door option the pinned content
+claims for an object before DoorManagingPlugin (`door_claims.rs`, generated
+by `tools/port_door_claims.py` from the classes in the class scan: 317
+(id, option) rows of InteractionListeners `on(..., SCENERY, ...)` and
+per-definition `option:` handlers, such as TollGateOptionPlugin's Al Kharid
+gate and the quest doors, and the Fremennik Trials trapdoors by location),
+refused by class name in the InteractionListeners step so the door handler
+never opens them; ten registrations the tool cannot read from the source
+alone stay unrefused (ConstructionDoorPlugin's house doors, the POH storage,
+compost bins, ThievableChestPlugin's chests and ObservatoryQuestListeners'
+chests: no house is reachable, and for the others DoorManagingPlugin
+answers false, "Nothing interesting happens.", where the original runs
+the content); the use-with MovementPulse to a ground item, a UseWithHandler's
 MovementPulse with a `getDestination` override and item-on-item Pulse (no such handler class is installed),
 the dialogue plugins CowMilkingPlugin opens (3807 without a bucket or a pail, 70099 for "steal-cowbell"),
 the dialogue plugins SmithingPlugin opens (82127843 for the dragon square and dragonfire shields, 62362 for the godsword),
@@ -554,7 +590,7 @@ saved spawn location or `login_type` attribute, the loot-share pulse, the
 management-server session, account creation from social, familiars, region
 NPC queries (`Repository.findNPC(location)`), the deferred login world
 configuration of CloseIface, the zone services of
-teleports, the scene's scenery services (doors, audio), a content script
+teleports, a content script
 this world did not install or queue, use-with interaction scripts and a
 script execution in an NPC's tick; graves' services without a port: the server store's grave
 archive (`ServerStore.getArchive`: graves are neither saved nor read back;
@@ -817,6 +853,25 @@ the client-side player and NPC update decoders):
   legacy walk and arrival, the global handlers' LadderManagingPlugin and
   `ClimbActionHandler` (lock, the one-tick pulse, the teleport location);
   the client's plane becomes 1.
+- Doors (`door_scenario`, `door_restore_scenario`; `RS09_LIVE_SCENARIOS=doors`
+  runs both): `doorone`, in Lumbridge castle's kitchen, uses Open on the
+  door 12348 at 3207,3217: the walk to DoorActionHandler's destination, the
+  delayed arrival, sound 62, the open door 10327 at 3207,3218 in both
+  `doorone`'s and `doortwo`'s chunk updates (195 then 179 in a 230), then
+  `doorone` walks through to 3207,3219; Close on 10327 brings 12348 back
+  (sound 60) for both. `bigone` opens the castle's entrance, the double door
+  12349/12350 at 3213,3221-3222 (both leaves replaced by 11382 one tile
+  west, seen by `bigtwo`), walks in to 3211,3221 and closes it (both leaves
+  back for both players). `shutone` uses Close on the door the map holds
+  open (36848 at 3233,3203): sound 62 and its closed form 36847 one tile
+  east. `tollone` uses Open on the Al Kharid toll gate (35549): refused by
+  name (TollGateOptionPlugin), nothing changes and the player stays west of
+  it. `restoreone` opens the castle's east door (36846 at 3226,3223) and
+  sees it come back about 500 ticks later: the restoration pulse on the
+  canonical runner. DoorActionHandler's autowalk (unconfigured doors), the
+  fence and the trapdoor branches, the wardrobe animation and the autowalk
+  logout listener are not exercised through a socket (no unconfigured
+  closed door without content lies near Lumbridge).
 - `healone` (a save with 5 of its 10 hitpoints) regains one hitpoint about
   100 ticks after login (SkillRestore from `addAutoTimers`; the client's
   hitpoints skill packet goes from 5 to 6; measured 61.3 to 61.9 s); it runs

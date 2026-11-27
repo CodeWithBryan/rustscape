@@ -70,11 +70,14 @@ pub struct Walk {
     /// The content pulses whose class overrides `stop()` (the milking
     /// pulse, super::items::milking).
     pub stopping_pulses: Vec<crate::pulses::Handle>,
+    /// The doors' "autowalk" logout listeners: the location each restores
+    /// at logout (super::doors).
+    pub door_logouts: BTreeMap<Node, Location>,
 }
 
-/// `scene::Services` for collision queries. The scenery services (doors,
-/// audio, scripts of scenery pulses) are not bound in the live world: they
-/// fail by name if reached.
+/// `scene::Services` for collision queries. The services a door or a scene
+/// pulse reaches are answered by [`super::doors::DoorWorld`]; reached through
+/// this one they fail by name.
 #[derive(Default)]
 pub struct Maps {
     pub players: BTreeSet<Node>,
@@ -193,6 +196,9 @@ pub enum Deferred {
         option: Vec<u16>,
         object: crate::world::doors::Handle,
     },
+    /// `AchievementDiaryManager.finishTask` from a door's autowalk pulse
+    /// (super::doors), with the whole world.
+    DoorDiary(NodeHandle, doors::Diary, i32, i32),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -277,11 +283,29 @@ fn binding_debug(e: impl std::fmt::Debug) -> player_walk::Error {
 }
 
 impl player_walk::Services for WalkHost<'_> {
+    fn external_pulse(
+        &mut self,
+        state: &mut State,
+        pulse: &crate::pulses::Handle,
+    ) -> crate::pulses::Result<bool> {
+        // The scene's pulses: SceneryBuilder's restorations and the doors'
+        // autowalk pulses (super::doors).
+        if self.walk.scene.owns_pulse(pulse) {
+            return self.scene_pulse(state, pulse);
+        }
+        Err(crate::pulses::Error::Binding(
+            "unregistered external pulse".into(),
+        ))
+    }
     fn external_stop(
         &mut self,
         _: &mut State,
         pulse: &crate::pulses::Handle,
     ) -> crate::pulses::Result<()> {
+        if self.walk.scene.owns_pulse(pulse) {
+            let Walk { scene, maps, .. } = &mut *self.walk;
+            return scene.context(maps).stop_pulse(pulse);
+        }
         // A combat pulse current in a pulse manager: its base stops now,
         // CombatPulse.stop() runs right after this walk call returns.
         let (class, node) = {
@@ -316,6 +340,10 @@ impl player_walk::Services for WalkHost<'_> {
         _: &mut State,
         pulse: &crate::pulses::Handle,
     ) -> crate::pulses::Result<bool> {
+        if self.walk.scene.owns_pulse(pulse) {
+            let Walk { scene, maps, .. } = &mut *self.walk;
+            return scene.context(maps).pulse_inactive(pulse);
+        }
         let (class, node) = {
             let p = pulse.read();
             (p.class.clone(), p.node(0).ok().flatten())
@@ -629,10 +657,26 @@ impl player_walk::Services for WalkHost<'_> {
         }
         result
     }
+    fn door_destination(
+        &mut self,
+        state: &mut State,
+        mover: Option<Node>,
+        target: Option<Node>,
+    ) -> player_walk::Result<Option<Location>> {
+        // DestinationFlag.OBJECT of a wall or diagonal: DoorActionHandler.
+        // getDestination over the live scene (super::doors).
+        let object = state.scenery(target.ok_or(player_walk::Error::Null)?)?;
+        let mover = mover.ok_or(player_walk::Error::Null)?;
+        self.with_doors(state, |ctx| {
+            crate::world::door_option::Context::door_destination(ctx, Some(mover), &object)
+                .map(Some)
+        })
+        .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))
+    }
     fn destination(
         &mut self,
         state: &mut State,
-        _: Option<Node>,
+        mover: Option<Node>,
         target: Option<Node>,
         service: crate::world::movement::DestinationService,
     ) -> player_walk::Result<Option<Location>> {
@@ -643,6 +687,12 @@ impl player_walk::Services for WalkHost<'_> {
             (&service, target)
             && let Ok(object) = state.scenery(target)
         {
+            // DoorManagingPlugin.getDestination (super::doors).
+            if let Some(door) = self.door_program(*id) {
+                return self
+                    .with_doors(state, |ctx| door.destination(ctx, mover, Some(&object)))
+                    .map_err(|e| player_walk::Error::Binding(format!("{e:?}")));
+            }
             let plugin = match self
                 .scenery_handler(*id)
                 .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?

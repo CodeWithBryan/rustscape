@@ -284,6 +284,10 @@ impl Live {
                     self.combat_stop_of(node)
                         .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
                 ),
+                Deferred::DoorDiary(owner, diary, level, task) => Some(
+                    self.door_diary(&owner, diary, level, task)
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
+                ),
             };
             if let Some(Err(error)) = result {
                 self.inner
@@ -520,10 +524,15 @@ impl repository::Host<P> for Live {
             .skip("WalkingQueue.reset at logout (player_walk does not expose it)");
         Ok(())
     }
-    fn player_logout_listeners(&mut self, _: &P) -> repository::Result<()> {
-        self.inner
-            .not_ported
-            .default_answer("Player.logoutListeners (content adds none: empty)");
+    fn player_logout_listeners(&mut self, p: &P) -> repository::Result<()> {
+        // DoorActionHandler's "autowalk" listener (super::doors): the
+        // location captured before the walk through.
+        if self.door_logout(p) {
+            return Ok(());
+        }
+        self.inner.not_ported.default_answer(
+            "Player.logoutListeners (content other than the doors' autowalk adds none: empty)",
+        );
         Ok(())
     }
     fn has_familiar(&mut self, _: &P) -> repository::Result<bool> {

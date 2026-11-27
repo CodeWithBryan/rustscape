@@ -129,7 +129,7 @@ impl WalkHost<'_> {
             return Ok(SceneryPlugin::Anvil);
         }
         Err(legacy::Error::Binding(Some(
-            "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),
+            "not ported in the live world: a scenery option handler that is neither a global handler, DoorManagingPlugin nor a ported content plugin (content)".into(),
         )))
     }
 }
@@ -247,6 +247,19 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
                 object: object.clone(),
             });
             return Ok(!locked);
+        }
+        // A door option the pinned content claims for this object (its own
+        // InteractionListeners `on` or per-definition `option:` handler,
+        // super::door_claims): not ported, so DoorManagingPlugin must not
+        // answer in its place.
+        let lower = lowercase_root(option.as_deref().unwrap_or("null"));
+        let at = object.read().location.coordinates();
+        if let Some(class) = super::door_claims::claim(id, &lower)
+            .or_else(|| super::door_claims::claim_at(at, &lower))
+        {
+            return Err(Error::Binding(format!(
+                "not ported in the live world: {class}'s \"{lower}\" on scenery {id} (content that claims the object before DoorManagingPlugin)"
+            )));
         }
         self.not_ported.default_answer(
             "InteractionListeners for scenery (none registered for the option: false)",
