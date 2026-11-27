@@ -1681,6 +1681,9 @@ impl driver::Host<P> for Live {
         // The canonical state's runner (movement pulses) is the rest of
         // GameWorld.Pulser.updateAll: run here, right after the world runner.
         self.with_walk(|world| world.pulses()).map_err(fail)?;
+        // Scene.collect_pulses: the scene's pulses ran in that phase (its
+        // runner is the canonical one); reap their task and check records.
+        self.walk.scene.collect_pulses();
         // GameWorld.tickListeners: the installed ones (super::content).
         self.content_tick_listeners().map_err(fail)?;
         // Shops.tick() (after GraveController in the scan's order).

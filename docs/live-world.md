@@ -288,14 +288,25 @@ modes of `rs09-server` are unchanged.
   `walkingQueue.reset()` and `addPath(x, y)` are made right after the pulse
   body returns (the scene call holds the scene they would walk through),
   in their order; nothing between them and the end of the body reads the
-  queue. `AchievementDiaryManager.finishTask` from that pulse (four door
-  ids, Lumbridge and Falador) runs right after the walking call returns,
-  with the whole world. The "autowalk" logout listener is kept per player
+  queue (the two calls go through `player_walk::World::queue_add_path`, a
+  wrapper of the library's own `navigation::add` without the lock check
+  and reset of `walk_path`, which the original's `addPath` does not make;
+  player-walk-oracle reproduces unchanged). `AchievementDiaryManager.finishTask`
+  from that pulse would run right after the walking call returns, with the
+  whole world, but no installed door reaches it: its four door ids (2112,
+  2406, 35549, 35551) are all content claims, refused below. The scene's
+  task and check records are reaped (`Scene.collect_pulses`) right after the
+  canonical pulse phase. `getName().toLowerCase()` in DoorManagingPlugin
+  uses the JVM's default locale; this world lowercases with ROOT (the
+  pinned world runs en-US, where the two agree for scenery names). The
+  "autowalk" logout listener is kept per player
   (`Walk.door_logouts`) and is the only `Player.logoutListeners` entry
-  this world runs. A door option content claims (`door_claims.rs`) is
-  refused at the InteractionListeners step, before the plugin and option
-  handler steps the original would reach for a per-definition handler; the
-  click is refused either way.
+  this world runs. A door option content claims (`door_claims.rs`) and a
+  door option inside an unported content zone are refused at the
+  InteractionListeners step, before the plugin and option handler steps
+  (and ZoneMonitor.interact at arrival) the original would reach; the click
+  is refused either way. A content PluginInteraction for the object is
+  refused at the PluginInteractionManager step, for any option.
 - `PulseManager.runUnhandledAction` of an unhandled use-with is a world pulse
   (the canonical pulse manager does not take content bodies).
 - The content use-with listeners (`items/everyday.rs`) are registered after
@@ -571,12 +582,26 @@ by `tools/port_door_claims.py` from the classes in the class scan: 317
 per-definition `option:` handlers, such as TollGateOptionPlugin's Al Kharid
 gate and the quest doors, and the Fremennik Trials trapdoors by location),
 refused by class name in the InteractionListeners step so the door handler
-never opens them; ten registrations the tool cannot read from the source
-alone stay unrefused (ConstructionDoorPlugin's house doors, the POH storage,
-compost bins, ThievableChestPlugin's chests and ObservatoryQuestListeners'
-chests: no house is reachable, and for the others DoorManagingPlugin
-answers false, "Nothing interesting happens.", where the original runs
-the content); the use-with MovementPulse to a ground item, a UseWithHandler's
+never opens them; `PluginInteractionManager.register(this, OBJECT)` plugins
+(`door_claims::PLUGINS`: the Fishing Contest gates, fence, stairs and vines,
+the Sheep Herder gates, the Gnome Stronghold ladders, Fist of Guthix),
+refused for any option in the PluginInteractionManager step; a door option
+inside a content map zone whose `interact` is not ported
+(`door_claims::ZONE_BORDERS` and `ZONE_REGIONS`: Port Phasmatys, Barrows,
+God Wars, the Slayer Tower, Rellekka, the Stronghold of Security and the
+others the tool lists; ZoneBorders exceptions are not applied, so a click
+in an excepted corner is refused too), refused in the InteractionListeners
+step. The table is read from the source, not from the running original's
+registries. What it does not cover stays unrefused: seventeen
+registrations the tool cannot read from the source alone (listed in
+`door_claims::UNRESOLVED`: ConstructionDoorPlugin's house doors, the POH
+storage, compost bins, ThievableChestPlugin's and ObservatoryQuestListeners'
+chests, Fishing Contest's garlic pipe, and the zones of Clan Wars, the duel
+arenas, the Pest Control landers, the Fight Caves and Bork, all instanced
+or behind content that is not ported), where DoorManagingPlugin answers
+for a door option ("Nothing interesting happens." for one that is not a
+door); and ZoneMonitor.interact for options other than the door options
+(answered false, as before); the use-with MovementPulse to a ground item, a UseWithHandler's
 MovementPulse with a `getDestination` override and item-on-item Pulse (no such handler class is installed),
 the dialogue plugins CowMilkingPlugin opens (3807 without a bucket or a pail, 70099 for "steal-cowbell"),
 the dialogue plugins SmithingPlugin opens (82127843 for the dragon square and dragonfire shields, 62362 for the godsword),
@@ -858,17 +883,21 @@ the client-side player and NPC update decoders):
   door 12348 at 3207,3217: the walk to DoorActionHandler's destination, the
   delayed arrival, sound 62, the open door 10327 at 3207,3218 in both
   `doorone`'s and `doortwo`'s chunk updates (195 then 179 in a 230), then
-  `doorone` walks through to 3207,3219; Close on 10327 brings 12348 back
-  (sound 60) for both. `bigone` opens the castle's entrance, the double door
+  `doorone` walks through to 3207,3219 (steps 3217, 3218, 3219: through the
+  doorway); Close on 10327 brings 12348 back (sound 60) for both, and the
+  walk back to 3207,3216 does not step through the door's tiles. `bigone` opens the castle's entrance, the double door
   12349/12350 at 3213,3221-3222 (both leaves replaced by 11382 one tile
   west, seen by `bigtwo`), walks in to 3211,3221 and closes it (both leaves
   back for both players). `shutone` uses Close on the door the map holds
   open (36848 at 3233,3203): sound 62 and its closed form 36847 one tile
-  east. `tollone` uses Open on the Al Kharid toll gate (35549): refused by
-  name (TollGateOptionPlugin), nothing changes and the player stays west of
-  it. `restoreone` opens the castle's north-east door (36846 at 3230,3235) and
-  sees it come back about 500 ticks later: the restoration pulse on the
-  canonical runner. DoorActionHandler's autowalk (unconfigured doors), the
+  east. `tollone`, three tiles west of the Al Kharid toll gate (35549),
+  uses Open: refused by name (TollGateOptionPlugin) before any walk, so the
+  player does not move, gets no message and the gate does not change.
+  `restoreone` opens the castle's north-east door (36846 at 3230,3235; open
+  form 36848 at 3230,3236); `restoretwo` logs in beside it 260 s later and
+  the chunk's synchronisation shows it the open door; both see the door
+  come back between 285 and 330 s after it opened (500 ticks: the
+  restoration pulse on the canonical runner; measured 302 s). DoorActionHandler's autowalk (unconfigured doors), the
   fence and the trapdoor branches, the wardrobe animation and the autowalk
   logout listener are not exercised through a socket (no unconfigured
   closed door without content lies near Lumbridge).

@@ -39,10 +39,7 @@ use crate::{
         walk_request::Interfaces,
     },
 };
-use rs09_protocol::{
-    buffer::Writer,
-    game::{Frame, updates},
-};
+use rs09_protocol::game::{Frame, updates};
 use std::collections::BTreeMap;
 
 /// A walking-queue call of a door body, made after the scene call returns.
@@ -109,27 +106,11 @@ impl scene::Services<CacheAssets> for DoorWorld<'_> {
         Ok(())
     }
     fn message(&mut self, _: &mut Map, n: Node, text: &str) -> scene::Result<()> {
-        // Player.sendMessage, with the chat filter of PacketRepository's
-        // GameMessage (as super::inner::Inner::message).
-        let filtered = self
-            .slot(n)?
-            .canonical
-            .player
-            .attributes()
-            .get("chat_filter")
-            .is_some();
-        if filtered && !text.contains("<col=CC6600>") && !text.contains("<col=FFFF00>") {
-            return Ok(());
+        // Player.sendMessage: the same rules as super::inner::Inner::message.
+        let attributes = self.slot(n)?.canonical.player.attributes();
+        if let Some(frame) = super::inner::game_message(&attributes, text).map_err(serror)? {
+            self.send(n, frame);
         }
-        let mut w = Writer::new();
-        w.pjstr(text.as_bytes()).map_err(serror)?;
-        self.send(
-            n,
-            Frame {
-                opcode: 70,
-                payload: w.into_vec(),
-            },
-        );
         Ok(())
     }
     fn logout_listener(
@@ -356,8 +337,12 @@ impl WalkHost<'_> {
             });
             (result, std::mem::take(&mut services.paths))
         };
-        self.apply_paths(state, paths).map_err(derror)?;
-        result
+        // The body's own failure comes first; the walking-queue calls it made
+        // before failing are still made, as the original made them in place.
+        let applied = self.apply_paths(state, paths).map_err(derror);
+        let value = result?;
+        applied?;
+        Ok(value)
     }
 
     /// A scene pulse body (a scenery restore or a door's autowalk pulse).
@@ -412,8 +397,11 @@ impl super::host::Live {
         let Some(location) = self.walk.door_logouts.remove(&node) else {
             return false;
         };
-        if let Ok(actor) = self.inner.state.actor(node) {
-            actor.queue.state.write().entity.location = Some(location.clone());
+        match self.inner.state.actor(node) {
+            Ok(actor) => actor.queue.state.write().entity.location = Some(location.clone()),
+            Err(e) => self.inner.log_line(format!(
+                "the doors' autowalk logout listener found no actor for node {node}: {e:?}"
+            )),
         }
         if let Some(slot) = self.inner.players.get_mut(&node) {
             slot.location = location;

@@ -268,30 +268,10 @@ impl Inner {
     }
     /// `PacketDispatch.sendMessage`: the chat filter, then GameMessage (70).
     pub fn message(&mut self, p: &P, text: &str) -> crate::world::login::Result<()> {
-        let filtered = self
-            .canonical(p)
-            .player
-            .attributes()
-            .get("chat_filter")
-            .is_some();
-        if filtered && !text.contains("<col=CC6600>") && !text.contains("<col=FFFF00>") {
-            return Ok(());
+        let attributes = self.canonical(p).player.attributes();
+        if let Some(frame) = game_message(&attributes, text)? {
+            self.queue_native(p, frame);
         }
-        // The original truncates longer messages; nothing in this world sends one.
-        if text.encode_utf16().count() > 255 {
-            return Err(crate::world::login::Error::Native(
-                "message truncation is not ported".into(),
-            ));
-        }
-        let mut w = Writer::new();
-        w.pjstr(text.as_bytes()).map_err(native)?;
-        self.queue_native(
-            p,
-            Frame {
-                opcode: 70,
-                payload: w.into_vec(),
-            },
-        );
         Ok(())
     }
     pub fn with_profile<T>(
@@ -1983,3 +1963,28 @@ impl settings::Context for Rest {
 /// The timers of a save file: the engine timers (`timers::content`) over
 /// the save host ([`super::timers::Saving`]).
 pub type LiveTimers<'n, 's> = timers::content::Natives<'n, super::timers::Saving<'s>>;
+
+/// `PacketDispatch.sendMessage`'s frame for a player with these attributes:
+/// `None` when the chat filter drops it (shared by [`Inner::message`] and the
+/// door services, super::doors).
+pub fn game_message(
+    attributes: &crate::player::owned::Attributes,
+    text: &str,
+) -> crate::world::login::Result<Option<Frame>> {
+    let filtered = attributes.get("chat_filter").is_some();
+    if filtered && !text.contains("<col=CC6600>") && !text.contains("<col=FFFF00>") {
+        return Ok(None);
+    }
+    // The original truncates longer messages; nothing in this world sends one.
+    if text.encode_utf16().count() > 255 {
+        return Err(crate::world::login::Error::Native(
+            "message truncation is not ported".into(),
+        ));
+    }
+    let mut w = Writer::new();
+    w.pjstr(text.as_bytes()).map_err(native)?;
+    Ok(Some(Frame {
+        opcode: 70,
+        payload: w.into_vec(),
+    }))
+}

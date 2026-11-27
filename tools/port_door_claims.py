@@ -229,14 +229,145 @@ def scan():
                 claims.update((i, om.group(1), cls) for i in ids)
         if found:
             digest.update(path.relative_to(SRC).as_posix().encode() + b'\0' + raw)
-    return sorted(claims), sorted(unresolved), digest.hexdigest()
+    plugins, p_unresolved = scan_plugins(names, digest)
+    rects, regions, z_unresolved = scan_zones(names, digest)
+    extra = (plugins, rects, regions)
+    return sorted(claims), sorted(unresolved | p_unresolved | z_unresolved), digest.hexdigest(), extra
+
+
+def file_class(text, names):
+    pm = re.search(r'^\s*package\s+([\w.]+)', text, re.M)
+    if not pm:
+        return None
+    for m in re.finditer(r'\b(?:class|object)\s+([A-Z]\w*)', text):
+        if pm.group(1) + '.' + m.group(1) in names:
+            return pm.group(1) + '.' + m.group(1)
+    return None
+
+
+def scan_plugins(names, digest):
+    """PluginInteractionManager.register(this, InteractionType.OBJECT): the
+    plugin's handle runs for every option of its ids, before the option
+    handler."""
+    plugins, unresolved = set(), set()
+    for path in sorted(SRC.rglob('*')):
+        if path.suffix not in ('.kt', '.java'):
+            continue
+        raw = path.read_bytes().replace(b'\r', b'')
+        text = raw.decode('utf-8')
+        if not re.search(r'PluginInteractionManager\.register\s*\([^)]*InteractionType\.OBJECT', text):
+            continue
+        cls = file_class(text, names)
+        if cls is None:
+            continue
+        digest.update(path.relative_to(SRC).as_posix().encode() + b'\0' + raw)
+        m = re.search(r'setIds\s*\(', text)
+        exprs = None
+        if m:
+            args = call_args(text, m.end() - 1)
+            exprs = args[:1] if args else None
+        else:
+            c = re.search(r'PluginInteraction\s*\(', text)
+            args = call_args(text, c.end() - 1) if c else None
+            exprs = args if args else None
+        ids = []
+        for e in exprs or []:
+            r = resolve(e, text)
+            if r is None:
+                ids = None
+                break
+            ids += r
+        if not exprs or ids is None:
+            unresolved.add((cls, 'plugin', 'ids'))
+        else:
+            plugins.update((i, cls) for i in ids)
+    return sorted(plugins), unresolved
+
+
+ZONE_BASES = re.compile(r'\b(?:extends|:)\s*(?:MapZone|ActivityPlugin|CutscenePlugin)\b')
+NATIVE_ZONES = {'core.game.world.map.zone.impl.WildernessZone', 'core.game.world.map.zone.impl.DarkZone'}
+
+
+def borders(expr, text):
+    m = re.fullmatch(r'(?:new\s+)?ZoneBorders\s*\((.*)\)', expr.strip(), re.S)
+    if not m:
+        body = declaration(expr.strip(), text) if re.fullmatch(r'\w+', expr.strip()) else None
+        return borders(body, text) if body else None
+    parts = [p.strip() for p in split_list(m.group(1))]
+    if len(parts) < 4 or not all(re.fullmatch(r'-?\d+', p) for p in parts[:4]):
+        return None
+    plane = int(parts[4]) if len(parts) > 4 and re.fullmatch(r'-?\d+', parts[4]) else -1
+    return [int(p) for p in parts[:4]] + [plane]
+
+
+def constructed_by(name, own, names):
+    """'Owner (Name)' when a scanned class's file constructs Name."""
+    pattern = re.compile(r'(?:\bnew\s+|[(=,\s])' + re.escape(name) + r'\s*\(')
+    for path in sorted(SRC.rglob('*')):
+        if path == own or path.suffix not in ('.kt', '.java'):
+            continue
+        text = path.read_text(encoding='utf-8')
+        if name in text and pattern.search(text):
+            owner = file_class(text, names)
+            if owner:
+                return f'{owner} ({name})'
+    return None
+
+
+def scan_zones(names, digest):
+    """Content map zones whose interact(e, target, option) is not ported:
+    ZoneMonitor.interact asks them before the option handler."""
+    rects, regions, unresolved = set(), set(), set()
+    for path in sorted(SRC.rglob('*')):
+        if path.suffix not in ('.kt', '.java'):
+            continue
+        raw = path.read_bytes().replace(b'\r', b'')
+        text = raw.decode('utf-8')
+        if not re.search(r'(?:override\s+fun|public\s+boolean)\s+interact\s*\(', text) or not ZONE_BASES.search(text):
+            continue
+        cls = file_class(text, names)
+        if cls is None:
+            # A zone class the scan does not list, constructed by one it does
+            # (ZoneBuilder.configure(new Zone()) in a scanned plugin).
+            zm = re.search(r'\bclass\s+([A-Z]\w*)', text)
+            if zm:
+                cls = constructed_by(zm.group(1), path, names)
+            if cls is None:
+                continue
+        if cls in NATIVE_ZONES or cls.endswith(('(DarkZone)', '(WildernessZone)')):
+            continue
+        digest.update(path.relative_to(SRC).as_posix().encode() + b'\0' + raw)
+        found = False
+        for m in re.finditer(r'(?<![\w.])register\s*\(', text):
+            args = call_args(text, m.end() - 1)
+            if not args or len(args) != 1:
+                continue
+            b = borders(args[0], text)
+            if b is None:
+                if 'ZoneBorders' in args[0] or re.fullmatch(r'[A-Z_]+', args[0].strip()):
+                    unresolved.add((cls, 'zone', ' '.join(args[0].split())))
+                continue
+            rects.add((cls, tuple(b)))
+            found = True
+        for m in re.finditer(r'registerRegion\s*\(', text):
+            args = call_args(text, m.end() - 1)
+            r = resolve(args[0], text) if args else None
+            if r is None:
+                unresolved.add((cls, 'zone', 'registerRegion'))
+                continue
+            regions.update((cls, i) for i in r)
+            found = True
+        if not found:
+            unresolved.add((cls, 'zone', 'no borders'))
+    return sorted(rects), sorted(regions), unresolved
 
 
 def quote(s):
     return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 
-def render(claims, locations, unresolved, digest):
+def render(claims, locations, unresolved, digest, extra):
+    plugins, rects, regions = extra
     out = '// Generated by tools/port_door_claims.py from the pinned content sources;\n'
     out += '// do not edit by hand. Sources SHA256 ' + digest + '\n'
     out += '//! Scenery door options the pinned content claims before DoorManagingPlugin\n'
@@ -250,8 +381,21 @@ def render(claims, locations, unresolved, digest):
     out += '/// start-up (`getScenery(x, y, z).id`).\n'
     out += 'pub const LOCATIONS: &[([i32; 3], &str, &str)] = &[\n'
     out += ''.join(f'    ([{x}, {y}, {z}], {quote(o)}, {quote(c)}),\n' for (x, y, z), o, c in locations) + '];\n\n'
-    out += '/// (class, option, id expression): registrations whose ids the tool does\n'
-    out += '/// not read from the source alone.\n'
+    out += '/// (scenery id, class): `PluginInteractionManager.register(this, OBJECT)`\n'
+    out += '/// plugins, which the original asks for every option of these ids before\n'
+    out += '/// the option handler.\n'
+    out += 'pub const PLUGINS: &[(i32, &str)] = &[\n'
+    out += ''.join(f'    ({i}, {quote(c)}),\n' for i, c in plugins) + '];\n\n'
+    out += '/// (class, [south-west x, y, north-east x, y, plane or -1]): the borders of\n'
+    out += '/// content map zones whose `interact` is not ported (ZoneMonitor.interact\n'
+    out += '/// asks them before the option handler).\n'
+    out += 'pub const ZONE_BORDERS: &[(&str, [i32; 5])] = &[\n'
+    out += ''.join(f'    ({quote(c)}, [{", ".join(map(str, b))}]),\n' for c, b in rects) + '];\n\n'
+    out += '/// (class, region id): regions those zones register whole.\n'
+    out += 'pub const ZONE_REGIONS: &[(&str, i32)] = &[\n'
+    out += ''.join(f'    ({quote(c)}, {r}),\n' for c, r in regions) + '];\n\n'
+    out += '/// (class, option or kind, id expression): registrations whose ids or\n'
+    out += '/// borders the tool does not read from the source alone.\n'
     out += 'pub const UNRESOLVED: &[(&str, &str, &str)] = &[\n'
     out += ''.join(f'    ({quote(c)}, {quote(o)}, {quote(e)}),\n' for c, o, e in unresolved) + '];\n\n'
     out += '/// The content class claiming `option` of scenery `id`, if any.\n'
@@ -262,7 +406,19 @@ def render(claims, locations, unresolved, digest):
     out += '/// The content class claiming `option` of the object at `at`, if any.\n'
     out += 'pub fn claim_at(at: [i32; 3], option: &str) -> Option<&\'static str> {\n'
     out += '    LOCATIONS\n        .iter()\n        .find(|(l, o, _)| *l == at && *o == option)\n'
-    out += '        .map(|(_, _, c)| *c)\n}\n'
+    out += '        .map(|(_, _, c)| *c)\n}\n\n'
+    out += '/// The content plugin registered for scenery `id`, if any.\n'
+    out += 'pub fn plugin(id: i32) -> Option<&\'static str> {\n'
+    out += '    PLUGINS.iter().find(|(i, _)| *i == id).map(|(_, c)| *c)\n}\n\n'
+    out += '/// The content zone whose borders hold `at` (ZoneBorders.insideBorder:\n'
+    out += '/// inclusive corners, any plane unless one is given), if any.\n'
+    out += 'pub fn zone_at(at: [i32; 3]) -> Option<&\'static str> {\n'
+    out += '    let [x, y, z] = at;\n'
+    out += '    let region = ((x >> 6) << 8) | (y >> 6);\n'
+    out += '    ZONE_BORDERS\n        .iter()\n'
+    out += '        .find(|(_, [a, b, c, d, p])| x >= *a && y >= *b && x <= *c && y <= *d && (*p < 0 || *p == z))\n'
+    out += '        .map(|(c, _)| *c)\n'
+    out += '        .or_else(|| ZONE_REGIONS.iter().find(|(_, r)| *r == region).map(|(c, _)| *c))\n}\n'
     return subprocess.run(['rustfmt', '--edition', '2024', '--emit', 'stdout'], input=out, text=True,
                           capture_output=True, check=True, cwd=R, encoding='utf-8').stdout
 
@@ -302,14 +458,14 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--check', action='store_true')
     a = p.parse_args()
-    claims, unresolved, digest = scan()
+    claims, unresolved, digest, extra = scan()
     claims, locations, unresolved = manual(list(claims), unresolved)
     seen, unique = set(), []
     for i, o, c in claims:
         if (i, o) not in seen:
             seen.add((i, o))
             unique.append((i, o, c))
-    out = render(unique, locations, unresolved, digest)
+    out = render(unique, locations, unresolved, digest, extra)
     if a.check:
         assert TARGET.read_text(encoding='utf-8') == out, 'door claims differ; review the pinned sources'
     else:

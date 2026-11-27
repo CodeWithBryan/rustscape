@@ -2434,13 +2434,16 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
     // Through the doorway: north of the door, where the closed door's wall
     // stood between the tiles.
     let through = [3207, 3219, 0];
+    assert_eq!(one.position(), at, "doorone on the door's tile");
     one.send(actions::worldspace_walk(through[0], through[1], false))
         .await;
-    one.until(Duration::from_secs(10), "doorone through the door", |c| {
-        c.position() == through
-    })
-    .await;
-    eprintln!("doorone walked through the doorway to {through:?}");
+    let steps = track_walk(&mut one, Duration::from_secs(10), through).await;
+    assert_eq!(
+        steps,
+        [at, opened_at, through],
+        "doorone's steps go straight through the doorway"
+    );
+    eprintln!("doorone walked through the doorway: {steps:?}");
 
     // Close: the constructed open door's replaced original comes back.
     let (one_from, two_from) = (one.locs.len(), two.locs.len());
@@ -2477,6 +2480,21 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
         "doorone closed the door: doortwo saw {:?}",
         &two.locs[two_from..]
     );
+    // The wall is back: a walk to the kitchen tile south of the door never
+    // steps through the door's tiles (it goes round, or stops).
+    let kitchen = [3207, 3216, 0];
+    one.send(actions::worldspace_walk(kitchen[0], kitchen[1], false))
+        .await;
+    let steps = track_walk(&mut one, Duration::from_secs(8), kitchen).await;
+    assert!(
+        !steps.windows(2).any(|w| w[0] == opened_at && w[1] == at),
+        "the walk back went through the closed door: {steps:?}"
+    );
+    assert!(
+        steps.len() > 4 || steps.last() != Some(&kitchen),
+        "the walk back did not go round the closed door: {steps:?}"
+    );
+    eprintln!("doorone's walk back after the close: {steps:?}");
     one.writer.close(1000, "logout").await.unwrap();
     two.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -2585,22 +2603,26 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
 
     // Content that claims a door before DoorManagingPlugin is not ported:
     // the Al Kharid toll gate's Open (TollGateOptionPlugin's per-definition
-    // handler) is refused by name, so the gate stays shut and the player
-    // stays on the Lumbridge side.
-    write_save(&players, "traceone", "tollone", [3267, 3227, 0], &[]);
+    // handler) is refused by name before any walk: `tollone`, three tiles
+    // west, does not move (the door handler would walk it to the gate and
+    // open it; a handler answering false would walk it there and say
+    // "Nothing interesting happens.").
+    let start = [3265, 3227, 0];
+    write_save(&players, "traceone", "tollone", start, &[]);
     let mut one = enter(address, "tollone").await;
-    let from = one.locs.len();
+    let (from, messages_from) = (one.locs.len(), one.messages.len());
     one.send(scenery_option1(35549, 3268, 3227)).await;
-    one.pump(Duration::from_secs(4)).await;
+    one.pump(Duration::from_secs(5)).await;
     assert!(
         one.locs[from..].is_empty(),
         "the toll gate did not open: {:?}",
         &one.locs[from..]
     );
-    assert_eq!(
-        one.position(),
-        [3267, 3227, 0],
-        "tollone stays west of the gate"
+    assert_eq!(one.position(), start, "tollone did not walk to the gate");
+    assert!(
+        one.messages[messages_from..].is_empty(),
+        "no message for a refused click: {:?}",
+        &one.messages[messages_from..]
     );
     eprintln!("tollone: the toll gate's Open is refused (TollGateOptionPlugin not ported)");
     one.writer.close(1000, "logout").await.unwrap();
@@ -2628,24 +2650,91 @@ async fn door_restore_scenario(address: std::net::SocketAddr, saves: PathBuf) {
     })
     .await;
     let opened = Instant::now();
+    // The open form one tile north (rotation 1's point), as 36848.
+    let open_at = [3230, 3236, 0];
+    assert!(
+        one.locs
+            .iter()
+            .any(|(_, t, id)| *t == open_at && *id == Some(36848)),
+        "the open form at {open_at:?}: {:?}",
+        &one.locs[from..]
+    );
     let from = one.locs.len();
-    one.until_pinging(
-        Duration::from_secs(360),
-        "the north-east door restored",
-        |c| {
-            c.locs[from..]
+    let restored = |c: &Client, from: usize| {
+        c.locs[from..]
+            .iter()
+            .any(|(_, t, id)| *t == [3230, 3235, 0] && *id == Some(36846))
+            && c.locs[from..]
                 .iter()
-                .any(|(_, t, id)| *t == [3230, 3235, 0] && *id == Some(36846))
-        },
+                .any(|(_, t, id)| *t == open_at && id.is_none())
+    };
+    // A second viewer arrives while the door is open: the chunk's
+    // synchronisation shows it the open door, then the restoration.
+    one.until_pinging(Duration::from_secs(270), "the door still open", |_| {
+        opened.elapsed() >= Duration::from_secs(260)
+    })
+    .await;
+    assert!(!restored(&one, from), "restored before 260 s");
+    write_save(&players, "traceone", "restoretwo", [3231, 3236, 0], &[]);
+    let mut two = enter(address, "restoretwo").await;
+    assert!(
+        two.locs
+            .iter()
+            .any(|(_, t, id)| *t == open_at && *id == Some(36848)),
+        "restoretwo sees the open door on arrival: {:?}",
+        two.locs
+    );
+    let two_from = two.locs.len();
+    // Both clients read and PING (93) while they wait.
+    let end = Instant::now() + Duration::from_secs(80);
+    let mut ping = Instant::now();
+    while !restored(&one, from) {
+        assert!(
+            Instant::now() < end && !one.closed && !two.closed,
+            "restoreone: timed out waiting for the north-east door restored"
+        );
+        if ping.elapsed() > Duration::from_secs(5) {
+            one.send(frame(93, &[])).await;
+            two.send(frame(93, &[])).await;
+            ping = Instant::now();
+        }
+        one.pump(Duration::from_millis(100)).await;
+        two.pump(Duration::from_millis(100)).await;
+    }
+    let after = opened.elapsed().as_secs_f64();
+    // 500 ticks of 600 ms, from the tick the door opened.
+    assert!(
+        (285.0..=330.0).contains(&after),
+        "the restoration after {after:.1} s, not about 500 ticks"
+    );
+    two.until(
+        Duration::from_secs(5),
+        "restoretwo sees the restoration",
+        |c| restored(c, two_from),
     )
     .await;
     eprintln!(
-        "restoreone: the door 36846 came back after {:.1} s: {:?}",
-        opened.elapsed().as_secs_f64(),
+        "restoreone: the door 36846 came back after {after:.1} s, seen by both: {:?}",
         &one.locs[from..]
     );
     one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Reads until the client stands on `target` (or `limit` passes) and
+/// returns each distinct tile it stood on, starting with the current one.
+async fn track_walk(c: &mut Client, limit: Duration, target: [i32; 3]) -> Vec<[i32; 3]> {
+    let end = Instant::now() + limit;
+    let mut steps = vec![c.position()];
+    while Instant::now() < end && c.position() != target {
+        c.pump(Duration::from_millis(100)).await;
+        let here = c.position();
+        if steps.last() != Some(&here) {
+            steps.push(here);
+        }
+    }
+    steps
 }
 
 /// Item on an NPC and on scenery (`processUseWith`): no listener, plugin or
