@@ -8,9 +8,9 @@
 //! and animators, the players' frame queues (sounds, messages), the scene's
 //! replacement, collision and chunk flags (delivered to every viewer by the
 //! chunk updates, `world::chunk_sync`), and the "autowalk" logout listener.
-//! The scene's restore and autowalk pulses run on the canonical state's
-//! runner (the rest of `GameWorld.Pulser`, as the movement pulses), whose
-//! external pulses the walk host routes here.
+//! The scene's restore and autowalk pulses run on the driver's runner
+//! (`GameWorld.Pulser`, the scene's runner since the content use-with
+//! round); `Live::pulse_body` runs their bodies with these services.
 //!
 //! Two calls are made right after the library call returns, in their order,
 //! because they need what the scene call holds: `walkingQueue.reset()` and

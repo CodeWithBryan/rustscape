@@ -1605,13 +1605,11 @@ impl driver::Host<P> for Live {
             return result.map_err(fail);
         }
         // SceneryBuilder's pulses (the scene submitted them to this runner).
+        // Their bodies (restorations, the doors' autowalk) get the door
+        // services of the live world (super::doors).
         if self.walk.scene.owns_pulse(pulse) {
-            let walk = &mut self.walk;
-            let done = crate::world::scenery::Context::pulse_direct(
-                &mut walk.scene.context(&mut walk.maps),
-                pulse,
-            );
-            walk.scene.collect_pulses();
+            let done = self.with_walk_host(|state, host| host.scene_pulse(state, pulse));
+            self.walk.scene.collect_pulses();
             return done.map_err(fail);
         }
         // CowMilkingPlugin's milking pulses (super::items::milking).
@@ -1681,9 +1679,6 @@ impl driver::Host<P> for Live {
         // The canonical state's runner (movement pulses) is the rest of
         // GameWorld.Pulser.updateAll: run here, right after the world runner.
         self.with_walk(|world| world.pulses()).map_err(fail)?;
-        // Scene.collect_pulses: the scene's pulses ran in that phase (its
-        // runner is the canonical one); reap their task and check records.
-        self.walk.scene.collect_pulses();
         // GameWorld.tickListeners: the installed ones (super::content).
         self.content_tick_listeners().map_err(fail)?;
         // Shops.tick() (after GraveController in the scan's order).

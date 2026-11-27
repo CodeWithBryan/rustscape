@@ -283,29 +283,11 @@ fn binding_debug(e: impl std::fmt::Debug) -> player_walk::Error {
 }
 
 impl player_walk::Services for WalkHost<'_> {
-    fn external_pulse(
-        &mut self,
-        state: &mut State,
-        pulse: &crate::pulses::Handle,
-    ) -> crate::pulses::Result<bool> {
-        // The scene's pulses: SceneryBuilder's restorations and the doors'
-        // autowalk pulses (super::doors).
-        if self.walk.scene.owns_pulse(pulse) {
-            return self.scene_pulse(state, pulse);
-        }
-        Err(crate::pulses::Error::Binding(
-            "unregistered external pulse".into(),
-        ))
-    }
     fn external_stop(
         &mut self,
         _: &mut State,
         pulse: &crate::pulses::Handle,
     ) -> crate::pulses::Result<()> {
-        if self.walk.scene.owns_pulse(pulse) {
-            let Walk { scene, maps, .. } = &mut *self.walk;
-            return scene.context(maps).stop_pulse(pulse);
-        }
         // A combat pulse current in a pulse manager: its base stops now,
         // CombatPulse.stop() runs right after this walk call returns.
         let (class, node) = {
@@ -340,10 +322,6 @@ impl player_walk::Services for WalkHost<'_> {
         _: &mut State,
         pulse: &crate::pulses::Handle,
     ) -> crate::pulses::Result<bool> {
-        if self.walk.scene.owns_pulse(pulse) {
-            let Walk { scene, maps, .. } = &mut *self.walk;
-            return scene.context(maps).pulse_inactive(pulse);
-        }
         let (class, node) = {
             let p = pulse.read();
             (p.class.clone(), p.node(0).ok().flatten())

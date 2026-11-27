@@ -514,11 +514,8 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_global_handlers(booth)?;
     // DoorManagingPlugin (super::doors). Its options ("open", "close",
     // "shut", "go-through") are none of the global handlers', so its place
-    // beside them in the scan does not change the table. The scene's
-    // pulses (SceneryBuilder's restorations, the doors' autowalk) join
-    // GameWorld.Pulser as the canonical state's runner.
+    // beside them in the scan does not change the table.
     live.install_doors()?;
-    live.walk.scene.runner = live.inner.state.runner();
     // ZoneBuilder.startup: the region zones.
     live.zone_startup()
         .map_err(|e| format!("ZoneBuilder.startup: {e:?}"))?;

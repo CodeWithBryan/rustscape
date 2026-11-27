@@ -2634,7 +2634,7 @@ async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
 /// other scenarios' players, whom it would otherwise stand beside for five
 /// minutes) and waits: the open form is a temporary replacement whose restoration pulse
 /// (`SceneryBuilder.replace(..., 500)`) runs on GameWorld.Pulser (the
-/// scene's pulses on the canonical runner here). About 500 ticks later the
+/// driver's runner). About 500 ticks later the
 /// closed door is back in the client's chunk updates. It runs beside the
 /// other scenarios and sends PING (93) while it waits.
 async fn door_restore_scenario(address: std::net::SocketAddr, saves: PathBuf) {
