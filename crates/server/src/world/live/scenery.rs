@@ -61,33 +61,36 @@ pub enum SceneryPlugin {
     Global(OptionPlugin),
     /// CowMilkingPlugin (super::items::milking).
     CowMilking,
+    /// FurnaceOptionPlugin (super::items::smelting).
+    Furnace,
 }
 impl SceneryPlugin {
     pub fn class(self) -> &'static str {
         match self {
             Self::Global(plugin) => plugin.class(),
             Self::CowMilking => super::items::milking::CLASS,
+            Self::Furnace => crate::world::smelting::PLUGIN_CLASS,
         }
     }
     /// `isWalk()`: OptionHandler's true for a content plugin.
     pub fn is_walk(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk(),
-            Self::CowMilking => true,
+            Self::CowMilking | Self::Furnace => true,
         }
     }
     /// `isWalk(player, node)`: OptionHandler's false.
     pub fn is_walk_for(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk_for(),
-            Self::CowMilking => false,
+            Self::CowMilking | Self::Furnace => false,
         }
     }
     /// `isDelayed(player)`: OptionHandler's true.
     pub fn is_delayed(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_delayed(),
-            Self::CowMilking => true,
+            Self::CowMilking | Self::Furnace => true,
         }
     }
 }
@@ -109,6 +112,12 @@ impl WalkHost<'_> {
             .is_some()
         {
             return Ok(SceneryPlugin::CowMilking);
+        }
+        if handler
+            .value::<super::items::smelting::FurnacePlugin>()
+            .is_some()
+        {
+            return Ok(SceneryPlugin::Furnace);
         }
         Err(legacy::Error::Binding(Some(
             "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),

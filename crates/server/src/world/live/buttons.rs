@@ -164,6 +164,13 @@ impl interface_packets::Context for Buttons<'_> {
         if plugin.value::<crate::world::trade::TradePlugin>().is_some() {
             return self.live.trade_button(p, c, b).map_err(ui);
         }
+        // SmeltingInterface on 311 (super::items::smelting).
+        if plugin
+            .value::<super::items::smelting::SmeltPlugin>()
+            .is_some()
+        {
+            return self.live.smelting_button(&Self::p(p), b.button).map_err(ui);
+        }
         let Some(plugin) = plugin.value::<registry::ComponentPlugin>().map(|p| *p) else {
             return Err(interfaces::Error::Binding(
                 "a component plugin this world did not register".into(),

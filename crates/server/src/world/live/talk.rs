@@ -745,6 +745,8 @@ pub enum Script {
     Trade(crate::world::trade::AmountScript<NodeHandle>),
     /// CookingDialogue's amount handler (`cooking::AmountInput::run`).
     Cook(super::items::cooking::CookScript),
+    /// SmeltingInterface's amount handler (`smelting::AmountInput::run`).
+    Smelt(super::items::smelting::SmeltScript),
 }
 
 struct Prompt<'a> {
@@ -869,6 +871,15 @@ impl input::Context for Prompt<'_> {
                     }
                 };
                 self.live.cooking_amount(&script, &value).map_err(ierror)
+            }
+            Script::Smelt(script) => {
+                let value = match &value {
+                    Response::Int(n) => crate::world::smelting::Input::Int(*n),
+                    Response::Text(text) => {
+                        crate::world::smelting::Input::Text(String::from_utf16_lossy(text))
+                    }
+                };
+                self.live.smelting_amount(&script, &value).map_err(ierror)
             }
             Script::Shop(script) => self
                 .live
@@ -1023,7 +1034,7 @@ impl Live {
         self.inner.drain(p);
         result.map_err(|e| format!("{e:?}"))
     }
-    /// `sendInputDialogue(player, InputType.AMOUNT, prompt, handler)` of a
+    /// `sendInputDialogue(player, true, prompt, handler)` of a
     /// shop's Buy-X or Sell-X.
     pub fn shop_prompt(
         &mut self,
@@ -1057,6 +1068,25 @@ impl Live {
             InputType::Numeric,
             utf16(prompt),
             Script::Cook(script),
+        );
+        self.inner.drain(p);
+        result
+    }
+    /// `sendInputDialogue(player, true, prompt, handler)` of
+    /// SmeltingInterface's Smelt-X.
+    pub fn smelt_prompt(
+        &mut self,
+        p: &P,
+        prompt: &str,
+        script: super::items::smelting::SmeltScript,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::send(
+            &mut Prompt { live: self },
+            &owner,
+            InputType::Numeric,
+            utf16(prompt),
+            Script::Smelt(script),
         );
         self.inner.drain(p);
         result

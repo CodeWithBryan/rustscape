@@ -1731,6 +1731,13 @@ impl Live {
                     )
                     .map_err(|e| Error::Binding(Some(format!("{e:?}"))))
                 }
+                // FurnaceOptionPlugin.handle(player, node, option).
+                super::scenery::SceneryPlugin::Furnace => match call.target.clone() {
+                    Some(furnace) => self
+                        .furnace_handle(&p, &super::items::Node::Scenery(furnace))
+                        .map_err(|e| Error::Binding(Some(format!("{e:?}")))),
+                    None => Err(Error::Null),
+                },
             };
             match result {
                 // InteractPlugin: a handler answering false is "Nothing

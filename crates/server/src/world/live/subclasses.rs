@@ -712,13 +712,13 @@ impl nc::Host for Classes<'_, '_> {
 
 /// `player.getAchievementDiaryManager()`: the persisted diaries taken out of
 /// the profile for one call and put back after it.
-struct Diaries<'a> {
+pub(super) struct Diaries<'a> {
     live: &'a mut Live,
     owner: P,
     manager: crate::player::persisted::diaries::Manager,
 }
 
-fn with_diaries<T>(
+pub(super) fn with_diaries<T>(
     live: &mut Live,
     owner: &P,
     f: impl FnOnce(&mut Diaries<'_>, &P) -> pm::Result<T>,

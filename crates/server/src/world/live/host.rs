@@ -1587,6 +1587,10 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.milking_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // SmeltingPulse (super::items::smelting).
+        if let Some(result) = self.smelting_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // PulseManager.runUnhandledAction's pulse of a use-with.
         if let Some(result) = self.use_pulse(pulse) {
             return result.map_err(fail);
