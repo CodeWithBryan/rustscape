@@ -234,6 +234,12 @@ pub trait Host<P>: repository::Host<P> {
     // The world pulse runner.
     /// `Pulse.pulse()` of a world pulse: true when it is finished.
     fn pulse_body(&mut self, pulse: &pulses::Handle) -> Result<bool>;
+    /// `Pulse.stop()` of a world pulse: the base `running = false` unless
+    /// the pulse's class overrides `stop` (a world answers its own).
+    fn pulse_stop(&mut self, pulse: &pulses::Handle) -> Result<()> {
+        pulses::stop_base(pulse);
+        Ok(())
+    }
     /// `node.isActive()` for a pulse's checked node.
     fn pulse_node_active(&mut self, node: pulses::Node) -> Result<bool>;
 
@@ -821,6 +827,9 @@ impl<P, H: Host<P>> pulses::Context<()> for PulseContext<'_, P, H> {
     }
     fn node_active(&mut self, node: pulses::Node, _: &mut ()) -> pulses::Result<bool> {
         self.host.pulse_node_active(node).map_err(|e| self.keep(e))
+    }
+    fn stop(&mut self, pulse: &pulses::Handle, _: &mut ()) -> pulses::Result<()> {
+        self.host.pulse_stop(pulse).map_err(|e| self.keep(e))
     }
     fn exception(&mut self, error: &pulses::Error, _: &mut ()) -> pulses::Result<()> {
         // Pulse.update's catch prints the body's failure; the category is

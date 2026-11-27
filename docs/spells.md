@@ -3,8 +3,12 @@
 `world::spells` ports the framework that magic combat and spell casting run
 on: rune requirements with combination runes and elemental staves, the cast
 pipeline, the spell books with their registered combat spells, spell blocks
-and autocast selection. It is a library. Nothing in the controlled sessions
-calls it, no packet handler reaches it, and nothing installs it in a world.
+and autocast selection. It is a library. The live world (`--world`)
+installs it for the registered combat spells, cast with the spell-on-entity
+packets and from the combat pulse, with each class's `fireEffect`
+(`spells::effects`, below); the listeners and non-combat plugins are
+refused there by name (docs/live-world.md). Nothing in the controlled
+sessions calls it.
 
 The sources are the pinned `MagicSpell.java`, `CombatSpell.java`,
 `DefaultCombatSpell.java`, `SpellType.java`, `Runes.java`,
@@ -116,9 +120,56 @@ calls): node kind and identity, the spell object, the registry, item
 definition names, `EXPERIENCE_MOD`, the player's spell book field, whether
 the weapon interface is the staff one, and the god-cast array write.
 
-Each spell's `fireEffect` (freeze, stat drains, Blood healing, Smoke
-poison, binding, teleblock and miasmic timers) is content: not ported, and a
-required service of the combat host (`spell_fire_effect`).
+Each spell's `fireEffect` is `spells::effects` (next section); the combat
+host's `spell_fire_effect` service answers through it.
+
+## Spell effects (`spells::effects`)
+
+`effects::fire_effect` ports `fireEffect` of `BindSpell`, `CurseSpells`,
+`GodSpells`, `TeleblockSpell`, `IceSpells`, `BloodSpells`, `ShadowSpells`,
+`SmokeSpells` and `MiasmicSpells`; the other classes keep the empty
+`CombatSpell.fireEffect`. It reads and writes the state's estimated hit and
+frozen flag and reads its spell and style (`EffectState`). Its services
+beyond `spells::Host` are the `Effects` trait: the movement lock and its
+query, the walking queue's reset, `drainLevel`, `decrementPrayerPoints`,
+`getStaticLevel`, `updateLevel`, `heal`, the style's handler's
+`isAccurateImpact`, Protect from Magic, `registerTimer(spawnTimer(...))`
+and `applyPoison`. None has a default.
+
+**There is no JVM corpus for these members.** `tests/spell_effects.rs`
+checks every class against a recording host, with expectations written
+from the pinned source; `tests/live_spell_effects.rs` (cache-backed) checks
+what the effects leave in a live NPC's levels, lifepoints and timers. Until
+an oracle exists this is a reading of the source, not differential
+evidence.
+
+- Bind, Snare, Entangle: an impling's estimated hit becomes -2 before the
+  splash test, so it is bound even on a splash; any other splash (-1)
+  returns. Bind (the type) sets -2. The ticks are read from the state's
+  spell id (30: 17, 56: 25, otherwise 9). A player victim whose movement
+  is not locked is told through the packet dispatch; the queue is reset,
+  movement locked, and the caster's `entangleDelay` is the tick plus the
+  ticks plus 2.
+- Curses: nothing on a splash; otherwise the hit becomes -2 and one
+  `drainLevel` (Confuse and Stun Attack, Weaken and Enfeeble Strength,
+  Curse and Vulnerability Defence; 5% for the first three, 10% for the
+  others, the same number as the maximum).
+- God spells: the drain happens whatever the hit (Saradomin one prayer
+  point, Guthix 5% Defence, Zamorak 5% Magic), chosen by the second rune's
+  amount.
+- Teleblock: with no teleblock timer, a player victim and an accurate
+  impact of the state's style, the timer is registered for 500 ticks (250
+  under Protect from Magic); otherwise the timer is asked again and the
+  caster, cast to a player, is told the target is already blocked.
+- Ice: nothing on a splash; `(type ordinal - 4) * 8` ticks; with a frozen
+  or frozen-immunity timer only a Barrage marks the state frozen;
+  otherwise `spawnTimer("frozen", ticks, true)` is registered.
+- Blood: a hit above -1 heals the caster `hit / 4` when that is positive,
+  with a message for a player. Shadow: `updateLevel(ATTACK, (int) -(level *
+  0.1), (int) (level - level * 0.1))` of the static level. Smoke:
+  `applyPoison` with severity 4 from Blitz up, else 2. Miasmic: without the
+  immunity timer, `spawnTimer("miasmic", (spellId - 15) * 20)`, whatever
+  the hit.
 
 ## Joined to the combat slices
 
@@ -206,15 +257,13 @@ order, not `Container.remove` itself, which the inventory port covers.
 
 ## Not ported
 
-Every `fireEffect`; the non-combat spells of the standard book (teleports,
+The non-combat spells of the standard book (teleports,
 alchemy, enchanting, charge, telekinetic grab, bounty locate, teleother) and
 the whole lunar book; `SpellListener`/`SpellListeners` and the modern
 listener-based spells; `SpellUtils.validateSpellbookInterface` and
 `getBookFromInterface`; spell packets; `WeaponInterface` beyond the three
 autocast members (`openAutocastSelect`, `restoreAutocast`, styles, tabs);
-`PCTorcherNPC`'s spell; the projectile engine. Binding `Host` to the canonical
-player (attributes, containers, skills, properties, the spell-book field,
-saved god casts), installing a registry and spell blocks in a world, and
-answering the combat hosts' spell services from these functions in a session
-are the next steps. Until then this establishes the tested decisions and call
-orders only; all source inventory rows remain `not_replaced`.
+`PCTorcherNPC`'s spell; the projectile engine; a JVM corpus for
+`fireEffect`. The live world binds `Host` and `Effects` to the canonical
+player and the NPC rows (world/live/magic.rs); spell blocks are not
+installed there. All source inventory rows remain `not_replaced`.

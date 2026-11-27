@@ -13,6 +13,7 @@ use super::super::{
     inner::{SkillsContext, placeholder_skills},
 };
 use super::{super::P, MAGIC, MELEE, RANGE, Submitted, style_handler};
+use crate::world::spells::combat as sc;
 use crate::{
     definitions::{item::Shared, property::Property},
     inventory::item::Handle as ItemHandle,
@@ -92,7 +93,7 @@ impl Live {
             .map_err(bind)?;
         Ok(result)
     }
-    pub(super) fn equipment_slot(&self, p: &P, slot: i32) -> Option<ItemHandle> {
+    pub(crate) fn equipment_slot(&self, p: &P, slot: i32) -> Option<ItemHandle> {
         if !self.inner.is_player_node(p.node()) {
             return None;
         }
@@ -113,7 +114,7 @@ impl Live {
         total >= i64::from(amount)
     }
     /// `Entity.face(target)`.
-    pub(super) fn entity_face(&mut self, e: &P, target: Option<&P>) -> Result<()> {
+    pub(crate) fn entity_face(&mut self, e: &P, target: Option<&P>) -> Result<()> {
         if self.inner.is_npc_node(e.node()) {
             let target = target.map(|t| self.face_target(t));
             self.npc_face(e.node(), target).map_err(bind)?;
@@ -161,11 +162,11 @@ impl Live {
     }
     /// `playGlobalAudio(location, id)`: the area sound (97) after the zone
     /// origin (26) for every player within the default radius 8.
-    pub(super) fn global_audio(&mut self, at: Location, id: i32) -> Result<()> {
+    pub(crate) fn global_audio(&mut self, at: Location, id: i32) -> Result<()> {
         self.global_audio_delayed(at, id, 0)
     }
     /// `playGlobalAudio(location, id, delay)`.
-    pub(super) fn global_audio_delayed(&mut self, at: Location, id: i32, delay: i32) -> Result<()> {
+    pub(crate) fn global_audio_delayed(&mut self, at: Location, id: i32, delay: i32) -> Result<()> {
         let players = self
             .local(at.clone(), 8, crate::world::entity_regions::Select::Players)
             .map_err(bind)?;
@@ -209,7 +210,7 @@ impl Live {
             .map(Animation::from_shared)
     }
     /// A locked kind of the entity's action locks.
-    pub(super) fn locked_kind(
+    pub(crate) fn locked_kind(
         &mut self,
         p: &P,
         kind: crate::world::action_locks::Kind,
@@ -221,7 +222,7 @@ impl Live {
             .map_err(bind)
     }
     /// `walkingQueue.reset()`.
-    pub(super) fn walk_reset(&mut self, p: &P) -> Result<()> {
+    pub(crate) fn walk_reset(&mut self, p: &P) -> Result<()> {
         let node = p.node();
         self.with_walk(|world| crate::world::movement::Context::walk_reset(world, None, node, None))
             .map_err(bind)
@@ -299,16 +300,15 @@ impl Live {
 impl cs::Types for Live {
     type Entity = P;
     type Item = ItemHandle;
-    /// A combat spell's id; no spell is ever selected (spells are not
-    /// installed).
-    type Spell = i32;
+    /// A registered spell of the live world's spell books (super::magic).
+    type Spell = super::super::magic::SpellKey;
 }
 
 impl cs::Host for Live {
     fn kind(&self, entity: &P) -> Kind {
         self.ckind(entity)
     }
-    fn same_spell(&self, a: &i32, b: &i32) -> bool {
+    fn same_spell(&self, a: &Self::Spell, b: &Self::Spell) -> bool {
         a == b
     }
     fn item_id(&self, item: &ItemHandle) -> i32 {
@@ -369,18 +369,8 @@ impl cs::Host for Live {
     fn update_combat_style(&mut self, entity: &P) -> Result<()> {
         cp::pulse::update_style(self, entity)
     }
-    fn spell(&mut self, entity: &P) -> Result<Option<i32>> {
-        if self.inner.is_npc_node(entity.node()) {
-            return Ok(None);
-        }
-        let spell = self
-            .inner
-            .with_profile(entity, |p| p.properties.spell)
-            .map_err(bind)?;
-        match spell {
-            None => Ok(None),
-            Some(_) => refuse("a selected combat spell (spells are not installed)"),
-        }
+    fn spell(&mut self, entity: &P) -> Result<Option<Self::Spell>> {
+        self.selected_spell(entity)
     }
     fn clear_spell(&mut self, entity: &P) -> Result<()> {
         if self.inner.is_player_node(entity.node()) {
@@ -390,20 +380,10 @@ impl cs::Host for Live {
         }
         Ok(())
     }
-    fn autocast_spell(&mut self, entity: &P) -> Result<Option<i32>> {
-        if self.inner.is_npc_node(entity.node()) {
-            // NPC autocast spells (DefaultCombatSpell) are not ported: the
-            // start-up counts them as a gap and sets none.
-            return Ok(None);
-        }
-        let autocast = self
-            .inner
-            .with_profile(entity, |p| p.persisted.spells.autocast.is_some())
-            .map_err(bind)?;
-        if autocast {
-            return refuse("an autocast spell (spells are not installed)");
-        }
-        Ok(None)
+    fn autocast_spell(&mut self, entity: &P) -> Result<Option<Self::Spell>> {
+        // NPC autocast spells (DefaultCombatSpell) are not ported: the
+        // start-up counts them as a gap and sets none.
+        self.autocast_key(entity)
     }
     fn level(&mut self, entity: &P, slot: i32) -> Result<i32> {
         cs::Host::level_with(self, entity, slot, false)
@@ -613,31 +593,46 @@ impl cs::Host for Live {
         Ok(self.inner.is_player_node(entity.node())
             && self.inner.canonical(entity).weapon.is_some())
     }
-    fn select_auto_spell(&mut self, _: &P, _: i32, _: bool, _: bool) -> Result<()> {
-        refuse("WeaponInterface.selectAutoSpell (spells are not installed)")
+    fn select_auto_spell(
+        &mut self,
+        entity: &P,
+        button: i32,
+        adjust: bool,
+        forget: bool,
+    ) -> Result<()> {
+        // WeaponInterface.selectAutoSpell on the player's weapon tab.
+        self.tabs(entity)
+            .weapon(|tabs, w| w.select_auto_spell(tabs, button, adjust, forget))
+            .map_err(bind)
     }
-    fn spell_meets_requirements(&mut self, _: &i32, _: &P, _: bool, _: bool) -> Result<bool> {
-        refuse("MagicSpell.meetsRequirements (spells are not installed)")
+    fn spell_meets_requirements(
+        &mut self,
+        spell: &Self::Spell,
+        caster: &P,
+        message: bool,
+        remove: bool,
+    ) -> Result<bool> {
+        self.with_spells(|h| sc::meets_requirements(h, spell, caster, message, remove))
     }
     fn spell_maximum_impact(
         &mut self,
-        _: &i32,
-        _: &P,
-        _: Option<&P>,
+        spell: &Self::Spell,
+        entity: &P,
+        victim: Option<&P>,
         _: &BattleState<Self>,
     ) -> Result<i32> {
-        refuse("CombatSpell.getMaximumImpact (spells are not installed)")
+        self.with_spells(|h| sc::maximum_impact(h, spell, entity, victim))
     }
     fn spell_targets(
         &mut self,
-        _: &i32,
-        _: &P,
-        _: Option<&P>,
+        spell: &Self::Spell,
+        entity: &P,
+        victim: Option<&P>,
     ) -> Result<Option<Vec<Option<BattleState<Self>>>>> {
-        refuse("CombatSpell.getTargets (spells are not installed)")
+        self.with_spells(|h| sc::targets::<_, Live>(h, spell, entity, victim))
     }
-    fn spell_is_blitz(&mut self, _: &i32) -> Result<bool> {
-        refuse("CombatSpell.getType (spells are not installed)")
+    fn spell_is_blitz(&mut self, spell: &Self::Spell) -> Result<bool> {
+        Ok(self.with_spells(|h| sc::is_blitz(h, spell)))
     }
     fn math_random(&mut self) -> Result<f64> {
         Ok(self.inner.generators.math_random())
@@ -1072,32 +1067,51 @@ impl cp::Host for Live {
         })?
         .map_err(bind)
     }
-    fn spell_id(&mut self, spell: &i32) -> Result<i32> {
-        Ok(*spell)
+    fn spell_id(&mut self, spell: &Self::Spell) -> Result<i32> {
+        Ok(self.with_spells(|h| sc::spell_id(h, spell)))
     }
     fn spell_fire_effect(
         &mut self,
-        _: &i32,
-        _: &P,
-        _: Option<&P>,
-        _: &mut BattleState<Self>,
+        spell: &Self::Spell,
+        entity: &P,
+        victim: Option<&P>,
+        state: &mut BattleState<Self>,
     ) -> Result<()> {
-        refuse("CombatSpell.fireEffect (spells are not installed)")
+        // The class's fireEffect (spells::effects) over the state's
+        // estimated hit, frozen flag, spell and style; what it wrote before
+        // a failure stays in the state.
+        let mut view = crate::world::spells::effects::EffectState {
+            estimated_hit: state.estimated_hit,
+            frozen: state.frozen,
+            spell: state.spell,
+            style: state.style,
+        };
+        let result = self.with_spells(|h| {
+            crate::world::spells::effects::fire_effect(h, spell, entity, victim, &mut view)
+        });
+        state.estimated_hit = view.estimated_hit;
+        state.frozen = view.frozen;
+        Ok(result?)
     }
-    fn spell_visualize(&mut self, _: &i32, _: &P, _: Option<&P>) -> Result<()> {
-        refuse("CombatSpell.visualize (spells are not installed)")
+    fn spell_visualize(
+        &mut self,
+        spell: &Self::Spell,
+        entity: &P,
+        victim: Option<&P>,
+    ) -> Result<()> {
+        self.with_spells(|h| sc::visualize(h, spell, entity, victim))
     }
     fn spell_visualize_impact(
         &mut self,
-        _: &i32,
-        _: Option<&P>,
-        _: Option<&P>,
-        _: &mut BattleState<Self>,
+        spell: &Self::Spell,
+        entity: Option<&P>,
+        victim: Option<&P>,
+        state: &mut BattleState<Self>,
     ) -> Result<()> {
-        refuse("CombatSpell.visualizeImpact (spells are not installed)")
+        self.with_spells(|h| sc::visualize_impact(h, spell, entity, victim, state))
     }
-    fn spell_add_experience(&mut self, _: &i32, _: &P, _: i32) -> Result<()> {
-        refuse("MagicSpell.addExperience (spells are not installed)")
+    fn spell_add_experience(&mut self, spell: &Self::Spell, entity: &P, hit: i32) -> Result<()> {
+        self.with_spells(|h| sc::add_experience(h, spell, entity, hit))
     }
     fn equipment_replace(
         &mut self,
@@ -1219,8 +1233,10 @@ impl cp::Host for Live {
     fn attack(&mut self, entity: &P, victim: &P) -> Result<()> {
         cp::pulse::attack(self, entity, Some(victim))
     }
-    fn update_weapon_interface(&mut self, _: &P) -> Result<()> {
-        refuse("WeaponInterface.updateInterface from combat (autocast)")
+    fn update_weapon_interface(&mut self, entity: &P) -> Result<()> {
+        self.tabs(entity)
+            .weapon(|tabs, w| w.update_interface(tabs))
+            .map_err(bind)
     }
     fn debug(&mut self, entity: &P, text: &str) -> Result<()> {
         // Player.debug: only shown in debug mode.

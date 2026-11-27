@@ -14,12 +14,14 @@
 //! that borrow across a service call. Everything the original reaches outside
 //! these classes is a required [`Host`] service, called in the original order
 //! with the original arguments. None has a default. Each spell's `fireEffect`
-//! (freeze, drain, heal, poison, bind, teleblock, miasmic) is content and not
-//! ported. Nothing installs this library in a session. See docs/spells.md.
+//! (freeze, drain, heal, poison, bind, teleblock, miasmic) is [`effects`],
+//! with its own services and no JVM corpus. The live world installs the
+//! library (world/live/magic.rs). See docs/spells.md.
 pub mod autocast;
 pub mod book;
 pub mod cast;
 pub mod combat;
+pub mod effects;
 pub mod runes;
 pub mod table;
 

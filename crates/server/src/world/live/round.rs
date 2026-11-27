@@ -55,6 +55,7 @@ pub struct Round {
     pub trade: super::trading::TradeWorld,
     pub follow: super::follow::FollowWorld,
     pub eat: super::eating::EatWorld,
+    pub magic: super::magic::MagicWorld,
     /// `ServerConstants.SECOND_BANK`.
     pub second_bank: bool,
 }
@@ -73,6 +74,7 @@ impl super::host::Live {
     }
     /// A player left the world: what this round keeps for it goes.
     pub fn round_logout(&mut self, node: usize) {
+        self.magic_logout(node);
         let talk = &mut self.round.talk;
         talk.interpreters.remove(&node);
         talk.close_hooks.remove(&node);

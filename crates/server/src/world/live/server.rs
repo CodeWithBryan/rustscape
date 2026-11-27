@@ -489,6 +489,15 @@ fn collect(live: &mut Live) {
         })
         .collect();
     for node in gone {
+        // A player that left on the welcome screen is still in the
+        // repository's lobby list (the original keeps the Player object
+        // there until the same name logs in again, and clears it then).
+        // Nothing of it is left here to clear, and the next lobby login
+        // would ask a name of a player without a slot: the entry goes with
+        // the slot.
+        if let Some(p) = live.player_of(node) {
+            live.repository.lobby_players().remove(&p);
+        }
         if let Some(slot) = live.inner.players.remove(&node) {
             live.online
                 .lock()
@@ -718,6 +727,9 @@ pub fn handle(
                 )),
             }
         }
+        (Handler::ComponentUseWith, dispatch::Packet::Action { player, action, .. }) => live
+            .component_use_with(player, action)
+            .map_err(super::host::fail),
         (Handler::SlotSwitch, dispatch::Packet::Action { player, action, .. }) => {
             match crate::world::packet_handlers::slot_switch::SlotSwitch::from_action(action) {
                 Some(request) => live.slot_switch(player, request).map_err(super::host::fail),

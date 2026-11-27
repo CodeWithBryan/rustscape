@@ -476,10 +476,10 @@ impl tab_weapon::Host for Tabs<'_> {
     }
     fn spell_lookup(
         &mut self,
-        _: crate::world::spells::SpellBook,
-        _: i32,
+        book: crate::world::spells::SpellBook,
+        id: i32,
     ) -> player_tabs::Result<tab_weapon::Lookup<save::Autocast>> {
-        refused("SpellBook.getSpell for autocast (spells are not installed)")
+        super::magic::autocast_lookup(book, id).map_err(player_tabs::Error::Binding)
     }
     fn get_attribute(&mut self, key: &str, default: Value) -> player_tabs::Result<Value> {
         Tabs::get_attribute(self, key, default)
