@@ -2500,6 +2500,214 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     two.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
     use_content_scenario(address, saves).await;
+    use_cook_scenario(address, saves).await;
+    use_milk_scenario(address, saves).await;
+}
+
+/// Cooking (`world::cooking`, docs/cooking.md) at the fire 5631 west of
+/// Lumbridge: a bowl of water and one cooked meat (no roll: hot water and
+/// burnt meat), then three raw shrimps through the "How many would you like
+/// to cook?" chatbox (307) with "All" (each shrimp is cooked or burnt by
+/// its roll at cooking level 1).
+/// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
+/// on it (BucketHandler through `UseWithHandler.HANDLERS`).
+async fn use_milk_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let start = [3251, 3273, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usemilk",
+        start,
+        &[(0, 1925, 1), (1, 1925, 1)],
+    );
+    let (code, milk) = Client::login(address, "usemilk").await;
+    assert_eq!(code, 2, "usemilk's login");
+    let mut milk = milk.unwrap();
+    milk.until(Duration::from_secs(10), "usemilk's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = milk.messages.len();
+    // The option: eight ticks later the first bucket is milk.
+    milk.send(scenery_option1(8689, 3252, 3275)).await;
+    milk.until_pinging(Duration::from_secs(30), "the first bucket of milk", |c| {
+        held(c, 1927) == 1
+    })
+    .await;
+    // A bucket on the cow: a new milking pulse takes the old one's place.
+    let slot = milk.containers[&93]
+        .iter()
+        .find(|(_, (item, _))| *item == 1925)
+        .map(|(slot, _)| *slot)
+        .expect("a bucket is left");
+    milk.send(use_with_scenery(1925, slot, 8689, 3252, 3275))
+        .await;
+    milk.until_pinging(Duration::from_secs(30), "the second bucket of milk", |c| {
+        held(c, 1927) == 2 && held(c, 1925) == 0
+    })
+    .await;
+    let lines: Vec<&str> = milk.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .collect();
+    // The save has debug on: UseWithHandler$3 names the handler it ran.
+    assert_eq!(
+        lines.iter().filter(|m| **m == "You milk the cow.").count(),
+        2,
+        "usemilk's messages: {lines:?}"
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|m| m.starts_with("Handler=BucketHandler, used item=")),
+        "the bucket handler's debug line: {lines:?}"
+    );
+    eprintln!(
+        "usemilk milked the dairy cow 8689 twice from {:?}",
+        milk.position()
+    );
+    milk.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+async fn use_cook_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let start = [3152, 3207, 0];
+    write_save_with(
+        &players,
+        "traceone",
+        "usecook",
+        start,
+        &[
+            (0, 1921, 1),
+            (1, 2142, 1),
+            (2, 317, 1),
+            (3, 317, 1),
+            (4, 317, 1),
+        ],
+        |save| {
+            // Three experience short of cooking level 2: the first cooked
+            // shrimp (30) gains the level.
+            save["skills"][7]["experience"] = Value::String("80.0".into());
+            save.as_object_mut()
+                .unwrap()
+                .entry("attributes")
+                .or_insert_with(|| Value::Array(vec![]))
+                .as_array_mut()
+                .unwrap()
+                .push(
+                    serde_json::json!({"key": "tutorial:complete", "type": "bool", "value": true}),
+                );
+        },
+    );
+    let (code, cook) = Client::login(address, "usecook").await;
+    assert_eq!(code, 2, "usecook's login");
+    let mut cook = cook.unwrap();
+    // tutorial:complete: the welcome screen (378) and its play button.
+    cook.until(Duration::from_secs(10), "usecook's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    cook.send(button(378, 140)).await;
+    cook.until(Duration::from_secs(10), "usecook in the game world", |c| {
+        !c.updates.is_empty()
+    })
+    .await;
+    // A bowl of water: no cooking row, no roll.
+    cook.send(use_with_scenery(1921, 0, 5631, 3150, 3205)).await;
+    cook.until(Duration::from_secs(20), "a bowl of hot water", |c| {
+        held(c, 4456) == 1 && held(c, 1921) == 0
+    })
+    .await;
+    let at = cook.position();
+    eprintln!(
+        "usecook heated a bowl of water at the fire 5631 at [3150, 3205, 0]: walked {start:?} -> {at:?}"
+    );
+    assert_ne!(at, start, "usecook walked to the fire");
+    // Cooked meat: burnt on purpose.
+    let from = cook.messages.len();
+    cook.send(use_with_scenery(2142, 1, 5631, 3150, 3205)).await;
+    cook.until(Duration::from_secs(20), "burnt meat", |c| {
+        held(c, 2146) == 1 && held(c, 2142) == 0
+    })
+    .await;
+    assert!(
+        cook.messages[from..]
+            .iter()
+            .any(|(_, m)| m == "You deliberately burn the perfectly good piece of meat."),
+        "usecook's burnt meat message: {:?}",
+        &cook.messages[from..]
+    );
+    // Three raw shrimps: the amount chatbox, then "All" (child 3, the file's button 2).
+    let from = cook.messages.len();
+    let opened = cook.opened.len();
+    cook.send(use_with_scenery(317, 2, 5631, 3150, 3205)).await;
+    cook.until(Duration::from_secs(20), "the cooking chatbox", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 307)
+    })
+    .await;
+    assert!(
+        cook.texts
+            .iter()
+            .any(|(_, _, text)| text == "<br><br><br><br>Raw shrimps"),
+        "the chatbox names the food"
+    );
+    // The interpreter hands the file `child - 1`: "All" is button 2.
+    cook.send(continue_option(307, 3)).await;
+    cook.until_pinging(Duration::from_secs(40), "three shrimps cooked", |c| {
+        held(c, 317) == 0 && held(c, 315) + held(c, 7954) == 3
+    })
+    .await;
+    let lines: Vec<&str> = cook.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .filter(|m| m.contains("shrimps"))
+        .collect();
+    assert_eq!(lines.len(), 3, "a message per shrimp: {lines:?}");
+    for line in &lines {
+        assert!(
+            [
+                "You manage to cook some shrimps.",
+                "You accidentally burn some shrimps."
+            ]
+            .contains(line),
+            "{line}"
+        );
+    }
+    let cooked = held(&cook, 315);
+    eprintln!(
+        "usecook cooked {cooked} and burnt {} of three shrimps; cooking {:?}",
+        held(&cook, 7954),
+        cook.skills.get(&7)
+    );
+    if cooked > 0 {
+        // 30 experience a shrimp (the client's skill packet for cooking).
+        let experience = cook.skills.get(&7).map(|s| s.1).unwrap_or(0);
+        assert!(experience > 80, "cooking experience after {cooked} shrimps");
+        // LevelUp.levelup for a tutorial-complete player.
+        assert!(
+            cook.messages[from..].iter().any(
+                |(_, m)| m == "You've just advanced a Cooking level! You have reached level 2."
+            ),
+            "the level-up message: {:?}",
+            &cook.messages[from..]
+        );
+    }
+    cook.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// The content use-with listeners installed from `world::global_items2` and

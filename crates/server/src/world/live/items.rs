@@ -42,7 +42,9 @@ use rs09_protocol::game::{ClientAction, Frame, updates};
 use std::collections::HashMap;
 
 mod component_use;
+pub mod cooking;
 pub mod everyday;
+pub mod milking;
 mod slots;
 pub mod use_with;
 
@@ -151,6 +153,8 @@ pub struct ItemActions {
     pub drops: Vec<(i32, drop::DropScript<Node>)>,
     /// `runUnhandledAction` pulses of use-with ([`use_with`]).
     pub use_pulses: Vec<(pulses::Handle, Node)>,
+    /// `UseWithHandler.HANDLERS`.
+    pub use_handlers: crate::world::packet_handlers::use_with::Registry,
 }
 
 /// The item ids `Pets.forId` answers (every constant's baby, grown and

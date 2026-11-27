@@ -1124,7 +1124,10 @@ impl skills::Context for SkillsContext<'_> {
             Effect::LevelUp { skill, amount } => {
                 // LevelUp.levelup(player, slot, amount), native.
                 crate::world::player_tabs::level_up::levelup(
-                    &mut super::tabs::Tabs::new(self.inner, self.p.clone()),
+                    &mut super::tabs::LevelUpTabs {
+                        tabs: super::tabs::Tabs::new(self.inner, self.p.clone()),
+                        skills: state,
+                    },
                     skill,
                     amount,
                 )

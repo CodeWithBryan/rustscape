@@ -259,6 +259,10 @@ impl Live {
                     self.npc_timers_due.push(node);
                     None
                 }
+                Deferred::ContentStop(pulse) => Some(
+                    self.content_pulse_stopped(&pulse)
+                        .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
+                ),
                 Deferred::CombatStop(node) => Some(
                     self.combat_stop_of(node)
                         .map_err(|e| interfaces::Error::Binding(format!("{e:?}"))),
@@ -1563,6 +1567,14 @@ impl driver::Host<P> for Live {
         }
         // The content use-with listeners' pulses (super::items::everyday).
         if let Some(result) = self.everyday_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
+        // The cooking pulses (super::items::cooking).
+        if let Some(result) = self.cooking_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
+        // CowMilkingPlugin's milking pulses (super::items::milking).
+        if let Some(result) = self.milking_pulse_body(pulse) {
             return result.map_err(fail);
         }
         // PulseManager.runUnhandledAction's pulse of a use-with.

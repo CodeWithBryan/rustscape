@@ -846,7 +846,13 @@ impl super::super::host::Live {
         );
         let mut registered = Vec::new();
         let mut npc_registered = Vec::new();
+        let mut cooking = false;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
+            if name == crate::world::cooking::CLASS {
+                // CookingRewrite.defineListeners (super::cooking).
+                crate::world::cooking::define(&registry).map_err(|e| format!("{name}: {e:?}"))?;
+                cooking = true;
+            }
             if let Some(class) = item_on_npc::Class::named(name) {
                 item_on_npc::define(&registry, class).map_err(|e| format!("{name}: {e:?}"))?;
                 npc_registered.push(class);
@@ -860,16 +866,19 @@ impl super::super::host::Live {
         }
         self.round.everyday.registered = registered;
         self.round.everyday.npc_registered = npc_registered;
+        self.round.cooking.registered = cooking;
         Ok(())
     }
     /// `player.pulseManager.run(pulse)` (STANDARD) of a content pulse: the
     /// pulses that are not running go, nothing happens while a STRONG pulse
     /// runs, the current STANDARD pulse stops, then the pulse is put,
-    /// started and submitted to `GameWorld.Pulser`. Whether it was submitted.
-    pub fn run_standard_pulse(
+    /// started (`start` answers `isRunning()` afterwards) and, while it is
+    /// running, submitted to `GameWorld.Pulser`. Whether it was submitted.
+    pub fn run_content_pulse(
         &mut self,
         player: &super::P,
         handle: pulses::Handle,
+        start: impl FnOnce(&mut Self) -> bool,
     ) -> std::result::Result<bool, String> {
         let node = player.node();
         let debug = |e: &dyn std::fmt::Debug| format!("{e:?}");
@@ -896,14 +905,27 @@ impl super::super::host::Live {
         self.with_walk(|world| world.clear_standard(node, manager.clone()))
             .map_err(|e| debug(&e))?;
         manager.put(Some(pulses::Kind::Standard), Some(handle.clone()));
-        pulses::start_base(&handle);
         self.walk.content_pulses.retain(|h| h.read().running);
         self.walk.content_pulses.push(handle.clone());
+        let running = start(self);
+        handle.write().running = running;
+        if !running {
+            return Ok(false);
+        }
         self.driver
             .pulser()
             .submit(Some(handle))
             .map_err(|e| debug(&e))?;
         Ok(true)
+    }
+    /// [`Self::run_content_pulse`] of a base `Pulse` (`start()` only sets
+    /// `running`).
+    pub fn run_standard_pulse(
+        &mut self,
+        player: &super::P,
+        handle: pulses::Handle,
+    ) -> std::result::Result<bool, String> {
+        self.run_content_pulse(player, handle, |_| true)
     }
     /// A content use-with lambda (`InteractionListeners`' `invoke_use`), if
     /// the function is one this module installed.
@@ -923,6 +945,9 @@ impl super::super::host::Live {
                 used,
                 Some(with),
             ));
+        }
+        if f.value::<crate::world::cooking::Interaction>().is_some() {
+            return Some(self.cooking_use(player, used, with));
         }
         if let Some(interaction) = f.value::<item_on_npc::Interaction>() {
             let mut host = Everyday(Ctx(self));

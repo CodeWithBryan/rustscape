@@ -58,6 +58,10 @@ pub struct Round {
     pub magic: super::magic::MagicWorld,
     /// The content use-with handlers (super::items::everyday).
     pub everyday: super::items::everyday::EverydayWorld,
+    /// Cooking (super::items::cooking).
+    pub cooking: super::items::cooking::CookingWorld,
+    /// CowMilkingPlugin (super::items::milking).
+    pub milking: super::items::milking::MilkingWorld,
     /// `ServerConstants.SECOND_BANK`.
     pub second_bank: bool,
 }
@@ -93,6 +97,13 @@ impl super::host::Live {
             .retain(|(_, _, _, player, target)| player.node != node && target.node != node);
         self.walk.follows.retain(|(_, mover)| *mover != node);
         self.round.eat.doses.retain(|(_, owner, _)| *owner != node);
+        self.milking_logout(node);
+        self.round.cooking.pulses.retain(|(handle, owner, _)| {
+            if *owner == node {
+                crate::pulses::stop_base(handle);
+            }
+            *owner != node
+        });
         // The player's content pulses stop with it (the runner drops a
         // pulse that is not running).
         self.round.everyday.pulses.retain(|(handle, owner, _)| {

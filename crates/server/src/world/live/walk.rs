@@ -66,6 +66,9 @@ pub struct Walk {
     /// The content pulses running in a pulse manager (super::items::everyday):
     /// base `Pulse`s, whose `stop()` only clears `running`.
     pub content_pulses: Vec<crate::pulses::Handle>,
+    /// The content pulses whose class overrides `stop()` (the milking
+    /// pulse, super::items::milking).
+    pub stopping_pulses: Vec<crate::pulses::Handle>,
 }
 
 /// `scene::Services` for collision queries. The scenery services (doors,
@@ -178,6 +181,9 @@ pub enum Deferred {
     /// `Entity.fullRestore()`'s `timers.removeTimer("poison")` and
     /// `("poison:immunity")` of an NPC.
     NpcRestoreTimers(Node),
+    /// The `stop()` override of a content pulse a pulse manager stopped
+    /// (super::items::milking).
+    ContentStop(crate::pulses::Handle),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -245,8 +251,15 @@ impl player_walk::Services for WalkHost<'_> {
                 Ok(())
             }
             _ if self.walk.content_pulses.iter().any(|h| h.same(pulse)) => {
-                // A content listener's base Pulse: Pulse.stop().
+                // A content listener's base Pulse: Pulse.stop(); a `stop()`
+                // override runs right after this walk call returns.
                 crate::pulses::stop_base(pulse);
+                self.walk
+                    .stopping_pulses
+                    .retain(|h| h.read().running || h.same(pulse));
+                if self.walk.stopping_pulses.iter().any(|h| h.same(pulse)) {
+                    self.deferred.push(Deferred::ContentStop(pulse.clone()));
+                }
                 Ok(())
             }
             _ => Err(crate::pulses::Error::Binding(
@@ -595,9 +608,15 @@ impl player_walk::Services for WalkHost<'_> {
             (&service, target)
             && let Ok(object) = state.scenery(target)
         {
-            let plugin = self
+            let plugin = match self
                 .scenery_handler(*id)
-                .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?;
+                .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?
+            {
+                super::scenery::SceneryPlugin::Global(plugin) => plugin,
+                // A content plugin without a getDestination override:
+                // OptionHandler's null.
+                super::scenery::SceneryPlugin::CowMilking => return Ok(None),
+            };
             let mut geometry = super::destination::Geometry {
                 walk: &mut *self.walk,
                 failures: Vec::new(),

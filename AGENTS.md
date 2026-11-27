@@ -611,6 +611,25 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (docs/live-world.md). Every other global_items2::Host service stays a
   refusal by name there; join a service before installing a class that
   reaches it. See docs/item-on-npc.md.
+- For cooking (world/cooking: CookingRewrite's use-with listener, the
+  Standard/Pie/Pizza/IntentionalBurn pulses, CookingDialogue and
+  CookableItems), run `cargo test -p rs09-server --test cooking`. There is no
+  JVM corpus: the test is a recording host written from the pinned sources
+  plus a row-by-row comparison of the tables with the text of
+  CookableItems.java and CookingRewrite.kt, so do not call the module
+  differentially verified. Keep the quirks docs/cooking.md lists (forId's
+  putIfAbsent map, the pulse submitted after a refused start, the burn roll
+  drawn on every check, IntentionalBurnPulse's own amount, sinew cooked with
+  BEEF's row). The live binding is world/live/items/cooking.rs; after
+  touching it run the live_world `usewith` scenario.
+- Cow milking in the live world is world/live/items/milking.rs: the live
+  world is equipment_registers::Host and creatures::Host for
+  CowMilkingPlugin only, and every other service of those two traits is a
+  refusal by name. Join a service before installing another class of
+  world/creatures or world/equipment_registers; a new UseWithHandler class
+  needs an id in `Live::use_handler_handle` and, if it overrides
+  getDestination, the handler branch of items/use_with.rs `movement`.
+  After touching it run the live_world `usewith` scenario.
 - For core.api (world/content_api: every ContentAPI.kt function, its
   ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
   SkillDialogueBuilder, and the other core/api files: ApiExtensions,
