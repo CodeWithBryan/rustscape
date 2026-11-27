@@ -4680,6 +4680,8 @@ async fn main() {
         captured_journey_finished: false,
         #[cfg(not(target_arch = "wasm32"))]
         pick_probe: None,
+        #[cfg(not(target_arch = "wasm32"))]
+        npc_menu: game::NpcMenuDriver::from_arguments(capture, live_mode),
         menu_click: Default::default(),
         walk: Default::default(),
         walk_spell: None,

@@ -139,12 +139,24 @@ fn npc_enters_pick(npc: &NpcActor) -> bool {
 
 /// `--pick-probe`'s row for each NPC of the frame's list, as the pick sees it.
 #[cfg(not(target_arch = "wasm32"))]
-fn npc_rows(npcs: &[NpcActor]) -> Vec<serde_json::Value> {
+fn npc_rows(world: &Workbench) -> Vec<serde_json::Value> {
+    npc_rows_named(&world.npcs, |id| {
+        world.npc_definitions.get(&id).map(|d| d.name.as_str())
+    })
+}
+
+/// [`npc_rows`] with each NPC's name from `name`.
+#[cfg(not(target_arch = "wasm32"))]
+fn npc_rows_named<'a>(
+    npcs: &[NpcActor],
+    name: impl Fn(u32) -> Option<&'a str>,
+) -> Vec<serde_json::Value> {
     npcs.iter()
         .map(|npc| {
             serde_json::json!({
                 "index": npc.index,
                 "id": npc.id,
+                "name": name(npc.id),
                 "render_id": npc.render_id,
                 "pick_triangles": npc.pick_triangles.len(),
                 "enters_pick": npc_enters_pick(npc),
@@ -994,6 +1006,9 @@ pub(crate) fn probe(
         let (mut points, mut walkable, mut deepest) = (0, 0, 0);
         let mut found = std::collections::BTreeMap::new();
         let mut actors = std::collections::BTreeMap::<u64, [i32; 4]>::new();
+        // The first grid point that hit each actor: a point a mouse can be
+        // put on to point at it (the area's corners may miss it).
+        let mut first_hits = std::collections::BTreeMap::<u64, [i32; 2]>::new();
         let mut samples = Vec::new();
         let mut y = rect[1] + 4.0;
         while y < rect[1] + rect[3] {
@@ -1007,6 +1022,7 @@ pub(crate) fn probe(
                 points += 1;
                 walkable += usize::from(steps.iter().any(|s| s.walk().flatten().is_some()));
                 for key in steps.iter().flat_map(Step::actor_keys) {
+                    first_hits.entry(key).or_insert([x as i32, y as i32]);
                     let area = actors.entry(key).or_insert([i32::MAX, i32::MAX, 0, 0]);
                     *area = [
                         area[0].min(x as i32),
@@ -1053,6 +1069,7 @@ pub(crate) fn probe(
             })).collect::<Vec<_>>(),
             "actors": actors.iter().map(|(key, area)| serde_json::json!({
                 "npc": key >> 29 & 3 == 1, "index": key >> 32, "pixels": area,
+                "first_pixel": first_hits.get(key),
             })).collect::<Vec<_>>(),
             "samples": samples,
         }));
@@ -1067,7 +1084,7 @@ pub(crate) fn probe(
             "replay_for_drawing_microseconds": replay,
         },
         "drawing": world.roofs.summary(world),
-        "npcs": npc_rows(&world.npcs),
+        "npcs": npc_rows(world),
         "scope": "Taken in the frame's menu build right after its mouse pick, from the same inputs. World picks only; npcs is the frame's NPC list as that pick sees it. The menu lists are the location entries MiniMenu.addEntries would add for the picked keys, top entry first, without walk, actor or interface entries. Roof removal is the frame's own (the real player level's), whatever level is probed.",
         "levels": levels,
     })
@@ -1108,10 +1125,10 @@ mod tests {
     fn npc_rows_at_pick_time_leave_an_undrawn_npc_out() {
         let mut npcs = vec![rebuilt(7)];
         // `build_menu`: the frame's mouse pick, then the probe from its inputs.
-        let at_pick = npc_rows(&npcs);
+        let at_pick = npc_rows_named(&npcs, |_| None);
         // The redraw refills the pick mesh before the capture is written.
         drawn(&mut npcs[0]);
-        let at_redraw = npc_rows(&npcs);
+        let at_redraw = npc_rows_named(&npcs, |_| None);
         assert_eq!(at_pick[0]["index"], 7);
         assert_eq!(at_pick[0]["enters_pick"], false);
         assert_eq!(at_pick[0]["pick_triangles"], 0);

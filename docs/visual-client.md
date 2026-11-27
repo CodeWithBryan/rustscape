@@ -205,6 +205,7 @@ writes its files and exits; it reads no preferences and plays no music):
 | `--capture-route`, `--capture-route-run`, `--capture-route-target X,Y` | Walk (or run) to a tile during the capture. |
 | `--capture-travel FILE` | Live capture: follow a recorded route. |
 | `--pick-probe` | Also write `pick-state.json`: what the picking offers across the view, taken right after the frame's mouse pick from its inputs (before the draw refills the actors' pick meshes), with each NPC's entry as that pick sees it. |
+| `--capture-npc-menu NAME` | Live capture only: a scripted pointer for `cargo xtask client-smoke` ([client-smoke.md](client-smoke.md)). It clicks the welcome screen's Play, takes the pick probe when an NPC named NAME is in the frame's NPC list, moves the mouse onto it, right-clicks, chooses Attack, waits for combat experience and ends the capture. Its events enter the input translator as window events on the canvas would; it writes `npc-menu-capture.json` (each stage as it ends) and `pick-state.json`. |
 
 Environment variables: `RS09_CLIENT_PASSWORD` (above). With
 `RS09_FRAME_DUMP=DIR` set, creating a file named `take` in that folder makes

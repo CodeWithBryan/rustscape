@@ -529,7 +529,16 @@ impl Game {
         }
         // This frame's key, mouse and focus events, for the `Keyboard` and
         // `Mouse` state the logic cycles below read.
-        input_events.pump(&mut input, (miniquad::date::now() * 1000.0) as i64);
+        let now = (miniquad::date::now() * 1000.0) as i64;
+        input_events.pump(&mut input, now);
+        // `--capture-npc-menu`: its pointer, after the window's events.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(driver) = &mut self.npc_menu {
+            input_events.hold_pointer();
+            for event in driver.events() {
+                input_events.synthetic(&mut input, event, now);
+            }
+        }
         if workbench_keys && is_key_pressed(KeyCode::Escape) && !show_ui {
             return false;
         }
@@ -1284,7 +1293,8 @@ impl Game {
         // below: the redraw that writes it refills the actors' pick meshes
         // first, which the pick never sees.
         #[cfg(not(target_arch = "wasm32"))]
-        let probe_due = self.capture_due() && std::env::args().any(|arg| arg == "--pick-probe");
+        let probe_due = (self.capture_due() && std::env::args().any(|arg| arg == "--pick-probe"))
+            || self.npc_menu.as_ref().is_some_and(|d| d.want_probe);
         #[cfg(not(target_arch = "wasm32"))]
         let roofs = self.roofs_frame;
         #[cfg(not(target_arch = "wasm32"))]

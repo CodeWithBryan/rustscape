@@ -58,6 +58,13 @@ fn valid_name(name: &str) -> Result<()> {
 }
 
 fn start(root: &Path, args: &[String]) -> Result<()> {
+    let world = start_world(root, args)?;
+    println!("{}", serde_json::to_string_pretty(&world)?);
+    Ok(())
+}
+
+/// `start` without printing: the world's `world.json` value.
+pub(crate) fn start_world(root: &Path, args: &[String]) -> Result<Value> {
     let mut name = None;
     let mut port = None;
     let mut data = None;
@@ -233,8 +240,7 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
         "Test world {name} is up on {address} (pid {pid}; log {}).\nStop it with: cargo xtask test-world stop --name {name}",
         log.display()
     );
-    println!("{}", serde_json::to_string_pretty(&world)?);
-    Ok(())
+    Ok(world)
 }
 
 fn free_port() -> Result<u16> {
@@ -358,7 +364,7 @@ fn kill(pid: u32) -> Result<()> {
     Ok(())
 }
 
-fn stop(root: &Path, args: &[String]) -> Result<()> {
+pub(crate) fn stop(root: &Path, args: &[String]) -> Result<()> {
     let mut names = Vec::new();
     let mut all = false;
     let mut clean = false;

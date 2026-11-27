@@ -10,11 +10,17 @@ use super::*;
 
 impl Game {
     /// Whether this frame's redraw writes the capture files: the frame asked
-    /// for, or the end of a travel capture. `build_menu` asks too, so that
+    /// for, the end of a travel capture or of `--capture-npc-menu`'s script.
+    /// `build_menu` asks too, so that
     /// `--pick-probe` is taken in the frame it is written with.
     pub(super) fn capture_due(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        let scripted_done = self.npc_menu.as_ref().is_some_and(|d| d.done);
+        #[cfg(target_arch = "wasm32")]
+        let scripted_done = false;
         self.capture
             && (self.captured_journey_finished
+                || scripted_done
                 || self.frame
                     == self.capture_frame.unwrap_or(if self.capture_npcs {
                         400
