@@ -858,6 +858,18 @@ impl item_on_npc::Host for Everyday<'_> {
     fn send_chat(&mut self, entity: &Node, text: &str) -> Result<()> {
         self.npc_chat(entity, text)
     }
+    fn in_borders(&mut self, entity: &Node, borders: [i32; 4]) -> Result<bool> {
+        let p = self.player(entity)?;
+        self.0.0.in_borders(&p, borders)
+    }
+    fn open_cider_dialogue(&mut self, player: &Node, with: &Node) -> Result<()> {
+        let p = self.player(player)?;
+        let Node::Npc(npc) = with else {
+            return Err(Error::Cast);
+        };
+        // super::withnpc.
+        self.0.0.open_cider_dialogue(&p, &super::P(npc.clone()))
+    }
 }
 
 impl super::super::host::Live {

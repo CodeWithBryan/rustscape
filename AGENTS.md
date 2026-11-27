@@ -603,7 +603,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (world/live/items/everyday.rs; the full binding is described in
   docs/global-items2.md).
 - For the item-on-NPC basics (world/item_on_npc: FeedOnStrayDog and
-  FeedFaladorSheepdog with the Bones and Meat tables), run `cargo test -p
+  FeedFaladorSheepdog with the Bones and Meat tables, CiderOnForester with
+  its dialogue file), run `cargo test -p
   rs09-server --test item_on_npc`. There is no JVM corpus: the test is a
   recording host written from the pinned sources, so do not call the module
   differentially verified. The live world registers both classes and the

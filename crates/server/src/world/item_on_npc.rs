@@ -1,7 +1,9 @@
 //! Item-on-NPC basics of `content/global/handlers/item/withnpc`: feeding the
 //! stray dogs (`FeedOnStrayDog`) and the Falador sheepdog
 //! (`FeedFaladorSheepdog`), with the two tables they read (`Bones.array`,
-//! `content.data.Meat`).
+//! `content.data.Meat`), and cider for the people of the Seers' Village pub
+//! (`CiderOnForester` with its `CiderOnForesterDialogue`, a DialogueFile:
+//! [`CiderDialogue`] over [`DialogueHost`]).
 //!
 //! Each use-with lambda is a typed native value ([`Interaction`]) whose body
 //! is a function over [`Host`]; every call the original makes outside the
@@ -22,6 +24,21 @@ pub const DOG_ANIMATION: i32 = 4777;
 pub const STRAY_DOGS: [i32; 4] = [4766, 4767, 5917, 5918];
 /// `NPCs.SHEEPDOG_2311`.
 pub const SHEEPDOG: i32 = 2311;
+
+/// `Items.CIDER_5763`.
+pub const CIDER: i32 = 5763;
+/// CiderOnForester's `ids`.
+pub const FORESTERS: [i32; 5] = [1, 2, 3, 4, 5];
+/// CiderOnForester's `inBorders(player, 2689, 3488, 2700, 3498)`.
+pub const CIDER_PUB: [i32; 4] = [2689, 3488, 2700, 3498];
+/// The attribute the cider dialogue counts in (not saved).
+pub const SEERS_CIDER_PUB: &str = "seersCiderPub";
+/// `DiaryType.SEERS_VILLAGE` level 0, task 6.
+pub const SEERS_EASY: i32 = 0;
+pub const SEERS_CIDER_TASK: i32 = 6;
+/// The dialogue file's class.
+pub const CIDER_DIALOGUE_CLASS: &str =
+    "content.global.handlers.item.withnpc.CiderOnForesterDialogue";
 
 /// `Items.BURNT_BONES_528`.
 pub const BURNT_BONES: i32 = 528;
@@ -133,6 +150,95 @@ pub trait Host {
     fn animate(&mut self, entity: &Self::Node, animation: i32) -> Result<()>;
     /// ContentAPI `sendChat(entity, message)`: `entity.sendChat`.
     fn send_chat(&mut self, entity: &Self::Node, text: &str) -> Result<()>;
+    /// ContentAPI `inBorders(entity, swX, swY, neX, neY)`.
+    fn in_borders(&mut self, entity: &Self::Node, borders: [i32; 4]) -> Result<bool>;
+    /// `player.dialogueInterpreter.open(CiderOnForesterDialogue(), with)`.
+    fn open_cider_dialogue(&mut self, player: &Self::Node, with: &Self::Node) -> Result<()>;
+}
+
+/// What `CiderOnForesterDialogue.handle` calls outside its body.
+pub trait DialogueHost {
+    type Node: Clone;
+    /// `stage` of the DialogueFile.
+    fn stage(&mut self) -> Result<i32>;
+    fn set_stage(&mut self, stage: i32) -> Result<()>;
+    /// `this.npc!!.id`: `Error::Null` without an NPC.
+    fn npc_id(&mut self) -> Result<i32>;
+    /// ContentAPI `sendNPCDialogue(player, npc, msg)` (NEUTRAL, shown).
+    fn send_npc_dialogue(&mut self, player: &Self::Node, npc: i32, text: &str) -> Result<()>;
+    /// `player.inventory.remove(Item(id, amount))`.
+    fn remove_from_inventory(&mut self, player: &Self::Node, id: i32, amount: i32) -> Result<bool>;
+    /// `player.getAttribute(key, default)` of an Int.
+    fn attribute_int(&mut self, player: &Self::Node, key: &str, default: i32) -> Result<i32>;
+    /// `player.setAttribute(key, value)` of an Int.
+    fn set_attribute_int(&mut self, player: &Self::Node, key: &str, value: i32) -> Result<()>;
+    /// `player.incrementAttribute(key, amount)`.
+    fn increment_attribute(&mut self, player: &Self::Node, key: &str, amount: i32) -> Result<()>;
+    /// `player.removeAttribute(key)`.
+    fn remove_attribute(&mut self, player: &Self::Node, key: &str) -> Result<()>;
+    /// `achievementDiaryManager.finishTask(player, SEERS_VILLAGE, level,
+    /// index)`.
+    fn finish_seers_task(&mut self, player: &Self::Node, level: i32, index: i32) -> Result<()>;
+    /// `achievementDiaryManager.hasCompletedTask(SEERS_VILLAGE, level,
+    /// index)`.
+    fn seers_task_completed(&mut self, player: &Self::Node, level: i32, index: i32)
+    -> Result<bool>;
+    /// `end()`.
+    fn end(&mut self) -> Result<()>;
+}
+
+/// `CiderOnForesterDialogue`: its `init` field.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CiderDialogue {
+    pub init: bool,
+}
+impl Default for CiderDialogue {
+    fn default() -> Self {
+        Self { init: true }
+    }
+}
+impl CiderDialogue {
+    /// `handle(componentID, buttonID)`. Stage 2 does not exist: the second
+    /// line sets stage 3.
+    pub fn handle<H: DialogueHost + ?Sized>(&mut self, h: &mut H, player: &H::Node) -> Result<()> {
+        // `if(init) stage = 0; init = false`.
+        if self.init {
+            h.set_stage(0)?;
+        }
+        self.init = false;
+        match h.stage()? {
+            0 => {
+                let npc = h.npc_id()?;
+                h.send_npc_dialogue(player, npc, "Ah, a glass of cider, Don't mind if I do!")?;
+                h.set_stage(1)
+            }
+            1 => {
+                let npc = h.npc_id()?;
+                h.send_npc_dialogue(player, npc, "Thanks!")?;
+                // The removal's answer is not read.
+                h.remove_from_inventory(player, CIDER, 1)?;
+                h.set_stage(3)
+            }
+            3 => {
+                if h.attribute_int(player, SEERS_CIDER_PUB, -1)? == 4 {
+                    h.finish_seers_task(player, SEERS_EASY, SEERS_CIDER_TASK)?;
+                    h.remove_attribute(player, SEERS_CIDER_PUB)?;
+                    h.end()
+                } else if !(0..=3).contains(&h.attribute_int(player, SEERS_CIDER_PUB, -1)?)
+                    && !h.seers_task_completed(player, SEERS_EASY, SEERS_CIDER_TASK)?
+                {
+                    h.set_attribute_int(player, SEERS_CIDER_PUB, 1)?;
+                    h.end()
+                } else if (0..=3).contains(&h.attribute_int(player, SEERS_CIDER_PUB, -1)?) {
+                    h.increment_attribute(player, SEERS_CIDER_PUB, 1)?;
+                    h.end()
+                } else {
+                    h.end()
+                }
+            }
+            _ => Ok(()),
+        }
+    }
 }
 
 /// The use-with lambdas.
@@ -142,6 +248,8 @@ pub enum Interaction {
     StrayDog,
     /// FeedFaladorSheepdog's `onUseAnyWith(IntType.NPC, SHEEPDOG_2311)`.
     Sheepdog,
+    /// CiderOnForester's `onUseWith(IntType.NPC, CIDER_5763, *ids)`.
+    Cider,
 }
 impl crate::world::component_objects::NativeObject for Interaction {}
 impl Interaction {
@@ -154,25 +262,28 @@ impl Interaction {
             Self::Sheepdog => {
                 "content.global.handlers.item.withnpc.FeedFaladorSheepdog$defineListeners$1"
             }
+            Self::Cider => "content.global.handlers.item.withnpc.CiderOnForester$defineListeners$1",
         }
     }
 }
 
-/// The two listener classes, by their scanned names.
+/// The three listener classes, by their scanned names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
+    Cider,
     Sheepdog,
     StrayDog,
 }
 impl Class {
     pub fn name(self) -> &'static str {
         match self {
+            Self::Cider => "content.global.handlers.item.withnpc.CiderOnForester",
             Self::Sheepdog => "content.global.handlers.item.withnpc.FeedFaladorSheepdog",
             Self::StrayDog => "content.global.handlers.item.withnpc.FeedOnStrayDog",
         }
     }
     pub fn named(name: &str) -> Option<Self> {
-        [Self::Sheepdog, Self::StrayDog]
+        [Self::Cider, Self::Sheepdog, Self::StrayDog]
             .into_iter()
             .find(|c| c.name() == name)
     }
@@ -192,6 +303,13 @@ pub fn define(registry: &interactions::Registry, class: Class) -> Result<()> {
             used.extend(consumable_meats());
             registry
                 .add_use_arrays(npc, &used, &STRAY_DOGS, function)
+                .map_err(binding)
+        }
+        Class::Cider => {
+            let f = Interaction::Cider;
+            let function = interactions::Function::new(FunctionKind::UseWith, f.class(), f);
+            registry
+                .add_use_ids(npc, CIDER, &FORESTERS, function)
                 .map_err(binding)
         }
         Class::Sheepdog => {
@@ -215,7 +333,18 @@ pub fn run<H: Host + ?Sized>(
     match f {
         Interaction::StrayDog => stray_dog(h, player, used, with),
         Interaction::Sheepdog => sheepdog(h, player, used, with),
+        Interaction::Cider => cider(h, player, with),
     }
+}
+
+/// CiderOnForester's lambda: inside the pub the dialogue opens; anywhere
+/// else the answer is false.
+pub fn cider<H: Host + ?Sized>(h: &mut H, player: &H::Node, with: &H::Node) -> Result<bool> {
+    if h.in_borders(player, CIDER_PUB)? {
+        h.open_cider_dialogue(player, with)?;
+        return Ok(true);
+    }
+    Ok(false)
 }
 
 /// FeedOnStrayDog's lambda: the food goes (nothing happens when the removal
