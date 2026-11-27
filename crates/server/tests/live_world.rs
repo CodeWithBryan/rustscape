@@ -1778,37 +1778,54 @@ async fn effects_scenario(address: std::net::SocketAddr, saves: &std::path::Path
     .await;
     // A chicken can still be in someone else's fight ("Someone else is
     // already fighting this."): the cast that went out is the one that
-    // took its runes.
-    let mut struck = None;
-    for (index, tile) in nearest_npcs(&one, &CHICKENS).into_iter().take(6) {
-        eprintln!("godone: Claws of Guthix on chicken {index} at {tile:?}");
-        let hits_from = one.npc_hits.len();
-        one.send(spell_on_npc(192, 42, index)).await;
-        let end = Instant::now() + Duration::from_secs(8);
-        while Instant::now() < end && amount(&one, 0) == 100 {
+    // took its runes. A splash shows no hit mark, so a cast is repeated
+    // until one lands; the hit mark comes after adjustBattleState, where
+    // fireEffect runs.
+    let mut casts = 0;
+    let mut marked = false;
+    for _ in 0..4 {
+        let blood = amount(&one, 0);
+        let mut cast = None;
+        for (index, tile) in nearest_npcs(&one, &CHICKENS).into_iter().take(6) {
+            eprintln!("godone: Claws of Guthix on chicken {index} at {tile:?}");
+            let hits_from = one.npc_hits.len();
+            one.send(spell_on_npc(192, 42, index)).await;
+            let end = Instant::now() + Duration::from_secs(8);
+            while Instant::now() < end && amount(&one, 0) == blood {
+                one.pump(Duration::from_millis(200)).await;
+            }
+            if amount(&one, 0) < blood {
+                cast = Some((index, hits_from));
+                break;
+            }
+        }
+        let (index, hits_from) = cast.unwrap_or_else(|| {
+            panic!(
+                "a Claws of Guthix cast on a chicken (messages {:?})",
+                one.messages
+            )
+        });
+        casts += 1;
+        assert_eq!(
+            (amount(&one, 0), amount(&one, 1), amount(&one, 2)),
+            (100 - 2 * casts, 100 - casts, 100 - 4 * casts),
+            "Claws of Guthix's blood, fire and air runes"
+        );
+        let hit = |c: &Client| c.npc_hits[hits_from..].iter().any(|(i, _, _)| *i == index);
+        let end = Instant::now() + Duration::from_secs(6);
+        while Instant::now() < end && !hit(&one) {
             one.pump(Duration::from_millis(200)).await;
         }
-        if amount(&one, 0) < 100 {
-            struck = Some((index, hits_from));
+        if hit(&one) {
+            marked = true;
             break;
         }
     }
-    let (index, hits_from) = struck.unwrap_or_else(|| {
-        panic!(
-            "a Claws of Guthix cast on a chicken (messages {:?})",
-            one.messages
-        )
-    });
-    assert_eq!(
-        (amount(&one, 0), amount(&one, 1), amount(&one, 2)),
-        (98, 99, 96),
-        "Claws of Guthix's blood, fire and air runes"
+    assert!(
+        marked,
+        "a Claws of Guthix hit mark in {casts} casts (messages {:?})",
+        one.messages
     );
-    // The hit mark comes after adjustBattleState, where fireEffect runs.
-    one.until(Duration::from_secs(8), "Claws of Guthix's hit mark", |c| {
-        c.npc_hits[hits_from..].iter().any(|(i, _, _)| *i == index)
-    })
-    .await;
     one.until(
         Duration::from_secs(5),
         "Claws of Guthix's experience",
