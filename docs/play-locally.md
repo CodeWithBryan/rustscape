@@ -73,3 +73,12 @@ To start somewhere else, log out (or stop the server), then edit
 
 Edit the file only while that character is logged out: the server writes it
 at logout.
+
+## Testing without playing
+
+To check a change with no one at the keyboard, use the test-world kit
+([test-world.md](test-world.md)): `cargo xtask test-world start` boots a
+disposable world on a free port with its own saves, a script's `character`
+seeds a save (location, items, skills; not on Tutorial Island) before login,
+and the `agent_run` example drives it with the headless agent and prints
+what the server sent as JSON.
