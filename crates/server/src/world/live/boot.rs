@@ -532,6 +532,8 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_cow_milking()?;
     live.install_smelting()?;
     live.install_smithing()?;
+    // Ported content (world/content): its classes in the scan's order.
+    live.install_ported()?;
     Ok(Booted {
         live,
         configuration,

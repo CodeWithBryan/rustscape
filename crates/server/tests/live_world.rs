@@ -940,6 +940,7 @@ async fn drive(
                 "effects" => effects_scenario(address, saves).await,
                 "appearance" => appearance_scenario(address, saves).await,
                 "reconnect" => reconnect_scenario(address, saves).await,
+                "donie" => donie_scenario(address, saves).await,
                 other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
             }
         }
@@ -995,6 +996,7 @@ async fn drive(
     effects_scenario(address, saves).await;
     appearance_scenario(address, saves).await;
     reconnect_scenario(address, saves).await;
+    donie_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
 }
 
@@ -3720,6 +3722,108 @@ async fn bank_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
     one.send(close_interface()).await;
     one.pump(Duration::from_secs(1)).await;
     eprintln!("bankone: the banker's Bank option opened the bank");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A ported content dialogue (world/content, docs/donie-dialogue.md):
+/// `donieone` stands near Donie (2238, who wanders around 3219,3247 in
+/// Lumbridge). Talk-to goes through NPCTalkListener to
+/// `DialogueInterpreter.open(2238, npc)`, which finds the DonieDialogue
+/// prototype `Live::install_ported` registered at boot; its handle opens
+/// the DialogueLabeller conversation: the greeting (241), Continue, the
+/// three options, "How are you today?" spoken by the player (64), Continue,
+/// and Donie's two-line answer (242) naming the world (SERVER_NAME through
+/// `GameWorld.settings?.name`).
+async fn donie_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(&players, "traceone", "donieone", [3221, 3247, 0], &[]);
+    let (code, one) = Client::login(address, "donieone").await;
+    assert_eq!(code, 2, "donieone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "donieone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let donie = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 2238)
+            .map(|(i, _)| *i as i32)
+    };
+    one.until(Duration::from_secs(15), "Donie in view", |c| {
+        donie(c).is_some()
+    })
+    .await;
+    let index = donie(&one).unwrap();
+    let said = |c: &Client, from: usize, what: &str| {
+        c.texts[from..].iter().any(|(_, _, t)| t.contains(what))
+    };
+    let at = |c: &Client, from: usize, what: &str| {
+        c.texts[from..]
+            .iter()
+            .find(|(_, _, t)| t.contains(what))
+            .map(|(_, p, _)| *p)
+            .unwrap()
+    };
+
+    // Talk-to: the greeting, a one-line NPC dialogue.
+    let from = one.texts.len();
+    one.send(npc_option1(index)).await;
+    one.until(Duration::from_secs(20), "Donie's greeting", |c| {
+        said(c, from, "Hello there, can I help you?")
+    })
+    .await;
+    assert_eq!(
+        at(&one, from, "Hello there") >> 16,
+        241,
+        "the greeting is chatbox 241"
+    );
+    // Continue: the three options.
+    let from = one.texts.len();
+    one.send(continue_option(241, 5)).await;
+    one.until(Duration::from_secs(10), "Donie's options", |c| {
+        said(c, from, "How are you today?")
+    })
+    .await;
+    for option in ["Where am I?", "Your shoe lace is untied."] {
+        assert!(said(&one, from, option), "the option {option:?}");
+    }
+    let how = at(&one, from, "How are you today?");
+    // The chosen option: the player speaks it.
+    let from = one.texts.len();
+    one.send(continue_option(how >> 16, how & 0xffff)).await;
+    one.until(Duration::from_secs(10), "the player's question", |c| {
+        said(c, from, "How are you today?")
+    })
+    .await;
+    assert_eq!(
+        at(&one, from, "How are you today?") >> 16,
+        64,
+        "the player's line is chatbox 64"
+    );
+    // Continue: Donie's two-line answer, the world's name on its second line.
+    let from = one.texts.len();
+    one.send(continue_option(64, 5)).await;
+    one.until(Duration::from_secs(10), "Donie's answer", |c| {
+        said(c, from, "this fine day.")
+    })
+    .await;
+    assert!(said(
+        &one,
+        from,
+        "Aye, not too bad thank you. Lovely weather in"
+    ));
+    let line = one.texts[from..]
+        .iter()
+        .find(|(_, _, t)| t.contains("this fine day."))
+        .map(|(_, p, t)| (*p, t.clone()))
+        .unwrap();
+    assert_eq!(line.0 >> 16, 242, "a two-line NPC dialogue is chatbox 242");
+    eprintln!("donieone: Donie said {:?}", line.1);
+    one.send(close_interface()).await;
+    one.pump(Duration::from_secs(1)).await;
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }

@@ -64,6 +64,11 @@ def command_folders(command, main_rs):
         main_rs,
     )
     if not arm:
+        # xtask's fallback arm: `<topic>-oracle` runs oracle/<topic>/generate.py
+        # (content ports laid out by tools/content_scaffold.py).
+        topic = command[: -len("-oracle")] if command.endswith("-oracle") else None
+        if topic and (ROOT / "oracle" / topic / "generate.py").is_file():
+            return generator_folders(topic, set())
         return None
     module, args = arm.groups()
     if module == "profile_oracle":

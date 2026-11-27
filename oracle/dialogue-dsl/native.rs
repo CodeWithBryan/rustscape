@@ -112,13 +112,13 @@ enum Attr {
 }
 
 pub struct Model {
-    source: J,
+    pub source: J,
     events: Vec<J>,
     count: usize,
     fail_at: usize,
-    node: NodeHandle,
+    pub node: NodeHandle,
     _state: State,
-    interp: d::Interpreter<Model>,
+    pub interp: d::Interpreter<Model>,
     chat: usize,
     comps: Vec<Comp>,
     npcs: Vec<Npc>,
@@ -542,7 +542,7 @@ fn self_id(host: &mut Model, item: &usize) -> Result<i32> {
 }
 
 impl Model {
-    fn emit(&mut self, name: &str, args: Vec<J>) -> Result<()> {
+    pub fn emit(&mut self, name: &str, args: Vec<J>) -> Result<()> {
         let mut row = vec![json!(name)];
         row.extend(args);
         self.events.push(json!(row));
@@ -1121,7 +1121,13 @@ impl d::Host for Model {
     }
     fn server_name(&mut self) -> Result<Option<Text>> {
         self.emit("settings", vec![])?;
-        Ok(Some("2009scape".encode_utf16().collect()))
+        // GameWorld.getSettings().getName(); the content kit's world can have
+        // no settings or another name (oracle/content-kit/DialogueOps.java).
+        if self.source.get("settings") == Some(&J::Null) {
+            return Err(Error::Null);
+        }
+        let name = self.source["serverName"].as_str().unwrap_or("2009scape");
+        Ok(Some(name.encode_utf16().collect()))
     }
     fn log(&mut self, origin: &str, level: LogLevel, message: Text) -> Result<()> {
         let level = match level {
@@ -1342,14 +1348,28 @@ impl BankHost for Model {
 }
 
 /// Replays one case; a failure case returns only its swept action's snapshot.
+#[allow(dead_code)] // content replays (oracle/content-kit) use evaluate_with
 pub fn evaluate(row: &J) -> J {
+    evaluate_with(row, &mut |_, _| None)
+}
+
+/// An action a content replay adds (oracle/content-kit/dialogue.rs):
+/// `Some` when it handled the action, `None` for the corpus's own actions.
+pub type Extension<'a> = dyn FnMut(&mut Model, &J) -> Option<Result<J>> + 'a;
+
+/// [`evaluate`] with the actions of a content replay tried first.
+pub fn evaluate_with(row: &J, extension: &mut Extension<'_>) -> J {
     let mut model = Model::new(row);
     let mut out = Vec::new();
     for action in row["actions"].as_array().unwrap() {
         let mark = model.events.len();
         model.count = 0;
         model.fail_at = action["failAt"].as_u64().unwrap_or(0) as usize;
-        let (result, error) = match model.act(action) {
+        let acted = match extension(&mut model, action) {
+            Some(result) => result,
+            None => model.act(action),
+        };
+        let (result, error) = match acted {
             Ok(result) => (result, None),
             Err(error) => (J::Null, Some(error)),
         };

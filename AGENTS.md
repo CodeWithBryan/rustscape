@@ -664,6 +664,20 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   shield and godsword dialogues are not ported. The live binding is
   world/live/items/smithing.rs; after touching it run the live_world
   `usewith` scenario.
+- For ported content (world/content, live/ported) or the content kit
+  (tools/content_scaffold.py, oracle/content-kit, the dialogue-dsl native.rs
+  extension point), follow docs/content-porting.md: lay a port out with
+  `cargo xtask content-scaffold dialogue <source>`, fill its cases, port the
+  bodies, bind its Host live (refusals, never fabricated success). Each port
+  runs `cargo xtask <topic>-oracle --check` with Python/JDK 11 and `cargo
+  test -p rs09-server --test content_<module>`, plus dialogue_dsl, dialogue,
+  plain_dialogue and live_world; a kit change also reruns every content
+  oracle and dialogue-dsl-oracle (its 3,600 cases byte-identical). Content
+  registers in scan.initializable order through ClassScanner's branch for
+  its type (DIALOGUE: init()). Donie (docs/donie-dialogue.md): preserve the
+  399 cases (16 designed, 383 injected failures); keep the settings read on
+  every pass, the shoelace open's arguments evaluated every pass and the
+  call-site null check of the plugin's npc field before openDialogue.
 - For core.api (world/content_api: every ContentAPI.kt function, its
   ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
   SkillDialogueBuilder, and the other core/api files: ApiExtensions,

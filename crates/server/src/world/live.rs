@@ -53,6 +53,7 @@ pub mod magic;
 pub mod not_ported;
 pub mod npc_life;
 pub mod npcs;
+pub mod ported;
 pub mod region_zones;
 pub mod regions;
 pub mod round;
