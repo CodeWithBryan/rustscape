@@ -8,15 +8,20 @@ on:
 permissions:
   contents: read
 
+# No debug info: test binaries link faster and the build cache stays small.
+# Incremental artifacts are useless on a fresh runner.
+env:
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+
+# Two jobs run side by side: formatting, lints and the Rust tests in one, the
+# JVM oracles and interop checks in the other. Neither reads what the other
+# writes (the tests ran before every oracle when they were one job).
 jobs:
-  compatibility:
+  tests:
+    name: Rust formatting, lints and tests
     runs-on: windows-latest
-    # No debug info: test binaries link faster and the build cache stays small.
-    # Incremental artifacts are useless on a fresh runner.
-    env:
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -42,10 +47,36 @@ jobs:
       # Some tests read the pinned original sources, so fetch them first.
       - name: Fetch locked original sources
         run: cargo xtask bootstrap
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      # nextest runs the test binaries in parallel (cargo test runs them one at
+      # a time). It does not run doc tests; the workspace has none (its doc
+      # code blocks are all `text`). Add `cargo test --doc` if one appears.
       - name: Rust regression and differential tests
-        run: cargo test --locked --workspace
+        run: cargo nextest run --locked --workspace
       - name: Browser protocol and visual build checks
         run: cargo check --locked --target wasm32-unknown-unknown -p rs09-protocol -p rs09-client -p rs09-audio-worklet
+
+  oracles:
+    name: JVM oracles and interop
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      # rustfmt: several tools/port_*.py checks format the code they generate.
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.97.0 --profile minimal --component rustfmt
+          rustup default 1.97.0
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+      - name: Fetch locked original sources
+        run: cargo xtask bootstrap
       - name: Reproduce original JVM outputs and source hashes
         run: cargo xtask oracle --check
       - name: Reproduce original cache reader and extraction fixtures
