@@ -1748,7 +1748,7 @@
     "oracle/content-api/adapters_nodes.py": "690ab5cd3f07bd7be322121618d3b31c91e30878701fb832f71ae8bcee0a77ab",
     "oracle/content-api/cases.py": "508e9a0686bcff0896a29d7cb5878bc89d37db0dc104b8393e134207285bd057",
     "oracle/content-api/generate.py": "2117592cea5b55512b01061fc34757fe1947015858d4b0b2c8fbb2b436934c03",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/data/Quests.kt": "20cc6078a5456cb36433518a2b9f0e7a0a37588040b5e1e151bc6fe6bfe12554",
     "reference/server/Server/src/main/content/global/skill/construction/decoration/pohstorage/StorableFamily.kt": "542f0d78c496029f7748e949c3a1dc9f48f565cbbf9fdf74e976bc00efe1c504",

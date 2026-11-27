@@ -11,7 +11,7 @@
     "oracle/inventory-listener/generate.py": "5887495524d2b275df3c7484da3fdbb007d8e1ed0c494e9ed03c1be3ba3c1990",
     "oracle/inventory/InventoryOracle.java": "c7a98e3f76bd5711508b408d65121e41b62f03286c0ddd3fe7ad8e545227c5e9",
     "oracle/inventory/generate.py": "ec994522b517f1ec218ca792101df8816e0b11e297420f22116ef97a6aa9235b",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/scenery/adapters/core/cache/crypto/ISAACCipher.java": "290c851c9e96a9ef730a37fe901aaca74ad75d06316c10171e73d6c53d65eafd",
     "oracle/scenery/adapters/core/cache/misc/buffer/ByteBufferUtils.java": "d10e96e4e5d2aad74c4d9a7684f131cf61d2f179b5d8040f2dd0256e0dcd01a5",
     "reference/server/Server/src/main/content/global/skill/summoning/SummoningPouch.java": "96d8399675d529cbf0dd1b24b6002718cb6410e6b9afd7e73ac1f2ff09f2cc21",

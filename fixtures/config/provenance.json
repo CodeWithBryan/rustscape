@@ -14,7 +14,7 @@
     "oracle/config/Shutdown.kt": "1e46b0d3abb6132c9f0d594422c8e43063083eed1820ab28ca7b1055a9dae1e1",
     "oracle/config/artifacts.lock.json": "1b07c50100a2487e58f5ce8008dca23bec20ab6c69b7e6e6c6fa692d90f2116a",
     "oracle/config/generate.py": "609dfc57cae2b99e5fe5398188141483c266206327da5a91737f3e7e6b682288",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/pom.xml": "2b252137565127c0d93399c85e7fad291639f8f5549677c4e9596420c684b9c4",
     "reference/server/Server/src/main/core/Server.kt": "6f2de8e6ea2d73a8a1b447277f278cc66a6560f95428590efbc0e9dafa274278",

@@ -84,7 +84,7 @@
     "oracle/dynamic-regions/adapters.py": "a8c2f6574ec5c53c66a72ce1bbda8a291f6766a5827b829f292c375bc00a0430",
     "oracle/dynamic-regions/cases.py": "23f13076d6fdd23179c81c56a846230cf52508b9d33142d1743caa0edd13aa6e",
     "oracle/dynamic-regions/generate.py": "c68b3f5141604ca53addc27060e9c16468d8d0b8cb3f9250350a71bf6c6ff789",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
     "reference/server/Server/src/main/core/cache/def/impl/SceneryDefinition.java": "25116188ca884e6580e3c273a254ede57b811fddc68ef82be2b6a05f43374312",

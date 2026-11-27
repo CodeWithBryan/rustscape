@@ -15,7 +15,7 @@
     "oracle/auth/SystemManager.java": "5139abc21251e48543314f8da198b3842d064c2f9914b56fa0fb403483471e97",
     "oracle/auth/generate.py": "f3a49bebd54a7cd0d49f40810bb954d0dd6c44e6c44a0dffdcadc1ed665e927c",
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/ServerConstants.kt": "fa28de7ee08f82432b2565044a9473a0ac4c57cc29d28dddc2f4d4454b85f0bd",
     "reference/server/Server/src/main/core/auth/Auth.kt": "4a8b2e960a86806b2d708c41fc1b4aa296beb9d47424612e7e89aefba08992ea",

@@ -199,7 +199,7 @@
     "root": "reference/server/Server/src/main"
   },
   "sources": {
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/world-login/generate.py": "c1695e78eb6faaf5c5d32ebb61619c579f8dcbf8a3e188b9bb3502aa918326a6",
     "oracle/world-login/harness/oracle/worldtrace/LoginOrigins.java": "3210d02bb9921ab8396902dc6b214c7542891a4cc92626929a1a72e16637b557",

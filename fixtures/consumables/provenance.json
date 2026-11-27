@@ -116,7 +116,7 @@
     "oracle/consumables/adapters.py": "d7aee2aa6f895afb8f2c7589b0809a2258da21b8f77cf1485fbe4e8f29643395",
     "oracle/consumables/cases.py": "b734f0537181720c9d7c5def40406970655fd4cd574d82990dc575998ab06799",
     "oracle/consumables/generate.py": "279e4658c3448710a4968eaf4b39b568b3ca846b514b44a51115705a2734224a",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/data/consumables/Consumables.java": "ad06981de2f0ba2532d7557be27520b86b21eeba5ccf91e2fa4b2396fc25263a",
     "reference/server/Server/src/main/content/data/consumables/effects/AchievementEffect.java": "c424269d99a712d4f52d90a948900e8385e6321e259174f1f18496a657a45168",

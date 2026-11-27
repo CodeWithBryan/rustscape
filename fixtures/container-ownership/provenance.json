@@ -19,7 +19,7 @@
     "oracle/container-ownership/generate.py": "94931f54814f64ce038f99ef7b5c97bc50b04e51dda0181b9d83a1e5e678a266",
     "oracle/inventory/InventoryOracle.java": "c7a98e3f76bd5711508b408d65121e41b62f03286c0ddd3fe7ad8e545227c5e9",
     "oracle/inventory/generate.py": "ec994522b517f1ec218ca792101df8816e0b11e297420f22116ef97a6aa9235b",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
     "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",
     "reference/server/Server/src/main/core/game/container/Container.java": "8b167878e7dd251d2b61c341837cb735c965c4f29ab7dfaebde073998bb96153",

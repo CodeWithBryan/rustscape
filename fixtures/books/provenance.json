@@ -68,7 +68,7 @@
     "oracle/books/cases.py": "df2cb2f44f2c5d60ce0ff20c82ce13c67681a0e2c00c5a3c78e358e2ca508ff2",
     "oracle/books/generate.py": "4d054d82cf78f101a53196d3927509e6414b1f3f12313ce06a5ddb9906b994b0",
     "oracle/global-items2/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/global/handlers/iface/BookInterface.kt": "087ddf649ac1243ab3f436bc8279e79d750bd1c9d1ea159dfdd7f09617101aa2",
     "reference/server/Server/src/main/content/global/handlers/item/book/GeneralRuleBook.kt": "1a4213857a00a71923f9fb89897ee0a4d663337d86770cd118a0ad935bd8c821",

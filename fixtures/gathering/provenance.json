@@ -203,7 +203,7 @@
     "oracle/gathering/cases_woodcutting.py": "74fb18dbe9ecec252175eaf824192926ec575e3dcefa05019548f6a0b9563384",
     "oracle/gathering/corpus.py": "c793f793dc9a888fc12bb00202b496e6238d13c1ed4495afbfbd0e6dc94610a6",
     "oracle/gathering/generate.py": "1fb09f842e419225d4deadf195c8d639eeaa6536c59764d7ffaa76cc714f3e02",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/data/skill/SkillingTool.java": "4fff2a812152a19df2c016fe2d9e1e3aea74c51c7e51682c975b1b260885a7df",
     "reference/server/Server/src/main/content/global/handlers/item/equipment/fistofguthixgloves/FOGGlovesManager.kt": "c9a9afa4e8aaacfeeb90f99746262d8562f8dff641b103dc6f1b47427f13234a",

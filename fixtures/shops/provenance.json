@@ -94,7 +94,7 @@
     "fixtures/interfaces/interface_configs.json": "09f673928a0db8406569442cb7a9d9c00e40c07738a69d5fc8746d617ea9e70e",
     "fixtures/startup-loaders/shops.json": "65d115b397aa55f1eef0a6bd729f65c829d42695c032bc0aae95eb0dc5c6295d",
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/shops/Launcher.java": "736f42fe62b16c2608a219d4dded447c15ff83abd1ca994a7ee50d03f7d4fc3e",
     "oracle/shops/Support.java": "bb59b1f4a514bfe634f8d315cfa9c86e20ee99a82d6734d87ffa01f039810dd2",

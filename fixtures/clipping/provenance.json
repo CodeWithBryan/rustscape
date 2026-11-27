@@ -8,7 +8,7 @@
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/clipping/Support.java": "72483fc01837c66ac74f859c7fbd66aa8ef9d70a600670e1fb7e3c4db4b012ea",
     "oracle/clipping/generate.py": "c220c05c452576e433881aa25d823c6ebeb8943d22c48fd99d9a496b6f82411e",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/game/world/map/build/ChunkFlags.java": "cd9bf1d8334189d374e68fa210104c1ca288c582b28ab5d387bc340bc7436354",
     "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"

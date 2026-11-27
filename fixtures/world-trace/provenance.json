@@ -324,7 +324,7 @@
     "root": "reference/server/Server/src/main"
   },
   "sources": {
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/world-trace/artifacts.lock.json": "236c9fbda37fa74ad98a14f90037a306e64a7f45e42b5c8e5b3b59a1f6210748",
     "oracle/world-trace/generate.py": "32bef5533f2c8537124ec072560f06ed870c006d8415ea3b20e7c14bf880c287",

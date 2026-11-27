@@ -109,7 +109,7 @@
   "sources": {
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/npc-death/Support.java": "52c05264dff8e8d73c3d2738eea0e2e77c5714b530f16d33406bfc16bf2aeea0",
     "oracle/npc-death/adapters.py": "2d4620b9c2b8318256855374c5187bd6702a25eb9ee8b110512dc60f4bd6a1fd",

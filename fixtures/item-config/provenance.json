@@ -8,7 +8,7 @@
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/item-config/ItemConfigOracle.java": "70d4b36a70a6bef677925fa83d712c31722ea2ea0c0f7a8c39487a21bf0dfd84",
     "oracle/item-config/generate.py": "91120d8143ff91ef4339f6a7ea33b2c0c5cd5fadc53d8d90cd8666f93bc849d1",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/cache/def/Definition.java": "72741180147da9525ff61358ec520d8a50ad4de93191c4f7fa7e74f3f0869dc0",
     "reference/server/Server/src/main/core/cache/def/impl/ItemDefinition.java": "18011f8dc7b7daec0479c5531b56834ebc51890f516e1fbb28d8bff6fb549b36",

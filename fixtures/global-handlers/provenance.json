@@ -450,7 +450,7 @@
     "oracle/global-handlers/adapters.py": "87b808307b361813acf6f92ef006a4195c1838f1a6f77f95506d476476544907",
     "oracle/global-handlers/cases.py": "e74d7e5e7644339af9041e75c81c7fcf19d522ac223be31b3ae59c6acf1ad40d",
     "oracle/global-handlers/generate.py": "f24c2c54057420c33be18bc5e15b74e117037ade7fb8cd546ff0a35f33f92b42",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/global/handlers/iface/AutocastSelectPlugin.java": "d385ed3d6facfbecc0427abb0e2a4e8ed7277343ef171ba6c92e80ea88f37229",
     "reference/server/Server/src/main/content/global/handlers/iface/CharacterDesignInterface.java": "2b6bc2cfd25689033995fbb88028e95d89cdd746608d0b74c555a8945b1f709f",

@@ -172,7 +172,7 @@
     "oracle/content-timers/adapters.py": "7136b4a88311a158147fc7d9f11b843eac20e8e60c430c6196b6610d032e4ca1",
     "oracle/content-timers/cases.py": "372605ee58f9a4afbd7173fa08d146147329311bd2b452bef516bb954a3531b9",
     "oracle/content-timers/generate.py": "e3daa551b4ef4a0f7f15de8de76a8caea1606eb6383f6574ffacd23e26383ae9",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/global/ame/RandomEvents.kt": "c64dbbed8fa5722dd6658d0d96a5d2c4c4a26fe1a064a46fafd9ff4ac3ebe57b",
     "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",

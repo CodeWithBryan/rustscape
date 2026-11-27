@@ -48,7 +48,7 @@
     "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
     "oracle/helpers/Support.java": "dc28a8ffbbf2be773d592506d6ba6f45170b6ef9051423f4ec6860d0387f3b02",
     "oracle/helpers/generate.py": "c9bd79447503e7c07a56eef3ce1a0e93a1007f0812e8a3a943985ef05f8a17d6",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/global/skill/AttackListener.kt": "fcdf89ca95f59f9b8d4b1327b3582e14570d34ac031076f191b1541b65054979",
     "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",

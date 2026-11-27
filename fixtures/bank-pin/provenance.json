@@ -21,7 +21,7 @@
     "oracle/bank-pin/generate.py": "734de0eb881eca3071a0051d8477bf8707b3e5b5aea21e4fbee4ff75cab8a05b",
     "oracle/bank-pin/initial.lock.json": "18824d54bc952bf0b5b248c88bddc36e4614ff9addff4910778ed05eac862030",
     "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "reference/server/Server/src/main/content/global/handlers/iface/bank/BankPinInterface.java": "8cb6a50f74608e015dddb81a232476aaabddc81ad93e1f30f538e8d1566d2bf8",
     "reference/server/Server/src/main/core/game/component/CloseEvent.java": "72a0b410dfa627379ba08e6bbd16845073bfed2c8ab3931c6176dd8d5a5f6227",
     "reference/server/Server/src/main/core/game/node/entity/player/link/BankPinManager.java": "baa38cb099089b41e754b8366176a7a8057e35cc133216ff9bd6c4ddfb723dc7",

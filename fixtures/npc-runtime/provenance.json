@@ -60,7 +60,7 @@
   "sources": {
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/content-api/Boot.java": "d3e5415e0598d3eedc959f1484743d228e0cf385fc097a27f9b6ac1592b99596",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/npc-runtime/Support.java": "178a347e69c0fc44e97362f9ff7363b71763711c5c51bbe3e993db40d3f4e6f1",
     "oracle/npc-runtime/generate.py": "9bf12af8fd446742dd4a9ded24c16857117f807dcf6025f32ed1c24da1731c91",

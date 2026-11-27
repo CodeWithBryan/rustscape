@@ -84,7 +84,7 @@
     "oracle/drop-tables/adapters/core/tools/StringUtils.java": "3ee8324783d907a8924a91f1f1a44082637a1ca6649a5f20694c511bd5da38c3",
     "oracle/drop-tables/adapters/core/tools/SystemLogger.kt": "c9754006a7602c8ba40624c98126b043492e2b36f8a2366f7eefb388941aa29e",
     "oracle/drop-tables/generate.py": "68711e3f53e1163a7eee405ffd39a6aed9f64ab98120ae27f87e7fa0fcf04b55",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/data/tables/AllotmentSeedDropTable.java": "5bdef3c1649969931e4394e44b2015024c0118c364e8486b2ccbd12116469096",
     "reference/server/Server/src/main/content/data/tables/CELEMinorTable.java": "f2c95e50c38a91977de22c727be8c65dfd930b6a99e9357947daea9ef021cb12",

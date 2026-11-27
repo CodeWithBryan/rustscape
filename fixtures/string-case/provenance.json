@@ -6,7 +6,7 @@
   "scope": "JDK 11 String.toLowerCase(Locale.ROOT), actual ROOT BreakIterator boundaries, every code point singleton lower mapping and ConditionalSpecialCasing cased flag, complete ROOT word automaton/category observations via test-only reflection. Native strings exclude unpaired UTF-16. Other locales and general BreakIterator APIs are outside scope.",
   "sources": {
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/string-case/CaseOracle.java": "d4e0880bbfb96251f814f4741e4e4ecd74a5f4d697a7d8331ad5d1ddbdbca7ad",
     "oracle/string-case/generate.py": "35df456d795c83a062170bac6497e3e3ba1d20c0bae90f37f9a6b917f2f93a2b"
   }

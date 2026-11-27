@@ -313,7 +313,7 @@
     "oracle/command-sets/adapters.py": "4478ddd58bab7c0fb94324d64b6b1daa11d231633f275c99fb33a6ee08d8709a",
     "oracle/command-sets/cases.py": "6d2b4e11acb1ba0dad9b3650f3c5edb18456736b29ff4ea2bf4048562ecbc1e8",
     "oracle/command-sets/generate.py": "b33382892454cdd2c8cbef614f621bc2e548bd695c89fec5d20f33c69f835bc2",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/social/Launcher.java": "b6dedafacbd62143b2f86b400ce5c521bf23f968fa0b146763e411297a49acee",
     "oracle/social/tool/Rewrite.java": "be0c6298f56a1343adc06db82b88bba06eb168b68e5c653e3945fa0c7245d475",

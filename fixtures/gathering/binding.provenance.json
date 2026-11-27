@@ -199,7 +199,7 @@
     "oracle/gathering/cases_binding.py": "4244a48fe7cab6109d7cec266ee14cf0d1f27e23c58bbd29f9cff82710524c77",
     "oracle/gathering/corpus.py": "c793f793dc9a888fc12bb00202b496e6238d13c1ed4495afbfbd0e6dc94610a6",
     "oracle/gathering/generate.py": "1fb09f842e419225d4deadf195c8d639eeaa6536c59764d7ffaa76cc714f3e02",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "reference/server/Server/src/main/content/data/skill/SkillingTool.java": "4fff2a812152a19df2c016fe2d9e1e3aea74c51c7e51682c975b1b260885a7df",
     "reference/server/Server/src/main/content/global/handlers/item/equipment/brawling_gloves/BrawlingGloves.java": "e4228ffc11782973bf743b5e9bc3e2e96272b8955afeba3d373ee01e7d43ba42",
     "reference/server/Server/src/main/content/global/skill/fishing/Fish.kt": "8e0b546348a23a96d3cb87c098d84fe7ccd921de209b7b9bedee3b062688b184",

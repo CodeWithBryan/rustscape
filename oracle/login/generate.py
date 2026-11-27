@@ -29,6 +29,12 @@ def read(path):
 def run(args):
     if JAVA_HOME is not None and args[0] in ["java", "javac"]:
         args = [JAVA_HOME / "bin" / (args[0] + (".exe" if os.name == "nt" else "")), *args[1:]]
+    # The Kotlin compiler's JVM stops at the C1 JIT: each compile is short, so
+    # it is mostly start-up, and C2 never pays off (4.4 s to 2.4 s measured).
+    # The classes it writes are byte for byte the same; only this compiler
+    # process is affected, never an oracle's own JVM.
+    if "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler" in map(str, args):
+        args = [args[0], "-XX:TieredStopAtLevel=1", *args[1:]]
     result = subprocess.run(list(map(str, args)), cwd=ROOT, capture_output=True, check=False)
     if result.returncode:
         raise RuntimeError(result.stdout.decode(errors="replace") + result.stderr.decode(errors="replace"))

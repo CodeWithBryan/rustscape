@@ -31,7 +31,7 @@
     "oracle/inventory-listener/generate.py": "5887495524d2b275df3c7484da3fdbb007d8e1ed0c494e9ed03c1be3ba3c1990",
     "oracle/inventory/InventoryOracle.java": "c7a98e3f76bd5711508b408d65121e41b62f03286c0ddd3fe7ad8e545227c5e9",
     "oracle/inventory/generate.py": "ec994522b517f1ec218ca792101df8816e0b11e297420f22116ef97a6aa9235b",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/player-appearance/AppearanceOracle.java": "33703dbf3092cbaa5900ae7522f42dd9a4fd68166f3decdd8cb90225fe529115",
     "oracle/player-appearance/Player.java": "e48ddc9d74935c403db79379fd49fc144ef656d3d8c9b7055c3d12dd1a8c7100",

@@ -17,7 +17,7 @@
     "oracle/doors/adapters/org/jetbrains/annotations/NotNull.java": "3055e8f32cc2cc38728cd541a8ca9380bbc020584b1661629e3e01b287197e8d",
     "oracle/landscape/Support.java": "7d677eb6490d82852b73456111698055c5aa6a367b3ad82eb1f2242dc8009a20",
     "oracle/landscape/generate.py": "67ccc112f2398cc8ecef261efc69535e3992cb5b9b0a2010149cf71e3222f75a",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/core/cache/misc/buffer/ByteBufferUtils.kt": "299f5638ca2e1a2550ddfbaea137a5704a1a7c4a27018853cd8fbea598f9b745",
     "reference/server/Server/src/main/core/game/node/scenery/Constructed.java": "ff1fe253c5e8d8b22da7a97bf5f9aa4ca4b130ea3c637039043f0340c5548b24",

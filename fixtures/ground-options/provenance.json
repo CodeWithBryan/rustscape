@@ -9,7 +9,7 @@
     "oracle/ground-options/Support.java": "d595bfe2e5ead2a3e5ea9c51bccd84209922fe4342c7cc1336968ff0dda0c6cb",
     "oracle/ground-options/generate.py": "1bbfdf81e68cfe8ae0ddd7400831807915ba275d06b0d85b3c729fd629a512b7",
     "oracle/legacy-interaction/generate.py": "9ae180071d00c686f76bf9d8e1eeb0c37552bde3250cc05f92968ccf13d59fa1",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "reference/server/Server/src/main/content/global/handlers/item/PickupPlugin.java": "118422ba32f484473f19d411b74aa7e00ae81afe4cb4d8ca7b327a570f50d71b",
     "reference/server/Server/src/main/core/api/utils/Vector.kt": "922b70f7d4acad5fbfaf99b9b86ad10ff9b71d5bc9fce2519dcf830631237c68",

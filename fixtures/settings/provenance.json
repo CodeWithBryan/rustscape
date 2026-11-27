@@ -5,7 +5,7 @@
   "scope": "Complete unchanged Settings.java. Player getters/properties, captured container/item/definition identities, config lookup, packet dispatch, IO buffer sink and synchronous callback/failure hooks are explicit adapters. Not complete Player, item/content integration, profile lifecycle or live settings proof.",
   "sources": {
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/settings/Support.java": "3a4debe0a302d109e2460f96b68b43e9cb500e2362ffdb02842ab01ff5422e11",
     "oracle/settings/generate.py": "82c67f5b6dd49e0135545726f4269c9983e70bbf02f4b4ed5f4fd91f2168a8db",
     "reference/server/Server/src/main/core/game/node/entity/player/link/Settings.java": "77c02e60c17ef7f9a458a920880491370b3190443fabba3cb2c739bf5fdf7e5a",

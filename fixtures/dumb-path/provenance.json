@@ -8,7 +8,7 @@
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
     "oracle/dumb-path/Support.java": "9db2be9852a207d2648e94b17f08d7a262c922db8e80ed82a423b16085e34ba8",
     "oracle/dumb-path/generate.py": "c4f5cde21f6f6317d1934692fa02a0bee8b9f7e184ccdfb8190acaf7581b0317",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/pathfinding/Support.java": "545d5c5a2b5f1e25f5bc3207df186fc72b982026f0366ab221347387f85feee7",
     "oracle/pathfinding/generate.py": "55d6d2b0c4de93a4be99fc49a5c0f427ccf365e3ba17e3935fecb4c03be7e654",

@@ -234,7 +234,7 @@
     "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
     "oracle/combat-pulse/adapters.txt": "feb289e19be452703786cbcbb73b294e42c6925f5c0a754e7df37f44a846b62e",
     "oracle/combat-swing/adapters.txt": "2bd2e6e0446de9c92b9225958bbc6e2b3e66713b7565ca61037d675ef92c60a8",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
     "oracle/special-attacks/Support.java": "7e218f414a63996b75a74dfd534cc4f2ef8887be15edab0cc96db10aafec92fe",
     "oracle/special-attacks/adapters.txt": "f634df89df570eedf1599eb7609bde039e516ea33932e1c9fbad39585caa0281",

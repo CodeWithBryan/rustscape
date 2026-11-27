@@ -14,7 +14,7 @@
     "oracle/action-locks/generate.py": "d75b02a28c2ca7f319b304b8a61aa690ffb7cfaa456adb5436cd1bab3762ec38",
     "oracle/action-locks/initial.lock.json": "cb6c656577f4a85638db7df64e5fea221882f6cc3fce04fa2f77d71a12f4d805",
     "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
-    "oracle/login/generate.py": "df4afaeb694984d4a01c26d560344d530ff90ded373862695ba3d54b533113eb",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
     "reference/server/Server/src/main/core/game/node/entity/lock/ActionLocks.java": "0f7fa7d9371d83dd14ac892b6ddf1f7d489dfbd2b23f0abbb78ada91474f04d3",
     "reference/server/Server/src/main/core/game/node/entity/lock/Lock.java": "bf22391d7f7c069cc9cc8c32eabeb57ae15fc0487b852fe351b8170fd57e81a9",
     "reference/server/Server/src/main/core/game/node/entity/lock/LockElapse.java": "b3a098ea249c7a1dba9447f7b1734b7d3144c87bb1c225e500aae509218ed27a",
