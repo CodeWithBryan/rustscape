@@ -28,7 +28,8 @@ straight to the build check and start-up:
    `enable_bots = false`. It calls `world_template` of
    `oracle/world-trace/generate.py` through `tools/play_world.py`, writing to
    its own folder; git fetches the `Server/data` blobs of the pinned commit
-   into the partial clone. `--force` rewrites an existing folder.
+   into the partial clone. `--force` rewrites an existing folder. Every run
+   sets the folder's `new_player_location` (see below).
 4. `cargo build --release -p rs09-server -p rs09-client` (`-SkipBuild` skips
    it).
 5. The server, in the background, with its log in `runs/play/server.log`:
@@ -41,7 +42,9 @@ Options: `-Port N` (when 43594 is taken), `-Sound` (start with audio on;
 by default the client gets `--mute`, which sets music, effects and ambient
 sound to volume 0 and leaves the saved volumes as they are), `-KeepServer`
 (leave the server running after the client closes), `-ServerOnly` or
-`-NoClient` (no client window; Ctrl+C stops the server), `-Data`, `-Saves`, `-Cache`, `-Python PATH`.
+`-NoClient` (no client window; Ctrl+C stops the server), `-TutorialStart`
+(new characters start on Tutorial Island, as shipped), `-Data`, `-Saves`,
+`-Cache`, `-Python PATH`.
 
 The region keys matter: without them the client streams the title screen's
 regions with no key and prints `JS5 length exceeds limit` and `negative JS5
@@ -57,19 +60,18 @@ other players, NPCs, combat, prayer, combat magic and three teleports, ground
 items, equipment, banking at bankers, shops, trading, eating and drinking run;
 quests and most content do not.
 
-**New characters start on Tutorial Island** (`new_player_location =
-"3094,3107,0"`). The tutorial is not ported, so there is no way off the
-island in game, and until the tutorial is complete the original caps each
-skill's experience at 175.
+**New characters start in Lumbridge** (`3222,3218,0`, the shipped
+`home_location`). The shipped configuration starts them on Tutorial Island
+(`new_player_location = "3094,3107,0"`), but the tutorial is not ported, so
+there is no way off the island in game. The launcher's world folder sets the
+original's own `new_player_location` setting to Lumbridge instead; the
+native login places a brand-new character there (`ServerConstants.START_LOCATION`),
+and no tutorial content is installed to send it back. `-TutorialStart` keeps
+the shipped start. Characters that already exist keep their saved location.
 
-To start somewhere else, log out (or stop the server), then edit
-`runs/play/saves/players/<name>.json`:
-
-- `core_data.location`: `"3222,3218,0"` is Lumbridge.
-- To count the tutorial as done (the original's lobby screen then shows at
-  login, and the experience cap no longer applies), add to the top-level
-  `attributes` list (create the list if it is missing):
-  `{"key": "tutorial:complete", "type": "bool", "value": true}`.
-
-Edit the file only while that character is logged out: the server writes it
-at logout.
+The character has still not completed the tutorial: the original caps each
+skill's experience at 175 until the save's attributes hold
+`{"key": "tutorial:complete", "type": "bool", "value": true}` (it also shows
+the lobby screen at login). Add that to the top-level `attributes` list of
+`runs/play/saves/players/<name>.json` only while the character is logged out;
+the server writes the file at logout.

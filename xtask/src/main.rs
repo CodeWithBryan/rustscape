@@ -336,7 +336,7 @@ fn main() -> Result<()> {
         Some("bots-oracle") => profile_oracle::generate(root, &args, "bots")?,
         Some("scene-audit") => scene_oracle::audit(root, &args)?,
         _ => println!(
-            "cargo xtask <bootstrap | oracle [--check] | cache-oracle [--check] | cache-fetch | play-world [--output DIR] [--force] [--python PATH] | cache-audit [--jvm] | network-oracle [--check] | input-oracle [--check] | headless-lifecycle-oracle [--check] | network-interop | network-smoke [--clients N] [--output DIR] | login-oracle [--check] | login-interop | auth-oracle [--check] | auth-interop | sql-oracle [--check] | config-oracle [--check] | player-oracle [--check] | saved-data-oracle [--check] | attributes-oracle [--check] | ironman-oracle [--check] | bank-oracle [--check] | bank-interface-oracle [--check] | input-prompt-oracle [--check] | plain-dialogue-oracle [--check] | dialogue-oracle [--check] | interaction-listeners-oracle [--check] | variables-oracle [--check] | bank-pin-oracle [--check] | skills-oracle [--check] | skills-bench | item-oracle [--check] | item-audit | item-samples | item-config-oracle [--check] | item-config-audit [--output DIR] | inventory-oracle [--check] | container-ownership-oracle [--check] | container-listeners-oracle [--check] | owned-player-oracle [--check] | equipment-oracle [--check] | player-appearance-oracle [--check] | appearance-writer-oracle [--check] | inventory-listener-oracle [--check] | player-inventory-oracle [--check] | timers-oracle [--check] | core-profile-oracle [--check] | player-save-oracle [--check] | timer-registry-oracle [--check] | string-case-oracle [--check] | pulses-oracle [--check] | scripts-oracle [--check] | script-runtime-oracle [--check] | action-locks-oracle [--check] | projectile-oracle [--check] | combat-swing-oracle [--check] | combat-pulse-oracle [--check] | game-packets-oracle [--check] | doors-oracle [--check] | scenery-oracle [--check] | clipping-oracle [--check] | chunk-oracle [--check] | landscape-oracle [--check] | mapscape-oracle [--check] | scenery-definition-oracle [--check] | scenery-definition-samples | scenery-definition-audit | scenery-node-oracle [--check] | region-load-oracle [--check] | region-queries-oracle [--check] | update-masks-oracle [--check] | npc-masks-oracle [--check] | prepared-masks-oracle [--check] | animator-oracle [--check] | animator-audit [--output DIR] | scene-oracle [--check] | scene-audit [--output DIR] | player-render-oracle [--check] | appearance-oracle [--check] | walking-oracle [--check] | pathfinding-oracle [--check] | movement-oracle [--check] | path-dispatch-oracle [--check] | navigation-oracle [--check] | walk-request-oracle [--check] | scenery-action-oracle [--check] | legacy-interaction-oracle [--check] | interaction-options-oracle [--check] | ground-action-oracle [--check] | ground-options-oracle [--check] | scenery-options-oracle [--check] | ground-target-oracle [--check] | item-option-registry-oracle [--check] | interaction-runtime-oracle [--check] | world-pulses-oracle [--check] | map-chunk-render-oracle [--check] | chunk-sync-oracle [--check] | clear-chunk-oracle [--check] | pickup-oracle [--check] | ground-items-oracle [--check] | ground-manager-oracle [--check] | ground-spawn-oracle [--check] | ground-spawn-loader-oracle [--check] | tick-oracle [--check] | player-walk-oracle [--check] | world-update-oracle [--check] | npc-render-oracle [--check] | npc-definition-oracle [--check] | npc-definition-audit | npc-init-oracle [--check] | entity-regions-oracle [--check] | interfaces-oracle [--check] | settings-oracle [--check] | npc-tick-oracle [--check] | npc-spawns-oracle [--check] | drop-tables-oracle [--check] | world-trace-oracle [--check] | startup-loaders-oracle [--check] | startup-draws-oracle [--check] | canonical-player-oracle [--check] | world-login-oracle [--check] | npc-death-oracle [--check] | player-death-oracle [--check] | npc-behaviour-oracle [--check] | zones-oracle [--check] | repository-oracle [--check] | social-oracle [--check] | dumb-path-oracle [--check] | trade-oracle [--check] | shops-oracle [--check] | prayer-oracle [--check] | teleport-oracle [--check] | wilderness-oracle [--check] | spells-oracle [--check] | content-timers-oracle [--check] | player-tabs-oracle [--check] | grand-exchange-oracle [--check] | player-managers-oracle [--check] | packet-handlers-oracle [--check] | commands-oracle [--check] | command-sets-oracle [--check] | global-handlers-oracle [--check] | global-items-oracle [--check] | global-items2-oracle [--check] | consumables-oracle [--check] | force-movement-oracle [--check] | npc-classes-oracle [--check] | dialogue-dsl-oracle [--check] | special-attacks-oracle [--check] | dragonfire-oracle [--check] | equipment-registers-oracle [--check] | wield-requirements-oracle [--check] | dynamic-regions-oracle [--check] | activities-oracle [--check] | books-oracle [--check] | familiars-oracle [--check] | content-api-oracle [--check] | bots-oracle [--check] | projectiles-oracle [--check] | npc-runtime-oracle [--check] | helpers-oracle [--check] | attack-chase-oracle [--check] | api-utils-oracle [--check] | inventory | bench>\nPython-based oracle commands accept --python PATH and --java-home PATH."
+            "cargo xtask <bootstrap | oracle [--check] | cache-oracle [--check] | cache-fetch | play-world [--output DIR] [--force] [--tutorial-start] [--python PATH] | cache-audit [--jvm] | network-oracle [--check] | input-oracle [--check] | headless-lifecycle-oracle [--check] | network-interop | network-smoke [--clients N] [--output DIR] | login-oracle [--check] | login-interop | auth-oracle [--check] | auth-interop | sql-oracle [--check] | config-oracle [--check] | player-oracle [--check] | saved-data-oracle [--check] | attributes-oracle [--check] | ironman-oracle [--check] | bank-oracle [--check] | bank-interface-oracle [--check] | input-prompt-oracle [--check] | plain-dialogue-oracle [--check] | dialogue-oracle [--check] | interaction-listeners-oracle [--check] | variables-oracle [--check] | bank-pin-oracle [--check] | skills-oracle [--check] | skills-bench | item-oracle [--check] | item-audit | item-samples | item-config-oracle [--check] | item-config-audit [--output DIR] | inventory-oracle [--check] | container-ownership-oracle [--check] | container-listeners-oracle [--check] | owned-player-oracle [--check] | equipment-oracle [--check] | player-appearance-oracle [--check] | appearance-writer-oracle [--check] | inventory-listener-oracle [--check] | player-inventory-oracle [--check] | timers-oracle [--check] | core-profile-oracle [--check] | player-save-oracle [--check] | timer-registry-oracle [--check] | string-case-oracle [--check] | pulses-oracle [--check] | scripts-oracle [--check] | script-runtime-oracle [--check] | action-locks-oracle [--check] | projectile-oracle [--check] | combat-swing-oracle [--check] | combat-pulse-oracle [--check] | game-packets-oracle [--check] | doors-oracle [--check] | scenery-oracle [--check] | clipping-oracle [--check] | chunk-oracle [--check] | landscape-oracle [--check] | mapscape-oracle [--check] | scenery-definition-oracle [--check] | scenery-definition-samples | scenery-definition-audit | scenery-node-oracle [--check] | region-load-oracle [--check] | region-queries-oracle [--check] | update-masks-oracle [--check] | npc-masks-oracle [--check] | prepared-masks-oracle [--check] | animator-oracle [--check] | animator-audit [--output DIR] | scene-oracle [--check] | scene-audit [--output DIR] | player-render-oracle [--check] | appearance-oracle [--check] | walking-oracle [--check] | pathfinding-oracle [--check] | movement-oracle [--check] | path-dispatch-oracle [--check] | navigation-oracle [--check] | walk-request-oracle [--check] | scenery-action-oracle [--check] | legacy-interaction-oracle [--check] | interaction-options-oracle [--check] | ground-action-oracle [--check] | ground-options-oracle [--check] | scenery-options-oracle [--check] | ground-target-oracle [--check] | item-option-registry-oracle [--check] | interaction-runtime-oracle [--check] | world-pulses-oracle [--check] | map-chunk-render-oracle [--check] | chunk-sync-oracle [--check] | clear-chunk-oracle [--check] | pickup-oracle [--check] | ground-items-oracle [--check] | ground-manager-oracle [--check] | ground-spawn-oracle [--check] | ground-spawn-loader-oracle [--check] | tick-oracle [--check] | player-walk-oracle [--check] | world-update-oracle [--check] | npc-render-oracle [--check] | npc-definition-oracle [--check] | npc-definition-audit | npc-init-oracle [--check] | entity-regions-oracle [--check] | interfaces-oracle [--check] | settings-oracle [--check] | npc-tick-oracle [--check] | npc-spawns-oracle [--check] | drop-tables-oracle [--check] | world-trace-oracle [--check] | startup-loaders-oracle [--check] | startup-draws-oracle [--check] | canonical-player-oracle [--check] | world-login-oracle [--check] | npc-death-oracle [--check] | player-death-oracle [--check] | npc-behaviour-oracle [--check] | zones-oracle [--check] | repository-oracle [--check] | social-oracle [--check] | dumb-path-oracle [--check] | trade-oracle [--check] | shops-oracle [--check] | prayer-oracle [--check] | teleport-oracle [--check] | wilderness-oracle [--check] | spells-oracle [--check] | content-timers-oracle [--check] | player-tabs-oracle [--check] | grand-exchange-oracle [--check] | player-managers-oracle [--check] | packet-handlers-oracle [--check] | commands-oracle [--check] | command-sets-oracle [--check] | global-handlers-oracle [--check] | global-items-oracle [--check] | global-items2-oracle [--check] | consumables-oracle [--check] | force-movement-oracle [--check] | npc-classes-oracle [--check] | dialogue-dsl-oracle [--check] | special-attacks-oracle [--check] | dragonfire-oracle [--check] | equipment-registers-oracle [--check] | wield-requirements-oracle [--check] | dynamic-regions-oracle [--check] | activities-oracle [--check] | books-oracle [--check] | familiars-oracle [--check] | content-api-oracle [--check] | bots-oracle [--check] | projectiles-oracle [--check] | npc-runtime-oracle [--check] | helpers-oracle [--check] | attack-chase-oracle [--check] | api-utils-oracle [--check] | inventory | bench>\nPython-based oracle commands accept --python PATH and --java-home PATH."
         ),
     }
     Ok(())
@@ -357,20 +357,24 @@ fn oracles(root: &Path, args: &[String]) -> Result<()> {
     Ok(())
 }
 
-/// `play-world [--output DIR] [--force] [--python PATH]`: the world folder
-/// `rs09-server --world` boots from (default runs/play/world-data), written by
-/// the world-trace oracle's world_template through tools/play_world.py. An
-/// existing folder is kept unless --force. See docs/play-locally.md.
+/// `play-world [--output DIR] [--force] [--tutorial-start] [--python PATH]`:
+/// the world folder `rs09-server --world` boots from (default
+/// runs/play/world-data), written by the world-trace oracle's world_template
+/// through tools/play_world.py. An existing folder is kept unless --force.
+/// Every run sets its `new_player_location` (Lumbridge unless
+/// --tutorial-start). See docs/play-locally.md.
 fn play_world(root: &Path, args: &[String]) -> Result<()> {
     let mut python = std::env::var_os("RS09_PYTHON").unwrap_or_else(|| "python".into());
     let mut output = root.join("runs/play/world-data");
     let mut force = false;
+    let mut tutorial_start = false;
     let mut options = args[1..].iter();
     while let Some(option) = options.next() {
         match option.as_str() {
             "--output" => output = options.next().ok_or("missing --output DIR")?.into(),
             "--python" => python = options.next().ok_or("missing Python executable")?.into(),
             "--force" => force = true,
+            "--tutorial-start" => tutorial_start = true,
             other => return Err(format!("unknown play-world option {other}").into()),
         }
     }
@@ -387,17 +391,55 @@ fn play_world(root: &Path, args: &[String]) -> Result<()> {
             "World folder {} exists; --force rewrites it.",
             output.display()
         );
-        return Ok(());
+    } else {
+        verify_reference(root)?;
+        let status = Command::new(python)
+            .current_dir(root)
+            .arg(root.join("tools/play_world.py"))
+            .arg(&output)
+            .status()?;
+        if !status.success() {
+            return Err(format!("tools/play_world.py failed ({status})").into());
+        }
     }
-    verify_reference(root)?;
-    let status = Command::new(python)
-        .current_dir(root)
-        .arg(root.join("tools/play_world.py"))
-        .arg(&output)
-        .status()?;
-    if !status.success() {
-        return Err(format!("tools/play_world.py failed ({status})").into());
+    set_new_player_location(&output, tutorial_start)
+}
+
+/// The shipped configuration's `new_player_location` (Tutorial Island) and
+/// its `home_location` (Lumbridge).
+const TUTORIAL_ISLAND: &str = "3094,3107,0";
+const LUMBRIDGE: &str = "3222,3218,0";
+
+/// Local play starts new characters in Lumbridge, through the original's own
+/// `new_player_location` setting (`ServerConstants.START_LOCATION`), unless
+/// `--tutorial-start` keeps the shipped Tutorial Island start. The tutorial
+/// is not ported, so there is no way off the island in game.
+fn set_new_player_location(world: &Path, tutorial_start: bool) -> Result<()> {
+    let path = world.join("worldprops/default.conf");
+    let text = fs::read_to_string(&path)?;
+    let location = if tutorial_start {
+        TUTORIAL_ISLAND
+    } else {
+        LUMBRIDGE
+    };
+    let mut count = 0;
+    let lines: Vec<String> = text
+        .split_inclusive('\n')
+        .map(|line| {
+            if line.starts_with("new_player_location ") {
+                count += 1;
+                let end = if line.ends_with('\n') { "\n" } else { "" };
+                format!("new_player_location = \"{location}\"{end}")
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect();
+    if count != 1 {
+        return Err(format!("{}: expected one new_player_location line", path.display()).into());
     }
+    fs::write(&path, lines.concat())?;
+    println!("New characters start at {location} (new_player_location).");
     Ok(())
 }
 

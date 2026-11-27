@@ -7,6 +7,7 @@ Each step is skipped when its result already exists:
   1. cargo xtask bootstrap     pinned reference/server and reference/client (partial clones)
   2. cargo xtask cache-fetch   pinned cache into assets/cache
   3. cargo xtask play-world    world folder (pinned Server/data + worldprops/default.conf)
+                               new characters start in Lumbridge (-TutorialStart: Tutorial Island)
   4. cargo build --release     rs09-server and rs09-client
 Then it starts the server in the background (log in runs/play/server.log), waits for its
 port, and runs the client in the foreground with audio off (--mute; -Sound keeps it on).
@@ -26,7 +27,8 @@ param(
     [switch]$SkipBuild,
     [Alias("NoClient")][switch]$ServerOnly,
     [switch]$KeepServer,
-    [switch]$Sound
+    [switch]$Sound,
+    [switch]$TutorialStart
 )
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
@@ -59,6 +61,7 @@ if (-not (Test-Path (Join-Path $Cache "main_file_cache.dat2"))) {
     Invoke-Step "Pinned cache (cargo xtask cache-fetch)" { cargo xtask cache-fetch }
 }
 $worldArgs = @("xtask", "play-world", "--output", $Data)
+if ($TutorialStart) { $worldArgs += "--tutorial-start" }
 if ($Python) { $worldArgs += @("--python", $Python) }
 Invoke-Step "World folder (cargo xtask play-world)" { cargo @worldArgs }
 if (-not $SkipBuild) {
