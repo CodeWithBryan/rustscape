@@ -22,6 +22,7 @@ apply to the libraries a port runs on.
 | The corpus and its provenance (source hashes, counts, scope) | `fixtures/<topic>/` | the generator |
 | The native module: the classes and a `Host` trait of the calls they make outside their library | `crates/server/src/world/content/<area>/<module>.rs` | scaffold, then porter |
 | The replay test: the corpus against the native module over a recording host | `crates/server/tests/content_<module>.rs` | scaffold |
+| The recording host's answers to the port's services (one shared file: every content test needs every port's answers, since `content::Host` is their union) | `oracle/content-kit/hosts.rs` | scaffold (a block recording each call), then porter |
 | Registration: the module, its Host bound, its class name in the plugin table | `world/content/mod.rs` | scaffold |
 | The live world's answers to the port's Host | `crates/server/src/world/live/ported/<module>.rs` | scaffold (refusals), then porter |
 | CI: `cargo xtask <topic>-oracle --check` | `oracle/ci.toml` | scaffold |
@@ -54,7 +55,8 @@ and `tools/run_oracles.py` finds its runs/ folder from the generator's `RUN` lin
    or on `content::Services` when other content will need it too (then add its pattern to the scaffold's
    `SHARED_SERVICES`).
 5. **Replay.** `cargo test -p rs09-server --test content_<module>`. The recording host answers the port's services
-   in the test file exactly as the oracle's stand-ins do (same recorded name, same values from the case). The first
+   in `oracle/content-kit/hosts.rs` exactly as the oracle's stand-ins do (same recorded name, same values from the
+   case). The first
    difference is printed as a JSON path into the snapshot (`/1/chat: native=1, original=0`).
 6. **Bind it live.** Fill `live/ported/<module>.rs` with the live world's answers. A service that needs a system
    without a port refuses with a named error and is listed in docs/live-world.md; never answer with a fabricated

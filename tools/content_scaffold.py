@@ -13,6 +13,8 @@ first class's name in kebab case) and module M (snake case) in area A (the sourc
                                     and a `Host` trait listing the outside calls the scaffold found in the source
     crates/server/tests/content_M.rs
                                     the replay test (oracle/content-kit/dialogue.rs over the recording host)
+    oracle/content-kit/hosts.rs     (appended) the recording host's answers to the port's services, one block per
+                                    port in one file, since every content test needs every port's answers
     crates/server/src/world/live/ported/M.rs
                                     the live world's answers to the port's Host (each refuses until written)
     docs/T.md                       the port's document, with the scope and the services to fill in
@@ -308,34 +310,29 @@ def cases_py(topic, plugin_classes, ids, prefix):
     return '\n'.join(lines) + '\n'
 
 
-def test_rs(topic, module, area, calls):
-    impls = []
+def recording_host(module, area, calls):
+    """The block appended to oracle/content-kit/hosts.rs: the recording host's answers to the port's services."""
+    lines = [f'impl content::{area}::{module}::Host for Model {{']
     for call, name in zip(calls, method_names(calls)):
-        impls += [f'    fn {name}(&mut self) -> Result<()> {{', f'        self.emit("{rust_str(call)}", vec![])', '    }']
-    return '\n'.join([
+        lines += [f'    /// `{call}`.', f'    fn {name}(&mut self) -> Result<()> {{', f'        self.emit("{rust_str(call)}", vec![])', '    }']
+    return '
+'.join(lines + ['}', ''])
+
+
+def test_rs(topic, module, area):
+    return '
+'.join([
         f'//! Replays the JVM {topic} corpus (oracle/{topic}) against',
         f'//! `world::content::{area}::{module}` over the dialogue-dsl recording host',
-        '//! and the dialogue content kit, and pins the fixture.',
-        '#[path = "../../../oracle/dialogue-dsl/native.rs"]',
-        'mod native;',
+        '//! and the dialogue content kit (oracle/content-kit), and pins the fixture.',
+        '#[path = "../../../oracle/content-kit/hosts.rs"]',
+        'mod hosts;',
         '#[path = "../../../oracle/content-kit/dialogue.rs"]',
         'mod kit;',
+        '#[path = "../../../oracle/dialogue-dsl/native.rs"]',
+        'mod native;',
         'use native::Model;',
-        'use rs09_server::world::{',
-        f'    content::{{self, {area}::{module}}},',
-        '    dialogue::{Plugin, Result, Text},',
-        '};',
-        '',
-        'impl content::Services for Model {',
-        '    fn settings_name(&mut self) -> Result<Option<Text>> {',
-        '        kit::settings_name(self)',
-        '    }',
-        '}',
-        "/// The recording answers of the port's own services: each records its call",
-        "/// as the oracle's stand-in does.",
-        f'impl {module}::Host for Model {{',
-        *impls,
-        '}',
+        'use rs09_server::world::{content, dialogue::Plugin};',
         '',
         'fn prototype(class: &str) -> Option<Plugin<Model>> {',
         '    content::dialogue_plugin(class)',
@@ -461,7 +458,8 @@ def main():
     insert('crates/server/src/world/live/ported/mod.rs', '// content-scaffold: live modules', f'mod {module};', written)
     write(f'oracle/{topic}/generate.py', generate_py(relative, topic, found), args.force, written)
     write(f'oracle/{topic}/cases.py', cases_py(topic, plugin_classes, ids, prefix), args.force, written)
-    write(f'crates/server/tests/content_{module}.rs', test_rs(topic, module, area, calls), args.force, written)
+    write(f'crates/server/tests/content_{module}.rs', test_rs(topic, module, area), args.force, written)
+    insert('oracle/content-kit/hosts.rs', '// content-scaffold: recording hosts', recording_host(module, area, calls), written)
     ci = ROOT / 'oracle/ci.toml'
     if f'"{topic}-oracle"' not in ci.read_text(encoding='utf-8'):
         names = ', '.join(n for n, _ in found)
