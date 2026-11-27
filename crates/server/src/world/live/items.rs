@@ -47,6 +47,7 @@ pub mod everyday;
 pub mod milking;
 mod slots;
 pub mod smelting;
+pub mod smithing;
 pub mod use_with;
 
 /// A node the handlers see: `==` is identity.

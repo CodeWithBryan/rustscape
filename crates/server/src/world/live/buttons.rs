@@ -171,6 +171,13 @@ impl interface_packets::Context for Buttons<'_> {
         {
             return self.live.smelting_button(&Self::p(p), b.button).map_err(ui);
         }
+        // SmithingInterface on 300 (super::items::smithing).
+        if plugin
+            .value::<super::items::smithing::SmithPlugin>()
+            .is_some()
+        {
+            return self.live.smithing_button(&Self::p(p), b.button).map_err(ui);
+        }
         let Some(plugin) = plugin.value::<registry::ComponentPlugin>().map(|p| *p) else {
             return Err(interfaces::Error::Binding(
                 "a component plugin this world did not register".into(),

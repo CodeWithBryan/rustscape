@@ -747,6 +747,8 @@ pub enum Script {
     Cook(super::items::cooking::CookScript),
     /// SmeltingInterface's amount handler (`smelting::AmountInput::run`).
     Smelt(super::items::smelting::SmeltScript),
+    /// SmithingInterface's amount handler (`smithing::AmountInput::run`).
+    Smith(super::items::smithing::SmithScript),
 }
 
 struct Prompt<'a> {
@@ -880,6 +882,15 @@ impl input::Context for Prompt<'_> {
                     }
                 };
                 self.live.smelting_amount(&script, &value).map_err(ierror)
+            }
+            Script::Smith(script) => {
+                let value = match &value {
+                    Response::Int(n) => crate::world::smelting::Input::Int(*n),
+                    Response::Text(text) => {
+                        crate::world::smelting::Input::Text(String::from_utf16_lossy(text))
+                    }
+                };
+                self.live.smithing_amount(&script, &value).map_err(ierror)
             }
             Script::Shop(script) => self
                 .live
@@ -1087,6 +1098,25 @@ impl Live {
             InputType::Numeric,
             utf16(prompt),
             Script::Smelt(script),
+        );
+        self.inner.drain(p);
+        result
+    }
+    /// `sendInputDialogue(player, true, prompt, handler)` of
+    /// SmithingInterface's Make-X.
+    pub fn smith_prompt(
+        &mut self,
+        p: &P,
+        prompt: &str,
+        script: super::items::smithing::SmithScript,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::send(
+            &mut Prompt { live: self },
+            &owner,
+            InputType::Numeric,
+            utf16(prompt),
+            Script::Smith(script),
         );
         self.inner.drain(p);
         result

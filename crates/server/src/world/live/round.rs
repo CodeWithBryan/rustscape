@@ -64,6 +64,8 @@ pub struct Round {
     pub milking: super::items::milking::MilkingWorld,
     /// FurnaceOptionPlugin and SmeltingInterface (super::items::smelting).
     pub smelting: super::items::smelting::SmeltingWorld,
+    /// SmithingPlugin and SmithingInterface (super::items::smithing).
+    pub smithing: super::items::smithing::SmithingWorld,
     /// `ServerConstants.SECOND_BANK`.
     pub second_bank: bool,
 }
@@ -100,6 +102,7 @@ impl super::host::Live {
         self.walk.follows.retain(|(_, mover)| *mover != node);
         self.round.eat.doses.retain(|(_, owner, _)| *owner != node);
         self.milking_logout(node);
+        self.smithing_logout(node);
         self.round.smelting.pulses.retain(|(handle, owner, _)| {
             if *owner == node {
                 crate::pulses::stop_base(handle);

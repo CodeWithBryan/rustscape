@@ -144,6 +144,7 @@ impl use_with::Context for Ctx<'_> {
             && ![
                 super::milking::BUCKET_HANDLER,
                 super::smelting::SMELT_HANDLER,
+                super::smithing::SMITH_HANDLER,
             ]
             .contains(&handler.read().handler)
         {
@@ -192,7 +193,7 @@ impl use_with::Context for Ctx<'_> {
     fn use_handle(&mut self, handler: &UseHandler, event: &Event<Node>) -> Result<bool> {
         let id = handler.read().handler;
         let p = self.player_of(&event.player)?;
-        match self.0.use_handler_handle(id, &p, &event.with) {
+        match self.0.use_handler_handle(id, &p, event) {
             Some(result) => {
                 self.0.inner.drain(&p);
                 result.map_err(err)

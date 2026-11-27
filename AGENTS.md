@@ -638,8 +638,19 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   differentially verified. Keep the quirks docs/smelting.md lists (the
   chatbox closed on every requirement check, "smelt bronze .", the ring of
   forging stopping the pulse from inside success, the null destination).
-  Anvils are not ported. The live binding is world/live/items/smelting.rs;
+  The live binding is world/live/items/smelting.rs;
   after touching it run the live_world `usewith` scenario.
+- For smithing at anvils (world/smithing: SmithingPlugin, SmithingBuilder,
+  SmithingInterface, SmithingPulse, Bars, BarType, SmithingType), run
+  `cargo test -p rs09-server --test smithing`. There is no JVM corpus: the
+  test is a recording host written from the pinned sources plus a
+  comparison of the three tables with the source text, so do not call the
+  module differentially verified. Keep the quirks docs/smithing.md lists
+  (the amount replaced by the bar count, the first run that only sets the
+  delay, the studs' fifth button, the null type of a silver bar). The
+  shield and godsword dialogues are not ported. The live binding is
+  world/live/items/smithing.rs; after touching it run the live_world
+  `usewith` scenario.
 - For core.api (world/content_api: every ContentAPI.kt function, its
   ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
   SkillDialogueBuilder, and the other core/api files: ApiExtensions,
