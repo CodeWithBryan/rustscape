@@ -56,6 +56,8 @@ pub struct Round {
     pub follow: super::follow::FollowWorld,
     pub eat: super::eating::EatWorld,
     pub magic: super::magic::MagicWorld,
+    /// The content use-with handlers (super::items::everyday).
+    pub everyday: super::items::everyday::EverydayWorld,
     /// `ServerConstants.SECOND_BANK`.
     pub second_bank: bool,
 }
@@ -91,6 +93,14 @@ impl super::host::Live {
             .retain(|(_, _, _, player, target)| player.node != node && target.node != node);
         self.walk.follows.retain(|(_, mover)| *mover != node);
         self.round.eat.doses.retain(|(_, owner, _)| *owner != node);
+        // The player's content pulses stop with it (the runner drops a
+        // pulse that is not running).
+        self.round.everyday.pulses.retain(|(handle, owner, _)| {
+            if *owner == node {
+                crate::pulses::stop_base(handle);
+            }
+            *owner != node
+        });
         self.walk.approaches.arrivals.retain(|a| a.player != node);
         if let Some(token) = self.walk.approaches.player_tokens.remove(&node) {
             self.walk.approaches.destinations.remove(&token);

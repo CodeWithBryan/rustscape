@@ -461,6 +461,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             player_handlers: Vec::new(),
             player_dispatch: false,
             follows: Vec::new(),
+            content_pulses: Vec::new(),
         },
         login_listeners: names("listeners.login"),
         logout_listeners: names("listeners.logout"),
@@ -521,6 +522,8 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     // NPC talk listeners, input prompts, the bank, shops, trade, follow.
     live.round.second_bank = constant_bool(&configuration, "SECOND_BANK")?;
     live.install_round()?;
+    // The content use-with listeners (super::items::everyday).
+    live.install_content_use()?;
     Ok(Booted {
         live,
         configuration,

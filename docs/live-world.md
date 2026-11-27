@@ -21,7 +21,9 @@ the zones and the SkullManager), the global handlers
 interfaces, the game-frame interfaces, the ladder, look-at and search option
 handlers), the scenery option packet (`world::scenery_action` through
 `world::scenery_runtime`), use-with (`processUseWith`) and the slot switch
-(`processSlotSwitch`), and combat (`world::combat_pulse` and
+(`processSlotSwitch`), the first content use-with listeners (water sources,
+sand pits, the hay sack and the hat stand of `world::global_items2`, the
+stray dogs and the Falador sheepdog of `world::item_on_npc`), and combat (`world::combat_pulse` and
 `world::combat_swing` for every entity, `ImpactHandler` with hit marks in the
 player and NPC update masks, the NPC update masks themselves, NPC aggression
 through `world::npc_behaviour`, NPC death and drops through `world::npc_death`
@@ -125,6 +127,7 @@ modes of `rs09-server` are unchanged.
 | global handlers | `ClassScanner` of the global handler classes, `InterfaceListeners`, `ComponentDefinition` plugins, OptionHandlers, `ClimbActionHandler` | `global.rs`: `registry::register_scanned` over the live InterfaceListeners, the interface definitions' plugins, the native InteractionListeners and the scenery option defaults at boot; the per-definition scenery handlers bound into the scenery definitions; buttons, open and close listeners and component plugins dispatched through `run_button`, `run_open` and `run_plugin` (`buttons.rs`); scenery OptionHandlers through `run_handler` and `handler_destination` (`destination.rs`, over the scene); the bodies' `Task`s submitted to `GameWorld.Pulser` and run with `run_task`; `GHost` is the handlers' `Host` (attributes, messages, interface text, the weapon, emote and music tabs, settings toggles, locks, the animator, the teleport location, scenery geometry, SpecialLadders) |
 | scenery options | `processSceneryAction`, scenery `InteractPlugin` | `scenery.rs`: `world::scenery_runtime` (the legacy walk and arrival, `world::scenery_action`) over the cache scene's objects, `scenery_options::Registry` (the scenery tables and handler arena with the global handlers' defaults), `Scenery.getChild` over the scene's definitions, the InteractionListeners lookup for scenery |
 | use-with, slot switch | `processUseWith`, `processSlotSwitch` | `items/use_with.rs`, `items/slots.rs`: `world::packet_handlers::use_with` (zone monitor, `InteractionListeners.run_use`, PluginInteractionManager, `UseWithHandler.HANDLERS`, `runUnhandledAction`) and `slot_switch` over the canonical inventory |
+| content use-with listeners | `WaterSourceListener`, `SandSourceListener`, `SackOnHay`, `HatStand`, `FeedOnStrayDog`, `FeedFaladorSheepdog`; `InteractionListeners.run`'s use-with path; `PulseManager.run(pulse)` and ContentAPI `runTask` for their pulses | `items/everyday.rs`: the four `global_items2` classes (`registry::define`) and the two `item_on_npc` classes registered in the native InteractionListeners at boot, in the class scan's order; `run_use` walks to the scene object (`DestinationFlag.OBJECT`) or the NPC and the arrival runs the lambda (`registry::run_interaction`, `item_on_npc::run`) with `Everyday` as both libraries' `Host` (the canonical inventory, the animators, messages, the synth sound, the ground manager for what does not fit, the dialogue interpreter, the Falador diary, an NPC's force chat); the fill pulse and the sand task are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity. ChestKeyListener is not registered (`SceneryBuilder.replace` is not joined) |
 | combat | `CombatPulse`, the melee/range/magic `CombatSwingHandler`s, `ImpactHandler`, `Entity.attack`/`onImpact`/`isAttackable`/`checkImpact`/`sendImpact`, `AttackListener` | `combat.rs`, `combat/host.rs`, `combat/behaviour.rs`: the live world is `combat_swing::Host`, `combat_pulse::Host` and `npc_behaviour::Host`; one combat pulse and impact handler per entity that fought (`Inner.combat`); the combat pulse is a `Class::Combat` pulse object current in the entity's canonical pulse manager (STANDARD) and submitted to `GameWorld.Pulser`, whose body is `combat_pulse::pulse::update`; impact, second-arrow and delayed-hit pulses on the same runner, dispatched by identity; NPC option "attack" through the native `InteractionListeners` (`AttackListener`, flagInstant, ported from the pinned AttackListener.kt); auto-retaliation, the NPC's swing handler and attackability through `npc_behaviour::combat`; experience through the native Skills (`LevelUp.levelup` on a level gained) |
 | hit marks, NPC masks | `UpdateMasks.prepare`'s impact poll, `NPCFlags530`, `PlayerFlags530.PrimaryHit/SecondaryHit`, NPC `Animator` | `combat/masks.rs`: an `update_masks::Masks` per NPC with the NPCFlags530 providers and encoders of `world::npc_masks` (hits, animation, face entity, spot animation, type swap, force chat, animation sequence, face location; npc-masks-oracle, docs/npc-masks.md; a context of another type is logged and writes nothing), prepared at the end of the NPC's `Entity.tick` and written by `NPCRenderer`; the NPC's animator over them; a player's impacts handed to its prepared masks before `prepare` (`prepared_masks::queue_impact`, the hit encoders added there) |
 | aggression | `AggressiveHandler.selectTarget` from `NPC.handleTickActions` | `combat/behaviour.rs`: the NPC's live `Ai` (made from the start-up's: DEFAULT, or WILDERNESS for the NPCs `ZoneBuilder.startup` gave it, with the start-up's radius, chance, tolerance and pause), `Region.isTolerated` over the scene regions' tolerances |
@@ -258,6 +261,18 @@ modes of `rs09-server` are unchanged.
   movement over the scene only.
 - `PulseManager.runUnhandledAction` of an unhandled use-with is a world pulse
   (the canonical pulse manager does not take content bodies).
+- The content use-with listeners (`items/everyday.rs`) are registered after
+  the install round, not at their place in the class scan among the other
+  listener classes: nothing registered earlier or later shares a key with
+  them (item on scenery and item on NPC rows), so the registry's content is
+  the same. Their pulses are base `Pulse` objects this world keeps beside
+  the canonical state (`Walk.content_pulses`): a walk or another STANDARD
+  pulse stops them through `PulseManager.clear`, as the original's, and the
+  body is looked up by the pulse's identity when `GameWorld.Pulser` runs it.
+  A pulse whose player left ends without running its body.
+- `String.toLowerCase()` (the default locale) and Kotlin's `lowercase()`
+  (`Locale.ROOT`) are both the root locale's in the content use-with
+  listeners.
 - An unhandled use-with on an NPC, a player or a scene object
   (`UseWithHandler$1`) is a movement of the canonical state toward the node
   (a scene object's canonical node, as its options walk to) with no
@@ -444,7 +459,14 @@ the driver refuses (commands, quick chat, report abuse, GE); content
 item and NPC option handlers and listeners (`InteractionListeners`
 functions other than DropListener, EquipHandler, AttackListener,
 GraveController's, ConsumableListener, NPCTalkListener's, BankerNPC's,
-Shops' and the global handlers' RequestOption listeners; a listener's walk
+Shops', the global handlers' RequestOption listeners and the content
+use-with listeners of `items/everyday.rs`; wildcard use-with predicates;
+every `global_items2::Host` service the installed use-with lambdas do not
+reach ("everyday item handler service NAME": the quest, slayer and POH
+tables, the dig registries, interfaces, teleports, impacts, skills,
+scenery replacement, `playAudio` at a location, `removeItem`/`addItem`
+outside the inventory, an animation with a delay or a priority other than
+MID, force chat on a player); a listener's walk
 to an item; `defineInteraction` scripts; a destination override this
 world did not register), item plugins (`ItemPlugin.remove`, `canPickUp`), the guild items'
 dialogue, `EquipHandler.unequip`'s caller other than the global equipment
@@ -648,6 +670,19 @@ the client-side player and NPC update decoders):
   listener, plugin or UseWithHandler, so `UseWithHandler.run`'s
   MovementPulse walks each next to the node and "Nothing interesting
   happens." arrives only then (the ladder is not climbed).
+- `usefill` (a save north of the fountain 36781 in Lumbridge castle's
+  courtyard, two buckets and a jug) uses a bucket on the fountain (opcode
+  134): `InteractionListeners.run` finds WaterSourceListener's row, the walk
+  arrives and the fill pulse fills one bucket a tick ("You fill the
+  bucket." twice, two buckets of water 1929 in the inventory container);
+  the jug is untouched until it is used itself ("You fill the jug.", 1937).
+  `usewell` uses a jug on the well 884 west of the castle: "If I drop my
+  jug down there, I don't think I'm likely to get it back." and the jug
+  stays. `usedog` uses bones on a stray dog (5917) in Varrock (opcode 115):
+  "You feed the stray dog your bones." and the bones leave the inventory.
+  The sand pits, the hay bales, the hat stand, the Falador pump's diary
+  task, the sheepdog and the dog's chat and animation are not exercised
+  through a socket.
 - `climbone` (a save south of the ladder 36768 at 3229,3213 east of
   Lumbridge castle) uses Climb-up (opcode 254): `processSceneryAction`, the
   legacy walk and arrival, the global handlers' LadderManagingPlugin and
@@ -794,6 +829,22 @@ stand-ins); this test checks the production binding end to end.
 
 ## Not covered / still to do
 
+- Content use-with: of the pinned source's 157 listener files that call
+  `onUseWith`/`onUseAnyWith`/`onUseWithWildcard` and 36 `UseWithHandler`
+  classes, six listener classes are installed (above). Not installed:
+  ChestKeyListener (ported in `world::global_items2`; needs
+  `SceneryBuilder.replace` in the live scene), cow milking and the other
+  `UseWithHandler` classes (`UseWithHandler.HANDLERS` is still empty here;
+  `world::creatures`' milking needs the equipment registers' host), the
+  enchanted-tablet and ectophial use-withs of `world::global_items`, and
+  everything not ported at all: cooking on ranges and fires, furnaces and
+  anvils (SmithingPlugin, AmmoMouldOnFurnace), the rest of `withobject`
+  (AxeOnTree, CauldronOfThunder, CoalTruck, DragonPlatebody, FishEasterEgg,
+  GWDEntranceRope, HairdresserCheese, KaramjaBananaCrate, PoisonFountain,
+  SapCollect, SpiritShieldBless, SwampHoleRope), the rest of `withnpc`
+  (docs/item-on-npc.md) and all of `withitem`. The two dog listeners have
+  no JVM corpus (docs/item-on-npc.md).
+
 - The remaining routed handlers: the driver's refused packets (commands, quick chat, abuse reports, the GE packet);
   the global handlers' dialogue services (ClimbDialogue, `send_options`,
   the dialogue senders) are still refused although the interpreter is
@@ -828,7 +879,8 @@ stand-ins); this test checks the production binding end to end.
   (`world::force_movement`: its Host, its pulses by identity and the
   ForceMove mask encoder, which is not ported; nothing installed calls it).
 - The rest of the install round (in order): the rest of spells and
-  teleports (above), the teleport jewellery and tablets, the everyday item handlers, zone overlays
+  teleports (above), the teleport jewellery and tablets, the everyday item handlers
+  other than the four use-with listeners installed (`items/everyday.rs`), zone overlays
   and `ZoneMonitor.interact`/`useWith` inside a zone; commands, quick
   chat, abuse reports and the Grand Exchange; the equipment registers and
   the creatures.

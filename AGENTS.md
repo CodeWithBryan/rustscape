@@ -597,8 +597,20 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   DiangoReclaimInterface `newInstance`. Every outside call is a required Host
   service with no default; quests, slayer, POH storage, random reachable
   locations and the dig callbacks are named content services. The global
-  books are world/books (next bullet); nothing installs the
-  library in `--world` (the binding is described in docs/global-items2.md).
+  books are world/books (next bullet); `--world` installs only the water,
+  sand, hay sack and hat stand use-with listeners
+  (world/live/items/everyday.rs; the full binding is described in
+  docs/global-items2.md).
+- For the item-on-NPC basics (world/item_on_npc: FeedOnStrayDog and
+  FeedFaladorSheepdog with the Bones and Meat tables), run `cargo test -p
+  rs09-server --test item_on_npc`. There is no JVM corpus: the test is a
+  recording host written from the pinned sources, so do not call the module
+  differentially verified. The live world registers both classes and the
+  four global_items2 use-with classes at boot; after touching
+  world/live/items/everyday.rs run the live_world `usewith` scenario
+  (docs/live-world.md). Every other global_items2::Host service stays a
+  refusal by name there; join a service before installing a class that
+  reaches it. See docs/item-on-npc.md.
 - For core.api (world/content_api: every ContentAPI.kt function, its
   ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
   SkillDialogueBuilder, and the other core/api files: ApiExtensions,

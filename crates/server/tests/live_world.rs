@@ -2499,6 +2499,142 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     );
     two.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+    use_content_scenario(address, saves).await;
+}
+
+/// The content use-with listeners installed from `world::global_items2` and
+/// `world::item_on_npc` (docs/live-world.md): two buckets and a jug at the
+/// Lumbridge castle fountain (WaterSourceListener's fill pulse, one vessel a
+/// tick), a jug at the well west of the castle (only a bucket goes down a
+/// well) and bones fed to a Varrock stray dog (FeedOnStrayDog).
+async fn use_content_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    // The fountain 36781 in the castle courtyard.
+    let start = [3222, 3214, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usefill",
+        start,
+        &[(0, 1925, 1), (1, 1925, 1), (2, 1935, 1)],
+    );
+    let (code, fill) = Client::login(address, "usefill").await;
+    assert_eq!(code, 2, "usefill's login");
+    let mut fill = fill.unwrap();
+    fill.until(Duration::from_secs(10), "usefill's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = fill.messages.len();
+    fill.send(use_with_scenery(1925, 0, 36781, 3221, 3210))
+        .await;
+    fill.until(Duration::from_secs(20), "two buckets of water", |c| {
+        held(c, 1929) == 2 && held(c, 1925) == 0
+    })
+    .await;
+    let lines: Vec<&str> = fill.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .collect();
+    assert_eq!(
+        lines,
+        ["You fill the bucket.", "You fill the bucket."],
+        "usefill's bucket messages"
+    );
+    let at = fill.position();
+    eprintln!(
+        "usefill filled two buckets at the fountain 36781 at [3221, 3210, 0]: walked {start:?} -> {at:?}"
+    );
+    assert_ne!(at, start, "usefill walked to the fountain");
+    assert_eq!(held(&fill, 1935), 1, "the jug is not the bucket's vessel");
+    let from = fill.messages.len();
+    fill.send(use_with_scenery(1935, 2, 36781, 3221, 3210))
+        .await;
+    fill.until(Duration::from_secs(20), "a jug of water", |c| {
+        held(c, 1937) == 1 && held(c, 1935) == 0
+    })
+    .await;
+    assert!(
+        fill.messages[from..]
+            .iter()
+            .any(|(_, m)| m == "You fill the jug."),
+        "usefill's jug message: {:?}",
+        &fill.messages[from..]
+    );
+    fill.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // The well 884 west of the castle: a jug does not go down a well.
+    let start = [3164, 3222, 0];
+    write_save(&players, "traceone", "usewell", start, &[(0, 1935, 1)]);
+    let (code, well) = Client::login(address, "usewell").await;
+    assert_eq!(code, 2, "usewell's login");
+    let mut well = well.unwrap();
+    well.until(Duration::from_secs(10), "usewell's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = well.messages.len();
+    well.send(use_with_scenery(1935, 0, 884, 3161, 3220)).await;
+    let refusal = "If I drop my jug down there, I don't think I'm likely to get it back.";
+    well.until(Duration::from_secs(20), "the well's refusal", |c| {
+        c.messages[from..].iter().any(|(_, m)| m == refusal)
+    })
+    .await;
+    assert_eq!(held(&well, 1935), 1, "usewell keeps the jug");
+    eprintln!(
+        "usewell used a jug on the well 884 at [3161, 3220, 0]: walked {start:?} -> {:?}",
+        well.position()
+    );
+    well.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // A stray dog (5917) in Varrock: bones.
+    let start = [3200, 3402, 0];
+    write_save(&players, "traceone", "usedog", start, &[(0, 526, 1)]);
+    let (code, dog) = Client::login(address, "usedog").await;
+    assert_eq!(code, 2, "usedog's login");
+    let mut dog = dog.unwrap();
+    dog.until(Duration::from_secs(10), "usedog's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let stray = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 5917)
+            .map(|(i, _)| *i as i32)
+    };
+    dog.until(Duration::from_secs(15), "the stray dog", |c| {
+        stray(c).is_some()
+    })
+    .await;
+    let index = stray(&dog).unwrap();
+    let from = dog.messages.len();
+    dog.send(use_with_npc(526, 0, index)).await;
+    dog.until(Duration::from_secs(30), "the dog fed", |c| {
+        c.messages[from..]
+            .iter()
+            .any(|(_, m)| m == "You feed the stray dog your bones.")
+    })
+    .await;
+    dog.until(Duration::from_secs(5), "the bones gone", |c| {
+        held(c, 526) == 0
+    })
+    .await;
+    eprintln!(
+        "usedog fed bones to the stray dog (index {index}): walked {start:?} -> {:?}",
+        dog.position()
+    );
+    dog.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// The engine timers: a saved character with 5 of its 10 hitpoints logs in;
