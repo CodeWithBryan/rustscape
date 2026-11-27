@@ -12,7 +12,7 @@
 //! docs/smelting.md for what is kept (the level message's "smelt bronze ."
 //! spacing, the chatbox closed on every requirement check, the ring of
 //! forging stopping the pulse from inside `success`) and what is not ported
-//! (anvils, the superheat spell's caller, the bots).
+//! (the superheat spell's caller, the bots). Anvils are `world::smithing`.
 pub use crate::world::global_items2::{Error, Result};
 
 /// `Skills.SMITHING`.

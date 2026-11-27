@@ -749,6 +749,18 @@ fn prefuse<T>(what: &str) -> pm::Result<T> {
     )))
 }
 
+impl Diaries<'_> {
+    /// A canonical container of the player, for the read-only checks.
+    fn held(&self, player: &P, kind: pm::Kind) -> crate::inventory::container::Container {
+        let player = &self.live.inner.canonical(player).player;
+        match kind {
+            pm::Kind::Inventory => player.inventory(),
+            pm::Kind::Equipment => player.equipment(),
+            pm::Kind::Bank => player.bank().container(),
+        }
+    }
+}
+
 impl diary::Host for Diaries<'_> {
     type Player = P;
     fn diaries(
@@ -819,8 +831,10 @@ impl diary::Host for Diaries<'_> {
     fn debug_message(&mut self, player: &P, text: &str) -> pm::Result<()> {
         diary::Host::message(self, player, text)
     }
-    fn contains(&mut self, _: &P, _: pm::Kind, _: pm::Item) -> pm::Result<bool> {
-        prefuse("diary rewards (containers)")
+    fn contains(&mut self, player: &P, kind: pm::Kind, item: pm::Item) -> pm::Result<bool> {
+        // Read-only: the reward checks of the diary read the containers
+        // (SmeltingPulse's Varrock armour through checkSmithReward).
+        Ok(self.held(player, kind).contains(item.0, item.1))
     }
     fn remove(&mut self, _: &P, _: pm::Kind, _: pm::Item) -> pm::Result<bool> {
         prefuse("diary rewards (containers)")
@@ -831,8 +845,12 @@ impl diary::Host for Diaries<'_> {
     fn free_slots(&mut self, _: &P, _: pm::Kind) -> pm::Result<i32> {
         prefuse("diary rewards (containers)")
     }
-    fn get(&mut self, _: &P, _: pm::Kind, _: i32) -> pm::Result<Option<pm::Item>> {
-        prefuse("diary rewards (containers)")
+    fn get(&mut self, player: &P, kind: pm::Kind, slot: i32) -> pm::Result<Option<pm::Item>> {
+        let item = self.held(player, kind).get(slot);
+        Ok(item.map(|item| {
+            let item = item.read();
+            (item.id(), item.amount())
+        }))
     }
     fn item_name(&mut self, id: i32) -> pm::Result<Option<String>> {
         Ok(self.live.inner.items.for_id(id).read().name.clone())

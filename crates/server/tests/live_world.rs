@@ -2504,6 +2504,7 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     use_milk_scenario(address, saves).await;
     use_chest_scenario(address, saves).await;
     use_smelt_scenario(address, saves).await;
+    use_smith_scenario(address, saves).await;
 }
 
 /// Cooking (`world::cooking`, docs/cooking.md) at the fire 5631 west of
@@ -2681,6 +2682,116 @@ async fn use_smelt_scenario(address: std::net::SocketAddr, saves: &std::path::Pa
         smelt.position()
     );
     smelt.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// SmithingPlugin, SmithingBuilder, SmithingInterface and SmithingPulse at
+/// a Varrock anvil 2783: a bronze bar used on it (SmithingPlugin through
+/// `UseWithHandler.HANDLERS`) opens the interface 300, whose dagger buttons
+/// smith one dagger, then the rest of the bars.
+async fn use_smith_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let start = [3186, 3424, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usesmith",
+        start,
+        &[(0, 2347, 1), (1, 2349, 1), (2, 2349, 1), (3, 2349, 1)],
+    );
+    let (code, smith) = Client::login(address, "usesmith").await;
+    assert_eq!(code, 2, "usesmith's login");
+    let mut smith = smith.unwrap();
+    smith
+        .until(Duration::from_secs(10), "usesmith's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = smith.messages.len();
+    // A bar on the anvil: the interface, then the dagger's "1" (button 24).
+    let opened = smith.opened.len();
+    smith
+        .send(use_with_scenery(2349, 1, 2783, 3188, 3424))
+        .await;
+    smith
+        .until(Duration::from_secs(20), "the smithing interface", |c| {
+            c.opened[opened..].iter().any(|(_, id)| *id == 300)
+        })
+        .await;
+    assert!(
+        smith
+            .texts
+            .iter()
+            .any(|(_, _, text)| text == "Bronze Smithing"),
+        "the interface names the metal"
+    );
+    assert!(
+        smith
+            .texts
+            .iter()
+            .any(|(_, _, text)| text == "<col=FFFFFF>Dagger"),
+        "the dagger's name is white at level 1"
+    );
+    smith.send(button(300, 24)).await;
+    smith
+        .until_pinging(Duration::from_secs(30), "the first dagger", |c| {
+            held(c, 1205) == 1
+        })
+        .await;
+    assert_eq!(held(&smith, 2349), 2, "one bar is gone");
+    // Again, with the dagger's "5" (button 23): five daggers are not
+    // covered, so the amount becomes the two bars left.
+    let opened = smith.opened.len();
+    let slot = smith.containers[&93]
+        .iter()
+        .find(|(_, (item, _))| *item == 2349)
+        .map(|(slot, _)| *slot)
+        .expect("a bar is left");
+    smith
+        .send(use_with_scenery(2349, slot, 2783, 3188, 3424))
+        .await;
+    smith
+        .until(
+            Duration::from_secs(20),
+            "the smithing interface again",
+            |c| c.opened[opened..].iter().any(|(_, id)| *id == 300),
+        )
+        .await;
+    smith.send(button(300, 23)).await;
+    smith
+        .until_pinging(Duration::from_secs(40), "three daggers", |c| {
+            held(c, 1205) == 3 && held(c, 2349) == 0
+        })
+        .await;
+    let lines: Vec<&str> = smith.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .collect();
+    assert_eq!(
+        lines
+            .iter()
+            .filter(|m| **m == "You hammer the bronze and make a bronze dagger.")
+            .count(),
+        3,
+        "usesmith's messages: {lines:?}"
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|m| m.starts_with("Handler=SmithingPlugin, used item=")),
+        "the smithing handler's debug line: {lines:?}"
+    );
+    eprintln!(
+        "usesmith smithed three bronze daggers at the anvil 2783 at [3188, 3424, 0]: walked {start:?} -> {:?}",
+        smith.position()
+    );
+    smith.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

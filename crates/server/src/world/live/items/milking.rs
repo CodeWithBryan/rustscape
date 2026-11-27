@@ -27,7 +27,7 @@ use crate::{
         equipment_registers as er,
         packet_handlers::{
             Container as Held,
-            use_with::{HandlerData, OBJECT_TYPE, UseHandler},
+            use_with::{Event, HandlerData, OBJECT_TYPE, UseHandler},
         },
     },
 };
@@ -92,14 +92,18 @@ impl Live {
         &mut self,
         handler: usize,
         player: &P,
-        with: &Node,
+        event: &Event<Node>,
     ) -> Option<Result<bool>> {
         match handler {
             // BucketHandler.handle: `(Scenery) event.getUsedWith()` holds,
             // the handler is keyed by OBJECT_TYPE.
             BUCKET_HANDLER => Some(cow_milking::bucket_handle(self, player)),
             // SmeltUseWithHandler.handle: FurnaceOptionPlugin's handle.
-            super::smelting::SMELT_HANDLER => Some(self.furnace_handle(player, with).map_err(bind)),
+            super::smelting::SMELT_HANDLER => {
+                Some(self.furnace_handle(player, &event.with).map_err(bind))
+            }
+            // SmithingPlugin.handle.
+            super::smithing::SMITH_HANDLER => Some(self.anvil_use(player, event).map_err(bind)),
             _ => None,
         }
     }
@@ -125,7 +129,11 @@ impl Live {
         let pulses = &mut self.round.milking.pulses;
         let Some(at) = pulses.iter().position(|(h, _)| h.same(pulse)) else {
             // SmeltingPulse: SkillPulse.stop().
-            return match self.smelting_pulse_stopped(pulse) {
+            if let Some(result) = self.smelting_pulse_stopped(pulse) {
+                return result.map_err(bind);
+            }
+            // SmithingPulse: SkillPulse.stop().
+            return match self.smithing_pulse_stopped(pulse) {
                 Some(result) => result.map_err(bind),
                 None => Ok(()),
             };

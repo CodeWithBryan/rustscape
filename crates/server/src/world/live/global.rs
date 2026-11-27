@@ -1738,6 +1738,16 @@ impl Live {
                         .map_err(|e| Error::Binding(Some(format!("{e:?}")))),
                     None => Err(Error::Null),
                 },
+                // SmithingPlugin's OptionHandler: the plugin's handle with
+                // the hammer as the used item.
+                super::scenery::SceneryPlugin::Anvil => match call.target.as_ref() {
+                    Some(anvil) => {
+                        let id = anvil.read().id;
+                        self.anvil_option(&p, id)
+                            .map_err(|e| Error::Binding(Some(format!("{e:?}"))))
+                    }
+                    None => Err(Error::Null),
+                },
             };
             match result {
                 // InteractPlugin: a handler answering false is "Nothing
