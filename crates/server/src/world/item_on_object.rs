@@ -1,4 +1,4 @@
-//! Six small listeners of `content/global/handlers/item/withobject`:
+//! Nine small listeners of `content/global/handlers/item/withobject`:
 //! collecting sap (`SapCollectListener`, with its "empty" item option), the
 //! Draynor Manor fountain (`PoisonFountainListener`), cheese for Ridgeley
 //! (`HairdresserCheeseListener`), the herring jokes (`FishEasterEgg`), the
@@ -8,7 +8,10 @@
 //! (`CoalTruckListener`: coal used on a truck and the truck's "remove-coal"
 //! and "investigate" options) with the two pieces of
 //! `SeersVillageAchievementDiary` they reach ([`coal_removed_from_seers_truck`]
-//! and the `AttributeSet` hook [`seers_attribute_set`]).
+//! and the `AttributeSet` hook [`seers_attribute_set`]); the Karamja banana
+//! crate (`KaramjaBananaCrateListener`: rum and bananas used on the crate
+//! and its "search" and "fill" options) and the rope on the Lumbridge swamp
+//! hole (`SwampHoleRopeListener`), both over the player's `GlobalData`.
 //!
 //! Each lambda is a typed native value ([`Interaction`]) whose body is a
 //! function over [`Host`]; the pulses the lambdas submit are [`Pulse`]
@@ -73,6 +76,23 @@ pub const COAL_TRUCK_INVENTORY: &str = "coal-truck-inventory";
 pub const COAL_TRUCK_INVENTORY_SAVED: &str = "/save:coal-truck-inventory";
 /// A truck's capacity.
 pub const COAL_TRUCK_CAPACITY: i32 = 120;
+
+/// `Items.KARAMJAN_RUM_431`.
+pub const KARAMJAN_RUM: i32 = 431;
+/// `Items.BANANA_1963`.
+pub const BANANA: i32 = 1963;
+/// `Scenery.CRATE_2072`.
+pub const BANANA_CRATE: i32 = 2072;
+/// KaramjaBananaCrateListener's `CRATE_CAPACITY`.
+pub const BANANA_CRATE_CAPACITY: i32 = 10;
+/// KaramjaBananaCrateListener's `Animation(832)`.
+pub const CRATE_ANIMATION: i32 = 832;
+/// The attribute the crate reads for the rum.
+pub const STASHED_RUM: &str = "stashed-rum";
+/// The key the crate writes (the same attribute, saved).
+pub const STASHED_RUM_SAVED: &str = "/save:stashed-rum";
+/// `Scenery.DARK_HOLE_5947`.
+pub const DARK_HOLE: i32 = 5947;
 /// SeersVillageAchievementDiary's `ATTRIBUTE_COAL_TRUCK_FULL`.
 pub const SEERS_COAL_TRUCK_FULL: &str = "diary:seers:coal-truck-full";
 /// SeersVillageAchievementDiary's `SEERS_COAL_TRUCK_LOCATIONS`.
@@ -205,6 +225,23 @@ pub trait Host {
     /// `achievementDiaryManager.finishTask(player, SEERS_VILLAGE, level,
     /// index)`.
     fn finish_seers_task(&mut self, player: &Self::Node, level: i32, index: i32) -> Result<()>;
+    /// `player.savedData.globalData.isLuthasTask`.
+    fn luthas_task(&mut self, player: &Self::Node) -> Result<bool>;
+    /// `player.savedData.globalData.karamjaBananas`.
+    fn karamja_bananas(&mut self, player: &Self::Node) -> Result<i32>;
+    /// `player.savedData.globalData.setKaramjaBannanas(value)`.
+    fn set_karamja_bananas(&mut self, player: &Self::Node, value: i32) -> Result<()>;
+    /// `player.savedData.globalData.hasTiedLumbridgeRope()`.
+    fn lumbridge_rope(&mut self, player: &Self::Node) -> Result<bool>;
+    /// `player.savedData.globalData.setLumbridgeRope(value)`.
+    fn set_lumbridge_rope(&mut self, player: &Self::Node, value: bool) -> Result<()>;
+    /// ContentAPI `sendItemDialogue(player, item, message)` with an `Item`.
+    fn send_item_dialogue(
+        &mut self,
+        player: &Self::Node,
+        item: &Self::Node,
+        text: &str,
+    ) -> Result<()>;
     /// `submitIndividualPulse(player, WoodcuttingSkillPulse(player,
     /// scenery))`: the pulse is constructed, then run in the player's pulse
     /// manager.
@@ -238,6 +275,19 @@ pub enum Interaction {
     CoalInvestigate,
     /// CoalTruckListener's `onUseWith(SCENERY, COAL_453, COAL_TRUCK_2114)`.
     CoalDeposit,
+    /// KaramjaBananaCrateListener's `onUseWith(SCENERY, KARAMJAN_RUM_431,
+    /// CRATE_2072)`.
+    CrateRum,
+    /// KaramjaBananaCrateListener's `onUseWith(SCENERY, BANANA_1963,
+    /// CRATE_2072)`.
+    CrateBanana,
+    /// KaramjaBananaCrateListener's `on(CRATE_2072, SCENERY, "search")`.
+    CrateSearch,
+    /// KaramjaBananaCrateListener's `on(CRATE_2072, SCENERY, "fill")`.
+    CrateFill,
+    /// SwampHoleRopeListener's `onUseWith(SCENERY, ROPE_954,
+    /// DARK_HOLE_5947)`.
+    SwampRope,
 }
 impl crate::world::component_objects::NativeObject for Interaction {}
 impl Interaction {
@@ -277,18 +327,37 @@ impl Interaction {
             Self::CoalDeposit => {
                 "content.global.handlers.item.withobject.CoalTruckListener$defineListeners$3"
             }
+            Self::CrateRum => {
+                "content.global.handlers.item.withobject.KaramjaBananaCrateListener$defineListeners$1"
+            }
+            Self::CrateBanana => {
+                "content.global.handlers.item.withobject.KaramjaBananaCrateListener$defineListeners$2"
+            }
+            Self::CrateSearch => {
+                "content.global.handlers.item.withobject.KaramjaBananaCrateListener$defineListeners$3"
+            }
+            Self::CrateFill => {
+                "content.global.handlers.item.withobject.KaramjaBananaCrateListener$defineListeners$4"
+            }
+            Self::SwampRope => {
+                "content.global.handlers.item.withobject.SwampHoleRopeListener$defineListeners$1"
+            }
         }
     }
     /// Whether the lambda is an `on` listener (the others are use-with).
     pub fn is_option(self) -> bool {
         matches!(
             self,
-            Self::SapEmpty | Self::CoalRemove | Self::CoalInvestigate
+            Self::SapEmpty
+                | Self::CoalRemove
+                | Self::CoalInvestigate
+                | Self::CrateSearch
+                | Self::CrateFill
         )
     }
 }
 
-/// The seven listener classes, by their scanned names.
+/// The nine listener classes, by their scanned names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
     AxeOnTree,
@@ -296,18 +365,22 @@ pub enum Class {
     FishEasterEgg,
     GwdEntranceRope,
     HairdresserCheese,
+    KaramjaBananaCrate,
     PoisonFountain,
     SapCollect,
+    SwampHoleRope,
 }
 impl Class {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 9] = [
         Self::AxeOnTree,
         Self::CoalTruck,
         Self::FishEasterEgg,
         Self::GwdEntranceRope,
         Self::HairdresserCheese,
+        Self::KaramjaBananaCrate,
         Self::PoisonFountain,
         Self::SapCollect,
+        Self::SwampHoleRope,
     ];
     pub fn name(self) -> &'static str {
         match self {
@@ -324,6 +397,10 @@ impl Class {
                 "content.global.handlers.item.withobject.PoisonFountainListener"
             }
             Self::SapCollect => "content.global.handlers.item.withobject.SapCollectListener",
+            Self::KaramjaBananaCrate => {
+                "content.global.handlers.item.withobject.KaramjaBananaCrateListener"
+            }
+            Self::SwampHoleRope => "content.global.handlers.item.withobject.SwampHoleRopeListener",
         }
     }
     pub fn named(name: &str) -> Option<Self> {
@@ -378,6 +455,35 @@ pub fn define(registry: &interactions::Registry, casing: &impl Casing, class: Cl
                 )
                 .map_err(binding)
         }
+        Class::KaramjaBananaCrate => {
+            // The two onUseWith calls come first, then the two on calls.
+            for (item, f) in [
+                (KARAMJAN_RUM, Interaction::CrateRum),
+                (BANANA, Interaction::CrateBanana),
+            ] {
+                registry
+                    .add_use(item, BANANA_CRATE, scenery, function(f))
+                    .map_err(binding)?;
+            }
+            for (option, f) in [
+                ("search", Interaction::CrateSearch),
+                ("fill", Interaction::CrateFill),
+            ] {
+                registry
+                    .add(
+                        casing,
+                        BANANA_CRATE,
+                        scenery,
+                        &[option.encode_utf16().collect()],
+                        function(f),
+                    )
+                    .map_err(binding)?;
+            }
+            Ok(())
+        }
+        Class::SwampHoleRope => registry
+            .add_use(ROPE, DARK_HOLE, scenery, function(Interaction::SwampRope))
+            .map_err(binding),
         Class::SapCollect => {
             registry
                 .add_use_ids(
@@ -468,10 +574,15 @@ pub fn run<H: Host + ?Sized>(
         }
         Interaction::GwdRope => gwd_rope(h, player, used),
         Interaction::CoalDeposit => coal_deposit(h, player),
+        Interaction::CrateRum => crate_rum(h, player, used),
+        Interaction::CrateBanana => crate_banana(h, player, used),
+        Interaction::SwampRope => swamp_rope(h, player, used),
         // An `on` lambda takes two arguments.
-        Interaction::SapEmpty | Interaction::CoalRemove | Interaction::CoalInvestigate => {
-            Err(Error::Cast)
-        }
+        Interaction::SapEmpty
+        | Interaction::CoalRemove
+        | Interaction::CoalInvestigate
+        | Interaction::CrateSearch
+        | Interaction::CrateFill => Err(Error::Cast),
     }
 }
 
@@ -486,6 +597,8 @@ pub fn run_option<H: Host + ?Sized>(
         Interaction::SapEmpty => sap_empty(h, player, node),
         Interaction::CoalRemove => coal_remove(h, player, node),
         Interaction::CoalInvestigate => coal_investigate(h, player),
+        Interaction::CrateSearch => crate_search(h, player),
+        Interaction::CrateFill => crate_fill(h, player),
         _ => Err(Error::Cast),
     }
 }
@@ -573,6 +686,122 @@ pub fn gwd_rope<H: Host + ?Sized>(h: &mut H, player: &H::Node, used: &H::Node) -
         return Ok(false);
     }
     h.set_varbit(player, GWD_ROPE_VARBIT, 1, true)?;
+    Ok(true)
+}
+
+/// The crates' first check: Luthas has not given the task.
+fn no_luthas_task<H: Host + ?Sized>(h: &mut H, player: &H::Node) -> Result<bool> {
+    if !h.luthas_task(player)? {
+        h.send_message(player, "I don't know what goes in there.")?;
+        return Ok(true);
+    }
+    Ok(false)
+}
+
+/// KaramjaBananaCrateListener's rum lambda.
+pub fn crate_rum<H: Host + ?Sized>(h: &mut H, player: &H::Node, used: &H::Node) -> Result<bool> {
+    if no_luthas_task(h, player)? {
+        return Ok(true);
+    }
+    if h.attribute(player, STASHED_RUM, false)? {
+        h.send_message(player, "There's already some rum in here...")?;
+        return Ok(true);
+    }
+    if !h.remove_item(player, used)? {
+        return Ok(false);
+    }
+    h.lock(player, 2)?;
+    h.animate(player, CRATE_ANIMATION)?;
+    h.send_dialogue(player, "You stash the rum in the crate.")?;
+    h.set_attribute(player, STASHED_RUM_SAVED, true)?;
+    Ok(true)
+}
+
+/// KaramjaBananaCrateListener's banana lambda.
+pub fn crate_banana<H: Host + ?Sized>(h: &mut H, player: &H::Node, used: &H::Node) -> Result<bool> {
+    if no_luthas_task(h, player)? {
+        return Ok(true);
+    }
+    let in_crate = h.karamja_bananas(player)?;
+    if in_crate >= BANANA_CRATE_CAPACITY {
+        h.send_message(player, "The crate is already full.")?;
+        return Ok(true);
+    }
+    if !h.remove_item(player, used)? {
+        return Ok(false);
+    }
+    h.lock(player, 2)?;
+    h.animate(player, CRATE_ANIMATION)?;
+    h.send_dialogue(player, "You pack a banana into the crate.")?;
+    h.set_karamja_bananas(player, in_crate.wrapping_add(1))?;
+    Ok(true)
+}
+
+/// KaramjaBananaCrateListener's "search" lambda.
+pub fn crate_search<H: Host + ?Sized>(h: &mut H, player: &H::Node) -> Result<bool> {
+    if no_luthas_task(h, player)? {
+        return Ok(true);
+    }
+    let in_crate = h.karamja_bananas(player)?;
+    if in_crate == 0 {
+        h.send_message(player, "The crate is completely empty.")?;
+        return Ok(true);
+    }
+    if in_crate >= BANANA_CRATE_CAPACITY {
+        h.send_message(player, "The crate is full of bananas.")?;
+        return Ok(true);
+    }
+    let plural = if in_crate > 1 { "s" } else { "" };
+    h.send_message(
+        player,
+        &format!("The crate has {in_crate} banana{plural} inside."),
+    )?;
+    Ok(true)
+}
+
+/// KaramjaBananaCrateListener's "fill" lambda. The count held and the
+/// amount to add are read before the checks; `globalData.karamjaBananas`
+/// is read three times.
+pub fn crate_fill<H: Host + ?Sized>(h: &mut H, player: &H::Node) -> Result<bool> {
+    if no_luthas_task(h, player)? {
+        return Ok(true);
+    }
+    let held = h.amount_in_inventory(player, BANANA)?;
+    let in_crate = h.karamja_bananas(player)?;
+    let to_add = held.min(BANANA_CRATE_CAPACITY.wrapping_sub(h.karamja_bananas(player)?));
+    if held == 0 {
+        return Ok(true);
+    }
+    if in_crate >= BANANA_CRATE_CAPACITY {
+        h.send_message(player, "The crate is already full.")?;
+        return Ok(true);
+    }
+    if !h.remove_items(player, BANANA, to_add)? {
+        return Ok(false);
+    }
+    h.lock(player, 2)?;
+    h.animate(player, CRATE_ANIMATION)?;
+    h.send_message(player, "You pack all your bananas into the crate.")?;
+    let now = h.karamja_bananas(player)?;
+    h.set_karamja_bananas(player, now.wrapping_add(to_add))?;
+    Ok(true)
+}
+
+/// SwampHoleRopeListener's lambda.
+pub fn swamp_rope<H: Host + ?Sized>(h: &mut H, player: &H::Node, used: &H::Node) -> Result<bool> {
+    if h.lumbridge_rope(player)? {
+        h.send_dialogue(player, "There is already a rope tied to the entrance.")?;
+        return Ok(true);
+    }
+    if !h.remove_item(player, used)? {
+        return Ok(false);
+    }
+    h.send_item_dialogue(
+        player,
+        used,
+        "You tie the rope to the top of the entrance and throw it down.",
+    )?;
+    h.set_lumbridge_rope(player, true)?;
     Ok(true)
 }
 

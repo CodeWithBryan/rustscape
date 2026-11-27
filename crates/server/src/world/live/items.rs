@@ -1437,12 +1437,17 @@ impl listeners::Context for Ctx<'_> {
         let monitor = self.0.monitor(&p.0);
         let target = match n {
             Node::Npc(h) | Node::Player(h) => h.clone(),
-            // An item or a scenery is not a zone target here: with no zone
-            // the answer is false, and inside one the call is refused.
+            // A scenery: of the six installed zones (ZoneBuilder.startup's)
+            // only WildernessZone and DarkZone override interact, the first
+            // for a Revenant NPC and the second for an Item, so every one
+            // answers false.
+            Node::Scenery(_) => return Ok(false),
+            // An item is not a zone target here: with no zone the answer
+            // is false, and inside one the call is refused.
             _ if monitor.zones().is_empty() => return Ok(false),
             _ => {
                 return lrefused(
-                    "ZoneMonitor.interact for an item or a scenery from a listener inside a region zone",
+                    "ZoneMonitor.interact for an item from a listener inside a region zone",
                 );
             }
         };
@@ -1463,9 +1468,13 @@ impl listeners::Context for Ctx<'_> {
             // ZoneMonitor.useWith with no zone: false.
             return Ok(false);
         }
-        lrefused(
-            "ZoneMonitor.useWith inside a region zone (an inventory item is not a canonical node)",
-        )
+        // None of the six installed zones (ZoneBuilder.startup's) overrides
+        // handleUseWith, so each answers false. A zone that does needs the
+        // inventory item as a canonical node first.
+        self.0.inner.not_ported.default_answer(
+            "ZoneMonitor.useWith inside a region zone (no installed region zone overrides handleUseWith: false)",
+        );
+        Ok(false)
     }
     fn location(&mut self, n: &Node) -> listeners::Result<Option<crate::world::doors::Location>> {
         match n {

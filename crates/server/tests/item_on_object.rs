@@ -37,6 +37,10 @@ struct Recorder {
     /// The Seers task is complete; its requirement attribute is set.
     task_complete: bool,
     truck_full: bool,
+    /// GlobalData: Luthas' task, the bananas in the crate, the swamp rope.
+    luthas: bool,
+    bananas: i32,
+    rope: bool,
 }
 
 impl Host for Recorder {
@@ -144,6 +148,31 @@ impl Host for Recorder {
     fn seers_update_task(&mut self, _: &Node, level: i32, index: i32, done: bool) -> Result<()> {
         self.calls
             .push(format!("seers update {level} {index} {done}"));
+        Ok(())
+    }
+    fn luthas_task(&mut self, _: &Node) -> Result<bool> {
+        self.calls.push("luthas task".to_owned());
+        Ok(self.luthas)
+    }
+    fn karamja_bananas(&mut self, _: &Node) -> Result<i32> {
+        self.calls.push("bananas".to_owned());
+        Ok(self.bananas)
+    }
+    fn set_karamja_bananas(&mut self, _: &Node, value: i32) -> Result<()> {
+        self.calls.push(format!("set bananas {value}"));
+        self.bananas = value;
+        Ok(())
+    }
+    fn lumbridge_rope(&mut self, _: &Node) -> Result<bool> {
+        self.calls.push("rope".to_owned());
+        Ok(self.rope)
+    }
+    fn set_lumbridge_rope(&mut self, _: &Node, value: bool) -> Result<()> {
+        self.calls.push(format!("set rope {value}"));
+        Ok(())
+    }
+    fn send_item_dialogue(&mut self, _: &Node, item: &Node, text: &str) -> Result<()> {
+        self.calls.push(format!("item dialogue {item:?} {text}"));
         Ok(())
     }
     fn finish_seers_task(&mut self, _: &Node, level: i32, index: i32) -> Result<()> {
@@ -605,6 +634,213 @@ fn a_full_truck_fulfils_the_seers_requirement_once() {
     assert_eq!(take(&mut h), ["seers complete 1 2"]);
 }
 
+#[test]
+fn the_banana_crate_needs_luthas_task_and_holds_ten() {
+    let crate_ = Node::Scenery(2072);
+    let rum = Node::Item(431, 0);
+    let banana = Node::Item(1963, 1);
+    let use_on = |h: &mut Recorder, f: Interaction, item: &Node| {
+        item_on_object::run(h, f, &Node::Player, item, &crate_)
+    };
+    let option =
+        |h: &mut Recorder, f: Interaction| item_on_object::run_option(h, f, &Node::Player, &crate_);
+    const NO_TASK: [&str; 2] = ["luthas task", "message I don't know what goes in there."];
+
+    // Without the task every lambda says the same and answers true.
+    let mut h = recorder(&[431, 1963]);
+    assert_eq!(use_on(&mut h, Interaction::CrateRum, &rum), Ok(true));
+    assert_eq!(take(&mut h), NO_TASK);
+    assert_eq!(use_on(&mut h, Interaction::CrateBanana, &banana), Ok(true));
+    assert_eq!(take(&mut h), NO_TASK);
+    assert_eq!(option(&mut h, Interaction::CrateSearch), Ok(true));
+    assert_eq!(take(&mut h), NO_TASK);
+    assert_eq!(option(&mut h, Interaction::CrateFill), Ok(true));
+    assert_eq!(take(&mut h), NO_TASK);
+
+    // The rum.
+    h.luthas = true;
+    assert_eq!(use_on(&mut h, Interaction::CrateRum, &rum), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "attribute stashed-rum false",
+            "remove Item(431, 0)",
+            "lock 2",
+            "animate 832",
+            "dialogue You stash the rum in the crate.",
+            "set attribute /save:stashed-rum true",
+        ]
+    );
+    h.killed = true; // the recorder's boolean attribute
+    assert_eq!(use_on(&mut h, Interaction::CrateRum, &rum), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "attribute stashed-rum false",
+            "message There's already some rum in here...",
+        ]
+    );
+    h.killed = false;
+    h.held.clear();
+    assert_eq!(use_on(&mut h, Interaction::CrateRum, &rum), Ok(false));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "attribute stashed-rum false",
+            "remove Item(431, 0)"
+        ]
+    );
+
+    // One banana.
+    h.held = vec![1963];
+    assert_eq!(use_on(&mut h, Interaction::CrateBanana, &banana), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "bananas",
+            "remove Item(1963, 1)",
+            "lock 2",
+            "animate 832",
+            "dialogue You pack a banana into the crate.",
+            "set bananas 1",
+        ]
+    );
+    assert_eq!(option(&mut h, Interaction::CrateSearch), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "bananas",
+            "message The crate has 1 banana inside."
+        ]
+    );
+    h.bananas = 4;
+    assert_eq!(option(&mut h, Interaction::CrateSearch), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "bananas",
+            "message The crate has 4 bananas inside."
+        ]
+    );
+    h.bananas = 0;
+    assert_eq!(option(&mut h, Interaction::CrateSearch), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "bananas",
+            "message The crate is completely empty."
+        ]
+    );
+
+    // Fill: seven held and four in the crate packs six.
+    (h.bananas, h.coal) = (4, 7); // `coal` is the recorder's amount held
+    assert_eq!(option(&mut h, Interaction::CrateFill), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "amount 1963",
+            "bananas",
+            "bananas",
+            "remove 1963 x6",
+            "lock 2",
+            "animate 832",
+            "message You pack all your bananas into the crate.",
+            "bananas",
+            "set bananas 10",
+        ]
+    );
+    // Full.
+    assert_eq!(option(&mut h, Interaction::CrateFill), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "amount 1963",
+            "bananas",
+            "bananas",
+            "message The crate is already full.",
+        ]
+    );
+    assert_eq!(option(&mut h, Interaction::CrateSearch), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "bananas",
+            "message The crate is full of bananas."
+        ]
+    );
+    assert_eq!(use_on(&mut h, Interaction::CrateBanana, &banana), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "bananas",
+            "message The crate is already full."
+        ]
+    );
+    // No banana held: nothing is said, even for a full crate.
+    h.coal = 0;
+    assert_eq!(option(&mut h, Interaction::CrateFill), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        ["luthas task", "amount 1963", "bananas", "bananas"]
+    );
+    // A refused removal answers false.
+    (h.bananas, h.coal, h.full) = (0, 3, true);
+    assert_eq!(option(&mut h, Interaction::CrateFill), Ok(false));
+    assert_eq!(
+        take(&mut h),
+        [
+            "luthas task",
+            "amount 1963",
+            "bananas",
+            "bananas",
+            "remove 1963 x3"
+        ]
+    );
+}
+
+#[test]
+fn the_swamp_hole_takes_one_rope() {
+    let hole = Node::Scenery(5947);
+    let rope = Node::Item(954, 3);
+    let tie = |h: &mut Recorder| {
+        item_on_object::run(h, Interaction::SwampRope, &Node::Player, &rope, &hole)
+    };
+    let mut h = recorder(&[954]);
+    assert_eq!(tie(&mut h), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "rope",
+            "remove Item(954, 3)",
+            "item dialogue Item(954, 3) You tie the rope to the top of the entrance and throw it down.",
+            "set rope true",
+        ]
+    );
+    h.held.clear();
+    assert_eq!(tie(&mut h), Ok(false));
+    assert_eq!(take(&mut h), ["rope", "remove Item(954, 3)"]);
+    h.rope = true;
+    assert_eq!(tie(&mut h), Ok(true));
+    assert_eq!(
+        take(&mut h),
+        [
+            "rope",
+            "dialogue There is already a rope tied to the entrance."
+        ]
+    );
+}
+
 struct Lower;
 impl Casing for Lower {
     fn lowercase_default(&self, s: &[u16]) -> Text {
@@ -626,7 +862,7 @@ fn define_listeners_registers_the_rows() {
         item_on_object::define(&registry, &Lower, class).unwrap();
     }
     assert_eq!(
-        Class::named("content.global.handlers.item.withobject.KaramjaBananaCrateListener"),
+        Class::named("content.global.handlers.item.withobject.SpiritShieldBlessListener"),
         None
     );
     let tables = registry.inspect();
@@ -657,6 +893,8 @@ fn define_listeners_registers_the_rows() {
     assert_eq!(
         options,
         [
+            (format!("2072:{scenery}:fill"), Interaction::CrateFill),
+            (format!("2072:{scenery}:search"), Interaction::CrateSearch),
             (
                 format!("2114:{scenery}:investigate"),
                 Interaction::CoalInvestigate
@@ -680,6 +918,9 @@ fn define_listeners_registers_the_rows() {
     assert_eq!(class_of(1985, 11677), Some(Interaction::HairdresserCheese));
     assert_eq!(class_of(954, 26340), Some(Interaction::GwdRope));
     assert_eq!(class_of(453, 2114), Some(Interaction::CoalDeposit));
+    assert_eq!(class_of(431, 2072), Some(Interaction::CrateRum));
+    assert_eq!(class_of(1963, 2072), Some(Interaction::CrateBanana));
+    assert_eq!(class_of(954, 5947), Some(Interaction::SwampRope));
     let trees = item_on_object::woodcutting_ids();
     assert!(trees.contains(&1276) && trees.len() > 50);
     for axe in item_on_object::AXES {
@@ -700,7 +941,7 @@ fn define_listeners_registers_the_rows() {
     distinct.dedup();
     assert_eq!(
         uses.len(),
-        27 + 4 + 2 * (distinct.len() + 2) + 9 * distinct.len()
+        27 + 7 + 2 * (distinct.len() + 2) + 9 * distinct.len()
     );
     // A second SapCollectListener is the original's IllegalStateException.
     assert!(matches!(
