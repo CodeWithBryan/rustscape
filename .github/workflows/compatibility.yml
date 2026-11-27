@@ -11,6 +11,12 @@ permissions:
 jobs:
   compatibility:
     runs-on: windows-latest
+    # No debug info: test binaries link faster and the build cache stays small.
+    # Incremental artifacts are useless on a fresh runner.
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -22,6 +28,11 @@ jobs:
           rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
           rustup default 1.97.0
           rustup target add wasm32-unknown-unknown
+      # Caches ~/.cargo and the compiled dependencies in target/; the
+      # workspace crates are rebuilt every run. The key includes the
+      # toolchain and Cargo.lock.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
       - name: Formatting
         run: cargo fmt --check
       - name: Verify pinned Macroquad atlas texture lifetime patch
