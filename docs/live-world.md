@@ -130,6 +130,7 @@ modes of `rs09-server` are unchanged.
 | use-with, slot switch | `processUseWith`, `processSlotSwitch` | `items/use_with.rs`, `items/slots.rs`: `world::packet_handlers::use_with` (zone monitor, `InteractionListeners.run_use`, PluginInteractionManager, `UseWithHandler.HANDLERS`, `runUnhandledAction`) and `slot_switch` over the canonical inventory |
 | content use-with listeners | `WaterSourceListener`, `SandSourceListener`, `SackOnHay`, `HatStand`, `FeedOnStrayDog`, `FeedFaladorSheepdog`; `InteractionListeners.run`'s use-with path; `PulseManager.run(pulse)` and ContentAPI `runTask` for their pulses | `items/everyday.rs`: the four `global_items2` classes (`registry::define`) and the two `item_on_npc` classes registered in the native InteractionListeners at boot, in the class scan's order; `run_use` walks to the scene object (`DestinationFlag.OBJECT`) or the NPC and the arrival runs the lambda (`registry::run_interaction`, `item_on_npc::run`) with `Everyday` as both libraries' `Host` (the canonical inventory, the animators, messages, the synth sound, the ground manager for what does not fit, the dialogue interpreter, the Falador diary, an NPC's force chat); the fill pulse and the sand task are STANDARD pulses of the player's canonical pulse manager on `GameWorld.Pulser`, dispatched by identity. ChestKeyListener is not registered (`SceneryBuilder.replace` is not joined) |
 | cooking | `CookingRewrite` (the use-with listener, `cook`), `StandardCookingPulse`, `PieCookingPulse`, `PizzaCookingPulse`, `IntentionalBurnPulse`, `CookingDialogue`, `CookableItems` | `items/cooking.rs`: `world::cooking` with `Cook` as its `Host` (the canonical inventory and equipment, the native Skills for the level and the experience, `RandomFunction.RANDOM` for the burn roll and the spit, messages, the synth sound, the animator at HIGH priority, the ground manager for a spit or cake tin that does not fit, the `stats_manager:food_cooked` attribute); registered in the native InteractionListeners at boot with the other content use-with classes; a cooking pulse is a STANDARD pulse of the player's canonical pulse manager on `GameWorld.Pulser` (`start()` runs inside `PulseManager.run`; `reward`'s `setDelay` is copied to the pulse object), dispatched by identity; CookingDialogue is a DialogueFile of the player's native interpreter (the chatbox 307 with its item, text and child positions, the sinew options) and Cook-X is an input prompt (`world::input_prompt`) whose script is the dialogue's handler |
+| cow milking | `CowMilkingPlugin`, its `BucketHandler`; `UseWithHandler.HANDLERS`, `UseWithHandler$3` | `items/milking.rs`: `world::creatures::cow_milking` (replayed against the equipment-registers oracle) with the live world as `equipment_registers::Host` and `creatures::Host`, joined for this class only (the canonical inventory, the animator, the synth sound, messages; every service of the other creature and equipment-register classes refuses by name). `newInstance` runs at boot when the class scan names the plugin: "option:milk" on the definitions of the dairy cows 8689 and 12111 and "steal-cowbell" on scenery's option handlers (a `scenery::SceneryPlugin` beside the global handlers', run after the legacy walk and arrival), and the BucketHandler for the two cows in the world's `use_with::Registry`, which `processUseWith` now reads: its MovementPulse is the two-argument one (no `getDestination` override), its arrival faces the cow (`Node.getFaceLocation`) and runs `handle`. The milking pulse is a `CreaturePulse` run by the player's pulse manager (STANDARD), updated every tick by the world's runner; its `stop()` override (the animation reset) also runs when the manager stops it (`Deferred::ContentStop`) |
 | combat | `CombatPulse`, the melee/range/magic `CombatSwingHandler`s, `ImpactHandler`, `Entity.attack`/`onImpact`/`isAttackable`/`checkImpact`/`sendImpact`, `AttackListener` | `combat.rs`, `combat/host.rs`, `combat/behaviour.rs`: the live world is `combat_swing::Host`, `combat_pulse::Host` and `npc_behaviour::Host`; one combat pulse and impact handler per entity that fought (`Inner.combat`); the combat pulse is a `Class::Combat` pulse object current in the entity's canonical pulse manager (STANDARD) and submitted to `GameWorld.Pulser`, whose body is `combat_pulse::pulse::update`; impact, second-arrow and delayed-hit pulses on the same runner, dispatched by identity; NPC option "attack" through the native `InteractionListeners` (`AttackListener`, flagInstant, ported from the pinned AttackListener.kt); auto-retaliation, the NPC's swing handler and attackability through `npc_behaviour::combat`; experience through the native Skills (`LevelUp.levelup` on a level gained, with the player's `Skills` as its levels, milestones and prayer points: `tabs::LevelUpTabs`; the jingle is the secondary MusicPacket and graphic 199 the SpotAnim mask) |
 | hit marks, NPC masks | `UpdateMasks.prepare`'s impact poll, `NPCFlags530`, `PlayerFlags530.PrimaryHit/SecondaryHit`, NPC `Animator` | `combat/masks.rs`: an `update_masks::Masks` per NPC with the NPCFlags530 providers and encoders of `world::npc_masks` (hits, animation, face entity, spot animation, type swap, force chat, animation sequence, face location; npc-masks-oracle, docs/npc-masks.md; a context of another type is logged and writes nothing), prepared at the end of the NPC's `Entity.tick` and written by `NPCRenderer`; the NPC's animator over them; a player's impacts handed to its prepared masks before `prepare` (`prepared_masks::queue_impact`, the hit encoders added there) |
 | aggression | `AggressiveHandler.selectTarget` from `NPC.handleTickActions` | `combat/behaviour.rs`: the NPC's live `Ai` (made from the start-up's: DEFAULT, or WILDERNESS for the NPCs `ZoneBuilder.startup` gave it, with the start-up's radius, chance, tolerance and pause), `Region.isTolerated` over the scene regions' tolerances |
@@ -450,7 +451,8 @@ zone (false), `ItemDefinition.getItemPlugin`
 (null: no item plugin is registered), `PluginInteractionManager` for ground
 items, NPCs, scenery and use-with (false), `InteractionListeners` for ground
 items (false) and for a scenery option nothing registers (false),
-`UseWithHandler.HANDLERS` (null: no content use-with handler),
+`UseWithHandler.HANDLERS` for a key no installed handler registered (null: only
+CowMilkingPlugin's BucketHandler is installed),
 `NPCDefinition.getOptionHandler` (null: NPC option handlers are content),
 `QuestRepository.isComplete` for cooking (false: no quest is ported, so the
 Lumbridge castle range 114 always refuses), `SkillcapePerks.isActive(HASTY_COOKING)`
@@ -520,9 +522,11 @@ varp-configured scenery (morphs) and their debug lookup, the bank booths'
 `defineInteraction` scripts (interaction scripts in the player's script
 queue) and the bank chest and deposit box listeners (the walk to scenery
 for a content listener), scenery option handlers that are not global handlers (doors and other
-content); the use-with MovementPulse to a ground item, a UseWithHandler's
-MovementPulse and item-on-item Pulse (no handler class is ported),
-`UseWithHandler.handle`, use-with on morphing scenery and `ZoneMonitor.useWith`
+content, CowMilkingPlugin aside); the use-with MovementPulse to a ground item, a UseWithHandler's
+MovementPulse with a `getDestination` override and item-on-item Pulse (no such handler class is installed),
+the dialogue plugins CowMilkingPlugin opens (3807 without a bucket or a pail, 70099 for "steal-cowbell"),
+every `creatures::Host` and `equipment_registers::Host` service outside cow milking (sheep, the stray dog's behaviour, decanting, chinchompas, salamanders, the hasta listener),
+use-with on morphing scenery and `ZoneMonitor.useWith`
 inside a region zone;
 the slot switch's bank calls; content NPC clipping suppliers;
 special attack handlers (`instant_spec`), `DialogueInterpreter.sendDialogue`
@@ -704,6 +708,14 @@ the client-side player and NPC update decoders):
   Cooking level! You have reached level 2."). A
   range, the sinew options, Cook-X, pies, pizzas, spits, the gauntlets and
   the level refusal are not exercised through a socket.
+- `usemilk` (a save beside the dairy cow 8689 at 3252,3275 with two
+  buckets) uses the cow's first option (opcode 254): eight ticks later
+  "You milk the cow." and a bucket of milk (1927). It then uses the other
+  bucket on the cow (opcode 134): the BucketHandler's pulse takes the first
+  one's place (the debug line names "Handler=BucketHandler"), and eight
+  ticks later the second bucket is milk. The refusal without a bucket, a
+  pail and "steal-cowbell" are not exercised through a socket (their
+  dialogue plugins are not ported).
 - `climbone` (a save south of the ladder 36768 at 3229,3213 east of
   Lumbridge castle) uses Climb-up (opcode 254): `processSceneryAction`, the
   legacy walk and arrival, the global handlers' LadderManagingPlugin and
@@ -855,9 +867,9 @@ stand-ins); this test checks the production binding end to end.
   classes, seven listener classes are installed (above; CookingRewrite is
   the seventh, ported without a JVM corpus, docs/cooking.md). Not installed:
   ChestKeyListener (ported in `world::global_items2`; needs
-  `SceneryBuilder.replace` in the live scene), cow milking and the other
-  `UseWithHandler` classes (`UseWithHandler.HANDLERS` is still empty here;
-  `world::creatures`' milking needs the equipment registers' host), the
+  `SceneryBuilder.replace` in the live scene), the `UseWithHandler` classes
+  other than CowMilkingPlugin's BucketHandler (the one handler in
+  `UseWithHandler.HANDLERS` here), the
   enchanted-tablet and ectophial use-withs of `world::global_items`, and
   everything not ported at all: the rest of the cooking package (recipes,
   dough, dairy, fermenting, the tutorial branch; docs/cooking.md), fires lit

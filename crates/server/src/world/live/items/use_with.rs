@@ -1,15 +1,16 @@
 //! `processUseWith` (`world::packet_handlers::use_with`) over the live world:
 //! item on item, NPC, player, scenery and ground item, with the zone monitor,
 //! the native `InteractionListeners` (`run_use`), PluginInteractionManager (no
-//! plugins) and `UseWithHandler.HANDLERS` (no handler class is ported: the
-//! list is empty, the original's answer with no content registered).
+//! plugins) and `UseWithHandler.HANDLERS` (the world's registry, which holds
+//! CowMilkingPlugin's BucketHandler, super::milking; a key without a
+//! handler is the original's null).
 //! An unhandled item-on-item use runs `runUnhandledAction` ("Nothing
 //! interesting happens." a tick later, as a world pulse). An unhandled use on
 //! an NPC, a player or a scene object runs `UseWithHandler$1`: a
 //! `MovementPulse` of the canonical movement toward the node (the scene
 //! object's canonical node for scenery) whose arrival sends "Nothing
 //! interesting happens." (super::super::talk's approaches). The movement to
-//! a ground item, a UseWithHandler's own pulses and morphing scenery
+//! a ground item, a UseWithHandler's item-on-item pulse and morphing scenery
 //! (`getChild` through varbits/varps) are refused by name. The debug lines
 //! use the ported `NPC`, `Player` and `Scenery` `toString`.
 use super::{Ctx, Node, err, refused};
@@ -91,13 +92,16 @@ impl use_with::Context for Ctx<'_> {
         );
         Ok(false)
     }
-    fn handlers(&mut self, _: i32) -> Result<Option<HandlerList>> {
-        // UseWithHandler.HANDLERS: filled by content UseWithHandler classes
-        // (none ported): no list for any key.
-        self.0.inner.not_ported.default_answer(
-            "UseWithHandler.HANDLERS (no content use-with handler registered: null)",
-        );
-        Ok(None)
+    fn handlers(&mut self, key: i32) -> Result<Option<HandlerList>> {
+        // UseWithHandler.HANDLERS: filled by the content UseWithHandler
+        // classes this world installs (super::milking's BucketHandler).
+        let list = self.0.item_actions.use_handlers.get(key);
+        if list.is_none() {
+            self.0.inner.not_ported.default_answer(
+                "UseWithHandler.HANDLERS for a key no installed handler registered (most content use-with handlers are not ported: null)",
+            );
+        }
+        Ok(list)
     }
     fn close_interface(&mut self, player: &Node) -> Result<()> {
         let p = self.player_of(player)?;
@@ -136,15 +140,17 @@ impl use_with::Context for Ctx<'_> {
         handler: Option<&UseHandler>,
         body: Body<Node>,
     ) -> Result<UsePulse> {
-        if handler.is_some() {
-            // UseWithHandler.getDestination: no handler class is ported, so
-            // HANDLERS never answers a list for this pulse to carry.
-            return refused("a UseWithHandler's MovementPulse (no handler class is ported)");
+        if let Some(handler) = handler
+            && handler.read().handler != super::milking::BUCKET_HANDLER
+        {
+            return refused("a UseWithHandler's MovementPulse with a getDestination override");
         }
         // `new MovementPulse(player, event.getUsedWith())`: the two-argument
         // constructor, whose destination flag is ENTITY for an NPC or a
         // player and null otherwise (scenery: the path to the object
-        // itself); its arrival runs `body`.
+        // itself); its arrival runs `body`. The three-argument constructor
+        // with a handler is the same pulse while the handler's
+        // `getDestination` is UseWithHandler's null (BucketHandler's).
         let Node::Player(p) = player else {
             return Err(Error::Cast);
         };
@@ -179,14 +185,44 @@ impl use_with::Context for Ctx<'_> {
             .skip("UseWithEvent dispatch (entity event hooks not ported)");
         Ok(())
     }
-    fn use_handle(&mut self, _: &UseHandler, _: &Event<Node>) -> Result<bool> {
-        refused("UseWithHandler.handle (no content use-with handler is ported)")
+    fn use_handle(&mut self, handler: &UseHandler, event: &Event<Node>) -> Result<bool> {
+        let id = handler.read().handler;
+        let p = self.player_of(&event.player)?;
+        match self.0.use_handler_handle(id, &p) {
+            Some(result) => {
+                self.0.inner.drain(&p);
+                result.map_err(err)
+            }
+            None => refused("UseWithHandler.handle of a handler this world did not install"),
+        }
     }
-    fn face_location(&mut self, _: &Node, _: Option<[i32; 3]>) -> Result<Option<[i32; 3]>> {
-        refused("Node.getFaceLocation in use-with")
+    fn face_location(&mut self, node: &Node, from: Option<[i32; 3]>) -> Result<Option<[i32; 3]>> {
+        // Node.getFaceLocation(fromLoc) of a scene object.
+        let Node::Scenery(object) = node else {
+            return refused("Node.getFaceLocation of a use-with target that is not scenery");
+        };
+        let [x, y, z] = from.ok_or(Error::Null)?;
+        let (location, size) = {
+            let object = object.read();
+            (object.location.clone(), object.node_size)
+        };
+        Ok(Some(
+            crate::world::legacy_interaction::node_face_location(
+                &location,
+                size,
+                &crate::world::doors::Location::new(x, y, z),
+            )
+            .coordinates(),
+        ))
     }
-    fn face(&mut self, _: &Node, _: Option<[i32; 3]>) -> Result<()> {
-        refused("faceLocation in use-with")
+    fn face(&mut self, player: &Node, location: Option<[i32; 3]>) -> Result<()> {
+        // player.faceLocation(location).
+        let p = self.player_of(player)?;
+        let masks = self.0.inner.canonical(&p).player.masks();
+        masks
+            .face_location(location.map(|[x, y, z]| crate::world::doors::Location::new(x, y, z)))
+            .map_err(err)?;
+        Ok(())
     }
 }
 

@@ -254,4 +254,5 @@ content/global/handlers/item/equipment class not listed above; repairing
 (`BobRepairItem`, `ArmourStand`, `BobDialogue`) beyond the repair cost;
 `CalquatDecant` and the consumables effects; the dragon classes elsewhere
 (KBD, Elvarg, wyverns, brutal and mithril dragons); every binding to a live
-session (`world/live` installs nothing of this yet).
+session except CowMilkingPlugin's (`world/live/items/milking.rs`, the only
+class of this module `world/live` installs; docs/live-world.md).

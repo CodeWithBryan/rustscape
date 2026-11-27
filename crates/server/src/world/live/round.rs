@@ -60,6 +60,8 @@ pub struct Round {
     pub everyday: super::items::everyday::EverydayWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
+    /// CowMilkingPlugin (super::items::milking).
+    pub milking: super::items::milking::MilkingWorld,
     /// `ServerConstants.SECOND_BANK`.
     pub second_bank: bool,
 }
@@ -95,6 +97,7 @@ impl super::host::Live {
             .retain(|(_, _, _, player, target)| player.node != node && target.node != node);
         self.walk.follows.retain(|(_, mover)| *mover != node);
         self.round.eat.doses.retain(|(_, owner, _)| *owner != node);
+        self.milking_logout(node);
         self.round.cooking.pulses.retain(|(handle, owner, _)| {
             if *owner == node {
                 crate::pulses::stop_base(handle);

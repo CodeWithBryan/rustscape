@@ -54,20 +54,65 @@ impl Live {
     }
 }
 
+/// A scenery definition's OptionHandler this world runs: a global handler's
+/// or a content plugin's.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SceneryPlugin {
+    Global(OptionPlugin),
+    /// CowMilkingPlugin (super::items::milking).
+    CowMilking,
+}
+impl SceneryPlugin {
+    pub fn class(self) -> &'static str {
+        match self {
+            Self::Global(plugin) => plugin.class(),
+            Self::CowMilking => super::items::milking::CLASS,
+        }
+    }
+    /// `isWalk()`: OptionHandler's true for a content plugin.
+    pub fn is_walk(self) -> bool {
+        match self {
+            Self::Global(plugin) => plugin.is_walk(),
+            Self::CowMilking => true,
+        }
+    }
+    /// `isWalk(player, node)`: OptionHandler's false.
+    pub fn is_walk_for(self) -> bool {
+        match self {
+            Self::Global(plugin) => plugin.is_walk_for(),
+            Self::CowMilking => false,
+        }
+    }
+    /// `isDelayed(player)`: OptionHandler's true.
+    pub fn is_delayed(self) -> bool {
+        match self {
+            Self::Global(plugin) => plugin.is_delayed(),
+            Self::CowMilking => true,
+        }
+    }
+}
+
 impl WalkHost<'_> {
-    /// The global handler an option handler id of the scenery arena holds.
-    pub fn scenery_handler(&self, id: usize) -> legacy::Result<OptionPlugin> {
+    /// The handler an option handler id of the scenery arena holds.
+    pub fn scenery_handler(&self, id: usize) -> legacy::Result<SceneryPlugin> {
         let handler = self
             .walk
             .scenery
             .handler(id)
             .map_err(|e| legacy::Error::Binding(Some(format!("{e:?}"))))?;
-        let plugin = handler.read().value::<OptionPlugin>().copied();
-        plugin.ok_or_else(|| {
-            legacy::Error::Binding(Some(
-                "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),
-            ))
-        })
+        let handler = handler.read();
+        if let Some(plugin) = handler.value::<OptionPlugin>() {
+            return Ok(SceneryPlugin::Global(*plugin));
+        }
+        if handler
+            .value::<super::items::milking::CowPlugin>()
+            .is_some()
+        {
+            return Ok(SceneryPlugin::CowMilking);
+        }
+        Err(legacy::Error::Binding(Some(
+            "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),
+        )))
     }
 }
 

@@ -462,6 +462,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             player_dispatch: false,
             follows: Vec::new(),
             content_pulses: Vec::new(),
+            stopping_pulses: Vec::new(),
         },
         login_listeners: names("listeners.login"),
         logout_listeners: names("listeners.logout"),
@@ -524,6 +525,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_round()?;
     // The content use-with listeners (super::items::everyday).
     live.install_content_use()?;
+    live.install_cow_milking()?;
     Ok(Booted {
         live,
         configuration,

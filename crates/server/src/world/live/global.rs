@@ -1610,7 +1610,7 @@ impl crate::world::interaction_listeners::Casing for RootCasing {
 /// reached it returns (it needs the whole world).
 #[derive(Clone)]
 pub struct HandlerCall {
-    pub plugin: registry::OptionPlugin,
+    pub plugin: super::scenery::SceneryPlugin,
     pub player: NodeHandle,
     pub target: Option<Scenery>,
     pub option: String,
@@ -1713,13 +1713,25 @@ impl Live {
             }
             let player = GNode::Entity(p.clone());
             let target = call.target.clone().map(GNode::Scenery);
-            let result = registry::run_handler(
-                &mut GHost { live: self },
-                call.plugin,
-                &player,
-                target.as_ref(),
-                Some(&call.option),
-            );
+            let result = match call.plugin {
+                super::scenery::SceneryPlugin::Global(plugin) => registry::run_handler(
+                    &mut GHost { live: self },
+                    plugin,
+                    &player,
+                    target.as_ref(),
+                    Some(&call.option),
+                ),
+                // CowMilkingPlugin.handle(player, node, option).
+                super::scenery::SceneryPlugin::CowMilking => {
+                    crate::world::creatures::cow_milking::handle(
+                        self,
+                        &p,
+                        target.is_some(),
+                        Some(&call.option),
+                    )
+                    .map_err(|e| Error::Binding(Some(format!("{e:?}"))))
+                }
+            };
             match result {
                 // InteractPlugin: a handler answering false is "Nothing
                 // interesting happens."

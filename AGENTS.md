@@ -622,6 +622,14 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   drawn on every check, IntentionalBurnPulse's own amount, sinew cooked with
   BEEF's row). The live binding is world/live/items/cooking.rs; after
   touching it run the live_world `usewith` scenario.
+- Cow milking in the live world is world/live/items/milking.rs: the live
+  world is equipment_registers::Host and creatures::Host for
+  CowMilkingPlugin only, and every other service of those two traits is a
+  refusal by name. Join a service before installing another class of
+  world/creatures or world/equipment_registers; a new UseWithHandler class
+  needs an id in `Live::use_handler_handle` and, if it overrides
+  getDestination, the handler branch of items/use_with.rs `movement`.
+  After touching it run the live_world `usewith` scenario.
 - For core.api (world/content_api: every ContentAPI.kt function, its
   ContainerisedItem, GAMETAB, SecondaryBankAccountActivationResult and
   SkillDialogueBuilder, and the other core/api files: ApiExtensions,

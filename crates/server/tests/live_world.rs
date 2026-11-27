@@ -2501,6 +2501,7 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     tokio::time::sleep(Duration::from_secs(2)).await;
     use_content_scenario(address, saves).await;
     use_cook_scenario(address, saves).await;
+    use_milk_scenario(address, saves).await;
 }
 
 /// Cooking (`world::cooking`, docs/cooking.md) at the fire 5631 west of
@@ -2508,6 +2509,74 @@ async fn use_with_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
 /// burnt meat), then three raw shrimps through the "How many would you like
 /// to cook?" chatbox (307) with "All" (each shrimp is cooked or burnt by
 /// its roll at cooking level 1).
+/// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
+/// on it (BucketHandler through `UseWithHandler.HANDLERS`).
+async fn use_milk_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let start = [3251, 3273, 0];
+    write_save(
+        &players,
+        "traceone",
+        "usemilk",
+        start,
+        &[(0, 1925, 1), (1, 1925, 1)],
+    );
+    let (code, milk) = Client::login(address, "usemilk").await;
+    assert_eq!(code, 2, "usemilk's login");
+    let mut milk = milk.unwrap();
+    milk.until(Duration::from_secs(10), "usemilk's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = milk.messages.len();
+    // The option: eight ticks later the first bucket is milk.
+    milk.send(scenery_option1(8689, 3252, 3275)).await;
+    milk.until_pinging(Duration::from_secs(30), "the first bucket of milk", |c| {
+        held(c, 1927) == 1
+    })
+    .await;
+    // A bucket on the cow: a new milking pulse takes the old one's place.
+    let slot = milk.containers[&93]
+        .iter()
+        .find(|(_, (item, _))| *item == 1925)
+        .map(|(slot, _)| *slot)
+        .expect("a bucket is left");
+    milk.send(use_with_scenery(1925, slot, 8689, 3252, 3275))
+        .await;
+    milk.until_pinging(Duration::from_secs(30), "the second bucket of milk", |c| {
+        held(c, 1927) == 2 && held(c, 1925) == 0
+    })
+    .await;
+    let lines: Vec<&str> = milk.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .collect();
+    // The save has debug on: UseWithHandler$3 names the handler it ran.
+    assert_eq!(
+        lines.iter().filter(|m| **m == "You milk the cow.").count(),
+        2,
+        "usemilk's messages: {lines:?}"
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|m| m.starts_with("Handler=BucketHandler, used item=")),
+        "the bucket handler's debug line: {lines:?}"
+    );
+    eprintln!(
+        "usemilk milked the dairy cow 8689 twice from {:?}",
+        milk.position()
+    );
+    milk.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 async fn use_cook_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
     let players = saves.join("players");
     let held = |c: &Client, id: i32| {
