@@ -10,6 +10,7 @@ use super::*;
 
 impl Game {
     pub(super) async fn redraw(&mut self) -> bool {
+        let ui_nodes = self.take_ui_nodes();
         let mut workbench = &mut self.workbench;
         let npc_replay = &mut self.npc_replay;
         let replay = &mut self.replay;
@@ -110,7 +111,6 @@ impl Game {
         let mut click_cross = std::mem::take(&mut self.click_cross);
         let mut last_render_metrics = std::mem::take(&mut self.last_render_metrics);
         let hover_menu = std::mem::take(&mut self.hover_menu);
-        let ui_nodes = std::mem::take(&mut self.ui_nodes);
         let input_camera = self.input_camera.take().expect("input_camera");
         let origin = workbench.navigation.origin;
         // `Cheat.shiftClick && Keyboard.pressedKeys[KEY_SHIFT]`: the left

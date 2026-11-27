@@ -555,6 +555,7 @@ impl Game {
     }
 
     pub(super) fn cycle_hooks(&mut self) {
+        let ui_nodes = self.take_ui_nodes();
         let workbench = &mut self.workbench;
         let mut ui = &mut self.ui;
         let ui_audio = &mut self.ui_audio;
@@ -582,7 +583,6 @@ impl Game {
         let self_size = self.self_size;
         let plane = self.plane;
         let mut route_steps = std::mem::take(&mut self.route_steps);
-        let ui_nodes = std::mem::take(&mut self.ui_nodes);
         macro_rules! display_effects {
             () => {
                 display_effects(
@@ -764,23 +764,24 @@ impl Game {
     /// is begun here, before this cycle's update of it (client.java:
     /// 1227-1229). In game the mini menu click begins it (`cycle_menu_click`).
     pub(super) fn begin_walk_drag(&mut self) {
-        let Some(ui) = &self.ui else {
-            return;
-        };
-        if let Some(key) = ui.drag_candidate {
+        let ui_nodes = self.take_ui_nodes();
+        if let Some(ui) = &self.ui
+            && let Some(key) = ui.drag_candidate
+        {
             let click = [self.input.mouse.click_x, self.input.mouse.click_y];
             self.ui_drag
-                .begin_walked(ui, &self.ui_nodes, key, click, self.ui_vm.cycle);
+                .begin_walked(ui, &ui_nodes, key, click, self.ui_vm.cycle);
         }
+        self.ui_nodes = ui_nodes;
     }
 
     pub(super) fn cycle_drag(&mut self, inventory: bool) -> Option<MenuEntry> {
+        let ui_nodes = self.take_ui_nodes();
         let mut ui = &mut self.ui;
         let ui_vm = &mut self.ui_vm;
         let outbox = &mut self.outbox;
         let input = &mut self.input;
         let ui_drag = &mut self.ui_drag;
-        let ui_nodes = std::mem::take(&mut self.ui_nodes);
         // A drag under way: an inventory item (Protocol.java:2720-2778) or a
         // component (2815-2817). The click a press stood for comes back when
         // the button is let go without a drag.
@@ -818,6 +819,7 @@ impl Game {
     }
 
     pub(super) fn cycle_menu_click(&mut self) -> Option<MenuEntry> {
+        let ui_nodes = self.take_ui_nodes();
         let workbench = &mut self.workbench;
         let ui = &mut self.ui;
         let ui_renderer = &mut self.ui_renderer;
@@ -829,7 +831,6 @@ impl Game {
         let paused = self.paused;
         let mut menu_trims_seen = self.menu_trims_seen;
         let mut hover_menu = std::mem::take(&mut self.hover_menu);
-        let ui_nodes = std::mem::take(&mut self.ui_nodes);
         let menu_click = &mut self.menu_click;
         // Each sub-interface opened or closed since the last frame trims the
         // open menu, before this frame's click is looked at.
@@ -943,6 +944,7 @@ impl Game {
     }
 
     pub(super) fn do_action(&mut self, chosen: Option<MenuEntry>) -> Option<[i32; 2]> {
+        let mut ui_nodes = self.take_ui_nodes();
         let walk_spell = &mut self.walk_spell;
         let workbench = &mut self.workbench;
         let mut ui = &mut self.ui;
@@ -962,7 +964,6 @@ impl Game {
         let mut route_status = std::mem::take(&mut self.route_status);
         let mut route_steps = std::mem::take(&mut self.route_steps);
         let mut click_cross = std::mem::take(&mut self.click_cross);
-        let mut ui_nodes = std::mem::take(&mut self.ui_nodes);
         let walk = &mut self.walk;
         let origin = workbench.navigation.origin;
         let mut menu_action_failed = false;
@@ -1583,9 +1584,9 @@ impl Game {
     }
 
     pub(super) fn cycle_finish(&mut self, interfaces: bool) {
+        let mut ui_nodes = self.take_ui_nodes();
         let mut ui = &mut self.ui;
         let mut ui_cycle = self.ui_cycle;
-        let mut ui_nodes = std::mem::take(&mut self.ui_nodes);
         ui_cycle = ui_cycle.wrapping_add(1);
         if interfaces && let Some(ui) = &mut ui {
             ui_nodes = ui

@@ -18,6 +18,9 @@ mod legacy;
 mod menu_tests;
 #[path = "state_session.rs"]
 mod session;
+#[cfg(test)]
+#[path = "state_stale_layout_tests.rs"]
+mod stale_layout_tests;
 pub use hook_walk::{KeyInput, drag_source};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Serialize)]
 pub struct Key {
@@ -1268,6 +1271,36 @@ impl State {
             _ => return Ok(false),
         }
         Ok(true)
+    }
+    /// Drops the nodes of a laid-out list whose component has gone since it
+    /// was laid out, keeping each remaining node's `subtree_end` pointing
+    /// past its own (remaining) subtree.
+    ///
+    /// The client lays the interfaces out once a frame, before its cycles,
+    /// and walks that list afterwards. The original has no such list: its
+    /// walks (`Cs1ScriptRunner.renderComponent`, `InterfaceList`) go over
+    /// the component arrays as they are at that moment, so a group a cycle
+    /// discarded (`closeSubInterface(.., true)`, or `InterfaceList.reset()`
+    /// when the server logs the player out) is simply not walked. Removing
+    /// exactly the discarded nodes gives the walks the same tree; nodes
+    /// that remain keep the positions the frame's layout gave them.
+    pub fn retain_current(&self, nodes: &mut Vec<DrawNode>) {
+        if nodes.iter().all(|n| self.components.contains_key(&n.key)) {
+            return;
+        }
+        // kept_before[i]: how many nodes before index i remain.
+        let mut kept_before = Vec::with_capacity(nodes.len() + 1);
+        let mut kept = 0usize;
+        for node in nodes.iter() {
+            kept_before.push(kept);
+            kept += usize::from(self.components.contains_key(&node.key));
+        }
+        kept_before.push(kept);
+        let len = nodes.len();
+        nodes.retain_mut(|node| {
+            node.subtree_end = kept_before[node.subtree_end.min(len)];
+            self.components.contains_key(&node.key)
+        });
     }
     pub fn layout(&mut self, width: i32, height: i32) -> Result<Vec<DrawNode>, String> {
         // A new canvas size is the original's layoutTopLevel(true): sizes
