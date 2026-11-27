@@ -67,9 +67,13 @@ impl use_with::Context for Ctx<'_> {
             // ZoneMonitor.useWith with no zone: false.
             return Ok(false);
         }
-        refused(
-            "ZoneMonitor.useWith inside a region zone (an inventory item is not a canonical node)",
-        )
+        // None of the six installed zones (ZoneBuilder.startup's) overrides
+        // handleUseWith, so each answers false. A zone that does needs the
+        // inventory item as a canonical node first.
+        self.0.inner.not_ported.default_answer(
+            "ZoneMonitor.useWith inside a region zone (no installed region zone overrides handleUseWith: false)",
+        );
+        Ok(false)
     }
     fn listeners_use(
         &mut self,

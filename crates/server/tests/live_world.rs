@@ -3053,6 +3053,128 @@ async fn use_object_scenario(address: std::net::SocketAddr, saves: &std::path::P
         saved.contains("coal-truck-inventory"),
         "the saved attribute is in usecoal's save"
     );
+
+    // KaramjaBananaCrateListener: Luthas' crate 2072 at [2943, 3151, 0]
+    // with the task given in the save's GlobalData.
+    let start = [2941, 3150, 0];
+    write_save_with(
+        &players,
+        "traceone",
+        "usecrate",
+        start,
+        &[(0, 1963, 1), (1, 1963, 1), (2, 1963, 1), (3, 431, 1)],
+        |save| save["globalData"]["luthasTask"] = Value::Bool(true),
+    );
+    let (code, banana) = Client::login(address, "usecrate").await;
+    assert_eq!(code, 2, "usecrate's login");
+    let mut banana = banana.unwrap();
+    banana
+        .until(Duration::from_secs(10), "usecrate's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = banana.messages.len();
+    banana.send(scenery_option1(2072, 2943, 3151)).await;
+    banana
+        .until_pinging(Duration::from_secs(20), "the empty crate", |c| {
+            said(c, from, "The crate is completely empty.")
+        })
+        .await;
+    let texts = banana.texts.len();
+    banana
+        .send(use_with_scenery(1963, 0, 2072, 2943, 3151))
+        .await;
+    banana
+        .until_pinging(Duration::from_secs(20), "the packed banana", |c| {
+            held(c, 1963) == 2 && read(c, texts, "You pack a banana into the crate.")
+        })
+        .await;
+    // The two-tick lock of the pack ends before the next option.
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    banana.send(scenery_option1(2072, 2943, 3151)).await;
+    banana
+        .until_pinging(Duration::from_secs(20), "the crate's count", |c| {
+            said(c, from, "The crate has 1 banana inside.")
+        })
+        .await;
+    banana.send(scenery_option2(2072, 2943, 3151)).await;
+    banana
+        .until_pinging(Duration::from_secs(20), "the filled crate", |c| {
+            held(c, 1963) == 0 && said(c, from, "You pack all your bananas into the crate.")
+        })
+        .await;
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    let texts = banana.texts.len();
+    banana
+        .send(use_with_scenery(431, 3, 2072, 2943, 3151))
+        .await;
+    banana
+        .until_pinging(Duration::from_secs(20), "the stashed rum", |c| {
+            held(c, 431) == 0 && read(c, texts, "You stash the rum in the crate.")
+        })
+        .await;
+    eprintln!(
+        "usecrate packed three bananas and the rum into the crate 2072 at [2943, 3151, 0]: walked {start:?} -> {:?}",
+        banana.position()
+    );
+    banana.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    let saved: Value = serde_json::from_str(
+        &std::fs::read_to_string(players.join("usecrate.json")).expect("usecrate's save"),
+    )
+    .unwrap();
+    assert_eq!(
+        saved["globalData"]["karamjaBananas"], "3",
+        "the bananas are in usecrate's GlobalData"
+    );
+    assert!(
+        saved.to_string().contains("stashed-rum"),
+        "the saved attribute is in usecrate's save"
+    );
+
+    // SwampHoleRopeListener: the dark hole 5947 at [3169, 3172, 0].
+    let start = [3167, 3172, 0];
+    write_save(
+        &players,
+        "traceone",
+        "userope",
+        start,
+        &[(0, 954, 1), (1, 954, 1)],
+    );
+    let (code, rope) = Client::login(address, "userope").await;
+    assert_eq!(code, 2, "userope's login");
+    let mut rope = rope.unwrap();
+    rope.until(Duration::from_secs(10), "userope's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let texts = rope.texts.len();
+    rope.send(use_with_scenery(954, 0, 5947, 3169, 3172)).await;
+    rope.until_pinging(Duration::from_secs(20), "the tied rope", |c| {
+        held(c, 954) == 1 && read(c, texts, "You tie the rope to the top of the entrance")
+    })
+    .await;
+    let texts = rope.texts.len();
+    rope.send(use_with_scenery(954, 1, 5947, 3169, 3172)).await;
+    rope.until_pinging(Duration::from_secs(20), "the second rope's answer", |c| {
+        read(c, texts, "There is already a rope tied to the entrance.")
+    })
+    .await;
+    assert_eq!(held(&rope, 954), 1, "the second rope stays");
+    eprintln!(
+        "userope tied a rope to the dark hole 5947 at [3169, 3172, 0]: walked {start:?} -> {:?}",
+        rope.position()
+    );
+    rope.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    let saved: Value = serde_json::from_str(
+        &std::fs::read_to_string(players.join("userope.json")).expect("userope's save"),
+    )
+    .unwrap();
+    assert_eq!(
+        saved["globalData"]["lumbridgeRope"], true,
+        "the rope is in userope's GlobalData"
+    );
 }
 
 /// AxeOnTree and WoodcuttingSkillPulse (`world::gathering::woodcutting`

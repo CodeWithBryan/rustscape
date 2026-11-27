@@ -54,6 +54,23 @@ impl WithObject<'_> {
     }
 }
 
+impl WithObject<'_> {
+    /// `player.savedData.globalData`: the canonical player's saved data.
+    fn global_data<T>(
+        &mut self,
+        player: &Node,
+        f: impl FnOnce(&mut crate::player::saved_data::GlobalData) -> T,
+    ) -> Result<T> {
+        let p = self.player(player)?;
+        self.0
+            .0
+            .0
+            .inner
+            .with_profile(&p, |profile| f(&mut profile.saved.global))
+            .map_err(bind)
+    }
+}
+
 impl item_on_object::Host for WithObject<'_> {
     type Node = Node;
 
@@ -216,6 +233,37 @@ impl item_on_object::Host for WithObject<'_> {
         .map_err(bind);
         self.0.0.0.inner.drain(&p);
         finished
+    }
+    fn luthas_task(&mut self, player: &Node) -> Result<bool> {
+        self.global_data(player, |g| g.luthas_task)
+    }
+    fn karamja_bananas(&mut self, player: &Node) -> Result<i32> {
+        self.global_data(player, |g| g.karamja_bananas)
+    }
+    fn set_karamja_bananas(&mut self, player: &Node, value: i32) -> Result<()> {
+        self.global_data(player, |g| g.karamja_bananas = value)
+    }
+    fn lumbridge_rope(&mut self, player: &Node) -> Result<bool> {
+        self.global_data(player, |g| g.lumbridge_rope)
+    }
+    fn set_lumbridge_rope(&mut self, player: &Node, value: bool) -> Result<()> {
+        self.global_data(player, |g| g.lumbridge_rope = value)
+    }
+    fn send_item_dialogue(&mut self, player: &Node, item: &Node, text: &str) -> Result<()> {
+        // `player.dialogueInterpreter.sendItemMessage(item,
+        // *splitLines(message))`.
+        let p = self.player(player)?;
+        let item = Ctx::item(item).map_err(|_| Error::Cast)?;
+        let units: Vec<u16> = text.encode_utf16().collect();
+        let lines = crate::world::plain_dialogue::split_lines(&units, 54).map_err(bind)?;
+        let live = &mut *self.0.0.0;
+        let interpreter = live.interpreter_of(&p);
+        let sent = interpreter
+            .send_item_message(live, &item, &crate::world::dialogue_dsl::lines(&lines))
+            .map(|_| ())
+            .map_err(bind);
+        live.inner.drain(&p);
+        sent
     }
     fn run_woodcutting_pulse(&mut self, player: &Node, scenery: &Node) -> Result<()> {
         let p = self.player(player)?;

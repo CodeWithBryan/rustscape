@@ -1,6 +1,6 @@
-# Seven small item-on-object listeners (`world::item_on_object`)
+# Nine small item-on-object listeners (`world::item_on_object`)
 
-Scope: seven listener classes of the pinned
+Scope: nine listener classes of the pinned
 `content/global/handlers/item/withobject` package. The package's other
 classes are either in `world::global_items2` (docs/global-items2.md),
 `world::smelting`, `world::smithing`, or not ported.
@@ -15,6 +15,8 @@ classes are either in `world::global_items2` (docs/global-items2.md),
 | `AxeOnTree` (`onUseWith(SCENERY, axes, *trees)`) | `Class::AxeOnTree`, `Interaction::AxeOnTree`, `AXES`, `woodcutting_ids()`; the lambda only hands `WoodcuttingSkillPulse(player, scenery)` to the host (`run_woodcutting_pulse`). The pulse itself is `gathering::woodcutting::Pulse`, verified by the gathering corpus (docs/gathering.md) |
 | `CoalTruckListener` (`on(COAL_TRUCK_2114, SCENERY, "remove-coal")`, `on(COAL_TRUCK_2114, SCENERY, "investigate")`, `onUseWith(SCENERY, COAL_453, COAL_TRUCK_2114)`) | `Class::CoalTruck`; `Interaction::CoalRemove`, `coal_remove`; `Interaction::CoalInvestigate`, `coal_investigate`; `Interaction::CoalDeposit`, `coal_deposit` |
 | `SeersVillageAchievementDiary.onCoalRemovedFromSeersTruck` and the coal truck branch of its `onAttributeSet` (medium task `TRANSPORT_COAL`) | `coal_removed_from_seers_truck`, `seers_attribute_set`; the diary's other tasks are not part of this module |
+| `KaramjaBananaCrateListener` (`onUseWith(SCENERY, KARAMJAN_RUM_431, CRATE_2072)`, `onUseWith(SCENERY, BANANA_1963, CRATE_2072)`, `on(CRATE_2072, SCENERY, "search")`, `on(CRATE_2072, SCENERY, "fill")`) | `Class::KaramjaBananaCrate`; `Interaction::CrateRum`, `crate_rum`; `Interaction::CrateBanana`, `crate_banana`; `Interaction::CrateSearch`, `crate_search`; `Interaction::CrateFill`, `crate_fill` |
+| `SwampHoleRopeListener` (`onUseWith(SCENERY, ROPE_954, DARK_HOLE_5947)`) | `Class::SwampHoleRope`, `Interaction::SwampRope`, `swamp_rope` |
 
 The bodies are functions over `item_on_object::Host`, whose every method is
 a call the original makes outside the lambda (ContentAPI `inInventory`,
@@ -31,7 +33,7 @@ is the `pulse()` of the three pulse classes.
 ## Evidence, and what it does not show
 
 **There is no JVM differential corpus for this module.** It was ported by
-reading the seven Kotlin files, the two diary functions and the ContentAPI
+reading the nine Kotlin files, the two diary functions and the ContentAPI
 functions they call:
 
 - `cargo test -p rs09-server --test item_on_object`: a recording host
@@ -40,10 +42,12 @@ functions they call:
   the reference checkout is present) the sap tree ids against the source
   text. It shows the port agrees with one reading of the sources, not with
   the original classes running.
-- `live_world`'s `usesap`, `usepoison`, `usecheese`, `usecoal` and
-  `usechop` (docs/live-world.md) run sap collecting with the "empty"
+- `live_world`'s `usesap`, `usepoison`, `usecheese`, `usecoal`,
+  `usecrate`, `userope` and `usechop` (docs/live-world.md) run sap collecting with the "empty"
   option, one herring joke, the fountain, the treadmill, the Seers'
-  Village coal truck (three coal in and out, both options) and a bronze
+  Village coal truck (three coal in and out, both options), Luthas'
+  banana crate (search, one banana, fill, the rum), the swamp hole's rope
+  and a bronze
   axe on a tree through a socket.
 
 Not shown: any of this against a JVM; the animations on a client; the
@@ -53,7 +57,13 @@ itself is not ported); what else reads `piranhas-killed` (Ernest the
 Chicken's fountain search, not ported); the truck's fill message at 120
 coal and the Seers' Village diary task through a socket (the recording
 host covers both); the mine cart end of the coal trucks (nothing else
-here reads `coal-truck-inventory`).
+here reads `coal-truck-inventory`); who sets and pays out Luthas' task
+(his dialogue is not ported, so only a save that already has
+`luthasTask` reaches the crate's bodies, and nothing here reads the
+bananas or `stashed-rum` afterwards: Pirate's Treasure and the ship to
+Port Sarim are not ported); the dark hole itself (its "Climb-down" and
+the Lumbridge swamp caves are not ported, so the tied rope changes
+nothing a player can reach yet).
 
 ## Kept from the sources
 
@@ -90,6 +100,16 @@ here reads `coal-truck-inventory`).
   `/save:diary:seers:coal-truck-full` (once, and only while the task is
   open), and coal taken from a truck that was full, at one of the two
   Seers' Village trucks, finishes the task and removes that attribute.
+- Every crate lambda says "I don't know what goes in there." and answers
+  true without Luthas' task. The rum reads `stashed-rum` and writes
+  `/save:stashed-rum`. A banana or the rum locks the player for two ticks,
+  animates 832 and opens a plain dialogue; "fill" sends a game message
+  instead.
+- "Fill" computes the amount before its checks and says nothing at all
+  when no banana is held, even for a full crate. "Search" says "1 banana"
+  and "N bananas".
+- The swamp rope is removed before its item dialogue (the dialogue shows
+  the removed `Item`); a second rope gets a plain dialogue and stays.
 - AxeOnTree starts the legacy `WoodcuttingSkillPulse`, not
   WoodcuttingListener's script: the two differ (docs/gathering.md), and an
   axe used on a tree gets the pulse's rules (a dialogue for a full
@@ -97,11 +117,11 @@ here reads `coal-truck-inventory`).
 
 ## Live world
 
-`rs09-server --world` registers the seven classes at boot when the class
+`rs09-server --world` registers the nine classes at boot when the class
 scan names them (`world/live/items/everyday.rs` `install_content_use`),
 runs the use-with lambdas from `InteractionListeners.run`'s arrival, the
-"empty" option from the item option path and the truck's two options from
-the scenery option path (`world/live/scenery.rs` defers the listener run
+"empty" option from the item option path and the truck's and the crate's
+options from the scenery option path (`world/live/scenery.rs` defers the listener run
 to `Live::scenery_listener_run`, which walks to the scenery and runs the
 lambda on arrival). `WithObject`
 (`world/live/items/withobject.rs`) is the host: see docs/live-world.md for
