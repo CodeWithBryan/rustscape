@@ -3363,6 +3363,63 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     mine.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // FishingListener: a net fishing spot (316) at Draynor, with a small
+    // fishing net.
+    let start = [3088, 3228, 0];
+    write_save(&players, "traceone", "netfish", start, &[(0, 303, 1)]);
+    let (code, fish) = Client::login(address, "netfish").await;
+    assert_eq!(code, 2, "netfish's login");
+    let mut fish = fish.unwrap();
+    fish.until(Duration::from_secs(10), "netfish's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let spot = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 316)
+            .map(|(i, _)| *i as i32)
+    };
+    fish.until(Duration::from_secs(15), "a net fishing spot", |c| {
+        spot(c).is_some()
+    })
+    .await;
+    let index = spot(&fish).unwrap();
+    let from = fish.messages.len();
+    let before = fish.skills.get(&10).map_or(0, |s| s.1);
+    fish.send(npc_option1(index)).await;
+    fish.until_pinging(Duration::from_secs(20), "the cast", |c| {
+        said(c, from, "You cast out your net...")
+    })
+    .await;
+    // Level 1: a roll every five ticks.
+    fish.until_pinging(Duration::from_secs(300), "the shrimps", |c| {
+        held(c, 317) >= 1
+    })
+    .await;
+    assert!(
+        said(&fish, from, "You catch some shrimps."),
+        "netfish's messages: {:?}",
+        &fish.messages[from..]
+    );
+    let after = fish.skills.get(&10).map_or(0, |s| s.1);
+    assert!(
+        after > before,
+        "fishing experience rose ({before} -> {after})"
+    );
+    // The script keeps running: a second catch comes without another click.
+    fish.until_pinging(Duration::from_secs(300), "a second catch", |c| {
+        held(c, 317) >= 2
+    })
+    .await;
+    eprintln!(
+        "netfish netted shrimps at the fishing spot 316 with a small fishing net: walked {start:?} -> {:?}, fishing experience {before} -> {after}",
+        fish.position()
+    );
+    fish.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

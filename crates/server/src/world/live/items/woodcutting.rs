@@ -122,13 +122,23 @@ const OTHERS: Handle = 1 << 32;
 /// `DiaryType.SEERS_VILLAGE`'s ordinal.
 const SEERS_VILLAGE: usize = 5;
 
+/// What a gathering body works on.
+#[derive(Clone)]
+pub(super) enum Target {
+    /// A tree or a rock.
+    Scenery(doors::Handle),
+    /// A fishing spot.
+    Npc(P),
+}
+
 /// The gathering bodies' services over the live world, for one player and
-/// one tree or rock (super::mining answers the mining bodies with it).
+/// one tree, rock or fishing spot (super::mining and super::fishing answer
+/// their bodies with it).
 pub(super) struct Gather<'a> {
     pub(super) live: &'a mut Live,
     pub(super) p: P,
-    /// The tree or rock.
-    node: doors::Handle,
+    /// The tree, rock or fishing spot.
+    node: Target,
     /// The last scenery the body made (`Scenery.transform`, `Scenery(...)`).
     made: Option<doors::Handle>,
     /// The skill, for a refusal's name.
@@ -155,7 +165,11 @@ impl Gather<'_> {
     }
     fn scenery(&mut self, token: &Arg) -> Result<doors::Handle> {
         match token {
-            Arg::Int(NODE) => Ok(self.node.clone()),
+            Arg::Int(NODE) => match &self.node {
+                Target::Scenery(object) => Ok(object.clone()),
+                // `node as Scenery` of an NPC.
+                Target::Npc(_) => Err(Error::ClassCast),
+            },
             Arg::Int(MADE) => self.made.clone().ok_or(Error::Reply),
             _ => Err(Error::Reply),
         }
@@ -175,6 +189,12 @@ impl Gather<'_> {
                     None => Err(Error::Reply),
                 }
             }
+            _ => Err(Error::Reply),
+        }
+    }
+    fn npc(&mut self, token: &Arg) -> Result<P> {
+        match (token, &self.node) {
+            (Arg::Int(NODE), Target::Npc(npc)) => Ok(npc.clone()),
             _ => Err(Error::Reply),
         }
     }
@@ -234,6 +254,20 @@ impl Context for Gather<'_> {
         use Service as S;
         let p = self.p.clone();
         match service {
+            S::NodeId if matches!(self.node, Target::Npc(_)) => {
+                let npc = self.npc(args.first().ok_or(Error::Reply)?)?;
+                match crate::world::packet_handlers::Base::id(
+                    &mut Ctx(self.live),
+                    &Node::Npc(npc.0),
+                ) {
+                    Ok(id) => Ok(id.into()),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::NodeIsActive if matches!(self.node, Target::Npc(_)) => {
+                let npc = self.npc(args.first().ok_or(Error::Reply)?)?;
+                Ok(self.live.inner.node_active(npc.node()).into())
+            }
             S::NodeId => {
                 let object = self.scenery(args.first().ok_or(Error::Reply)?)?;
                 let id = object.read().id;
@@ -348,7 +382,7 @@ impl Context for Gather<'_> {
                     Err(e) => self.fail(e),
                 }
             }
-            S::InventoryContains => {
+            S::InventoryContains | S::ApiInInventory => {
                 let node = self.player_node();
                 match Ctx(self.live).container(&node, Held::Inventory) {
                     Ok(inventory) => Ok(inventory
@@ -823,6 +857,82 @@ impl Context for Gather<'_> {
                     None => self.fail("ThreadLocalRandom.nextInt of a bound below 1"),
                 }
             }
+            // ---- FishingListener's calls (super::fishing).
+            S::ApiGetUsedOption => {
+                // getUsedOption(player): the `interact:option` attribute.
+                let attributes = self.live.inner.canonical(&p).player.attributes();
+                match attributes.get("interact:option") {
+                    None => Ok("INVALID".into()),
+                    Some(crate::player::attributes::AttributeValue::Text(t)) => Ok(t.into()),
+                    Some(_) => Err(Error::ClassCast),
+                }
+            }
+            S::ApiHasLevelDyn => {
+                // hasLevelDyn(entity, skill, level): `skills.getLevel`.
+                match combat_swing::Host::level(self.live, &p, int(args.first())?) {
+                    Ok(v) => Ok((v >= int(args.get(1))?).into()),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::ApiHasSpaceFor => {
+                // hasSpaceFor(player, Item(id, amount)).
+                let node = self.player_node();
+                let item = Everyday(Ctx(self.live)).native(int(args.first())?, int(args.get(1))?);
+                let space = Ctx(self.live)
+                    .container(&node, Held::Inventory)
+                    .map(|inventory| inventory.has_space_for(Some(&item)));
+                match space {
+                    Ok(Ok(v)) => Ok(v.into()),
+                    Ok(Err(e)) => self.fail(e),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::FamiliarHasFamiliar => {
+                self.live
+                    .inner
+                    .not_ported
+                    .default_answer("FamiliarManager.hasFamiliar (not ported: false)");
+                Ok(false.into())
+            }
+            S::NpcLocation => {
+                // `npc.location` and the Location object's identity, which
+                // only the legacy pulse compares: the spot's node here.
+                let npc = self.npc(args.first().ok_or(Error::Reply)?)?;
+                match self.live.inner.state.node_location(npc.node()) {
+                    Ok(Some(l)) => {
+                        let [x, y, z] = l.coordinates();
+                        Ok(Arg::List(vec![
+                            x.into(),
+                            y.into(),
+                            z.into(),
+                            Arg::Int(npc.node() as i64),
+                        ]))
+                    }
+                    other => self.fail(other.map(|_| "no location")),
+                }
+            }
+            S::GameWorldSettings => Ok(true.into()),
+            S::GameSettingsIsDevMode => Ok(self.live.inner.settings.dev_mode.into()),
+            S::PlayerIncrementAttribute => {
+                // incrementAttribute(key): getAttribute(key, 0) + 1.
+                let key = text(args.first())?;
+                let attributes = self.live.inner.canonical(&p).player.attributes();
+                match attributes.integer(key, 0) {
+                    Ok(v) => {
+                        attributes.set_integer(key, v.wrapping_add(1));
+                        Ok(Arg::Null)
+                    }
+                    Err(_) => Err(Error::ClassCast),
+                }
+            }
+            S::FogGlovesUpdateCharges => {
+                self.live
+                    .inner
+                    .not_ported
+                    .skip("FOGGlovesManager.updateCharges (Fist of Guthix gloves not ported)");
+                Ok(Arg::Null)
+            }
+            S::RngSharedNextDouble => Ok(self.live.inner.generators.shared_next_double().into()),
             S::RngSharedNextInt => {
                 match self
                     .live
@@ -855,7 +965,8 @@ impl Context for Gather<'_> {
         if service == Service::PulseManagerRun {
             // player.pulseManager.run(object : Pulse(delay) { ... }):
             // ProspectListener's message (super::mining).
-            let (p, rock) = (self.p.clone(), self.node.clone());
+            let p = self.p.clone();
+            let rock = self.scenery(&NODE.into())?;
             let delay = int(args.first())?;
             return self
                 .live
@@ -879,7 +990,7 @@ impl Context for Gather<'_> {
         let function = Function::new(
             FunctionKind::Void,
             QUEUED_CLASS,
-            Queued::Woodcutting(task, self.node.clone()),
+            Queued::Woodcutting(task, self.scenery(&NODE.into())?),
         );
         self.script(ScriptCall::Queue(function, delay, strength, *persist))
             .map(|_| ())
@@ -911,10 +1022,21 @@ impl Live {
         skill: &'static str,
         f: impl FnOnce(&mut Gather<'_>) -> Result<T>,
     ) -> Bound<T> {
+        self.gather_at(p, Target::Scenery(node.clone()), skill, f)
+    }
+
+    /// [`Self::gather`] for any target.
+    pub(super) fn gather_at<T>(
+        &mut self,
+        p: &P,
+        node: Target,
+        skill: &'static str,
+        f: impl FnOnce(&mut Gather<'_>) -> Result<T>,
+    ) -> Bound<T> {
         let mut host = Gather {
             live: self,
             p: p.clone(),
-            node: node.clone(),
+            node,
             made: None,
             skill,
             error: None,

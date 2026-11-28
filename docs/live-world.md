@@ -494,7 +494,7 @@ scenery replacement, `playAudio` at a location, `removeItem`/`addItem`
 outside the inventory, an animation with a delay or a priority other than
 MID, force chat on a player); cooking before the tutorial is complete
 (CookingRewrite's tutorial island branch); a listener's walk
-to an item; `defineInteraction` scripts other than WoodcuttingListener's and MiningListener's; a destination override this
+to an item; `defineInteraction` scripts other than the gathering listeners' (woodcutting, mining, fishing); a destination override this
 world did not register), item plugins (`ItemPlugin.remove`, `canPickUp`), the guild items'
 dialogue, `EquipHandler.unequip`'s caller other than the global equipment
 tab, equipment plugins' `fireEvent`, brawling gloves, autocast clearing on a
@@ -817,6 +817,16 @@ the client-side player and NPC update decoders):
   star bonus, the bonus gem, perfect gold, the level, pickaxe and
   full-inventory refusals and the empty rock's update and respawn are not
   asserted through a socket.
+- `netfish` (the same scenario: a save at Draynor, 3088,3228, with a small
+  fishing net) takes a fishing spot 316's "Net" option (opcode 78):
+  FishingListener's interaction script walks it next to the spot, says
+  "You cast out your net...", rolls every five ticks, gives raw shrimps
+  (317) and 10 Fishing experience with "You catch some shrimps.", and
+  keeps running: a second catch comes without another click. Bait and its
+  removal, the other options and spots, the big-net extras, barehand
+  fishing, the level, tool, bait and full-inventory refusals and the
+  script's end when the player walks away are not asserted through a
+  socket.
 - `usemilk` (a save beside the dairy cow 8689 at 3252,3275 with two
   buckets) uses the cow's first option (opcode 254): eight ticks later
   "You milk the cow." and a bucket of milk (1927). It then uses the other
@@ -993,12 +1003,17 @@ stand-ins); this test checks the production binding end to end.
   `withnpc`
   (docs/item-on-npc.md) and all of `withitem`. The two dog listeners and CiderOnForester have
   no JVM corpus (docs/item-on-npc.md). Of `world::gathering` (verified
-  by its corpus) woodcutting and mining are installed:
+  by its corpus) the listeners are installed:
   `WoodcuttingSkillPulse`, started by an axe used on a tree;
-  WoodcuttingListener and MiningListener, the trees' and rocks' own options
-  as interaction scripts of the player's ScriptProcessor (`scripts.rs`);
-  and ProspectListener (`items/mining.rs`). Fishing is not, so raw fish
-  only come from saves and shops here. In these bodies the familiar boost
+  WoodcuttingListener, MiningListener and FishingListener, the trees',
+  rocks' and fishing spots' own options as interaction scripts of the
+  player's ScriptProcessor (`scripts.rs`); and ProspectListener
+  (`items/mining.rs`). The fishing spots do not move (`FishingNPC` and
+  `FishSpots` are not ported), no forager familiar acts, the Fist of
+  Guthix gloves' charges are skipped, barehand fishing's Fremennik diary
+  task is a refusal (nothing here sets the barbarian training attribute
+  barehand fishing needs), and barbarian fishing and the legacy
+  `FishingPulse` are not installed. In these bodies the familiar boost
   is 0, skillcape perks are inactive and the ResourceProducedEvent is
   skipped; the shooting star's bonus timer is read from the player's
   timers, which nothing here starts (shooting stars are not ported), and

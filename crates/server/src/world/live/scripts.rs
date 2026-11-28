@@ -48,6 +48,8 @@ pub enum Interaction {
     Woodcutting,
     /// `MiningListener::handleMining`.
     Mining,
+    /// `FishingListener::handleFishing`.
+    Fishing,
 }
 impl Interaction {
     pub fn class(self) -> &'static str {
@@ -56,6 +58,9 @@ impl Interaction {
                 "content.global.skill.gather.woodcutting.WoodcuttingListener$defineListeners$1"
             }
             Self::Mining => "content.global.skill.gather.mining.MiningListener$defineListeners$1",
+            Self::Fishing => {
+                "content.global.skill.gather.fishing.FishingListener$defineListeners$1"
+            }
         }
     }
     /// The handler as the registry's function object.
@@ -396,6 +401,7 @@ impl Live {
                 match function.value::<Interaction>().as_deref() {
                     Some(Interaction::Woodcutting) => self.woodcutting_script(&p, &target, stage),
                     Some(Interaction::Mining) => self.mining_script(&p, &target, stage),
+                    Some(Interaction::Fishing) => self.fishing_script(&p, &target, stage),
                     None => Err(refused("an interaction script this world did not install")),
                 }
             }

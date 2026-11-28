@@ -44,6 +44,7 @@ use std::collections::HashMap;
 mod component_use;
 pub mod cooking;
 pub mod everyday;
+pub mod fishing;
 pub mod milking;
 pub mod mining;
 mod slots;

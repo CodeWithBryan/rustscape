@@ -894,7 +894,7 @@ impl super::super::host::Live {
         let mut object_registered = Vec::new();
         let mut cooking = false;
         let mut woodcutting = false;
-        let (mut mining, mut prospect) = (false, false);
+        let (mut mining, mut prospect, mut fishing) = (false, false, false);
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
                 // CookingRewrite.defineListeners (super::cooking).
@@ -908,6 +908,10 @@ impl super::super::host::Live {
             if name == super::mining::LISTENER_CLASS {
                 // MiningListener.defineListeners (super::mining).
                 mining = true;
+            }
+            if name == super::fishing::LISTENER_CLASS {
+                // FishingListener.defineListeners (super::fishing).
+                fishing = true;
             }
             if name == super::mining::PROSPECT_CLASS {
                 // ProspectListener.defineListeners (super::mining).
@@ -941,6 +945,9 @@ impl super::super::host::Live {
         }
         if mining {
             self.define_mining_listener();
+        }
+        if fishing {
+            self.define_fishing_listener();
         }
         if prospect {
             // The only generic "prospect" listener, so its place among
