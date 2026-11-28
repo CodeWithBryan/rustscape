@@ -1,6 +1,11 @@
 package oracle;
 
 import content.global.skill.fletching.arrow.ArrowListeners;
+import content.global.skill.fletching.bolts.BoltListeners;
+import content.global.skill.fletching.crossbow.LimbingListener;
+import content.global.skill.fletching.darts.DartListeners;
+import content.global.skill.fletching.gem.GemBoltListeners;
+import content.global.skill.fletching.grapple.GrappleListeners;
 import content.global.skill.fletching.log.LogCraftableListeners;
 import content.global.skill.fletching.stringing.StringingListeners;
 import core.game.node.entity.player.Player;
@@ -27,10 +32,15 @@ public final class Oracle {
             Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
             W.names.put(Integer.parseInt((String) e.getKey()), (String) e.getValue());
         }
-        // The three classes register once, in this order, as the class scan would.
+        // The classes register once, in this declared order.
         new LogCraftableListeners().defineListeners();
         new StringingListeners().defineListeners();
         new ArrowListeners().defineListeners();
+        new BoltListeners().defineListeners();
+        new DartListeners().defineListeners();
+        new LimbingListener().defineListeners();
+        new GemBoltListeners().defineListeners();
+        new GrappleListeners().defineListeners();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
         PrintStream out = new PrintStream(System.out, false, "UTF-8");
         for (String line; (line = in.readLine()) != null; ) {
@@ -46,7 +56,7 @@ public final class Oracle {
     private static JSONArray run(JSONObject c) {
         W.state = (JSONObject) new JSONParserCopy().copy(c.get("state"));
         W.handler = null;
-        W.script = null;
+        W.scripts.clear();
         JSONArray results = new JSONArray();
         for (Object o : (JSONArray) c.get("ops")) {
             JSONObject op = (JSONObject) o;
@@ -114,8 +124,10 @@ public final class Oracle {
                 if (W.handler == null) return "no handler";
                 return W.handler.getAll(number(op, "index"));
             case "script":
-                if (W.script == null) return "no script";
-                return W.script.invoke(number(op, "stage"));
+                // The script the case names by its place in the queueing order, or the last one queued.
+                int n = op.containsKey("n") ? number(op, "n") : W.scripts.size() - 1;
+                if (n < 0 || n >= W.scripts.size()) return "no script";
+                return W.scripts.get(n).invoke(number(op, "stage"));
             default:
                 throw new IllegalArgumentException(kind);
         }

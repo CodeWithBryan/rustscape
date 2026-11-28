@@ -20,7 +20,8 @@ fn the_fixture_is_the_one_its_provenance_names() {
     );
 }
 
-/// Every original fletching case (logs, stringing, arrows) replayed over the
+/// Every original fletching case (logs, stringing, arrows, bolts, darts,
+/// crossbow limbs, gem tips, grapples) replayed over the
 /// native library with the same declared state.
 #[test]
 fn native_fletching_matches_the_original_cases() {
@@ -40,5 +41,5 @@ fn native_fletching_matches_the_original_cases() {
             operations += 1;
         }
     }
-    assert!(operations > 7000, "{operations} operations compared");
+    assert!(operations > 15000, "{operations} operations compared");
 }

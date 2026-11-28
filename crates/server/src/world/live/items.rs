@@ -50,6 +50,7 @@ pub mod everyday;
 pub mod firemaking;
 pub mod fishing;
 pub mod fletching;
+pub mod fletching_ammo;
 pub mod fletching_assembly;
 pub mod milking;
 pub mod mining;

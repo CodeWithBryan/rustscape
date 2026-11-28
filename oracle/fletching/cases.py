@@ -191,11 +191,127 @@ def arrow_cases():
     return out
 
 
+def block(path):
+    """Enum rows that may span lines: NAME(arguments) up to the companion object."""
+    body = text(path)
+    body = body[body.index("{", body.index("enum class")) + 1:body.index("companion object")]
+    out = []
+    for match in re.finditer(r"([A-Z][A-Z_0-9]*)\(((?:[^()]|\([^()]*\))*)\)\s*[,;]", body):
+        out.append((match.group(1), [part.strip() for part in match.group(2).split(",") if part.strip()]))
+    return out
+
+
+def bolts():
+    return [dict(name=n, unfinished=item(a[0]), finished=item(a[1]), level=int(a[2])) for n, a in block("bolts/BoltCraftInfo.kt")]
+
+
+def darts():
+    return [dict(name=n, tip=item(a[0]), dart=item(a[1]), level=int(a[2])) for n, a in block("darts/DartCraftInfo.kt")]
+
+
+def crossbows():
+    return [dict(name=n, stock=item(a[0]), limb=item(a[1]), unstrung=item(a[2]), level=int(a[3]))
+            for n, a in block("crossbow/UnfinishedCrossbowCraftInfo.kt")]
+
+
+def gems():
+    return [dict(name=n, untipped=item(a[0]), gem=item(a[1]), tip=item(a[3]), tipped=item(a[4]), level=int(a[5]))
+            for n, a in block("gem/GemBoltsCraftInfo.kt")]
+
+
+def run(n, stage):
+    return dict(op="script", stage=stage, n=n)
+
+
+CHISEL, MITHRIL_BOLTS, GRAPPLE_TIP, ROPE, GRAPPLE = 1755, 9142, 9416, 954, 9418
+PAIRS = [(40, 40), (10, 3), (1, 20), (0, 5), (5, 0), (11, 21), (2, 2)]
+
+
+def ammo_cases():
+    out = []
+    plumes = feathers()
+    for number, bolt in enumerate(bolts()):
+        feather = plumes[number % len(plumes)]
+        for level in sorted({max(1, bolt["level"] - 1), bolt["level"], 99}):
+            for broads in [True, False]:
+                for space in [True, False]:
+                    for first, second in PAIRS:
+                        if not (broads and space) and (first, second) != (40, 40):
+                            continue
+                        held = {str(feather): first, str(bolt["unfinished"]): second}
+                        out.append(dict(state=state(level=level, broads=broads, space=space, held=held), ops=[
+                            use(feather, bolt["unfinished"]), GET_ALL, create(3), script(0), script(1), script(2)]))
+        out.append(dict(state=state(clockReady=False, level=bolt["level"], held={str(feather): 30, str(bolt["unfinished"]): 30}), ops=[
+            use(bolt["unfinished"], feather), create(2), script(0), change(clockReady=True), script(0),
+            change(level=bolt["level"] - 1), script(1)]))
+    for number, dart in enumerate(darts()):
+        feather = plumes[number % len(plumes)]
+        for level in sorted({max(1, dart["level"] - 1), dart["level"], 99}):
+            for trap in [0, 99, 100, 101]:
+                for space in [True, False]:
+                    for first, second in PAIRS:
+                        if not (trap == 100 and space) and (first, second) != (40, 40):
+                            continue
+                        held = {str(feather): first, str(dart["tip"]): second}
+                        out.append(dict(state=state(level=level, space=space, held=held, quests=dict(THE_TOURIST_TRAP=trap)), ops=[
+                            use(feather, dart["tip"]), GET_ALL, create(3), script(0), script(1), script(2)]))
+        out.append(dict(state=state(clockReady=False, level=dart["level"], held={str(feather): 30, str(dart["tip"]): 30},
+                                    quests=dict(THE_TOURIST_TRAP=100)), ops=[
+            use(dart["tip"], feather), create(2), script(0), change(clockReady=True), script(0),
+            change(level=max(0, dart["level"] - 1)), script(1)]))
+    bows = crossbows()
+    for number, bow in enumerate(bows):
+        wrong = bows[(number + 1) % len(bows)]["limb"]
+        for level in sorted({max(1, bow["level"] - 1), bow["level"], 99}):
+            for space in [True, False]:
+                for stocks, limbs in [(2, 2), (1, 0), (0, 1), (3, 1)]:
+                    if not space and (stocks, limbs) != (2, 2):
+                        continue
+                    held = {str(bow["stock"]): stocks, str(bow["limb"]): limbs, str(wrong): 1}
+                    out.append(dict(state=state(level=level, space=space, held=held), ops=[
+                        use(wrong, bow["stock"]), use(bow["limb"], bow["stock"]), GET_ALL, create(3), script(0), script(1), script(2)]))
+        out.append(dict(state=state(clockReady=False, level=bow["level"], held={str(bow["stock"]): 2, str(bow["limb"]): 2}), ops=[
+            use(bow["stock"], bow["limb"]), create(2), script(0), change(clockReady=True), script(0),
+            change(level=bow["level"] - 1), script(1)]))
+    all_gems = gems()
+    for gem in all_gems:
+        for level in sorted({max(1, gem["level"] - 1), gem["level"], 99}):
+            for held_gems in [0, 1, 2, 5]:
+                # The start script queues the animation loop (1) and the craft loop (2).
+                out.append(dict(state=state(level=level, held={str(gem["gem"]): held_gems, str(CHISEL): 1}), ops=[
+                    use(CHISEL, gem["gem"]), GET_ALL, create(2), run(0, 0), run(1, 0), run(2, 0), run(1, 1), run(2, 1),
+                    run(1, 2), run(2, 2), run(1, 3)]))
+        out.append(dict(state=state(clockReady=False, level=gem["level"], held={str(gem["gem"]): 3}), ops=[
+            use(gem["gem"], CHISEL), create(3), run(0, 0), run(2, 0), run(1, 0), change(clockReady=True), run(2, 0),
+            change(level=gem["level"] - 1), run(1, 1), run(2, 1), run(1, 2)]))
+        for level in sorted({max(1, gem["level"] - 1), gem["level"], 99}):
+            for space in [True, False]:
+                for first, second in PAIRS:
+                    if not space and (first, second) != (40, 40):
+                        continue
+                    held = {str(gem["untipped"]): first, str(gem["tip"]): second}
+                    out.append(dict(state=state(level=level, space=space, held=held), ops=[
+                        use(gem["untipped"], gem["tip"]), GET_ALL, create(3), script(0), script(1), script(2)]))
+        # The tip on its bolts, and every other bolt with this tip.
+        ops = [use(gem["tip"], gem["untipped"]), create(1), script(0)]
+        ops += [use(other, gem["tip"]) for other in sorted({g["untipped"] for g in all_gems} - {gem["untipped"]})]
+        out.append(dict(state=state(held={str(gem["untipped"]): 4, str(gem["tip"]): 4}), ops=ops))
+    for used, with_ in [(MITHRIL_BOLTS, GRAPPLE_TIP), (GRAPPLE_TIP, MITHRIL_BOLTS), (ROPE, GRAPPLE), (GRAPPLE, ROPE)]:
+        for level in [58, 59]:
+            for first, second in [(1, 1), (0, 1), (1, 0), (5, 5)]:
+                for ready in [True, False]:
+                    held = {str(used): first, str(with_): second}
+                    out.append(dict(state=state(level=level, clockReady=ready, held=held), ops=[
+                        use(used, with_), script(0), change(clockReady=True), script(0), script(1)]))
+    return out
+
+
 def requests():
     cases = [dict(state=state(), ops=[dict(op="registrations")])]
     cases += log_cases() + bow_cases() + arrow_cases()
     # Pairs no listener registers.
     cases.append(dict(state=state(), ops=[use(KNIFE, BOW_STRING), use(SHAFT, HEADLESS), use(1, 2)]))
+    cases += ammo_cases()
     for number, case in enumerate(cases):
         case["id"] = number
     return cases

@@ -1066,8 +1066,12 @@ stand-ins); this test checks the production binding end to end.
   `world/fletching_assembly.rs`, same corpus,
   docs/fletching-assembly.md): StringingListeners and ArrowListeners open
   their one-option and make-sets dialogues and their four scripts run;
-  SlayerFlags is not ported, so broad arrows are always refused, and the
-  rest of fletching (bolts, darts, crossbow limbs, gems, grapples) is not
+  SlayerFlags is not ported, so broad arrows are always refused. Bolts,
+  darts, crossbow limbs, gem bolt tips and the mithril grapple are
+  installed (`items/fletching_ammo.rs` over `world/fletching_ammo.rs`,
+  same corpus, docs/fletching-ammo.md): broad bolts are always refused,
+  and darts are refused unless the save already holds Tourist Trap at
+  stage 100, which nothing here sets; ZogreFletchingListeners is not
   ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

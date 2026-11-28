@@ -86,6 +86,9 @@ pub enum Queued {
     LogCraft(usize, i32),
     /// A stringing or arrow script of `fletching_assembly` with its amount.
     Assembly(crate::world::fletching_assembly::Job, i32),
+    /// A bolt, dart, limb, gem or grapple script of `fletching_ammo` with
+    /// its amount.
+    Ammo(crate::world::fletching_ammo::Script, i32),
 }
 impl NativeObject for Queued {}
 
@@ -424,6 +427,9 @@ impl Live {
                 }
                 Some(Queued::Assembly(job, amount)) => {
                     self.fletching_assembly_queued(&p, *job, *amount, stage)
+                }
+                Some(Queued::Ammo(script, amount)) => {
+                    self.fletching_ammo_queued(&p, script, *amount, stage)
                 }
                 None => Err(refused("a queued script this world did not queue")),
             },

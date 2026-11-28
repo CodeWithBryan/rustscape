@@ -39,6 +39,20 @@ UNMODIFIED = [
     FLETCHING + "arrow/HeadlessArrowCraftScript.kt",
     FLETCHING + "arrow/TippedArrowCraftScript.kt",
     FLETCHING + "arrow/FlightedOgreArrowCraftScript.kt",
+    FLETCHING + "bolts/BoltListeners.kt",
+    FLETCHING + "bolts/BoltCraftScript.kt",
+    FLETCHING + "bolts/BoltCraftInfo.kt",
+    FLETCHING + "darts/DartListeners.kt",
+    FLETCHING + "darts/DartCraftScript.kt",
+    FLETCHING + "darts/DartCraftInfo.kt",
+    FLETCHING + "crossbow/LimbingListener.kt",
+    FLETCHING + "crossbow/LimbingScript.kt",
+    FLETCHING + "crossbow/UnfinishedCrossbowCraftInfo.kt",
+    FLETCHING + "gem/GemBoltListeners.kt",
+    FLETCHING + "gem/AttachGemTipToBoltScript.kt",
+    FLETCHING + "gem/CutGemsIntoBoltTipsScript.kt",
+    FLETCHING + "gem/GemBoltsCraftInfo.kt",
+    FLETCHING + "grapple/GrappleListeners.kt",
     FLETCHING + "Zones.kt",
     FLETCHING + "Feathers.kt",
     FLETCHING + "AchievementDiaryAttributeKeys.kt",
@@ -66,20 +80,23 @@ JVM_FLAGS = ["-Xmx512m", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.
 SCOPE = (
     "Complete unchanged LogCraftableListeners, CraftItemWithLogScript, LogCraftInfo, GrammarHelpers, StringingListeners, "
     "StringItemScript, StringableCraftInfo, ArrowListeners, ArrowCraftInfo, HeadlessArrowCraftScript, "
-    "TippedArrowCraftScript, FlightedOgreArrowCraftScript, Zones, Feathers, AchievementDiaryAttributeKeys, Quests, Clocks, "
+    "TippedArrowCraftScript, FlightedOgreArrowCraftScript, BoltListeners, BoltCraftScript, BoltCraftInfo, DartListeners, "
+    "DartCraftScript, DartCraftInfo, LimbingListener, LimbingScript, UnfinishedCrossbowCraftInfo, GemBoltListeners, "
+    "AttachGemTipToBoltScript, CutGemsIntoBoltTipsScript, GemBoltsCraftInfo, GrappleListeners, Zones, Feathers, AchievementDiaryAttributeKeys, Quests, Clocks, "
     "IntType and the Container enum, compiled with Kotlin 1.8.20/JDK 11 against the pinned ConstLib 1.4.28 artifact. "
     "Player, Item (with declared names), the inventory (a map of amounts: a removal succeeds when at least the amount is "
     "held, an addition always succeeds), hasSpaceFor, levels, quest stages, the skilling clock, attributes (one map, the "
     "/save: prefix dropped), the diary manager, SlayerFlags, sendDialogue, sendMessage, rewardXP, animate, queueScript, "
-    "keepRunning, stopExecuting, delayClock and PacketRepository are recording adapters whose results come from declared "
-    "case state; they are service inputs, not ports. isQuestStarted, removeItemsIfPlayerHasEnough, StringUtils.isPlusN, "
+    "keepRunning, stopExecuting, delayClock, delayScript, the animate function and PacketRepository are recording adapters whose results come from declared "
+    "case state; they are service inputs, not ports. isQuestStarted, isQuestComplete, removeItemsIfPlayerHasEnough, StringUtils.isPlusN, "
     "RandomFunction.random(int,int) and random(int), SkillDialogue.forLength, the SkillDialogue constants and "
     "ZoneBorders' constructors and insideBorder methods are pinned text spliced into adapter shells; RandomFunction.RANDOM "
     "returns the case's declared draws. SkillDialogueHandler is an adapter that records open() with its type and items "
     "and keeps create/getAll overridable: its display, buttons and amount prompts are not covered. The driver calls a "
     "use-with handler through a declared lookup (the pair as used, then flipped), not InteractionListeners, and runs a "
-    "queued script with the stage each case names, not ScriptProcessor. No live world, original Container/Skills "
-    "arithmetic, dialogue interpreter or item definition behaviour is established by this corpus."
+    "queued script (the one a case names by its place in the queueing order) with the stage the case names, not "
+    "ScriptProcessor: nothing here establishes when or in what order the processor runs the gem cutting loops. "
+    "No live world, original Container/Skills arithmetic, dialogue interpreter or item definition behaviour is established by this corpus."
 )
 
 
@@ -120,6 +137,7 @@ def splices():
     return {
         "/* SKILL_CONSTANTS */": re.search(r"public static final int ATTACK = 0,[^;]*;", read(SERVER / "core/game/node/entity/skill/Skills.java")).group(),
         "/* IS_QUEST_STARTED */": c.method(api, "fun isQuestStarted(player: Player, quest: Quests): Boolean"),
+        "/* IS_QUEST_COMPLETE */": c.method(api, "fun isQuestComplete(player: Player, quest: Quests): Boolean"),
         "/* REMOVE_ITEMS_IF_PLAYER_HAS_ENOUGH */": c.method(api, "fun removeItemsIfPlayerHasEnough(player: Player, vararg items: Item): Boolean"),
         "/* IS_PLUS_N */": c.method(read(SERVER / "core/tools/StringUtils.java"), "public static boolean isPlusN(String word)"),
         "/* RANDOM_AB */": c.method(random, "public static final int random(int a, int b)"),
