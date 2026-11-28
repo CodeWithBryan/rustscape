@@ -821,6 +821,19 @@ impl Context for Gather<'_> {
                     Err(e) => self.fail(e),
                 }
             }
+            S::DiaryFinishTask => {
+                // achievementDiaryManager.finishTask(player, type, level, index).
+                let kind = match text(args.first())? {
+                    "FREMENNIK" => crate::world::dialogue_dsl::otto::FREMENNIK,
+                    _ => return self.refuse(service),
+                };
+                let (level, index) = (int(args.get(1))?, int(args.get(2))?);
+                let done = super::super::subclasses::with_diaries(self.live, &p, |h, owner| {
+                    diary::finish_task(h, owner, owner, Some(kind), level, index)
+                });
+                done.or_else(|e| self.fail(e))?;
+                Ok(Arg::Null)
+            }
             S::DiaryGetLevel => {
                 // achievementDiaryManager.getDiary(type).level.
                 let kind = match text(args.first())? {

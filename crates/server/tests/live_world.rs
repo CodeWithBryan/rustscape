@@ -3611,6 +3611,139 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     barb.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Otto Godblessed (2725): OttoGodblessedDialogue's "talk-to" opens the
+    // DialogueLabeller conversation. A save with no barbarian training
+    // attribute takes the first-time branch; "You think so?" leads to the
+    // training menu, the rod topic sets `barbtraining:rod` to 1, and
+    // leaving hands out the Barbarian skills book (11340). The bed (25268)
+    // then gives the barbarian rod.
+    let start = [2501, 3488, 0];
+    write_save(&players, "traceone", "ottotalk", start, &[]);
+    let (code, otto) = Client::login(address, "ottotalk").await;
+    assert_eq!(code, 2, "ottotalk's login");
+    let mut otto = otto.unwrap();
+    otto.until(Duration::from_secs(10), "ottotalk's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let ottos = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 2725)
+            .map(|(i, _)| *i as i32)
+    };
+    otto.until_pinging(Duration::from_secs(15), "Otto Godblessed", |c| {
+        ottos(c).is_some()
+    })
+    .await;
+    let index = ottos(&otto).unwrap();
+    let picks = [
+        "You think so?",
+        "Are there any ways to use a fishing rod which I might learn?",
+        "I have no more questions at this time.",
+    ];
+    // The chat interfaces (the player's 64-67, an NPC's 241-244) and the
+    // option lists; other texts (the music tab's track name) are not pages.
+    let dialogue = |component: i32| {
+        let interface = component >> 16;
+        (64..=67).contains(&interface) || (224..=244).contains(&interface)
+    };
+    let mut picked = Vec::new();
+    let mut transcript = Vec::new();
+    let mut from = otto.texts.len();
+    otto.send(npc_option1(index)).await;
+    for step in 0..40 {
+        otto.until_pinging(Duration::from_secs(20), "Otto's next page", |c| {
+            c.texts[from..].iter().any(|(_, p, _)| dialogue(*p))
+                || held(c, 11340) >= 1
+                || c.messages.iter().any(|(_, m)| m == "I can't reach that.")
+        })
+        .await;
+        assert!(
+            !otto
+                .messages
+                .iter()
+                .any(|(_, m)| m == "I can't reach that."),
+            "ottotalk could not reach Otto from {:?}",
+            otto.position()
+        );
+        if !otto.texts[from..].iter().any(|(_, p, _)| dialogue(*p)) {
+            break;
+        }
+        // The rest of the page's texts.
+        otto.pump(Duration::from_millis(300)).await;
+        let page: Vec<(i32, String)> = otto.texts[from..]
+            .iter()
+            .filter(|(_, p, _)| dialogue(*p))
+            .map(|(_, p, t)| (*p, t.clone()))
+            .collect();
+        from = otto.texts.len();
+        let interface = page.last().unwrap().0 >> 16;
+        let chat = (64..=67).contains(&interface) || (241..=244).contains(&interface);
+        let line = format!(
+            "{interface}: {}",
+            page.iter()
+                .map(|(_, t)| t.as_str())
+                .collect::<Vec<_>>()
+                .join(" | ")
+        );
+        if std::env::var_os("RS09_LIVE_VERBOSE").is_some() {
+            eprintln!("ottotalk step {step}: {line}");
+        }
+        transcript.push(line);
+        if chat {
+            // An NPC's or the player's lines: Continue is the child after
+            // the lines.
+            let lines = if interface >= 241 {
+                interface - 241
+            } else {
+                interface - 64
+            };
+            otto.send(continue_option(interface, lines + 5)).await;
+        } else {
+            let (component, text) = page
+                .iter()
+                .find(|(_, t)| picks.contains(&t.as_str()))
+                .unwrap_or_else(|| panic!("step {step}: no option to pick in {page:?}"));
+            picked.push(text.clone());
+            otto.send(continue_option(component >> 16, component & 0xffff))
+                .await;
+        }
+    }
+    eprintln!("ottotalk's conversation: {transcript:#?}");
+    assert_eq!(picked, picks, "the options chosen: {transcript:#?}");
+    assert!(
+        transcript
+            .iter()
+            .any(|page| page.contains("Take the rod from under the bed in my")),
+        "Otto taught the rod: {transcript:#?}"
+    );
+    assert_eq!(held(&otto, 11340), 1, "the Barbarian skills book");
+    assert_eq!(held(&otto, 11323), 0, "no rod before the bed");
+    let from = otto.messages.len();
+    otto.send(scenery_option1(25268, OTTO_BED[0], OTTO_BED[1]))
+        .await;
+    otto.until_pinging(Duration::from_secs(20), "the rod from the bed", |c| {
+        held(c, 11323) >= 1
+    })
+    .await;
+    assert!(
+        said(
+            &otto,
+            from,
+            "You find a heavy fishing rod under the bed and take it."
+        ),
+        "ottotalk's messages: {:?}",
+        &otto.messages[from..]
+    );
+    eprintln!(
+        "ottotalk learned barbarian fishing from Otto in {} pages, took the book and found the rod under the bed",
+        transcript.len()
+    );
+    otto.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
@@ -4212,6 +4345,8 @@ fn use_with_scenery(item: i32, slot: i32, id: i32, x: i32, y: i32) -> Frame {
         ],
     )
 }
+/// Otto's bed (scenery 25268) in his grotto.
+const OTTO_BED: [i32; 2] = [2500, 3490];
 /// NPC_ACTION_1 (78): an NPC's first option.
 fn npc_option1(index: i32) -> Frame {
     frame(78, &[&le16(index)])

@@ -16,8 +16,8 @@
 //!   the kernel's own tick actions do nothing.
 //! - The player bodies answer through [`Gather`](super::woodcutting) with no
 //!   target node; the familiar's boost is 0 by name (familiars not ported).
-//!   Nothing in this world sets the barbarian training attribute the bed
-//!   asks for (Otto's dialogue is not ported).
+//!   The barbarian training attribute the bed asks for is set by Otto's
+//!   conversation (super::otto).
 use super::{
     super::host::Live,
     Node, P,

@@ -30,6 +30,8 @@ the source's control flow only) and runs in the live world
 runs in the live world (`world/live/items/barbarian.rs`); `SpotManager`
 picks locations with Kotlin's `Collection.random()`, which this port takes
 to be the thread-local generator, and nothing checks that against a JVM.
+Otto Godblessed's conversation, which sets the barbarian training attributes
+these bodies read, is `world/dialogue_dsl/otto.rs` ([dialogue DSLs](dialogue-dsl.md)).
 **Not ported:** `PickaxeRepairPlugin` and the option handlers that start
 `FishingPulse`.
 

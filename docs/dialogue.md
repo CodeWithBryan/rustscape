@@ -123,7 +123,8 @@ default. Content supplies `PluginBody` and `FileBody` objects.
 
 ## Remaining parity work
 
-Concrete dialogue content other than the banker conversation (the DSLs are
+Concrete dialogue content other than the banker conversation and Otto
+Godblessed's (the DSLs are
 [dialogue DSLs](dialogue-dsl.md)). Binding `Host` to the
 canonical player, InterfaceManager, real packet writers, definitions, NPC
 queue/pulse state, attributes and events. Joining Continue (`interface_packets`)
