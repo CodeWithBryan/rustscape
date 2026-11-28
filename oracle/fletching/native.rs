@@ -11,6 +11,7 @@
 //! `Job::kind`, `Job::product`), as the live binding sends them.
 use rs09_server::world::{
     dialogue_dsl::skill::SkillDialogue,
+    fletching_ammo::{self as ammo, Craft},
     fletching_assembly::{self as assembly, Job, Listener},
     fletching_logs::{self as logs, Error, Quest, Result},
 };
@@ -24,12 +25,14 @@ fn bits(v: f64) -> String {
 enum Handler {
     Logs { log: i32, crafts: Vec<usize> },
     Assembly { job: Job, string: i32 },
+    Ammo { craft: Craft, used: i32, with: i32 },
 }
-/// The script the last `queueScript` holds.
-#[derive(Clone, Copy)]
+/// A script a `queueScript` holds.
+#[derive(Clone)]
 enum Script {
     Logs(usize, i32),
     Assembly(Job, i32),
+    Ammo(ammo::Script, i32),
 }
 
 pub struct World {
@@ -37,7 +40,8 @@ pub struct World {
     names: Map<String, Value>,
     trace: Vec<Value>,
     handler: Option<Handler>,
-    script: Option<Script>,
+    /// Every script the case queued, in order.
+    scripts: Vec<Script>,
 }
 impl World {
     fn flag(&self, key: &str) -> bool {
@@ -112,7 +116,7 @@ impl logs::Host for World {
         Ok(self.held(id))
     }
     fn queue(&mut self, delay: i32, craft: usize, amount: i32) -> Result<()> {
-        self.script = Some(Script::Logs(craft, amount));
+        self.scripts.push(Script::Logs(craft, amount));
         self.emit(json!(["queue", delay, "WEAK", false]));
         Ok(())
     }
@@ -192,7 +196,7 @@ impl assembly::Host for World {
         Ok(self.flag("space"))
     }
     fn queue(&mut self, delay: i32, job: Job, amount: i32) -> Result<()> {
-        self.script = Some(Script::Assembly(job, amount));
+        self.scripts.push(Script::Assembly(job, amount));
         self.emit(json!(["queue", delay, "WEAK", false]));
         Ok(())
     }
@@ -237,11 +241,73 @@ impl assembly::Host for World {
     }
 }
 
+impl ammo::Host for World {
+    fn level(&mut self) -> Result<i32> {
+        Ok(World::level(self))
+    }
+    fn dialogue(&mut self, message: &str) -> Result<()> {
+        logs::Host::dialogue(self, message)
+    }
+    fn message(&mut self, message: &str) -> Result<()> {
+        logs::Host::message(self, message)
+    }
+    fn tourist_trap_stage(&mut self) -> Result<i32> {
+        Ok(self.state["quests"]["THE_TOURIST_TRAP"]
+            .as_i64()
+            .unwrap_or(0) as i32)
+    }
+    fn broads_unlocked(&mut self) -> Result<bool> {
+        Ok(self.flag("broads"))
+    }
+    fn amount_in_inventory(&mut self, id: i32) -> Result<i32> {
+        Ok(self.held(id))
+    }
+    fn has_space_for(&mut self, _: i32) -> Result<bool> {
+        Ok(self.flag("space"))
+    }
+    fn queue(&mut self, delay: i32, script: ammo::Script, amount: i32) -> Result<()> {
+        self.scripts.push(Script::Ammo(script, amount));
+        self.emit(json!(["queue", delay, "WEAK", false]));
+        Ok(())
+    }
+    fn clock_ready(&mut self) -> Result<bool> {
+        Ok(self.flag("clockReady"))
+    }
+    fn keep_running(&mut self) -> Result<bool> {
+        logs::Host::keep_running(self)
+    }
+    fn stop_executing(&mut self) -> Result<bool> {
+        logs::Host::stop_executing(self)
+    }
+    fn remove_item(&mut self, id: i32, amount: i32) -> Result<bool> {
+        Ok(self.remove(id, amount))
+    }
+    fn animate(&mut self, id: i32) -> Result<()> {
+        logs::Host::animate(self, id)
+    }
+    fn add_item(&mut self, id: i32, amount: i32) -> Result<bool> {
+        self.add(id, amount);
+        Ok(true)
+    }
+    fn reward_xp(&mut self, xp: f64) -> Result<()> {
+        logs::Host::reward_xp(self, xp)
+    }
+    fn delay_clock(&mut self, ticks: i32, delay_script: bool) -> Result<bool> {
+        self.emit(json!(["delayClock", logs::SKILLING, ticks, delay_script]));
+        Ok(false)
+    }
+    fn delay_script(&mut self, ticks: i32) -> Result<bool> {
+        self.emit(json!(["delayScript", ticks]));
+        Ok(false)
+    }
+}
+
 /// What a registration's lambda is.
 #[derive(Clone, Copy)]
 enum Lambda {
     Logs,
     Assembly(Listener),
+    Ammo(ammo::Listener),
 }
 
 /// The registrations in the order the three classes make them.
@@ -250,6 +316,10 @@ fn registrations() -> Vec<(Lambda, Vec<i32>, Vec<i32>)> {
     for listener in Listener::ALL {
         let (used, with) = listener.ids();
         all.push((Lambda::Assembly(listener), used, with));
+    }
+    for listener in ammo::Listener::ALL {
+        let (used, with) = listener.ids();
+        all.push((Lambda::Ammo(listener), used, with));
     }
     all
 }
@@ -277,6 +347,18 @@ fn lambda(world: &mut World, which: Lambda, used: i32, with: i32) -> Result<Valu
                 world.handler = Some(Handler::Assembly { job, string: used });
                 if listener == Listener::Stringing {
                     world.emit(json!(["packet", "RepositionChild", 309, 2, 215, 10]));
+                }
+                Ok(json!(true))
+            }
+        },
+        Lambda::Ammo(listener) => match ammo::use_with(world, listener, used, with)? {
+            None => Ok(json!(false)),
+            Some(None) => Ok(json!(true)),
+            Some(Some(craft)) => {
+                open(world, Some(craft.kind()), vec![craft.product()?]);
+                world.handler = Some(Handler::Ammo { craft, used, with });
+                if let Some([interface, child, x, y]) = craft.reposition() {
+                    world.emit(json!(["packet", "RepositionChild", interface, child, x, y]));
                 }
                 Ok(json!(true))
             }
@@ -327,6 +409,10 @@ fn step(world: &mut World, op: &Value) -> Result<Value> {
                     world.handler = Some(Handler::Assembly { job, string });
                     assembly::create(world, job, amount).map(|()| Value::Null)
                 }
+                Some(Handler::Ammo { craft, used, with }) => {
+                    world.handler = Some(Handler::Ammo { craft, used, with });
+                    ammo::create(world, craft, amount).map(|()| Value::Null)
+                }
             }
         }
         "getAll" => match &world.handler {
@@ -337,16 +423,32 @@ fn step(world: &mut World, op: &Value) -> Result<Value> {
                 let (job, string) = (*job, *string);
                 assembly::get_all(world, job, string).map(|n| json!(n))
             }
-        },
-        "script" => match world.script {
-            None => Ok(json!("no script")),
-            Some(Script::Logs(craft, amount)) => {
-                logs::script(world, craft, amount, number("stage")).map(|b| json!(b))
-            }
-            Some(Script::Assembly(job, amount)) => {
-                assembly::script(world, job, amount, number("stage")).map(|b| json!(b))
+            Some(Handler::Ammo { craft, used, with }) => {
+                let (craft, used, with) = (*craft, *used, *with);
+                ammo::get_all(world, craft, used, with).map(|n| json!(n))
             }
         },
+        "script" => {
+            // The script the case names by its place in the queueing order,
+            // or the last one queued.
+            let n = match op.get("n") {
+                Some(n) => usize::try_from(n.as_i64().unwrap()).ok(),
+                None => world.scripts.len().checked_sub(1),
+            };
+            let stage = number("stage");
+            match n.and_then(|n| world.scripts.get(n).cloned()) {
+                None => Ok(json!("no script")),
+                Some(Script::Logs(craft, amount)) => {
+                    logs::script(world, craft, amount, stage).map(|b| json!(b))
+                }
+                Some(Script::Assembly(job, amount)) => {
+                    assembly::script(world, job, amount, stage).map(|b| json!(b))
+                }
+                Some(Script::Ammo(script, amount)) => {
+                    ammo::script(world, &script, amount, stage).map(|b| json!(b))
+                }
+            }
+        }
         other => panic!("unknown operation {other}"),
     }
 }
@@ -358,7 +460,7 @@ pub fn replay(case: &Value, names: &Value) -> Value {
         names: names.as_object().unwrap().clone(),
         trace: Vec::new(),
         handler: None,
-        script: None,
+        scripts: Vec::new(),
     };
     let mut results = Vec::new();
     for op in case["ops"].as_array().unwrap() {

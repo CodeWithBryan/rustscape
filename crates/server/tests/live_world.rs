@@ -4097,6 +4097,147 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     eprintln!("fletcharrow strung a shortbow and made 15 headless then 15 bronze arrows");
     arrow.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Bolt, Dart, Limbing and GemBolt listeners: feathers on unfinished
+    // bolts make one set of ten; darts are refused without Tourist Trap;
+    // the wrong limbs are refused with a message and the right ones make
+    // the crossbow; a chisel cuts an opal into twelve tips, and the tips on
+    // the bolts make ten opal bolts.
+    let inventory = [
+        (0, 314, 20),
+        (1, 9375, 20),
+        (2, 819, 5),
+        (3, 9440, 1),
+        (4, 9420, 1),
+        (5, 9422, 1),
+        (6, 1755, 1),
+        (7, 1609, 1),
+    ];
+    write_save_with(
+        &players,
+        "traceone",
+        "fletchbolt",
+        start,
+        &inventory,
+        |save| {
+            save["skills"][9]["static"] = Value::String("11".into());
+            save["skills"][9]["dynamic"] = Value::String("11".into());
+        },
+    );
+    let (code, bolt) = Client::login(address, "fletchbolt").await;
+    assert_eq!(code, 2, "fletchbolt's login");
+    let mut bolt = bolt.unwrap();
+    bolt.until(Duration::from_secs(10), "fletchbolt's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = bolt.messages.len();
+    let texts = bolt.texts.len();
+    bolt.send(use_item_on_item(314, 0, 9375, 1)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the bolt dialogue", |c| {
+        shown(c, texts, (582 << 16) | 5, "Bronze bolts")
+    })
+    .await;
+    bolt.send(continue_option(582, 6)).await;
+    bolt.until_pinging(Duration::from_secs(20), "one set of bolts", |c| {
+        amount(c, 877) == 10 && said(c, from, "You fletch 10 bolts")
+    })
+    .await;
+    assert_eq!(
+        (amount(&bolt, 314), amount(&bolt, 9375)),
+        (10, 10),
+        "one set takes ten feathers and ten unfinished bolts"
+    );
+    let texts = bolt.texts.len();
+    bolt.send(use_item_on_item(314, 0, 819, 2)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the dart dialogue", |c| {
+        shown(c, texts, (582 << 16) | 5, "Bronze dart")
+    })
+    .await;
+    let texts = bolt.texts.len();
+    bolt.send(continue_option(582, 6)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the Tourist Trap refusal", |c| {
+        read(c, texts, "You need to have completed Tourist Trap")
+    })
+    .await;
+    assert_eq!(
+        (amount(&bolt, 806), amount(&bolt, 819)),
+        (0, 5),
+        "no dart is made without the quest"
+    );
+    bolt.send(use_item_on_item(9422, 5, 9440, 3)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the wrong limbs", |c| {
+        said(
+            c,
+            from,
+            "That's not the right limb to attach to that stock.",
+        )
+    })
+    .await;
+    let texts = bolt.texts.len();
+    bolt.send(use_item_on_item(9420, 4, 9440, 3)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the limbing dialogue", |c| {
+        shown(c, texts, (309 << 16) | 6, "crossbow")
+    })
+    .await;
+    bolt.send(continue_option(309, 6)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the unstrung crossbow", |c| {
+        amount(c, 9454) == 1 && said(c, from, "You attach the metal limbs to the stock.")
+    })
+    .await;
+    assert_eq!(
+        (
+            amount(&bolt, 9440),
+            amount(&bolt, 9420),
+            amount(&bolt, 9422)
+        ),
+        (0, 0, 1),
+        "the stock and its limbs are used"
+    );
+    let texts = bolt.texts.len();
+    bolt.send(use_item_on_item(1755, 6, 1609, 7)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the gem dialogue", |c| {
+        shown(c, texts, (309 << 16) | 6, "Opal")
+    })
+    .await;
+    bolt.send(continue_option(309, 6)).await;
+    bolt.until_pinging(Duration::from_secs(30), "the opal bolt tips", |c| {
+        amount(c, 45) == 12 && amount(c, 1609) == 0
+    })
+    .await;
+    // The crafting loop's delay runs out before the next script is taken.
+    bolt.pump(Duration::from_secs(5)).await;
+    let texts = bolt.texts.len();
+    let slot = |id: i32| bolt.slot_of(93, id).expect("the item is held");
+    let (bolts, tips) = (slot(877), slot(45));
+    bolt.send(use_item_on_item(877, bolts, 45, tips)).await;
+    bolt.until_pinging(Duration::from_secs(20), "the tipping dialogue", |c| {
+        shown(c, texts, (582 << 16) | 5, "Opal bolts")
+    })
+    .await;
+    // Ten sets: the second finds no bronze bolt and stops.
+    bolt.send(continue_option(582, 3)).await;
+    bolt.until_pinging(Duration::from_secs(30), "the opal bolts", |c| {
+        amount(c, 879) == 10 && said(c, from, "You fletch 10 bolts.")
+    })
+    .await;
+    bolt.pump(Duration::from_secs(4)).await;
+    assert_eq!(
+        (amount(&bolt, 879), amount(&bolt, 877), amount(&bolt, 45)),
+        (10, 0, 2),
+        "one set of opal bolts"
+    );
+    // 5 for the bolts, 12 for the crossbow, 1.6 for the gem, 16 for the tips.
+    let experience = bolt.skills.get(&9).map(|s| s.1);
+    assert!(
+        matches!(experience, Some(34 | 35)),
+        "fletchbolt's experience: {experience:?}"
+    );
+    eprintln!(
+        "fletchbolt made 10 bronze bolts, a bronze crossbow (u), 12 opal tips and 10 opal bolts"
+    );
+    bolt.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

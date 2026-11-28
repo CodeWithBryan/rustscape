@@ -36,7 +36,8 @@ public final class W {
     public static JSONObject state;
     public static JSONArray trace;
     public static SkillDialogueHandler handler;
-    public static Function1<Integer, Boolean> script;
+    /** Every script the case queued, in order. */
+    public static final List<Function1<Integer, Boolean>> scripts = new ArrayList<>();
 
     @SuppressWarnings("unchecked")
     public static void emit(String name, Object... args) {
@@ -94,7 +95,7 @@ public final class W {
         emit("setAttribute", attribute, value);
     }
     public static void queue(int delay, String strength, boolean persist, Function1<Integer, Boolean> body) {
-        script = body;
+        scripts.add(body);
         emit("queue", delay, strength, persist);
     }
     @SuppressWarnings("unchecked")

@@ -1148,8 +1148,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   docs/fletching-logs.md), stringing bows and assembling arrows
   (world/fletching_assembly.rs, run live by
   world/live/items/fletching_assembly.rs; broad arrows are always refused
-  because SlayerFlags is not ported, and bolts, darts, crossbow limbs,
-  gems and grapples are not ported; docs/fletching-assembly.md; both
+  because SlayerFlags is not ported; docs/fletching-assembly.md), bolts,
+  darts, crossbow limbs, gem bolt tips and the mithril grapple
+  (world/fletching_ammo.rs, run live by
+  world/live/items/fletching_ammo.rs; broad bolts are always refused and
+  darts need a save that already holds Tourist Trap complete;
+  ZogreFletchingListeners is not ported; docs/fletching-ammo.md; the three
   fletching libraries are replayed against the JVM corpus
   fixtures/fletching from oracle/fletching, their live bindings are not) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by

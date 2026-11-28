@@ -6,10 +6,11 @@ import core.game.interaction.QueueStrength
 import core.game.node.entity.Entity
 import core.game.node.entity.player.Player
 import core.game.node.item.Item
+import core.game.world.update.flag.context.Animation
 import oracle.W
 
 // Adapters: each answers from the case's declared state or records its call.
-// isQuestStarted and removeItemsIfPlayerHasEnough are the pinned functions,
+// isQuestStarted, isQuestComplete and removeItemsIfPlayerHasEnough are the pinned functions,
 // spliced verbatim over these adapters.
 
 fun getDynLevel(entity: Entity, skill: Int): Int = W.level(skill)
@@ -41,9 +42,23 @@ fun delayClock(entity: Entity, clock: Int, ticks: Int, delayScript: Boolean = fa
     return false
 }
 fun clockReady(entity: Entity, clock: Int): Boolean = W.flag("clockReady")
+fun delayScript(entity: Entity, ticks: Int): Boolean {
+    W.emit("delayScript", ticks)
+    return false
+}
+fun <T> animate(entity: Entity, anim: T, forced: Boolean = false) {
+    val animation = when (anim) {
+        is Int -> Animation(anim)
+        is Animation -> anim
+        else -> throw IllegalStateException("Invalid value passed for anim")
+    }
+    W.emit("animate", animation.id)
+}
 fun getSlayerFlags(player: Player): SlayerFlags = SlayerFlags()
 fun Int.asItem(): Item = Item(this)
 
 /* IS_QUEST_STARTED */
+
+/* IS_QUEST_COMPLETE */
 
 /* REMOVE_ITEMS_IF_PLAYER_HAS_ENOUGH */

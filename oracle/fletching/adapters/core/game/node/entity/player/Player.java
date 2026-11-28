@@ -11,4 +11,16 @@ public final class Player extends Entity {
     @Override public Location getLocation() { return W.location(); }
     public boolean animate(Animation animation) { W.emit("animate", animation.getId()); return true; }
     public AchievementDiaryManager getAchievementDiaryManager() { return diaries; }
+    public Inventory getInventory() { return inventory; }
+    public QuestRepository getQuestRepository() { return quests; }
+    /** Adapter: the declared stage of a quest. */
+    public static final class QuestRepository {
+        public int getStage(content.data.Quests quest) { return W.questStage(quest.name()); }
+    }
+    private final QuestRepository quests = new QuestRepository();
+    /** Adapter: the amount of an item's id in the declared inventory. */
+    public static final class Inventory {
+        public int getAmount(core.game.node.item.Item item) { return W.amount(item.getId()); }
+    }
+    private final Inventory inventory = new Inventory();
 }

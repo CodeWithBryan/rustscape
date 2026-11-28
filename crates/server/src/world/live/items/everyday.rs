@@ -903,6 +903,7 @@ impl super::super::host::Live {
         let mut altar = false;
         let mut log_fletching = false;
         let (mut stringing, mut arrows) = (false, false);
+        let mut ammo = Vec::new();
         use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -933,6 +934,19 @@ impl super::super::host::Live {
             }
             if name == crate::world::fletching_assembly::ARROW_CLASS {
                 arrows = true;
+            }
+            {
+                use crate::world::fletching_ammo as a;
+                let classes = [
+                    a::BOLT_CLASS,
+                    a::DART_CLASS,
+                    a::LIMBING_CLASS,
+                    a::GEM_CLASS,
+                    a::GRAPPLE_CLASS,
+                ];
+                if let Some(class) = classes.into_iter().find(|class| *class == name) {
+                    ammo.push(class);
+                }
             }
             if name == crate::world::prayer_altar::LISTENER_CLASS {
                 altar = true;
@@ -1027,6 +1041,11 @@ impl super::super::host::Live {
             // ArrowListeners.defineListeners (super::fletching_assembly).
             self.define_arrow_listeners()?;
         }
+        for class in ammo {
+            // Bolt, Dart, Limbing, GemBolt and Grapple listeners
+            // (super::fletching_ammo).
+            self.define_fletching_ammo_listeners(class)?;
+        }
         if altar {
             // PrayerAltarListener.defineListeners (super::altar).
             self.define_prayer_altar_listener()?;
@@ -1120,6 +1139,12 @@ impl super::super::host::Live {
         }
         if f.value::<crate::world::cooking::Interaction>().is_some() {
             return Some(self.cooking_use(player, used, with));
+        }
+        if let Some(ammo) = f.value::<super::fletching_ammo::Ammo>() {
+            return Some(
+                self.fletching_ammo_use(*ammo, player, used, with)
+                    .map_err(bind),
+            );
         }
         if let Some(assembly) = f.value::<super::fletching_assembly::Assembly>() {
             return Some(
