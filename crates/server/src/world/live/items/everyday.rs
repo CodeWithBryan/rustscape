@@ -160,15 +160,7 @@ impl Everyday<'_> {
     /// ContentAPI `sendDialogue`: `dialogueInterpreter.sendDialogue(*splitLines(message))`.
     pub(super) fn dialogue(&mut self, player: &Node, text: &str) -> Result<()> {
         let p = self.player(player)?;
-        let units: Vec<u16> = text.encode_utf16().collect();
-        let lines = crate::world::plain_dialogue::split_lines(&units, 54).map_err(bind)?;
-        let interpreter = self.0.0.interpreter_of(&p);
-        let sent = interpreter
-            .send_dialogue(self.0.0, Some(&crate::world::dialogue_dsl::lines(&lines)))
-            .map(|_| ())
-            .map_err(bind);
-        self.0.0.inner.drain(&p);
-        sent
+        self.0.0.content_send_dialogue(&p, text).map_err(bind)
     }
     /// ContentAPI `animate(entity, animation)`: `animator.animate(animation)`
     /// of a player or an NPC.

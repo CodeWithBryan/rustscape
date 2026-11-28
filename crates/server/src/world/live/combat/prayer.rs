@@ -314,7 +314,7 @@ impl prayer::Host for PrayerHost<'_> {
             .map_err(perr)
     }
     fn send_dialogue(&mut self, _: &P, _: &str) -> Result<()> {
-        refuse("sendDialogue (the dialogue interpreter is not installed)")
+        refuse("sendDialogue (not bound to the interpreter)")
     }
     fn has_kings_ransom(&mut self, _: &P) -> Result<bool> {
         self.live

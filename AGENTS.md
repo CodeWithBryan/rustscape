@@ -507,9 +507,13 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   BankerNPC and ShopNPC are world/npc_classes, next bullet); `rs09-server
   --world` installs the handlers (world/live/global.rs; since the eighth
   round also the Attack and Follow player options, the RequestOption
-  listeners, face, the lock queries and openBankAccount; the dialogue
-  senders, deposit boxes and the other services listed in
-  docs/live-world.md stay refused) (the binding is described in
+  listeners, face, the lock queries and openBankAccount; since PR #20
+  the interface services (openInterface/openSingleTab/close and the open
+  and close listeners, run through world/live/global_ui.rs's world
+  interface context; a global listener reached through the plain `Inner`
+  context is refused, never skipped), the dialogue senders and
+  ClimbDialogue; openDialogue, deposit boxes and the other services
+  listed in docs/live-world.md stay refused) (the binding is described in
   docs/global-handlers.md).
 - For the NPC subclass framework or the global NPC handlers
   (world/npc_classes: AbstractNPC's registry, newInstance, forId, construct
@@ -1908,7 +1912,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   bank_interface, interfaces, shops, trade, consumables,
   consumables_timers, legacy_interaction and movement. Bank booths
   (defineInteraction scripts), chests, deposit boxes, the bank PIN,
-  AssistSession and the global handlers' dialogue senders remain refused.
+  AssistSession and the global handlers' openDialogue remain refused (the
+  global handlers' dialogue senders and ClimbDialogue run through the
+  interpreter: world/live/global_ui.rs, live_world's climb scenario).
   See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh

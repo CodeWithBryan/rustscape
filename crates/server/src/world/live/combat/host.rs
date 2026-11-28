@@ -1319,11 +1319,13 @@ impl cp::Host for Live {
         if !self.inner.is_player_node(entity.node()) {
             return Ok(());
         }
-        self.inner.current = Some(entity.clone());
-        let manager = self.inner.canonical(entity).player.manager();
-        crate::world::interfaces::close(&mut self.inner, &manager)
-            .map(|_| ())
-            .map_err(bind)
+        // victim.interfaceManager.close() with the world's interface
+        // context, so the global handlers' close listeners run
+        // (super::super::global_ui).
+        self.with_world_ui(entity, |ui, m| {
+            crate::world::interfaces::close(ui, m).map(|_| ())
+        })
+        .map_err(bind)
     }
     fn interface_close_chatbox(&mut self, entity: &P) -> Result<()> {
         if !self.inner.is_player_node(entity.node()) {

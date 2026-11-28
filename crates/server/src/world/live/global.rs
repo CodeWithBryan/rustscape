@@ -16,6 +16,10 @@
 //! tables); every other service is a refusal by name ("not ported in the
 //! live world: global handler service NAME"), listed in docs/live-world.md.
 use super::{P, host::Live, inner::SettingsContext, tabs::Tabs};
+use crate::world::{
+    dialogue::{FacialExpression, Lines},
+    interfaces,
+};
 use crate::{
     definitions::item::Shared,
     inventory::{container::Container, item::Handle as ItemHandle},
@@ -36,6 +40,7 @@ use crate::{
     },
 };
 use rs09_game_core::java_lower::lowercase_root;
+use rs09_protocol::game::updates;
 
 /// A node as the handlers see it.
 #[derive(Clone)]
@@ -84,6 +89,8 @@ pub struct GlobalState {
     pub ladders: Option<climb::Ladders>,
     /// The classes `register_scanned` registered, in order.
     pub registered: Vec<registry::Class>,
+    /// `InterfaceContainer.index` (super::global_ui), set at install.
+    pub container_index: i32,
 }
 
 fn refuse<T>(what: &str) -> Result<T> {
@@ -385,7 +392,10 @@ impl gh::Host for GHost<'_> {
         self.live.inner.text(&p, text, iface, child).map_err(bind)
     }
     fn dialogue(&mut self, player: &Self::Node, text: &str) -> Result<()> {
-        refuse("dialogue")
+        // ContentAPI.sendDialogue: interpreter.sendDialogue(*splitLines(msg))
+        // (super::global_ui).
+        let p = self.player(player)?;
+        self.live.content_send_dialogue(&p, text).map_err(bind)
     }
     fn npc_dialogue(
         &mut self,
@@ -395,10 +405,25 @@ impl gh::Host for GHost<'_> {
         expression: Expression,
         hide: bool,
     ) -> Result<()> {
-        refuse("npc_dialogue")
+        // ContentAPI.sendNPCDialogue: interpreter.sendDialogues(npc, expr,
+        // hideContinue, *splitLines(msg)).
+        let p = self.player(player)?;
+        let expression = match expression {
+            Expression::Neutral => FacialExpression::Neutral,
+            Expression::Annoyed => FacialExpression::Annoyed,
+        };
+        self.live
+            .content_send_npc_dialogue(&p, npc, expression, hide, text)
+            .map_err(bind)
     }
     fn item_dialogue(&mut self, player: &Self::Node, item: i32, text: &str) -> Result<()> {
-        refuse("item_dialogue")
+        // ContentAPI.sendItemDialogue with an Int: Item(item), then
+        // interpreter.sendItemMessage(item, *splitLines(message)).
+        let p = self.player(player)?;
+        let item = crate::world::dialogue::Host::new_item(self.live, item).map_err(bind)?;
+        self.live
+            .content_send_item_dialogue(&p, &item, text)
+            .map_err(bind)
     }
     fn double_item_dialogue(
         &mut self,
@@ -407,7 +432,17 @@ impl gh::Host for GHost<'_> {
         second: i32,
         text: &str,
     ) -> Result<()> {
-        refuse("double_item_dialogue")
+        // ContentAPI.sendDoubleItemDialogue with Ints: Item(first),
+        // Item(second), then interpreter.sendDoubleItemMessage(first, second,
+        // *splitLines(message)).
+        let p = self.player(player)?;
+        let first = crate::world::dialogue::Host::new_item(self.live, first).map_err(bind)?;
+        let second = crate::world::dialogue::Host::new_item(self.live, second).map_err(bind)?;
+        let lines = super::talk::content_split_lines(text).map_err(bind)?;
+        let interpreter = self.live.interpreter_of(&p);
+        let result = interpreter.send_double_item_message(self.live, &first, &second, &lines);
+        self.live.drain_all();
+        result.map(|_| ()).map_err(bind)
     }
     fn open_dialogue(
         &mut self,
@@ -421,21 +456,50 @@ impl gh::Host for GHost<'_> {
         refuse("dialogue_contains")
     }
     fn open_interface(&mut self, player: &Self::Node, id: i32) -> Result<()> {
-        refuse("open_interface")
+        // ContentAPI.openInterface: interfaceManager.open(Component(id))
+        // with the world's interface context (super::global_ui).
+        let p = self.player(player)?;
+        self.live
+            .with_world_ui(&p, |ui, m| {
+                let c = interfaces::Context::component(ui, id)?;
+                interfaces::open(ui, m, Some(c)).map(|_| ())
+            })
+            .map_err(bind)
     }
     fn close_interface(&mut self, player: &Self::Node) -> Result<()> {
-        // ContentAPI.closeInterface: interfaceManager.close().
+        // ContentAPI.closeInterface: interfaceManager.close(), with the
+        // world's interface context (close listeners and events run).
         let p = self.player(player)?;
-        crate::world::player_death::Host::close_interface(self.live, &p.0).map_err(bind)
+        self.live
+            .with_world_ui(&p, |ui, m| interfaces::close(ui, m).map(|_| ()))
+            .map_err(bind)
     }
     fn open_single_tab(&mut self, player: &Self::Node, id: i32) -> Result<()> {
-        refuse("open_single_tab")
+        // ContentAPI.openSingleTab: interfaceManager.openSingleTab(Component(id)).
+        let p = self.player(player)?;
+        self.live
+            .with_world_ui(&p, |ui, m| {
+                let c = interfaces::Context::component(ui, id)?;
+                interfaces::open_single_tab(ui, m, &c).map(|_| ())
+            })
+            .map_err(bind)
     }
     fn close_tab_interface(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("close_tab_interface")
+        // ContentAPI.closeTabInterface: interfaceManager.closeSingleTab().
+        let p = self.player(player)?;
+        self.live
+            .with_world_ui(&p, |ui, m| interfaces::close_single_tab(ui, m).map(|_| ()))
+            .map_err(bind)
     }
     fn open(&mut self, player: &Self::Node, id: i32) -> Result<bool> {
-        refuse("open")
+        // interfaceManager.open(Component(id)) != null.
+        let p = self.player(player)?;
+        self.live
+            .with_world_ui(&p, |ui, m| {
+                let c = interfaces::Context::component(ui, id)?;
+                interfaces::open(ui, m, Some(c)).map(|o| o.is_some())
+            })
+            .map_err(bind)
     }
     fn set_close_event(
         &mut self,
@@ -446,13 +510,21 @@ impl gh::Host for GHost<'_> {
         refuse("set_close_event")
     }
     fn opened(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("opened")
+        let p = self.player(player)?;
+        let manager = self.live.inner.canonical(&p).player.manager();
+        Ok(interfaces::is_opened(&manager))
     }
     fn close_manager(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("close_manager")
+        let p = self.player(player)?;
+        self.live
+            .with_world_ui(&p, |ui, m| interfaces::close(ui, m))
+            .map_err(bind)
     }
     fn close_single_tab(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("close_single_tab")
+        let p = self.player(player)?;
+        self.live
+            .with_world_ui(&p, |ui, m| interfaces::close_single_tab(ui, m))
+            .map_err(bind)
     }
     fn remove_tabs(&mut self, player: &Self::Node, tabs: &[i32]) -> Result<()> {
         refuse("remove_tabs")
@@ -482,7 +554,26 @@ impl gh::Host for GHost<'_> {
         types: &str,
         args: Vec<ScriptArg>,
     ) -> Result<()> {
-        refuse("run_script")
+        // packetDispatch.sendRunScript(id, types, args...).
+        let p = self.player(player)?;
+        let objects: Vec<updates::ScriptArg> = args
+            .into_iter()
+            .map(|a| match a {
+                ScriptArg::Int(i) => updates::ScriptArg::Int(i),
+                ScriptArg::Text(t) => updates::ScriptArg::Text(t.into_bytes()),
+            })
+            .collect();
+        let counter = self
+            .live
+            .inner
+            .canonical(&p)
+            .player
+            .manager()
+            .packet_count(1);
+        let frame =
+            updates::run_client_script(id, types.as_bytes(), &objects, counter).map_err(bind)?;
+        self.live.inner.queue_native(&p, frame);
+        Ok(())
     }
     fn iface_settings(
         &mut self,
@@ -493,7 +584,24 @@ impl gh::Host for GHost<'_> {
         offset: i32,
         length: i32,
     ) -> Result<()> {
-        refuse("iface_settings")
+        // packetDispatch.sendIfaceSettings(hash, child, iface, offset, length).
+        let p = self.player(player)?;
+        let counter = self
+            .live
+            .inner
+            .canonical(&p)
+            .player
+            .manager()
+            .packet_count(1);
+        let frame = updates::interface_events(
+            iface.wrapping_shl(16) | child,
+            offset,
+            length,
+            hash,
+            counter,
+        );
+        self.live.inner.queue_native(&p, frame);
+        Ok(())
     }
     fn interface_config(
         &mut self,
@@ -502,7 +610,18 @@ impl gh::Host for GHost<'_> {
         child: i32,
         hide: bool,
     ) -> Result<()> {
-        refuse("interface_config")
+        // packetDispatch.sendInterfaceConfig(iface, child, hide).
+        let p = self.player(player)?;
+        let counter = self
+            .live
+            .inner
+            .canonical(&p)
+            .player
+            .manager()
+            .packet_count(1);
+        let frame = updates::interface_hidden(hide, counter, iface.wrapping_shl(16) | child);
+        self.live.inner.queue_native(&p, frame);
+        Ok(())
     }
     fn script_configs(
         &mut self,
@@ -525,7 +644,15 @@ impl gh::Host for GHost<'_> {
         y: i32,
         key: Option<i32>,
     ) -> Result<()> {
-        refuse("generate_items")
+        // InterfaceContainer.generateItems with a key (the equipment
+        // screen's inventory side, key 93); the unkeyed overloads draw the
+        // key from the index first and are not reached by these handlers.
+        let Some(key) = key else {
+            return refuse("generate_items without a key");
+        };
+        let p = self.player(player)?;
+        super::global_ui::generate_items(self.live, &p, &items, options, iface, child, x, y, key)
+            .map(|_| ())
     }
     fn update_scene_graph(&mut self, player: &Self::Node, login: bool) -> Result<()> {
         refuse("update_scene_graph")
@@ -604,6 +731,14 @@ impl gh::Host for GHost<'_> {
                 "content.global.handlers.iface.tabs.CombatTabInterface$handle$2"
             }
             Task::Climb { .. } => "core.game.global.action.ClimbActionHandler$climb$1",
+            // ClimbDialogue.handle's two anonymous pulses: case 1 (climb-up)
+            // is $1, case 2 (climb-down) is $2.
+            Task::ClimbChoice { option, .. } if *option == "climb-up" => {
+                "core.game.global.action.ClimbActionHandler$ClimbDialogue$1"
+            }
+            Task::ClimbChoice { .. } => {
+                "core.game.global.action.ClimbActionHandler$ClimbDialogue$2"
+            }
             _ => "content.global.handlers (a deferred body)",
         };
         let handle = Shared::new(pulses::Pulse::new(
@@ -835,7 +970,10 @@ impl gh::Host for GHost<'_> {
         monitor.can_logout(self.live).map_err(bind)
     }
     fn zone_type(&mut self, player: &Self::Node) -> Result<i32> {
-        refuse("zone_type")
+        // player.zoneMonitor.type.
+        let p = self.player(player)?;
+        let monitor = self.live.monitor(&p.0);
+        monitor.get_type().map_err(bind)
     }
     fn disconnect(&mut self, player: &Self::Node) -> Result<()> {
         let p = self.player(player)?;
@@ -873,7 +1011,9 @@ impl gh::Host for GHost<'_> {
         refuse("check_restriction")
     }
     fn is_skulled(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("is_skulled")
+        // player.skullManager.isSkulled (world::player_managers::skull).
+        let p = self.player(player)?;
+        crate::world::player_managers::skull::answers::is_skulled(self.live, &p.0).map_err(bind)
     }
     fn prayer_active(&mut self, player: &Self::Node, prayer: PrayerType) -> Result<bool> {
         // player.prayer.get(type) (world::prayer, super::combat::prayer).
@@ -891,7 +1031,15 @@ impl gh::Host for GHost<'_> {
         self.live.prayer_toggle(&p, prayer).map_err(bind)
     }
     fn has_familiar(&mut self, player: &Self::Node) -> Result<bool> {
-        refuse("has_familiar")
+        // FamiliarManager.hasFamiliar: summoning is not installed, so no
+        // player of this world has a familiar (the same named answer as the
+        // interface context's has_familiar).
+        self.player(player)?;
+        self.live
+            .inner
+            .not_ported
+            .default_answer("FamiliarManager.hasFamiliar (not ported: false)");
+        Ok(false)
     }
     fn is_burden_beast(&mut self, player: &Self::Node) -> Result<bool> {
         refuse("is_burden_beast")
@@ -962,10 +1110,23 @@ impl gh::Host for GHost<'_> {
             .map_err(bind)
     }
     fn set_varbit(&mut self, player: &Self::Node, id: i32, value: i32, save: bool) -> Result<()> {
-        refuse("set_varbit")
+        // ContentAPI.setVarbit(player, id, value, save).
+        let p = self.player(player)?;
+        self.live
+            .inner
+            .variables(&p, |ctx, owner| {
+                crate::player::variables::set_varbit(ctx, Some(owner), id, value, save)
+            })
+            .map_err(bind)
     }
     fn flashing_icons(&mut self, player: &Self::Node, skill: i32) -> Result<()> {
-        refuse("flashing_icons")
+        // LevelUp.sendFlashingIcons(player, skill), native.
+        let p = self.player(player)?;
+        crate::world::player_tabs::level_up::send_flashing_icons(
+            &mut super::tabs::Tabs::new(&mut self.live.inner, p),
+            skill,
+        )
+        .map_err(bind)
     }
     fn emote(&mut self, player: &Self::Node, button: i32) -> Result<()> {
         let p = self.player(player)?;
@@ -1022,7 +1183,18 @@ impl gh::Host for GHost<'_> {
         Ok(self.live.inner.canonical(&p).player.equipment())
     }
     fn death_containers(&mut self, player: &Self::Node) -> Result<[Self::Container; 2]> {
-        refuse("death_containers")
+        // DeathTask.getContainers(player) (world::player_death), with the
+        // player as the container operations' subject.
+        let p = self.player(player)?;
+        let factory = crate::inventory::container::Factory {
+            null_item: self.live.inner.factory.null_item.clone(),
+        };
+        let definitions = self.live.inner.items.clone();
+        let previous = self.live.inner.combat.death_subject.replace(p.clone());
+        let result =
+            crate::world::player_death::get_containers(self.live, &p.0, &factory, &definitions);
+        self.live.inner.combat.death_subject = previous;
+        result.map_err(bind)
     }
     fn get(&mut self, container: &Self::Container, slot: i32) -> Result<Option<Self::Node>> {
         refuse("get")
@@ -1036,16 +1208,22 @@ impl gh::Host for GHost<'_> {
         Ok(id)
     }
     fn item_count(&mut self, container: &Self::Container) -> Result<i32> {
-        refuse("item_count")
+        Ok(container.count())
     }
     fn container_id(&mut self, container: &Self::Container, slot: i32) -> Result<i32> {
-        refuse("container_id")
+        container.get_id(slot).map_err(bind)
     }
     fn is_empty(&mut self, container: &Self::Container) -> Result<bool> {
-        refuse("is_empty")
+        Ok(container.empty())
     }
     fn to_array(&mut self, container: &Self::Container) -> Result<Vec<Option<Self::Node>>> {
-        refuse("to_array")
+        // container.toArray(): the live item array.
+        Ok(container
+            .items()
+            .read()
+            .iter()
+            .map(|i| i.clone().map(GNode::Item))
+            .collect())
     }
     fn get_amount(&mut self, container: &Self::Container, item: &Self::Node) -> Result<i32> {
         refuse("get_amount")
@@ -1060,7 +1238,18 @@ impl gh::Host for GHost<'_> {
         refuse("add")
     }
     fn equipment_update(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("equipment_update")
+        // EquipmentContainer.update(player) (inventory::equipment) with the
+        // live equipment context.
+        let p = self.player(player)?;
+        let listeners = Some(self.live.item_actions.listeners.clone());
+        let mut ctx = super::inner::EquipmentContext {
+            inner: &mut self.live.inner,
+            p: p.clone(),
+            listeners,
+        };
+        let result = crate::inventory::equipment::update(&p.0, &mut ctx);
+        self.live.inner.drain(&p);
+        result.map_err(bind)
     }
     fn unequip(&mut self, player: &Self::Node, slot: i32, item: i32) -> Result<()> {
         let p = self.player(player)?;
@@ -1576,17 +1765,37 @@ impl gh::Host for GHost<'_> {
         refuse("zogre_ladder")
     }
     fn send_options(&mut self, player: &Self::Node, title: &str, options: &[&str]) -> Result<()> {
-        refuse("send_options")
+        // interpreter.sendOptions(title, options...) (super::global_ui).
+        let p = self.player(player)?;
+        let lines = Lines::new(
+            options
+                .iter()
+                .map(|o| Some(o.encode_utf16().collect()))
+                .collect(),
+        );
+        let interpreter = self.live.interpreter_of(&p);
+        let result =
+            interpreter.send_options(self.live, Some(title.encode_utf16().collect()), &lines);
+        self.live.drain_all();
+        result.map(|_| ()).map_err(bind)
     }
     fn set_dialogue(
         &mut self,
         player: &Self::Node,
         dialogue: climb::ClimbDialogue<Self::Node>,
     ) -> Result<()> {
-        refuse("set_dialogue")
+        // player.getDialogueInterpreter().setDialogue(ClimbDialogue).
+        let p = self.player(player)?;
+        self.live.set_climb_dialogue(&p, dialogue).map_err(bind)
     }
     fn dialogue_end(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("dialogue_end")
+        // DialoguePlugin.end(): the captured interpreter's close(), which is
+        // the player's own interpreter.
+        let p = self.player(player)?;
+        let interpreter = self.live.interpreter_of(&p);
+        let result = interpreter.close(self.live);
+        self.live.drain_all();
+        result.map(|_| ()).map_err(bind)
     }
 }
 
@@ -1654,6 +1863,7 @@ impl Live {
         self.global.login_plugins = login_plugins;
         self.global.registered = classes;
         self.global.booth = booth;
+        self.global.container_index = super::global_ui::CONTAINER_INDEX_START;
         Ok(())
     }
 

@@ -88,6 +88,13 @@ fn utf16(text: &str) -> Text {
     text.encode_utf16().collect()
 }
 
+/// ContentAPI's `splitLines(msg)` (DialUtils, 54 per line).
+pub(super) fn content_split_lines(message: &str) -> d::Result<Lines> {
+    let utf16: Vec<u16> = message.encode_utf16().collect();
+    let lines = crate::world::plain_dialogue::split_lines(&utf16, 54).map_err(bind)?;
+    Ok(Lines::new(lines.into_iter().map(Some).collect()))
+}
+
 impl Live {
     fn talk_player(&self, player: &NodeHandle) -> d::Result<P> {
         if self.inner.players.contains_key(&player.node) {
@@ -108,6 +115,61 @@ impl Live {
             .entry(p.node())
             .or_insert_with(|| Interpreter::new(Some(p.0.clone()), registry))
             .clone()
+    }
+    /// ContentAPI `sendDialogue(player, msg)`:
+    /// `dialogueInterpreter.sendDialogue(*splitLines(msg))`. Shared by every
+    /// live host that answers it (the global handlers, the everyday items).
+    pub fn content_send_dialogue(&mut self, p: &P, message: &str) -> d::Result<()> {
+        let lines = content_split_lines(message)?;
+        let interpreter = self.interpreter_of(p);
+        let sent = interpreter.send_dialogue(self, Some(&lines)).map(|_| ());
+        self.drain_all();
+        sent
+    }
+    /// ContentAPI `sendItemDialogue(player, item, msg)` with an Item (the
+    /// Int form builds `Item(id)` first):
+    /// `dialogueInterpreter.sendItemMessage(item, *splitLines(msg))`. Shared
+    /// by every live host that answers it (the global handlers, the
+    /// item-on-object listeners).
+    pub fn content_send_item_dialogue(
+        &mut self,
+        p: &P,
+        item: &<Live as d::Host>::Item,
+        message: &str,
+    ) -> d::Result<()> {
+        let lines = content_split_lines(message)?;
+        let interpreter = self.interpreter_of(p);
+        let sent = interpreter
+            .send_item_message(self, item, &lines)
+            .map(|_| ());
+        self.drain_all();
+        sent
+    }
+    /// ContentAPI `sendNPCDialogue(player, npc, msg, expr)`:
+    /// `dialogueInterpreter.sendDialogues(npc, expr, hideContinue,
+    /// *splitLines(msg))`. Shared by every live host that answers it (the
+    /// global handlers, the item-on-NPC listeners).
+    pub fn content_send_npc_dialogue(
+        &mut self,
+        p: &P,
+        npc: i32,
+        expression: d::FacialExpression,
+        hide_continue: bool,
+        message: &str,
+    ) -> d::Result<()> {
+        let lines = content_split_lines(message)?;
+        let interpreter = self.interpreter_of(p);
+        let sent = interpreter
+            .send_dialogues(
+                self,
+                npc,
+                d::FacialExpression::or_unset(Some(expression)),
+                hide_continue,
+                &lines,
+            )
+            .map(|_| ());
+        self.drain_all();
+        sent
     }
     /// A frame that takes `InterfaceManager.getPacketCount(1)`.
     fn counted(&mut self, p: &P, frame: impl FnOnce(i32) -> Frame) {

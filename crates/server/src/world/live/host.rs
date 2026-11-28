@@ -536,13 +536,13 @@ impl repository::Host<P> for Live {
         Err(repository::Error::Exception("not ported: familiars".into()))
     }
     fn interface_close(&mut self, p: &P) -> repository::Result<()> {
-        let (ui, manager) = self.ui_of(p);
-        interfaces::close(ui, &manager).map(|_| ()).map_err(rfail)
+        // With the world's interface context (super::global_ui): the global
+        // handlers' close listeners run.
+        self.with_world_ui(p, |ui, m| interfaces::close(ui, m).map(|_| ()))
+            .map_err(rfail)
     }
     fn interface_close_single_tab(&mut self, p: &P) -> repository::Result<()> {
-        let (ui, manager) = self.ui_of(p);
-        interfaces::close_single_tab(ui, &manager)
-            .map(|_| ())
+        self.with_world_ui(p, |ui, m| interfaces::close_single_tab(ui, m).map(|_| ()))
             .map_err(rfail)
     }
     fn entity_clear(&mut self, p: &P) -> repository::Result<()> {

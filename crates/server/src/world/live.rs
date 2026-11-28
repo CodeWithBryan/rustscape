@@ -43,6 +43,7 @@ pub mod equipment;
 pub mod faults;
 pub mod follow;
 pub mod global;
+pub mod global_ui;
 pub mod graves;
 pub mod ground;
 pub mod ground_items;

@@ -254,16 +254,11 @@ impl item_on_object::Host for WithObject<'_> {
         // *splitLines(message))`.
         let p = self.player(player)?;
         let item = Ctx::item(item).map_err(|_| Error::Cast)?;
-        let units: Vec<u16> = text.encode_utf16().collect();
-        let lines = crate::world::plain_dialogue::split_lines(&units, 54).map_err(bind)?;
-        let live = &mut *self.0.0.0;
-        let interpreter = live.interpreter_of(&p);
-        let sent = interpreter
-            .send_item_message(live, &item, &crate::world::dialogue_dsl::lines(&lines))
-            .map(|_| ())
-            .map_err(bind);
-        live.inner.drain(&p);
-        sent
+        self.0
+            .0
+            .0
+            .content_send_item_dialogue(&p, &item, text)
+            .map_err(bind)
     }
     fn run_woodcutting_pulse(&mut self, player: &Node, scenery: &Node) -> Result<()> {
         let p = self.player(player)?;

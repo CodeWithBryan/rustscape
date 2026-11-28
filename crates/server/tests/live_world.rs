@@ -921,6 +921,9 @@ async fn drive(
                 "items" => items_scenario(address, saves).await,
                 "wilderness" => wilderness_scenario(address, saves).await,
                 "scenery" => scenery_scenario(address, saves).await,
+                "interfaces" => interfaces_scenario(address, saves).await,
+                "interfacescombat" => interfaces_combat_scenario(address, saves).await,
+                "climb" => climb_scenario(address, saves).await,
                 "combat" => combat_scenario(address, saves).await,
                 "aggression" => aggression_scenario(address, saves).await,
                 "death" => death_scenario(address, saves).await,
@@ -977,6 +980,9 @@ async fn drive(
     items_scenario(address, saves).await;
     wilderness_scenario(address, saves).await;
     scenery_scenario(address, saves).await;
+    interfaces_scenario(address, saves).await;
+    interfaces_combat_scenario(address, saves).await;
+    climb_scenario(address, saves).await;
     combat_scenario(address, saves).await;
     aggression_scenario(address, saves).await;
     death_scenario(address, saves).await;
@@ -2340,6 +2346,495 @@ async fn scenery_scenario(address: std::net::SocketAddr, saves: &std::path::Path
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
+
+/// The server frames' client-script ids from frame `from` on, with each
+/// frame's number.
+fn scripts_from(c: &Client, from: usize) -> Vec<(usize, i32)> {
+    c.frames
+        .iter()
+        .enumerate()
+        .skip(from)
+        .filter_map(|(n, f)| match updates::ServerUpdate::decode(f) {
+            Ok(Some(updates::ServerUpdate::RunClientScript { id, .. })) => Some((n, id)),
+            _ => None,
+        })
+        .collect()
+}
+/// The interface closes (149) from frame `from` on: (frame number, pane
+/// child).
+fn closes_from(c: &Client, from: usize) -> Vec<(usize, i32)> {
+    c.frames
+        .iter()
+        .enumerate()
+        .skip(from)
+        .filter(|(_, f)| f.opcode == 149 && f.payload.len() == 6)
+        .map(|(n, f)| {
+            (
+                n,
+                i32::from(u16::from_be_bytes([f.payload[4], f.payload[5]])),
+            )
+        })
+        .collect()
+}
+/// A main interface's pane child (fixed 11, resizable 6) and a single tab's
+/// (fixed 80, resizable 76).
+const MAIN_CHILD: [i32; 2] = [11, 6];
+const SINGLE_TAB_CHILD: [i32; 2] = [80, 76];
+
+/// The tab buttons that open interfaces through the global handlers'
+/// ContentAPI services (`openInterface`, `openSingleTab`), with their open
+/// and close listeners run where the interface manager calls them
+/// (world/live/global_ui.rs). Worn items' "Show equipment stats" (387:55)
+/// opens 667: its onOpen sends the access mask, EquipmentContainer.update's
+/// bonus texts and opens the single tab 670, whose onOpen generates the
+/// inventory items (script 150, key 93), all before 667's own interface
+/// packet. Close (184) runs 667's onClose, which closes the single tab
+/// (149 to child 80), then 667 itself closes (149 to child 11). "Items kept
+/// on death" (387:52) runs its onOpen's script 118 before 102's interface
+/// packet. The settings tab's graphics and audio buttons (261:16, 261:18)
+/// open 742 and 743; the stats tab's Attack (320:125) opens the skill guide
+/// 499 and sets varp 965 to its config 1.
+async fn interfaces_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3222, 3218, 0];
+    write_save(&players, "traceone", "ifaceone", at, &[(0, 1205, 1)]);
+    let (code, one) = Client::login(address, "ifaceone").await;
+    assert_eq!(code, 2, "ifaceone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "ifaceone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    one.pump(Duration::from_secs(1)).await;
+
+    // Show equipment stats: 670 (from 667's onOpen), then 667.
+    let opened = one.opened.len();
+    let frames = one.frames.len();
+    let texts = one.texts.len();
+    one.send(button(387, 55)).await;
+    one.until(Duration::from_secs(10), "the equipment stats screen", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 667)
+    })
+    .await;
+    let order: Vec<(usize, i32)> = one.opened[opened..]
+        .iter()
+        .copied()
+        .filter(|(_, id)| [667, 670].contains(id))
+        .collect();
+    assert_eq!(
+        order.iter().map(|(_, id)| *id).collect::<Vec<_>>(),
+        [670, 667],
+        "667's onOpen opens 670 before 667 itself"
+    );
+    let main_667 = order[1].0;
+    let script_150 = scripts_from(&one, frames)
+        .into_iter()
+        .find(|(_, id)| *id == 150)
+        .expect("the inventory side's items (InterfaceContainer script 150)");
+    assert!(
+        script_150.0 < main_667,
+        "670's onOpen (script 150) comes before 667's interface packet"
+    );
+    assert!(
+        one.texts[texts..]
+            .iter()
+            .any(|(n, p, t)| *p == (667 << 16 | 34) && t == "Attack bonus" && *n < main_667),
+        "EquipmentContainer.update's texts on 667, before its interface packet"
+    );
+    assert!(
+        one.texts[texts..]
+            .iter()
+            .any(|(_, p, t)| *p == (667 << 16 | 36) && t.starts_with("Stab: ")),
+        "the bonus texts on 667"
+    );
+    // Close: 667's onClose closes the single tab 670, then 667 closes.
+    let frames = one.frames.len();
+    one.send(close_interface()).await;
+    one.until(
+        Duration::from_secs(10),
+        "667 and its single tab closed",
+        |c| {
+            let closes = closes_from(c, frames);
+            closes.iter().any(|(_, ch)| SINGLE_TAB_CHILD.contains(ch))
+                && closes.iter().any(|(_, ch)| MAIN_CHILD.contains(ch))
+        },
+    )
+    .await;
+    let closes = closes_from(&one, frames);
+    let tab = closes
+        .iter()
+        .position(|(_, ch)| SINGLE_TAB_CHILD.contains(ch))
+        .unwrap();
+    let main = closes
+        .iter()
+        .position(|(_, ch)| MAIN_CHILD.contains(ch))
+        .unwrap();
+    assert!(
+        tab < main,
+        "667's onClose closes the single tab before 667 itself"
+    );
+    eprintln!("ifaceone: equipment stats opened 670 then 667; Close closed 670, then 667");
+
+    // Items kept on death: script 118 from 102's onOpen, then 102.
+    let opened = one.opened.len();
+    let frames = one.frames.len();
+    one.send(button(387, 52)).await;
+    one.until(Duration::from_secs(10), "items kept on death", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 102)
+    })
+    .await;
+    let opened_102 = one.opened[opened..]
+        .iter()
+        .find(|(_, id)| *id == 102)
+        .unwrap()
+        .0;
+    let script_118 = scripts_from(&one, frames)
+        .into_iter()
+        .find(|(_, id)| *id == 118)
+        .expect("102's onOpen runs script 118");
+    assert!(
+        script_118.0 < opened_102,
+        "102's onOpen (script 118) comes before 102's interface packet"
+    );
+    one.send(close_interface()).await;
+    one.pump(Duration::from_millis(600)).await;
+    eprintln!("ifaceone: items kept on death ran script 118, then opened 102");
+
+    // The settings tab's graphics (742) and audio (743) settings: each
+    // opens as the main interface and Close closes it.
+    for (child, id) in [(16, 742), (18, 743)] {
+        let opened = one.opened.len();
+        one.send(button(261, child)).await;
+        one.until(Duration::from_secs(10), "a settings interface", |c| {
+            c.opened[opened..].iter().any(|(_, i)| *i == id)
+        })
+        .await;
+        let frames = one.frames.len();
+        one.send(close_interface()).await;
+        one.until(
+            Duration::from_secs(10),
+            "the settings interface closed",
+            |c| {
+                closes_from(c, frames)
+                    .iter()
+                    .any(|(_, ch)| MAIN_CHILD.contains(ch))
+            },
+        )
+        .await;
+    }
+    eprintln!("ifaceone: the settings tab opened and closed 742 and 743");
+
+    // The stats tab's Attack: the skill guide 499 and varp 965 = 1.
+    let opened = one.opened.len();
+    let frames = one.frames.len();
+    one.send(button(320, 125)).await;
+    one.until(Duration::from_secs(10), "the skill guide", |c| {
+        c.opened[opened..].iter().any(|(_, i)| *i == 499)
+    })
+    .await;
+    one.pump(Duration::from_millis(600)).await;
+    let varp = one.frames[frames..].iter().any(|f| {
+        matches!(
+            updates::ServerUpdate::decode(f),
+            Ok(Some(updates::ServerUpdate::Varp { id: 965, value: 1 }))
+        )
+    });
+    assert!(varp, "the skill guide's varp 965 = 1");
+    one.send(close_interface()).await;
+    one.pump(Duration::from_millis(600)).await;
+    eprintln!("ifaceone: the stats tab opened the skill guide 499 (varp 965 = 1)");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The combat close path: `CombatPulse.setCombatFlags` closes the
+/// attacking player's interfaces (`entity.interfaceManager.close()`) and a
+/// victim player's (world/live/combat/host.rs) with the world's interface
+/// context, so the equipment screen's onClose runs there too. `ifacefight`
+/// (full hitpoints, next to the Lumbridge swamp's giant rats) attacks the
+/// nearest giant rat itself (no random aggressor), then opens the equipment
+/// stats (667 with its single tab 670); the next swing of the fight, its
+/// own or the rat's, closes 670 (149 to child 80) and then 667.
+async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    const GIANT_RATS: [i32; 4] = [86, 87, 446, 950];
+    let players = saves.join("players");
+    let at = [3196, 3206, 0];
+    write_save_with(&players, "traceone", "ifacefight", at, &[], |save| {
+        let list = save
+            .as_object_mut()
+            .unwrap()
+            .entry("attributes")
+            .or_insert_with(|| Value::Array(vec![]));
+        list.as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"key": "tutorial:complete", "type": "bool", "value": true}));
+    });
+    let (code, one) = Client::login(address, "ifacefight").await;
+    assert_eq!(code, 2, "ifacefight's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "ifacefight's lobby", |c| {
+        c.base.is_some() && c.frames.iter().any(|f| f.opcode == 164)
+    })
+    .await;
+    one.send(button(378, 140)).await;
+    one.until(
+        Duration::from_secs(10),
+        "ifacefight in the game world with giant rats in view",
+        |c| {
+            !c.updates.is_empty()
+                && c.npcs
+                    .actors
+                    .values()
+                    .any(|n| GIANT_RATS.contains(&n.type_id))
+        },
+    )
+    .await;
+    // Attack a giant rat, then open the equipment screen while the fight
+    // goes on; a rat that dies before a swing lands while 667 is open is
+    // replaced by the next nearest (at most three fights).
+    let started = Instant::now();
+    let mut fights = 0;
+    'fight: loop {
+        fights += 1;
+        assert!(
+            fights <= 3,
+            "ifacefight: three fights and no swing closed the equipment screen"
+        );
+        let rat = attack_nearest(&mut one, &GIANT_RATS, "giant rat").await;
+        let opened = one.opened.len();
+        // From before the button: a swing in the tick that opens 667 can
+        // close it in the same batch of frames.
+        let frames = one.frames.len();
+        one.send(button(387, 55)).await;
+        one.until(Duration::from_secs(10), "the equipment stats screen", |c| {
+            c.opened[opened..].iter().any(|(_, id)| *id == 667)
+        })
+        .await;
+        let end = Instant::now() + Duration::from_secs(20);
+        while Instant::now() < end {
+            one.pump(Duration::from_secs(1)).await;
+            one.send(Frame {
+                opcode: 93,
+                payload: vec![],
+            })
+            .await;
+            let closes = closes_from(&one, frames);
+            if closes.iter().any(|(_, ch)| MAIN_CHILD.contains(ch)) {
+                let tab = closes
+                    .iter()
+                    .position(|(_, ch)| SINGLE_TAB_CHILD.contains(ch));
+                let main = closes
+                    .iter()
+                    .position(|(_, ch)| MAIN_CHILD.contains(ch))
+                    .unwrap();
+                assert!(
+                    tab.is_some_and(|t| t < main),
+                    "the combat close runs 667's onClose (670 closed first): {closes:?}"
+                );
+                eprintln!(
+                    "ifacefight: the fight with giant rat {rat} closed the equipment screen after {:.1} s: 670, then 667",
+                    started.elapsed().as_secs_f64()
+                );
+                break 'fight;
+            }
+        }
+    }
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A two-way staircase: Lumbridge castle's north staircase on the middle
+/// floor (36777, options Climb, Climb-up, Climb-down). Its first option,
+/// "Climb", finds a staircase above and below, so ClimbActionHandler sends
+/// the options "Climb Up." / "Climb Down." (chatbox 228) and sets
+/// ClimbDialogue as the player's dialogue (world/live/global_ui.rs). The
+/// chosen option (Continue 132 on 228:2 or 228:3) locks the player, submits
+/// the one-tick pulse and ends the dialogue (`end()`: the chatbox back to
+/// 137); the pulse climbs: one character reaches the top floor, another the
+/// ground floor, each on its staircase's destination tile. Another Continue
+/// on 228 then does nothing (the dialogue is cleared). A third character
+/// clicks a settings button while the options are up: IfAction closes the
+/// dialogue first (PacketProcessor.processIfAction), the chatbox goes back
+/// to 137, the button still opens 742, and a late Continue on the options
+/// climbs nowhere. A fourth walks away while the options are up:
+/// processWalkPacket closes the options chatbox (228 is not walkable) and
+/// the dialogue, then walks.
+async fn climb_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let at = [3206, 3229, 1];
+    let offered = |c: &Client, from: usize| {
+        let at = |child: i32, text: &str| {
+            c.texts[from..]
+                .iter()
+                .any(|(_, p, t)| *p == (228 << 16 | child) && t == text)
+        };
+        at(2, "Climb Up.") && at(3, "Climb Down.")
+    };
+    for (name, child, destination) in [
+        ("stairup", 2, CLIMBED_UP),
+        ("stairdown", 3, CLIMBED_DOWN),
+        ("stairleave", 0, at),
+        ("stairwalk", -1, WALKED_OFF),
+    ] {
+        write_save(&players, "traceone", name, at, &[]);
+        let (code, one) = Client::login(address, name).await;
+        assert_eq!(code, 2, "{name}'s login");
+        let mut one = one.unwrap();
+        one.until(Duration::from_secs(10), "the rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+        assert_eq!(one.players.plane, 1, "{name} starts on the middle floor");
+        let from = one.texts.len();
+        let opened = one.opened.len();
+        one.send(scenery_option1(36777, STAIRS[0], STAIRS[1])).await;
+        one.until(Duration::from_secs(10), "the climb options", |c| {
+            offered(c, from)
+        })
+        .await;
+        assert!(
+            one.texts[from..]
+                .iter()
+                .any(|(_, p, t)| *p == (228 << 16 | 1) && t == "What would you like to do?"),
+            "the options' title"
+        );
+        assert!(
+            one.opened[opened..].iter().any(|(_, id)| *id == 228),
+            "the options chatbox 228"
+        );
+        let opened = one.opened.len();
+        let frames = one.frames.len();
+        if child == 0 {
+            // Interrupted: a settings button closes the dialogue first.
+            one.send(button(261, 16)).await;
+            one.until(
+                Duration::from_secs(10),
+                "the dialogue closed, 742 open",
+                |c| {
+                    chatbox_restored(c, frames).is_some()
+                        && c.opened[opened..].iter().any(|(_, id)| *id == 742)
+                },
+            )
+            .await;
+            let back = chatbox_restored(&one, frames).unwrap();
+            let settings = one.opened[opened..]
+                .iter()
+                .find(|(_, id)| *id == 742)
+                .unwrap()
+                .0;
+            assert!(
+                back < settings,
+                "IfAction closes the dialogue before the button runs"
+            );
+            one.send(close_interface()).await;
+        } else if child < 0 {
+            // Interrupted by a walk: processWalkPacket closes the options
+            // chatbox (not walkable) and the dialogue, then walks.
+            one.send(actions::worldspace_walk(
+                destination[0],
+                destination[1],
+                false,
+            ))
+            .await;
+            one.until(Duration::from_secs(10), "the walk off the stairs", |c| {
+                c.position() != at
+            })
+            .await;
+            one.pump(Duration::from_secs(3)).await;
+            let closes = closes_from(&one, frames);
+            eprintln!(
+                "stairwalk: at {:?}, closes {closes:?}, scripts {:?}",
+                one.position(),
+                scripts_from(&one, frames)
+            );
+            assert!(
+                chatbox_restored(&one, frames).is_some(),
+                "the walk closed the options and the dialogue: {closes:?}"
+            );
+            assert_eq!(one.position(), destination, "stairwalk walked off");
+        } else {
+            one.send(continue_option(228, child)).await;
+            one.until(Duration::from_secs(10), "the chosen floor", |c| {
+                c.players.plane == destination[2]
+            })
+            .await;
+            assert!(
+                chatbox_restored(&one, frames).is_some(),
+                "end(): the options closed and the chatbox back to 137"
+            );
+            // The rebuild after the climb (the client's base follows).
+            one.pump(Duration::from_secs(1)).await;
+            let [x, y, _] = one.position();
+            assert_eq!(
+                [x, y, one.players.plane],
+                destination,
+                "{name}: the staircase's destination tile"
+            );
+        }
+        // The dialogue is cleared: another Continue on the options climbs
+        // nowhere.
+        let plane = one.players.plane;
+        let [x, y, _] = one.position();
+        let late = one.frames.len();
+        let texts = one.texts.len();
+        one.send(continue_option(228, 2)).await;
+        one.pump(Duration::from_secs(2)).await;
+        let [x2, y2, _] = one.position();
+        eprintln!(
+            "{name}: after the late Continue: closes {:?}, scripts {:?}",
+            closes_from(&one, late),
+            scripts_from(&one, late)
+        );
+        // A ClimbDialogue left behind would run `end()` again (its close and
+        // script 101) and could offer the options again.
+        assert!(
+            chatbox_restored(&one, late).is_none(),
+            "{name}: no dialogue left to end"
+        );
+        assert!(
+            !offered(&one, texts),
+            "{name}: the options are not offered again"
+        );
+        assert_eq!(
+            [x2, y2, one.players.plane],
+            [x, y, plane],
+            "{name}: a Continue after the dialogue ended does nothing"
+        );
+        eprintln!(
+            "{name}: Climb on the staircase 36777 offered Climb Up./Climb Down.; {} at {:?} on plane {}",
+            match child {
+                0 => "a settings button closed the dialogue; stayed".to_owned(),
+                -1 => "a walk closed the dialogue and walked off".to_owned(),
+                c => format!("option {c} climbed"),
+            },
+            [x2, y2],
+            one.players.plane
+        );
+        one.writer.close(1000, "logout").await.unwrap();
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+}
+/// DialoguePlugin.close's `closeChatbox()` then `openChatbox(137)`: the
+/// options chatbox closed (149 to the chatbox pane's child 12) and script
+/// 101 (137 is opened without a packet when the closed chatbox was a
+/// dialogue); the frame number of the script.
+fn chatbox_restored(c: &Client, from: usize) -> Option<usize> {
+    let closed = closes_from(c, from)
+        .into_iter()
+        .find(|(_, ch)| *ch == 12)?
+        .0;
+    scripts_from(c, closed)
+        .into_iter()
+        .find(|(_, id)| *id == 101)
+        .map(|(n, _)| n)
+}
+/// The staircase 36777 on Lumbridge castle's middle floor.
+const STAIRS: [i32; 2] = [3204, 3229];
+/// Where `stairwalk` walks while the options are up (three tiles south).
+const WALKED_OFF: [i32; 3] = [3206, 3226, 1];
+/// Where its Climb Up. and Climb Down. choices land.
+const CLIMBED_UP: [i32; 3] = [3206, 3229, 2];
+const CLIMBED_DOWN: [i32; 3] = [3206, 3229, 0];
 
 /// Item on an NPC and on scenery (`processUseWith`): no listener, plugin or
 /// UseWithHandler takes a bronze dagger on Lumbridge's shop keeper or on the
@@ -3782,11 +4277,21 @@ async fn use_content_scenario(address: std::net::SocketAddr, saves: &std::path::
             c.base.is_some() && !c.updates.is_empty()
         })
         .await;
+    // A patron at least two tiles inside the pub (CIDER_PUB, 2689,3488 to
+    // 2700,3498): the patrons wander, and the borders are tested on the
+    // player after the walk, so one at the edge can lead the player out of
+    // the pub and no dialogue opens.
     let patron = |c: &Client| {
+        let base = c.base?;
         c.npcs
             .actors
             .iter()
-            .find(|(_, n)| (1..=5).contains(&n.type_id))
+            .find(|(_, n)| {
+                let (x, y) = (base[0] + n.tile[0], base[1] + n.tile[1]);
+                (1..=5).contains(&n.type_id)
+                    && (2691..=2698).contains(&x)
+                    && (3490..=3496).contains(&y)
+            })
             .map(|(i, _)| *i as i32)
     };
     cider
@@ -3799,6 +4304,11 @@ async fn use_content_scenario(address: std::net::SocketAddr, saves: &std::path::
     };
     let messages = cider.messages.len();
     for slot in 0..5 {
+        cider
+            .until_pinging(Duration::from_secs(30), "a patron inside the pub", |c| {
+                patron(c).is_some()
+            })
+            .await;
         let index = patron(&cider).unwrap();
         let from = cider.texts.len();
         cider.send(use_with_npc(5763, slot, index)).await;

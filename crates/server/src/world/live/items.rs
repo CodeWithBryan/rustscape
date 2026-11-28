@@ -968,9 +968,16 @@ impl drop::Context for Ctx<'_> {
     }
     fn close_all_interfaces(&mut self, player: &Node) -> Result<()> {
         let p = self.player_of(player)?;
+        // interfaceManager.close() with the world's interface context (the
+        // global handlers' close listeners, super::global_ui), then
+        // closeChatbox().
+        self.0
+            .with_world_ui(&p, |ui, m| {
+                crate::world::interfaces::close(ui, m).map(|_| ())
+            })
+            .map_err(err)?;
         self.0.inner.current = Some(p.clone());
         let manager = self.0.inner.canonical(&p).player.manager();
-        crate::world::interfaces::close(&mut self.0.inner, &manager).map_err(err)?;
         crate::world::interfaces::close_chatbox(&mut self.0.inner, &manager).map_err(err)
     }
     fn queue_soft_script(&mut self, _: &Node, script: drop::DropScript<Node>) -> Result<()> {
@@ -1038,10 +1045,10 @@ impl drop::Context for Ctx<'_> {
         crate::world::repository::Host::save_immediately(self.0, &p).map_err(err)
     }
     fn send_destroy_item(&mut self, _: &Node, _: i32, _: Option<&str>) -> Result<()> {
-        refused("DialogueInterpreter.sendDestroyItem (the dialogue interpreter is not installed)")
+        refused("DialogueInterpreter.sendDestroyItem (not bound to the interpreter)")
     }
     fn add_dialogue_action(&mut self, _: &Node, _: drop::DestroyAction<Node>) -> Result<()> {
-        refused("addDialogueAction (the dialogue interpreter is not installed)")
+        refused("addDialogueAction (not bound to the interpreter)")
     }
     fn remove_item(&mut self, player: &Node, item: &Node) -> Result<bool> {
         let item = Self::item(item)?;

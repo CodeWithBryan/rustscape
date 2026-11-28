@@ -426,6 +426,13 @@ pub fn interaction_option(index: i32, name: &str) -> Frame {
 fn ui_error(e: impl std::fmt::Display) -> interfaces::Error {
     interfaces::Error::Binding(e.to_string())
 }
+/// An interface listener that needs the whole world, reached through the
+/// plain interface context.
+fn refused_listener(id: i32, which: &str) -> interfaces::Error {
+    interfaces::Error::Binding(format!(
+        "not ported in the live world: {which}({id}) through the plain interface context (the global handlers' listeners run only with the world's context, super::global_ui)"
+    ))
+}
 fn ui_error_debug(e: impl std::fmt::Debug) -> interfaces::Error {
     interfaces::Error::Binding(format!("{e:?}"))
 }
@@ -461,7 +468,10 @@ impl interfaces::Context for Inner {
     }
     fn listener_open(&mut self, component: &interfaces::Handle) -> interfaces::Result<()> {
         // InterfaceListeners.runOpen: BankInterface's onOpen(762) runs
-        // (super::bank); the global handlers' open listeners stay skipped.
+        // (super::bank), the shop's onOpen (super::shopping); no listener
+        // does nothing. A global handler's listener needs the whole world
+        // (super::global_ui's context runs it): reached through this plain
+        // context it is refused, never skipped.
         let id = component.read().id;
         if let Some(callback) = self.interface_listeners.get_open(id)? {
             if let Some(result) = self.bank_open_listener(&callback, component) {
@@ -470,23 +480,21 @@ impl interfaces::Context for Inner {
             if let Some(result) = self.shop_open_listener(&callback) {
                 return result.map(|_| ());
             }
+            return Err(refused_listener(id, "onOpen"));
         }
-        self.not_ported
-            .skip("InterfaceListeners.runOpen (content interface listeners)");
         Ok(())
     }
     fn listener_close(&mut self, component: &interfaces::Handle) -> interfaces::Result<bool> {
-        // The shop's onClose(620) (super::shopping).
+        // InterfaceListeners.runClose: the shop's onClose(620)
+        // (super::shopping); true when no listener is registered. A global
+        // handler's close listener is refused here (see listener_open).
         let id = component.read().id;
-        if let Some(callback) = self.interface_listeners.get_close(id)?
-            && let Some(result) = self.shop_open_listener(&callback)
-        {
-            return result;
+        if let Some(callback) = self.interface_listeners.get_close(id)? {
+            if let Some(result) = self.shop_open_listener(&callback) {
+                return result;
+            }
+            return Err(refused_listener(id, "onClose"));
         }
-        // InterfaceListeners.runClose answers true when no listener is
-        // registered for the interface; none is (content).
-        self.not_ported
-            .default_answer("InterfaceListeners.runClose (no content listener: true)");
         Ok(true)
     }
     fn dispatch_close(&mut self, _: Option<interfaces::Handle>) -> interfaces::Result<()> {

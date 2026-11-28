@@ -77,22 +77,9 @@ impl item_on_npc::DialogueHost for CiderHost<'_> {
         // `player.dialogueInterpreter.sendDialogues(npc, NEUTRAL, false,
         // *splitLines(msg))`.
         let p = self.player(player)?;
-        let units: Vec<u16> = text.encode_utf16().collect();
-        let lines = crate::world::plain_dialogue::split_lines(&units, 54).map_err(bind)?;
-        let interpreter = self.live.interpreter_of(&p);
-        let expression = d::FacialExpression::or_unset(Some(d::FacialExpression::Neutral));
-        let sent = interpreter
-            .send_dialogues(
-                self.live,
-                npc,
-                expression,
-                false,
-                &crate::world::dialogue_dsl::lines(&lines),
-            )
-            .map(|_| ())
-            .map_err(bind);
-        self.live.inner.drain(&p);
-        sent
+        self.live
+            .content_send_npc_dialogue(&p, npc, d::FacialExpression::Neutral, false, text)
+            .map_err(bind)
     }
     fn remove_from_inventory(&mut self, player: &Node, id: i32, amount: i32) -> Result<bool> {
         item_on_object::Host::remove_items(&mut self.objects(), player, id, amount)

@@ -246,11 +246,31 @@ pub fn interfaces_of(players: &BTreeMap<Node, Slot>, n: Node) -> player_walk::Re
     let chatbox = interfaces::has_chatbox(&m);
     Ok(Interfaces {
         opened: interfaces::is_opened(&m),
-        opened_walkable: Some(interfaces::is_walkable(&m).map_err(binding)?),
+        // `interfaceManager.opened.definition.isWalkable`
+        // (PacketProcessor.processWalkPacket), not
+        // InterfaceManager.isWalkable(); a missing definition is null.
+        opened_walkable: m
+            .fields
+            .read()
+            .opened
+            .as_ref()
+            .and_then(|c| c.read().definition.clone())
+            .map(|d| d.read().walkable),
         chatbox,
-        // A chatbox other than 137 is opened only by dialogue content,
-        // which is not ported.
-        chatbox_walkable: None,
+        // `interfaceManager.chatbox.definition.isWalkable`, read only
+        // when hasChatbox() (a chatbox other than 137, such as the
+        // dialogue's options 228); a missing definition is the
+        // original's null (walk_request fails with Null).
+        chatbox_walkable: if chatbox {
+            m.fields
+                .read()
+                .chatbox
+                .as_ref()
+                .and_then(|c| c.read().definition.clone())
+                .map(|d| d.read().walkable)
+        } else {
+            None
+        },
     })
 }
 
