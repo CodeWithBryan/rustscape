@@ -1,0 +1,818 @@
+{
+  "census": {
+    "area": "Varrock",
+    "centre": [
+      3185,
+      3438,
+      0
+    ],
+    "radius": 8,
+    "tour": "varrock_west_bank"
+  },
+  "character": {
+    "inventory": [
+      {
+        "amount": 1,
+        "id": 1351
+      },
+      {
+        "amount": 1,
+        "id": 1265
+      },
+      {
+        "amount": 1,
+        "id": 590
+      },
+      {
+        "amount": 1,
+        "id": 303
+      },
+      {
+        "amount": 3,
+        "id": 1511
+      },
+      {
+        "amount": 1,
+        "id": 2309
+      },
+      {
+        "amount": 1,
+        "id": 315
+      },
+      {
+        "amount": 1,
+        "id": 317
+      },
+      {
+        "amount": 1,
+        "id": 1925
+      },
+      {
+        "amount": 1,
+        "id": 1931
+      },
+      {
+        "amount": 1,
+        "id": 946
+      },
+      {
+        "amount": 1,
+        "id": 1755
+      },
+      {
+        "amount": 1,
+        "id": 1733
+      },
+      {
+        "amount": 5,
+        "id": 1734
+      },
+      {
+        "amount": 1,
+        "id": 1205
+      },
+      {
+        "amount": 1,
+        "id": 1171
+      },
+      {
+        "amount": 5000,
+        "id": 995
+      },
+      {
+        "amount": 1,
+        "id": 526
+      },
+      {
+        "amount": 50,
+        "id": 556
+      },
+      {
+        "amount": 50,
+        "id": 558
+      }
+    ],
+    "location": [
+      3185,
+      3438,
+      0
+    ],
+    "name": "cs_vwbank",
+    "skills": {
+      "agility": 60,
+      "attack": 60,
+      "construction": 60,
+      "cooking": 60,
+      "crafting": 60,
+      "defence": 60,
+      "farming": 60,
+      "firemaking": 60,
+      "fishing": 60,
+      "fletching": 60,
+      "herblore": 60,
+      "hitpoints": 60,
+      "hunter": 60,
+      "magic": 60,
+      "mining": 60,
+      "prayer": 60,
+      "ranged": 60,
+      "runecrafting": 60,
+      "slayer": 60,
+      "smithing": 60,
+      "strength": 60,
+      "summoning": 60,
+      "thieving": 60,
+      "woodcutting": 60
+    }
+  },
+  "keepGoing": true,
+  "steps": [
+    {
+      "do": "pump",
+      "label": "(idle baseline)",
+      "seconds": 20.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Banker (44)",
+      "npc": {
+        "type": 44
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Banker (44)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Banker (44)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Banker (44)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Bank Banker (44)",
+      "npc": {
+        "type": 44
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Bank Banker (44)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Bank Banker (44)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Bank Banker (44)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Collect Banker (44)",
+      "npc": {
+        "type": 44
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Collect Banker (44)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Collect Banker (44)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Collect Banker (44)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Banker (44)",
+      "npc": {
+        "type": 44
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Banker (44)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Banker (44)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Banker (44)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Banker (45)",
+      "npc": {
+        "type": 45
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Banker (45)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Banker (45)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Banker (45)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Bank Banker (45)",
+      "npc": {
+        "type": 45
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Bank Banker (45)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Bank Banker (45)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Bank Banker (45)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Collect Banker (45)",
+      "npc": {
+        "type": 45
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Collect Banker (45)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Collect Banker (45)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Collect Banker (45)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Banker (45)",
+      "npc": {
+        "type": 45
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Banker (45)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Banker (45)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Banker (45)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Use Bank booth (11402)",
+      "option": 0,
+      "scenery": 11402,
+      "tile": [
+        3181,
+        3436
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Use Bank booth (11402)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3181,
+            3436
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Use Bank booth (11402)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Use Bank booth (11402)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Use Bank booth (11402)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Use-quickly Bank booth (11402)",
+      "option": 1,
+      "scenery": 11402,
+      "tile": [
+        3181,
+        3436
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Use-quickly Bank booth (11402)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3181,
+            3436
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Use-quickly Bank booth (11402)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Use-quickly Bank booth (11402)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Use-quickly Bank booth (11402)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Collect Bank booth (11402)",
+      "option": 2,
+      "scenery": 11402,
+      "tile": [
+        3181,
+        3436
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Collect Bank booth (11402)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3181,
+            3436
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Collect Bank booth (11402)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Collect Bank booth (11402)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Collect Bank booth (11402)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Knock-at Door (24389)",
+      "option": 0,
+      "scenery": 24389,
+      "tile": [
+        3181,
+        3434
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Knock-at Door (24389)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3181,
+            3434
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Knock-at Door (24389)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Knock-at Door (24389)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Knock-at Door (24389)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Door (24376)",
+      "option": 0,
+      "scenery": 24376,
+      "tile": [
+        3188,
+        3433
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Door (24376)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3188,
+            3433
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Door (24376)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Door (24376)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Door (24376)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-down Staircase (24360)",
+      "option": 0,
+      "scenery": 24360,
+      "tile": [
+        3189,
+        3432
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-down Staircase (24360)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3189,
+            3432
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-down Staircase (24360)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-down Staircase (24360)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-down Staircase (24360)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Ladder (24354)",
+      "option": 0,
+      "scenery": 24354,
+      "tile": [
+        3183,
+        3446
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Ladder (24354)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3183,
+            3446
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Ladder (24354)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Ladder (24354)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Ladder (24354)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1351,
+      "label": "item Wield Bronze axe (1351)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze axe (1351)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze axe (1351)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze axe (1351)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1265,
+      "label": "item Wield Bronze pickaxe (1265)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze pickaxe (1265)"
+    },
+    {
+      "do": "itemOption",
+      "item": 2309,
+      "label": "item Eat Bread (2309)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Bread (2309)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Bread (2309)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Bread (2309)"
+    },
+    {
+      "do": "itemOption",
+      "item": 315,
+      "label": "item Eat Shrimps (315)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Shrimps (315)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Shrimps (315)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Shrimps (315)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1205,
+      "label": "item Wield Bronze dagger (1205)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze dagger (1205)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze dagger (1205)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze dagger (1205)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1171,
+      "label": "item Wield Wooden shield (1171)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Wooden shield (1171)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Wooden shield (1171)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Wooden shield (1171)"
+    },
+    {
+      "do": "itemOption",
+      "item": 526,
+      "label": "item Bury Bones (526)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Bury Bones (526)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Bury Bones (526)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Bury Bones (526)"
+    },
+    {
+      "do": "useOnItem",
+      "item": 946,
+      "label": "item use Knife on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Knife on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Knife on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Knife on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 590,
+      "label": "item use Tinderbox on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Tinderbox on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Tinderbox on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Tinderbox on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1755,
+      "label": "item use Chisel on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Chisel on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Chisel on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Chisel on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1733,
+      "label": "item use Needle on Thread",
+      "target": 1734
+    },
+    {
+      "do": "pump",
+      "label": "item use Needle on Thread",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Needle on Thread",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Needle on Thread"
+    },
+    {
+      "do": "itemOption",
+      "item": 1931,
+      "label": "item drop Empty pot (1931)",
+      "option": 4
+    },
+    {
+      "do": "pump",
+      "label": "item drop Empty pot (1931)",
+      "seconds": 1.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item drop Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item drop Empty pot (1931)"
+    }
+  ]
+}

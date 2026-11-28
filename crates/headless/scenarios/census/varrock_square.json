@@ -1,0 +1,1278 @@
+{
+  "census": {
+    "area": "Varrock",
+    "centre": [
+      3212,
+      3428,
+      0
+    ],
+    "radius": 12,
+    "tour": "varrock_square"
+  },
+  "character": {
+    "inventory": [
+      {
+        "amount": 1,
+        "id": 1351
+      },
+      {
+        "amount": 1,
+        "id": 1265
+      },
+      {
+        "amount": 1,
+        "id": 590
+      },
+      {
+        "amount": 1,
+        "id": 303
+      },
+      {
+        "amount": 3,
+        "id": 1511
+      },
+      {
+        "amount": 1,
+        "id": 2309
+      },
+      {
+        "amount": 1,
+        "id": 315
+      },
+      {
+        "amount": 1,
+        "id": 317
+      },
+      {
+        "amount": 1,
+        "id": 1925
+      },
+      {
+        "amount": 1,
+        "id": 1931
+      },
+      {
+        "amount": 1,
+        "id": 946
+      },
+      {
+        "amount": 1,
+        "id": 1755
+      },
+      {
+        "amount": 1,
+        "id": 1733
+      },
+      {
+        "amount": 5,
+        "id": 1734
+      },
+      {
+        "amount": 1,
+        "id": 1205
+      },
+      {
+        "amount": 1,
+        "id": 1171
+      },
+      {
+        "amount": 5000,
+        "id": 995
+      },
+      {
+        "amount": 1,
+        "id": 526
+      },
+      {
+        "amount": 50,
+        "id": 556
+      },
+      {
+        "amount": 50,
+        "id": 558
+      }
+    ],
+    "location": [
+      3212,
+      3428,
+      0
+    ],
+    "name": "cs_vsquare",
+    "skills": {
+      "agility": 60,
+      "attack": 60,
+      "construction": 60,
+      "cooking": 60,
+      "crafting": 60,
+      "defence": 60,
+      "farming": 60,
+      "firemaking": 60,
+      "fishing": 60,
+      "fletching": 60,
+      "herblore": 60,
+      "hitpoints": 60,
+      "hunter": 60,
+      "magic": 60,
+      "mining": 60,
+      "prayer": 60,
+      "ranged": 60,
+      "runecrafting": 60,
+      "slayer": 60,
+      "smithing": 60,
+      "strength": 60,
+      "summoning": 60,
+      "thieving": 60,
+      "woodcutting": 60
+    }
+  },
+  "keepGoing": true,
+  "steps": [
+    {
+      "do": "pump",
+      "label": "(idle baseline)",
+      "seconds": 20.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Zaff (546)",
+      "npc": {
+        "type": 546
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Zaff (546)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Zaff (546)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Zaff (546)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Trade Zaff (546)",
+      "npc": {
+        "type": 546
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Trade Zaff (546)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Trade Zaff (546)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Trade Zaff (546)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Buy-battlestaves Zaff (546)",
+      "npc": {
+        "type": 546
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Buy-battlestaves Zaff (546)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Buy-battlestaves Zaff (546)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Buy-battlestaves Zaff (546)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Zaff (546)",
+      "npc": {
+        "type": 546
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Zaff (546)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Zaff (546)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Zaff (546)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Baraek (547)",
+      "npc": {
+        "type": 547
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Baraek (547)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Baraek (547)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Baraek (547)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Baraek (547)",
+      "npc": {
+        "type": 547
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Baraek (547)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Baraek (547)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Baraek (547)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Thessalia (548)",
+      "npc": {
+        "type": 548
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Thessalia (548)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Thessalia (548)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Thessalia (548)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Trade Thessalia (548)",
+      "npc": {
+        "type": 548
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Trade Thessalia (548)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Trade Thessalia (548)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Trade Thessalia (548)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Change-clothes Thessalia (548)",
+      "npc": {
+        "type": 548
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Change-clothes Thessalia (548)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Change-clothes Thessalia (548)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Change-clothes Thessalia (548)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Thessalia (548)",
+      "npc": {
+        "type": 548
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Thessalia (548)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Thessalia (548)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Thessalia (548)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Romeo (639)",
+      "npc": {
+        "type": 639
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Romeo (639)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Romeo (639)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Romeo (639)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Romeo (639)",
+      "npc": {
+        "type": 639
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Romeo (639)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Romeo (639)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Romeo (639)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Shilop (781)",
+      "npc": {
+        "type": 781
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Shilop (781)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Shilop (781)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Shilop (781)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Shilop (781)",
+      "npc": {
+        "type": 781
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Shilop (781)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Shilop (781)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Shilop (781)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Wilough (783)",
+      "npc": {
+        "type": 783
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Wilough (783)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Wilough (783)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Wilough (783)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Wilough (783)",
+      "npc": {
+        "type": 783
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Wilough (783)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Wilough (783)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Wilough (783)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Gypsy Aris (882)",
+      "npc": {
+        "type": 882
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Gypsy Aris (882)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Gypsy Aris (882)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Gypsy Aris (882)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Gypsy Aris (882)",
+      "npc": {
+        "type": 882
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Gypsy Aris (882)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Gypsy Aris (882)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Gypsy Aris (882)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Iffie (5914)",
+      "npc": {
+        "type": 5914
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Iffie (5914)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Iffie (5914)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Iffie (5914)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Iffie (5914)",
+      "npc": {
+        "type": 5914
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Iffie (5914)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Iffie (5914)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Iffie (5914)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Benny (5925)",
+      "npc": {
+        "type": 5925
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Benny (5925)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Benny (5925)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Benny (5925)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Benny (5925)",
+      "npc": {
+        "type": 5925
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Benny (5925)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Benny (5925)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Benny (5925)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Door (24376)",
+      "option": 0,
+      "scenery": 24376,
+      "tile": [
+        3205,
+        3432
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Door (24376)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3205,
+            3432
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Door (24376)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Door (24376)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Door (24376)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Crate (24208)",
+      "option": 0,
+      "scenery": 24208,
+      "tile": [
+        3219,
+        3420
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Crate (24208)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3219,
+            3420
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Crate (24208)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Crate (24208)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Crate (24208)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Crate (17100)",
+      "option": 0,
+      "scenery": 17100,
+      "tile": [
+        3215,
+        3419
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Crate (17100)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3215,
+            3419
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Crate (17100)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Crate (17100)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Crate (17100)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Crate (17101)",
+      "option": 0,
+      "scenery": 17101,
+      "tile": [
+        3216,
+        3419
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Crate (17101)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3216,
+            3419
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Crate (17101)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Crate (17101)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Crate (17101)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Boxes (24206)",
+      "option": 0,
+      "scenery": 24206,
+      "tile": [
+        3214,
+        3419
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Boxes (24206)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3214,
+            3419
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Boxes (24206)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Boxes (24206)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Boxes (24206)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Close Door (24375)",
+      "option": 0,
+      "scenery": 24375,
+      "tile": [
+        3217,
+        3419
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Close Door (24375)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3217,
+            3419
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Close Door (24375)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Close Door (24375)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Close Door (24375)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Chop down Tree (1276)",
+      "option": 0,
+      "scenery": 1276,
+      "tile": [
+        3222,
+        3421
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Chop down Tree (1276)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3222,
+            3421
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Chop down Tree (1276)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Chop down Tree (1276)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Chop down Tree (1276)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Chop down Oak (1281)",
+      "option": 0,
+      "scenery": 1281,
+      "tile": [
+        3223,
+        3434
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Chop down Oak (1281)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3223,
+            3434
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Chop down Oak (1281)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Chop down Oak (1281)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Chop down Oak (1281)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Read Signpost (4132)",
+      "option": 0,
+      "scenery": 4132,
+      "tile": [
+        3223,
+        3427
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Read Signpost (4132)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3223,
+            3427
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Read Signpost (4132)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Read Signpost (4132)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Read Signpost (4132)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Chop down Tree (1278)",
+      "option": 0,
+      "scenery": 1278,
+      "tile": [
+        3201,
+        3440
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Chop down Tree (1278)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3201,
+            3440
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Chop down Tree (1278)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Chop down Tree (1278)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Chop down Tree (1278)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Ladder (24354)",
+      "option": 0,
+      "scenery": 24354,
+      "tile": [
+        3202,
+        3434
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Ladder (24354)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3202,
+            3434
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Ladder (24354)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Ladder (24354)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Ladder (24354)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1351,
+      "label": "item Wield Bronze axe (1351)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze axe (1351)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze axe (1351)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze axe (1351)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1265,
+      "label": "item Wield Bronze pickaxe (1265)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze pickaxe (1265)"
+    },
+    {
+      "do": "itemOption",
+      "item": 2309,
+      "label": "item Eat Bread (2309)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Bread (2309)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Bread (2309)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Bread (2309)"
+    },
+    {
+      "do": "itemOption",
+      "item": 315,
+      "label": "item Eat Shrimps (315)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Shrimps (315)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Shrimps (315)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Shrimps (315)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1205,
+      "label": "item Wield Bronze dagger (1205)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze dagger (1205)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze dagger (1205)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze dagger (1205)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1171,
+      "label": "item Wield Wooden shield (1171)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Wooden shield (1171)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Wooden shield (1171)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Wooden shield (1171)"
+    },
+    {
+      "do": "itemOption",
+      "item": 526,
+      "label": "item Bury Bones (526)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Bury Bones (526)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Bury Bones (526)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Bury Bones (526)"
+    },
+    {
+      "do": "useOnItem",
+      "item": 946,
+      "label": "item use Knife on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Knife on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Knife on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Knife on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 590,
+      "label": "item use Tinderbox on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Tinderbox on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Tinderbox on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Tinderbox on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1755,
+      "label": "item use Chisel on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Chisel on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Chisel on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Chisel on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1733,
+      "label": "item use Needle on Thread",
+      "target": 1734
+    },
+    {
+      "do": "pump",
+      "label": "item use Needle on Thread",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Needle on Thread",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Needle on Thread"
+    },
+    {
+      "do": "itemOption",
+      "item": 1931,
+      "label": "item drop Empty pot (1931)",
+      "option": 4
+    },
+    {
+      "do": "pump",
+      "label": "item drop Empty pot (1931)",
+      "seconds": 1.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item drop Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item drop Empty pot (1931)"
+    }
+  ]
+}

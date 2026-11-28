@@ -1,0 +1,1129 @@
+{
+  "census": {
+    "area": "Falador",
+    "centre": [
+      2965,
+      3380,
+      0
+    ],
+    "radius": 12,
+    "tour": "falador_square"
+  },
+  "character": {
+    "inventory": [
+      {
+        "amount": 1,
+        "id": 1351
+      },
+      {
+        "amount": 1,
+        "id": 1265
+      },
+      {
+        "amount": 1,
+        "id": 590
+      },
+      {
+        "amount": 1,
+        "id": 303
+      },
+      {
+        "amount": 3,
+        "id": 1511
+      },
+      {
+        "amount": 1,
+        "id": 2309
+      },
+      {
+        "amount": 1,
+        "id": 315
+      },
+      {
+        "amount": 1,
+        "id": 317
+      },
+      {
+        "amount": 1,
+        "id": 1925
+      },
+      {
+        "amount": 1,
+        "id": 1931
+      },
+      {
+        "amount": 1,
+        "id": 946
+      },
+      {
+        "amount": 1,
+        "id": 1755
+      },
+      {
+        "amount": 1,
+        "id": 1733
+      },
+      {
+        "amount": 5,
+        "id": 1734
+      },
+      {
+        "amount": 1,
+        "id": 1205
+      },
+      {
+        "amount": 1,
+        "id": 1171
+      },
+      {
+        "amount": 5000,
+        "id": 995
+      },
+      {
+        "amount": 1,
+        "id": 526
+      },
+      {
+        "amount": 50,
+        "id": 556
+      },
+      {
+        "amount": 50,
+        "id": 558
+      }
+    ],
+    "location": [
+      2965,
+      3380,
+      0
+    ],
+    "name": "cs_fsquare",
+    "skills": {
+      "agility": 60,
+      "attack": 60,
+      "construction": 60,
+      "cooking": 60,
+      "crafting": 60,
+      "defence": 60,
+      "farming": 60,
+      "firemaking": 60,
+      "fishing": 60,
+      "fletching": 60,
+      "herblore": 60,
+      "hitpoints": 60,
+      "hunter": 60,
+      "magic": 60,
+      "mining": 60,
+      "prayer": 60,
+      "ranged": 60,
+      "runecrafting": 60,
+      "slayer": 60,
+      "smithing": 60,
+      "strength": 60,
+      "summoning": 60,
+      "thieving": 60,
+      "woodcutting": 60
+    }
+  },
+  "keepGoing": true,
+  "steps": [
+    {
+      "do": "pump",
+      "label": "(idle baseline)",
+      "seconds": 20.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Pickpocket Guard (9)",
+      "npc": {
+        "type": 9
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Pickpocket Guard (9)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Pickpocket Guard (9)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Pickpocket Guard (9)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Guard (9)",
+      "npc": {
+        "type": 9
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Guard (9)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Guard (9)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Guard (9)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Shop assistant (527)",
+      "npc": {
+        "type": 527
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Shop assistant (527)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Shop assistant (527)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Shop assistant (527)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Trade Shop assistant (527)",
+      "npc": {
+        "type": 527
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Trade Shop assistant (527)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Trade Shop assistant (527)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Trade Shop assistant (527)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Shop assistant (527)",
+      "npc": {
+        "type": 527
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Shop assistant (527)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Shop assistant (527)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Shop assistant (527)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Cassie (577)",
+      "npc": {
+        "type": 577
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Cassie (577)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Cassie (577)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Cassie (577)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Trade Cassie (577)",
+      "npc": {
+        "type": 577
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Trade Cassie (577)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Trade Cassie (577)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Trade Cassie (577)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Cassie (577)",
+      "npc": {
+        "type": 577
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Cassie (577)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Cassie (577)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Cassie (577)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Imp (708)",
+      "npc": {
+        "type": 708
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Imp (708)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Imp (708)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Imp (708)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Emily (736)",
+      "npc": {
+        "type": 736
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Emily (736)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Emily (736)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Emily (736)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Emily (736)",
+      "npc": {
+        "type": 736
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Emily (736)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Emily (736)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Emily (736)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Kaylee (3217)",
+      "npc": {
+        "type": 3217
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Kaylee (3217)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Kaylee (3217)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Kaylee (3217)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Kaylee (3217)",
+      "npc": {
+        "type": 3217
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Kaylee (3217)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Kaylee (3217)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Kaylee (3217)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Pickpocket Guard (3228)",
+      "npc": {
+        "type": 3228
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Pickpocket Guard (3228)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Pickpocket Guard (3228)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Pickpocket Guard (3228)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Guard (3228)",
+      "npc": {
+        "type": 3228
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Guard (3228)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Guard (3228)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Guard (3228)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Close Door (11708)",
+      "option": 0,
+      "scenery": 11708,
+      "tile": [
+        2971,
+        3376
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Close Door (11708)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2971,
+            3376
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Close Door (11708)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Close Door (11708)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Close Door (11708)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Look-at Poster (41337)",
+      "option": 0,
+      "scenery": 41337,
+      "tile": [
+        2959,
+        3376
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Look-at Poster (41337)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2959,
+            3376
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Look-at Poster (41337)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Look-at Poster (41337)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Look-at Poster (41337)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Bookcase (9523)",
+      "option": 0,
+      "scenery": 9523,
+      "tile": [
+        2961,
+        3373
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Bookcase (9523)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2961,
+            3373
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Bookcase (9523)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Bookcase (9523)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Bookcase (9523)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Close Door (11712)",
+      "option": 0,
+      "scenery": 11712,
+      "tile": [
+        2958,
+        3385
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Close Door (11712)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2958,
+            3385
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Close Door (11712)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Close Door (11712)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Close Door (11712)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Crates (11745)",
+      "option": 0,
+      "scenery": 11745,
+      "tile": [
+        2955,
+        3390
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Crates (11745)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2955,
+            3390
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Crates (11745)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Crates (11745)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Crates (11745)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Smelt Furnace (11666)",
+      "option": 1,
+      "scenery": 11666,
+      "tile": [
+        2976,
+        3368
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Smelt Furnace (11666)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2976,
+            3368
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Smelt Furnace (11666)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Smelt Furnace (11666)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Smelt Furnace (11666)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Staircase (11732)",
+      "option": 0,
+      "scenery": 11732,
+      "tile": [
+        2973,
+        3384
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Staircase (11732)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2973,
+            3384
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Staircase (11732)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Staircase (11732)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Staircase (11732)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Staircase (11736)",
+      "option": 0,
+      "scenery": 11736,
+      "tile": [
+        2971,
+        3370
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Staircase (11736)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2971,
+            3370
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Staircase (11736)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Staircase (11736)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Staircase (11736)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Ladder (11740)",
+      "option": 0,
+      "scenery": 11740,
+      "tile": [
+        2954,
+        3389
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Ladder (11740)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            2954,
+            3389
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Ladder (11740)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Ladder (11740)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Ladder (11740)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1351,
+      "label": "item Wield Bronze axe (1351)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze axe (1351)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze axe (1351)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze axe (1351)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1265,
+      "label": "item Wield Bronze pickaxe (1265)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze pickaxe (1265)"
+    },
+    {
+      "do": "itemOption",
+      "item": 2309,
+      "label": "item Eat Bread (2309)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Bread (2309)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Bread (2309)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Bread (2309)"
+    },
+    {
+      "do": "itemOption",
+      "item": 315,
+      "label": "item Eat Shrimps (315)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Shrimps (315)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Shrimps (315)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Shrimps (315)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1205,
+      "label": "item Wield Bronze dagger (1205)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze dagger (1205)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze dagger (1205)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze dagger (1205)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1171,
+      "label": "item Wield Wooden shield (1171)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Wooden shield (1171)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Wooden shield (1171)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Wooden shield (1171)"
+    },
+    {
+      "do": "itemOption",
+      "item": 526,
+      "label": "item Bury Bones (526)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Bury Bones (526)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Bury Bones (526)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Bury Bones (526)"
+    },
+    {
+      "do": "useOnItem",
+      "item": 946,
+      "label": "item use Knife on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Knife on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Knife on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Knife on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 590,
+      "label": "item use Tinderbox on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Tinderbox on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Tinderbox on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Tinderbox on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1755,
+      "label": "item use Chisel on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Chisel on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Chisel on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Chisel on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1733,
+      "label": "item use Needle on Thread",
+      "target": 1734
+    },
+    {
+      "do": "pump",
+      "label": "item use Needle on Thread",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Needle on Thread",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Needle on Thread"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Guard (9)",
+      "npc": {
+        "type": 9
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Guard (9)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Guard (9)",
+      "run": true,
+      "to": [
+        2965,
+        3380
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Guard (9)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Imp (708)",
+      "npc": {
+        "type": 708
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Imp (708)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Imp (708)",
+      "run": true,
+      "to": [
+        2965,
+        3380
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Imp (708)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Guard (3228)",
+      "npc": {
+        "type": 3228
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Guard (3228)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Guard (3228)",
+      "run": true,
+      "to": [
+        2965,
+        3380
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Guard (3228)",
+      "seconds": 2.0
+    },
+    {
+      "do": "itemOption",
+      "item": 1931,
+      "label": "item drop Empty pot (1931)",
+      "option": 4
+    },
+    {
+      "do": "pump",
+      "label": "item drop Empty pot (1931)",
+      "seconds": 1.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item drop Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item drop Empty pot (1931)"
+    }
+  ]
+}

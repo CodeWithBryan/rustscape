@@ -1,0 +1,1186 @@
+{
+  "census": {
+    "area": "Lumbridge",
+    "centre": [
+      3212,
+      3247,
+      0
+    ],
+    "radius": 9,
+    "tour": "lumbridge_store"
+  },
+  "character": {
+    "inventory": [
+      {
+        "amount": 1,
+        "id": 1351
+      },
+      {
+        "amount": 1,
+        "id": 1265
+      },
+      {
+        "amount": 1,
+        "id": 590
+      },
+      {
+        "amount": 1,
+        "id": 303
+      },
+      {
+        "amount": 3,
+        "id": 1511
+      },
+      {
+        "amount": 1,
+        "id": 2309
+      },
+      {
+        "amount": 1,
+        "id": 315
+      },
+      {
+        "amount": 1,
+        "id": 317
+      },
+      {
+        "amount": 1,
+        "id": 1925
+      },
+      {
+        "amount": 1,
+        "id": 1931
+      },
+      {
+        "amount": 1,
+        "id": 946
+      },
+      {
+        "amount": 1,
+        "id": 1755
+      },
+      {
+        "amount": 1,
+        "id": 1733
+      },
+      {
+        "amount": 5,
+        "id": 1734
+      },
+      {
+        "amount": 1,
+        "id": 1205
+      },
+      {
+        "amount": 1,
+        "id": 1171
+      },
+      {
+        "amount": 5000,
+        "id": 995
+      },
+      {
+        "amount": 1,
+        "id": 526
+      },
+      {
+        "amount": 50,
+        "id": 556
+      },
+      {
+        "amount": 50,
+        "id": 558
+      }
+    ],
+    "location": [
+      3212,
+      3247,
+      0
+    ],
+    "name": "cs_lumstore",
+    "skills": {
+      "agility": 60,
+      "attack": 60,
+      "construction": 60,
+      "cooking": 60,
+      "crafting": 60,
+      "defence": 60,
+      "farming": 60,
+      "firemaking": 60,
+      "fishing": 60,
+      "fletching": 60,
+      "herblore": 60,
+      "hitpoints": 60,
+      "hunter": 60,
+      "magic": 60,
+      "mining": 60,
+      "prayer": 60,
+      "ranged": 60,
+      "runecrafting": 60,
+      "slayer": 60,
+      "smithing": 60,
+      "strength": 60,
+      "summoning": 60,
+      "thieving": 60,
+      "woodcutting": 60
+    }
+  },
+  "keepGoing": true,
+  "steps": [
+    {
+      "do": "pump",
+      "label": "(idle baseline)",
+      "seconds": 20.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Shopkeeper (520)",
+      "npc": {
+        "type": 520
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Shopkeeper (520)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Shopkeeper (520)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Shopkeeper (520)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Trade Shopkeeper (520)",
+      "npc": {
+        "type": 520
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Trade Shopkeeper (520)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Trade Shopkeeper (520)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Trade Shopkeeper (520)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Shopkeeper (520)",
+      "npc": {
+        "type": 520
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Shopkeeper (520)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Shopkeeper (520)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Shopkeeper (520)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Shop assistant (521)",
+      "npc": {
+        "type": 521
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Shop assistant (521)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Shop assistant (521)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Shop assistant (521)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Trade Shop assistant (521)",
+      "npc": {
+        "type": 521
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Trade Shop assistant (521)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Trade Shop assistant (521)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Trade Shop assistant (521)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Shop assistant (521)",
+      "npc": {
+        "type": 521
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Shop assistant (521)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Shop assistant (521)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Shop assistant (521)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Melee Tutor (705)",
+      "npc": {
+        "type": 705
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Melee Tutor (705)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Melee Tutor (705)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Melee Tutor (705)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Work-for Melee Tutor (705)",
+      "npc": {
+        "type": 705
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Work-for Melee Tutor (705)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Work-for Melee Tutor (705)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Work-for Melee Tutor (705)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Melee Tutor (705)",
+      "npc": {
+        "type": 705
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Melee Tutor (705)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Melee Tutor (705)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Melee Tutor (705)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Ranged Tutor (1861)",
+      "npc": {
+        "type": 1861
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Ranged Tutor (1861)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Ranged Tutor (1861)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Ranged Tutor (1861)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Claim Ranged Tutor (1861)",
+      "npc": {
+        "type": 1861
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Claim Ranged Tutor (1861)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Claim Ranged Tutor (1861)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Claim Ranged Tutor (1861)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Work-for Ranged Tutor (1861)",
+      "npc": {
+        "type": 1861
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Work-for Ranged Tutor (1861)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Work-for Ranged Tutor (1861)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Work-for Ranged Tutor (1861)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Ranged Tutor (1861)",
+      "npc": {
+        "type": 1861
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Ranged Tutor (1861)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Ranged Tutor (1861)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Ranged Tutor (1861)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Donie (2238)",
+      "npc": {
+        "type": 2238
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Donie (2238)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Donie (2238)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Donie (2238)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Work-for Donie (2238)",
+      "npc": {
+        "type": 2238
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Work-for Donie (2238)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Work-for Donie (2238)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Work-for Donie (2238)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Donie (2238)",
+      "npc": {
+        "type": 2238
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Donie (2238)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Donie (2238)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Donie (2238)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Magic dummy (4474)",
+      "npc": {
+        "type": 4474
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Magic dummy (4474)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Magic dummy (4474)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Magic dummy (4474)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Magic Tutor (4707)",
+      "npc": {
+        "type": 4707
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Magic Tutor (4707)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Magic Tutor (4707)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Magic Tutor (4707)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Claim Magic Tutor (4707)",
+      "npc": {
+        "type": 4707
+      },
+      "option": 2
+    },
+    {
+      "do": "pump",
+      "label": "NPC Claim Magic Tutor (4707)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Claim Magic Tutor (4707)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Claim Magic Tutor (4707)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Work-for Magic Tutor (4707)",
+      "npc": {
+        "type": 4707
+      },
+      "option": 3
+    },
+    {
+      "do": "pump",
+      "label": "NPC Work-for Magic Tutor (4707)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Work-for Magic Tutor (4707)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Work-for Magic Tutor (4707)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Magic Tutor (4707)",
+      "npc": {
+        "type": 4707
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Magic Tutor (4707)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Magic Tutor (4707)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Magic Tutor (4707)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Melee dummy (7891)",
+      "npc": {
+        "type": 7891
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Melee dummy (7891)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Melee dummy (7891)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Melee dummy (7891)"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Talk-to Explorer Jack (7969)",
+      "npc": {
+        "type": 7969
+      },
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "NPC Talk-to Explorer Jack (7969)",
+      "seconds": 3.0
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC Talk-to Explorer Jack (7969)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC Talk-to Explorer Jack (7969)"
+    },
+    {
+      "do": "useOnNpc",
+      "item": 2309,
+      "label": "NPC use Bread on Explorer Jack (7969)",
+      "npc": {
+        "type": 7969
+      }
+    },
+    {
+      "do": "pump",
+      "label": "NPC use Bread on Explorer Jack (7969)",
+      "seconds": 2.5
+    },
+    {
+      "do": "dialogue",
+      "label": "NPC use Bread on Explorer Jack (7969)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "NPC use Bread on Explorer Jack (7969)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Crate (37016)",
+      "option": 0,
+      "scenery": 37016,
+      "tile": [
+        3208,
+        3243
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Crate (37016)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3208,
+            3243
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Crate (37016)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Crate (37016)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Crate (37016)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Search Crate (37015)",
+      "option": 0,
+      "scenery": 37015,
+      "tile": [
+        3209,
+        3242
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Search Crate (37015)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3209,
+            3242
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Search Crate (37015)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Search Crate (37015)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Search Crate (37015)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Chop down Tree (1278)",
+      "option": 0,
+      "scenery": 1278,
+      "tile": [
+        3219,
+        3252
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Chop down Tree (1278)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3219,
+            3252
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Chop down Tree (1278)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Chop down Tree (1278)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Chop down Tree (1278)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Open Door (36846)",
+      "option": 0,
+      "scenery": 36846,
+      "tile": [
+        3219,
+        3241
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Open Door (36846)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3219,
+            3241
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Open Door (36846)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Open Door (36846)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Open Door (36846)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Stairs (36793)",
+      "option": 0,
+      "scenery": 36793,
+      "tile": [
+        3215,
+        3239
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Stairs (36793)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3215,
+            3239
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Stairs (36793)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Stairs (36793)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Stairs (36793)"
+    },
+    {
+      "do": "scenery",
+      "label": "scenery Climb-up Stairs (36960)",
+      "option": 0,
+      "scenery": 36960,
+      "tile": [
+        3212,
+        3256
+      ]
+    },
+    {
+      "do": "wait",
+      "label": "scenery Climb-up Stairs (36960)",
+      "timeout": 8,
+      "until": {
+        "near": {
+          "tile": [
+            3212,
+            3256
+          ],
+          "within": 3
+        }
+      }
+    },
+    {
+      "do": "pump",
+      "label": "scenery Climb-up Stairs (36960)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "scenery Climb-up Stairs (36960)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "scenery Climb-up Stairs (36960)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1351,
+      "label": "item Wield Bronze axe (1351)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze axe (1351)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze axe (1351)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze axe (1351)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1265,
+      "label": "item Wield Bronze pickaxe (1265)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze pickaxe (1265)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze pickaxe (1265)"
+    },
+    {
+      "do": "itemOption",
+      "item": 2309,
+      "label": "item Eat Bread (2309)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Bread (2309)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Bread (2309)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Bread (2309)"
+    },
+    {
+      "do": "itemOption",
+      "item": 315,
+      "label": "item Eat Shrimps (315)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Eat Shrimps (315)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Eat Shrimps (315)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Eat Shrimps (315)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1205,
+      "label": "item Wield Bronze dagger (1205)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Bronze dagger (1205)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Bronze dagger (1205)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Bronze dagger (1205)"
+    },
+    {
+      "do": "itemOption",
+      "item": 1171,
+      "label": "item Wield Wooden shield (1171)",
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "item Wield Wooden shield (1171)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Wield Wooden shield (1171)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Wield Wooden shield (1171)"
+    },
+    {
+      "do": "itemOption",
+      "item": 526,
+      "label": "item Bury Bones (526)",
+      "option": 0
+    },
+    {
+      "do": "pump",
+      "label": "item Bury Bones (526)",
+      "seconds": 1.5
+    },
+    {
+      "do": "dialogue",
+      "label": "item Bury Bones (526)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item Bury Bones (526)"
+    },
+    {
+      "do": "useOnItem",
+      "item": 946,
+      "label": "item use Knife on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Knife on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Knife on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Knife on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 590,
+      "label": "item use Tinderbox on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Tinderbox on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Tinderbox on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Tinderbox on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1755,
+      "label": "item use Chisel on Logs",
+      "target": 1511
+    },
+    {
+      "do": "pump",
+      "label": "item use Chisel on Logs",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Chisel on Logs",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Chisel on Logs"
+    },
+    {
+      "do": "useOnItem",
+      "item": 1733,
+      "label": "item use Needle on Thread",
+      "target": 1734
+    },
+    {
+      "do": "pump",
+      "label": "item use Needle on Thread",
+      "seconds": 2.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item use Needle on Thread",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item use Needle on Thread"
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Magic dummy (4474)",
+      "npc": {
+        "type": 4474
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Magic dummy (4474)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Magic dummy (4474)",
+      "run": true,
+      "to": [
+        3212,
+        3247
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Magic dummy (4474)",
+      "seconds": 2.0
+    },
+    {
+      "do": "npcOption",
+      "label": "NPC Attack Melee dummy (7891)",
+      "npc": {
+        "type": 7891
+      },
+      "option": 1
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Melee dummy (7891)",
+      "seconds": 6.0
+    },
+    {
+      "do": "walk",
+      "label": "NPC Attack Melee dummy (7891)",
+      "run": true,
+      "to": [
+        3212,
+        3247
+      ]
+    },
+    {
+      "do": "pump",
+      "label": "NPC Attack Melee dummy (7891)",
+      "seconds": 2.0
+    },
+    {
+      "do": "itemOption",
+      "item": 1931,
+      "label": "item drop Empty pot (1931)",
+      "option": 4
+    },
+    {
+      "do": "pump",
+      "label": "item drop Empty pot (1931)",
+      "seconds": 1.0
+    },
+    {
+      "do": "dialogue",
+      "label": "item drop Empty pot (1931)",
+      "timeout": 1.0
+    },
+    {
+      "do": "close",
+      "label": "item drop Empty pot (1931)"
+    }
+  ]
+}
