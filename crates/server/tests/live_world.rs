@@ -4177,7 +4177,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     let texts = bolt.texts.len();
     bolt.send(use_item_on_item(9420, 4, 9440, 3)).await;
     bolt.until_pinging(Duration::from_secs(20), "the limbing dialogue", |c| {
-        shown(c, texts, (309 << 16) | 6, "crossbow")
+        shown(c, texts, (309 << 16) | 6, "Bronze c'bow (u)")
     })
     .await;
     bolt.send(continue_option(309, 6)).await;
