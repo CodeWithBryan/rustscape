@@ -752,6 +752,8 @@ pub enum Script {
     Smith(super::items::smithing::SmithScript),
     /// GlassCraftingListener's amount handler (`crafting_wares::glass_input`).
     Glass(super::items::crafting_wares::GlassScript),
+    /// JewelleryInterface's amount handler (`crafting_jewellery::input`).
+    Jewellery(super::items::crafting_jewellery::JewelleryScript),
     /// SpinningInterface's amount handler (`crafting_stations::spin_input`).
     Spin(super::items::crafting_stations::SpinScript),
     /// SilverCraftingListener's amount handler
@@ -924,6 +926,14 @@ impl input::Context for Prompt<'_> {
                         .map_err(|_| input::Error::Number)?,
                 };
                 self.live.glass_amount(&script, amount).map_err(ierror)
+            }
+            Script::Jewellery(script) => {
+                use crate::world::crafting_jewellery::Input;
+                let value = match &value {
+                    Response::Int(n) => Input::Int(*n),
+                    Response::Text(text) => Input::Text(String::from_utf16_lossy(text)),
+                };
+                self.live.jewellery_amount(&script, &value).map_err(ierror)
             }
             Script::Spin(script) => {
                 let value = station_input(&value);
@@ -1181,6 +1191,25 @@ impl Live {
             InputType::Amount,
             utf16(prompt),
             Script::Glass(script),
+        );
+        self.inner.drain(p);
+        result
+    }
+    /// `sendInputDialogue(player, true, prompt, handler)` of
+    /// JewelleryInterface's Make-X.
+    pub fn jewellery_prompt(
+        &mut self,
+        p: &P,
+        prompt: &str,
+        script: super::items::crafting_jewellery::JewelleryScript,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::send(
+            &mut Prompt { live: self },
+            &owner,
+            InputType::Numeric,
+            utf16(prompt),
+            Script::Jewellery(script),
         );
         self.inner.drain(p);
         result

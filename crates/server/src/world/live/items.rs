@@ -47,6 +47,7 @@ pub mod bones;
 pub mod chests;
 mod component_use;
 pub mod cooking;
+pub mod crafting_jewellery;
 pub mod crafting_stations;
 pub mod crafting_tools;
 pub mod crafting_wares;

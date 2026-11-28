@@ -1009,9 +1009,10 @@ stand-ins); this test checks the production binding end to end.
   the `UseWithHandler` classes
   other than CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's
   SmeltUseWithHandler, SmithingPlugin, GrindItemPlugin, HerbTarPlugin,
-  AmuletStringingPlugin, ChiselLimestonePlugin, GemCutPlugin and
-  SpikyVambraces (docs/crafting-wares.md)
-  (the nine handlers in `UseWithHandler.HANDLERS` here; smelting and
+  AmuletStringingPlugin, ChiselLimestonePlugin, GemCutPlugin,
+  SpikyVambraces (docs/crafting-wares.md) and JewelleryCraftPlugin
+  (docs/crafting-jewellery.md)
+  (the ten handlers in `UseWithHandler.HANDLERS` here; smelting and
   smithing are ported without a JVM corpus, docs/smelting.md and
   docs/smithing.md; the two herblore plugins are docs/herblore-tools.md
   and the three crafting plugins docs/crafting-tools.md),
@@ -1019,8 +1020,7 @@ stand-ins); this test checks the production binding end to end.
   enchanted-tablet and ectophial use-withs of `world::global_items`, and
   everything not ported at all: the rest of the cooking package (recipes,
   dough, dairy, fermenting, the tutorial branch; docs/cooking.md),
-  the other furnace uses (AmmoMouldOnFurnace, jewellery and silver
-  crafting), the shield and godsword dialogues of the anvils, the rest of `withobject`
+  the other furnace use (AmmoMouldOnFurnace), the shield and godsword dialogues of the anvils, the rest of `withobject`
   (CauldronOfThunder, DragonPlatebody,
   SpiritShieldBless; the God Wars hole
   the rope listener's varbit belongs to is not ported either), the rest of
@@ -1147,7 +1147,15 @@ stand-ins); this test checks the production binding end to end.
   "option:spin", SpinningInterface as the component plugin of 459 with
   its amount prompt, SpinningPulse, SilverCraftingListener's use-with
   registration, `onOpen(438)` and `on(438)` with its amount prompt, and
-  SilverCraftingPulse. The rest of the crafting package is not ported.
+  SilverCraftingPulse.
+  Jewellery casting is installed (`items/crafting_jewellery.rs` over
+  `world/crafting_jewellery.rs`, docs/crafting-jewellery.md; the library
+  is replayed against the JVM corpus `fixtures/crafting-jewellery`, the
+  live binding is not): JewelleryCraftPlugin in
+  `UseWithHandler.HANDLERS` under the thirteen furnaces,
+  JewelleryInterface as the component plugin of 446 with its amount
+  prompt, and JewelleryPulse; the Slayer ring is always refused because
+  slayer is not ported. The rest of the crafting package is not ported.
   Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

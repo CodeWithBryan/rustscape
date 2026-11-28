@@ -112,6 +112,10 @@ impl Live {
                 self.crafting_tool_handle(handler, player, event)
                     .map_err(bind),
             ),
+            // JewelleryCraftPlugin.handle.
+            super::crafting_jewellery::JEWELLERY_HANDLER => {
+                Some(self.jewellery_handle(player).map_err(bind))
+            }
             // SpikyVambraces.handle.
             super::crafting_wares::VAMBRACES_HANDLER => {
                 Some(self.crafting_ware_handle(player, event).map_err(bind))
@@ -171,6 +175,10 @@ impl Live {
             }
             // GemCutPulse and ChiselLimestonePulse: SkillPulse.stop().
             if let Some(result) = self.crafting_tool_pulse_stopped(pulse) {
+                return result.map_err(bind);
+            }
+            // JewelleryPulse: SkillPulse.stop().
+            if let Some(result) = self.crafting_jewellery_pulse_stopped(pulse) {
                 return result.map_err(bind);
             }
             // SpinningPulse: SkillPulse.stop(); SilverCraftingPulse: no

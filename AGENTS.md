@@ -1199,8 +1199,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (world/crafting_stations.rs, run live by
   world/live/items/crafting_stations.rs; replayed against the JVM corpus
   fixtures/crafting-stations from oracle/crafting-stations, the live
-  binding is not; the rest of the crafting package is not ported;
-  docs/crafting-stations.md) and Otto
+  binding is not; docs/crafting-stations.md), crafting's jewellery
+  casting (world/crafting_jewellery.rs, run live by
+  world/live/items/crafting_jewellery.rs; replayed against the JVM corpus
+  fixtures/crafting-jewellery from oracle/crafting-jewellery, the live
+  binding is not; the Slayer ring is always refused live; the rest of the
+  crafting package is not ported; docs/crafting-jewellery.md) and Otto
   Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no

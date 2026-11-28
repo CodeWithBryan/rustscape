@@ -186,6 +186,13 @@ impl interface_packets::Context for Buttons<'_> {
         {
             return self.live.smithing_button(&Self::p(p), b.button).map_err(ui);
         }
+        // JewelleryInterface on 446 (super::items::crafting_jewellery).
+        if plugin
+            .value::<super::items::crafting_jewellery::JewelleryPlugin>()
+            .is_some()
+        {
+            return self.live.jewellery_button(&Self::p(p), b).map_err(ui);
+        }
         // SpinningInterface on 459 (super::items::crafting_stations).
         if plugin
             .value::<super::items::crafting_stations::SpinPlugin>()

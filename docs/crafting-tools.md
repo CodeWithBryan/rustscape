@@ -8,9 +8,9 @@ Scope: the pinned `content/global/skill/crafting/GemCutPlugin.java`,
 `forProductID`, with `SkillPulse`'s `start`, `pulse` and `stop` and the
 `JewelleryItem` rows AmuletStringingPlugin reads. Battlestaves, glass and
 spiky vambraces are docs/crafting-wares.md; spinning and silver casting
-are docs/crafting-stations.md. The rest of the crafting package
-(jewellery casting, leather, pottery, weaving and the rest) is not
-ported.
+are docs/crafting-stations.md; jewellery casting is
+docs/crafting-jewellery.md. The rest of the crafting package (leather,
+pottery, weaving and the rest) is not ported.
 
 | original | here |
 |---|---|

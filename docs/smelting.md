@@ -14,7 +14,7 @@ The bodies are functions over `smelting::Host`; every call the original
 makes outside these classes is a required method with no default.
 
 Anvils are `world::smithing` (docs/smithing.md). Not ported:
-`AmmoMouldOnFurnace`, the jewellery and silver crafting furnaces, the
+`AmmoMouldOnFurnace`, the
 superheat spell that constructs a `SmeltingPulse` with `heat` (the pulse's
 superheat branches are ported and tested, nothing calls them), and the
 bots that smelt.
