@@ -126,6 +126,7 @@ pub mod spells;
 pub mod system_manager;
 pub mod teleport;
 pub mod thieving_chest;
+pub mod thieving_door;
 pub mod thieving_pickpocket;
 pub mod thieving_stall;
 pub mod tick;

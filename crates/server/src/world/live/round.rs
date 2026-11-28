@@ -81,6 +81,8 @@ pub struct Round {
     /// DoorManagingPlugin, the door pulses and the "autowalk" logout
     /// listeners (super::items::doors).
     pub doors: super::items::doors::DoorWorld,
+    /// The PickableDoorHandler plugin (super::items::pick_doors).
+    pub pick_doors: Option<crate::definitions::option_handler::Handle>,
     /// ThievingOptionPlugin and StallThiefPulse (super::items::stalls).
     pub stalls: super::items::stalls::StallWorld,
     /// FurnaceOptionPlugin and SmeltingInterface (super::items::smelting).

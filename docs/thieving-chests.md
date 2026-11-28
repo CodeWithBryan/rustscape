@@ -14,8 +14,9 @@ with its `Chest` enum and the anonymous pulse of `searchTraps`.
 The bodies are functions over `thieving_chest::Host`; every call the
 original makes outside this class is a required method with no default.
 
-Not ported: doors (`PickableDoorHandler`). Pickpocketing is
-docs/thieving-pickpocket.md and stalls are docs/thieving-stalls.md.
+Pickpocketing is docs/thieving-pickpocket.md, stalls are
+docs/thieving-stalls.md and doors (`PickableDoorHandler`) are
+docs/thieving-doors.md.
 
 ## Evidence, and what it does not show
 

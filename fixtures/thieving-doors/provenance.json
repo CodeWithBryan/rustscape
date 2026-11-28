@@ -1,0 +1,85 @@
+{
+  "caseCount": 2059,
+  "constants": {
+    "sha256": "f4e687cd74099a0eb914ff0e98defe0c5f5703634dd7d6aa25ab4ac186b98459",
+    "version": "1.4.28"
+  },
+  "fixtureSha256": "16de35133d73e4c67712760a3b8f227c43022a80c935273fe4dfd23be8c30d9f",
+  "format": 1,
+  "javaVersion": "openjdk version \"11.0.33.1\" 2026-11-17",
+  "jvmFlags": [
+    "-Xmx512m",
+    "-Dfile.encoding=UTF-8",
+    "-Duser.language=en",
+    "-Duser.country=US",
+    "-Duser.variant="
+  ],
+  "kinds": {
+    "destination": 16,
+    "doors": 1,
+    "handle": 4592,
+    "registrations": 1,
+    "set": 2688
+  },
+  "kotlinCompiler": "1.8.20",
+  "scope": "Complete unchanged PickableDoorHandler (its PickableDoor class), Direction, ClipMaskSupplier and Point, compiled with Kotlin 1.8.20/JDK 11. The Skills constants are pinned text spliced into an adapter shell; RandomFunction's two random methods are adapters with the original bodies whose RANDOM.nextInt is the case's next declared draw reduced into the bound. Player (location, sendMessage, the packet dispatch's sendMessage), Skills (getLevel, addExperience), the inventory (containsItem), ImpactHandler.manualHit, Scenery (id, location, the direction of its rotation, its definition's hasAction), Location (create, equals, coordinates), SceneryDefinition's handlers, ContentAPI's handleAutowalkDoor and sendMessage and DoorActionHandler.getDestination are recording adapters whose results come from declared case state; they are service inputs, not ports. The driver calls the registered plugin's handle and getDestination with a scenery of the id, tile and rotation an operation names; the private pickableDoors list and the flipped field are read by reflection. No option dispatch, live world, door walk, hit, inventory, message splitting or experience behaviour is established by this corpus.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/thieving-doors/adapters/core/api/ContentAPI.kt": "6abbdf5fb3ac065fcd31d90e79fd09535cd70fb8ec8f4648a5ec1f582945d27a",
+    "oracle/thieving-doors/adapters/core/cache/def/impl/SceneryDefinition.java": "798c16a100e671be10489fdc3b15cd56356e7c0ee9b4e7be2b22f8865a48b727",
+    "oracle/thieving-doors/adapters/core/game/global/action/DoorActionHandler.java": "02f3e1eaa6a41b5860c9b03bab241a84dd1487296af4ab14ef28c1d44d80f1ba",
+    "oracle/thieving-doors/adapters/core/game/interaction/OptionHandler.java": "401f29a5a080be20e55f32763157a513e062c08aca03dcc4bda0e68a88a263a3",
+    "oracle/thieving-doors/adapters/core/game/node/Node.java": "d4fac589bfd1c0492e54df800b981371c7bc77f32c57d0ab0f2e332add394e76",
+    "oracle/thieving-doors/adapters/core/game/node/entity/Entity.java": "d229b8ba605be5181fd6eb967cb5679c26676408fa46280a32164031eb09a2a6",
+    "oracle/thieving-doors/adapters/core/game/node/entity/combat/ImpactHandler.java": "cf036c45b9cdc462345587a31e9aaf9c91312eecc2bb3019d6487d382539bf08",
+    "oracle/thieving-doors/adapters/core/game/node/entity/player/Player.java": "6a2e9ca51a883971dc80d716a3633a8d6646a097f971531c6ec207ada00a85c8",
+    "oracle/thieving-doors/adapters/core/game/node/entity/skill/Skills.java": "3a1295a95ea286d51583421bb8bd24fa062e3a2bf65ae6bf7a2dda8838aee339",
+    "oracle/thieving-doors/adapters/core/game/node/item/Item.java": "bad7d3f064be587fef0e8715705740be6ec96d9b05e26c2dbe26523b8d770203",
+    "oracle/thieving-doors/adapters/core/game/node/scenery/Scenery.java": "7d7654b75380f6bf334b6cb23732cbe8a553b357319e45bad012346491f64c88",
+    "oracle/thieving-doors/adapters/core/game/world/map/Location.java": "ca930379a38a724b4ab3a75a7cd817b906e433178d9d603cbc6ccf4c7a6ad150",
+    "oracle/thieving-doors/adapters/core/game/world/map/RegionManager.java": "598c2270168df51c0adfe81af11dd40fe4100ae70077992576c669ec515223d5",
+    "oracle/thieving-doors/adapters/core/plugin/Initializable.java": "ce0bf365f544ad7633c4996c5a333cac37319c9f76f1ebcd4a246a141b83c348",
+    "oracle/thieving-doors/adapters/core/plugin/Plugin.java": "a174fd7aed38d4e741f9b410aa4c05d77f6f9c4f638be25805f5af6aab7cafe1",
+    "oracle/thieving-doors/adapters/core/tools/RandomFunction.java": "515f0376c848860f3409cbfbf8149f379ae7145012269f2c80bd0e5c66f41336",
+    "oracle/thieving-doors/adapters/oracle/Oracle.java": "55b3abdb31baabe38e31b95381f948074edc0a9680235e19f1dd0ff406d86b87",
+    "oracle/thieving-doors/adapters/oracle/W.java": "ec2677f8aea0d00731321d2f70135354c38924a466eac0ed9a9145a8f02c04df",
+    "oracle/thieving-doors/cases.py": "757ee1478ff430d961dc2ca616d382fc7467c60ff87a58631e8ee64f08a67865",
+    "oracle/thieving-doors/generate.py": "a1146502860f10696df3eeef9d4970524614c3fde4673655b42f1c6808572df2",
+    "reference/server/Server/src/main/content/global/skill/thieving/PickableDoorHandler.java": "83bcaab74732532aa2554b83bcf0a81529aca5bb5a4a92ac09011938367951f3",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/cache/def/impl/SceneryDefinition.java": "25116188ca884e6580e3c273a254ede57b811fddc68ef82be2b6a05f43374312",
+    "reference/server/Server/src/main/core/game/container/Container.java": "8b167878e7dd251d2b61c341837cb735c965c4f29ab7dfaebde073998bb96153",
+    "reference/server/Server/src/main/core/game/global/action/DoorActionHandler.java": "1f7dc3811743b13feb09fc1ce0d61556b7aeced3db1bd2fc513a196e02a895c7",
+    "reference/server/Server/src/main/core/game/interaction/OptionHandler.java": "fa8138e9f13a34ca4a8222fe026694a03ceda053575c214dcbf7dc8cd321646b",
+    "reference/server/Server/src/main/core/game/node/entity/combat/ImpactHandler.java": "9ba865d0d25b1a3a0054d08bcdf33f567b46e27712aa929296d28c4c9f5ec68e",
+    "reference/server/Server/src/main/core/game/node/entity/skill/Skills.java": "b442b260cc591406dc903d46cd729db27976b9470413bc039d6766bd4fe1f0db",
+    "reference/server/Server/src/main/core/game/node/scenery/Scenery.java": "eaba60d20ec9e0e2953907641c5cc0ef366bde1ea0ce84c4af1609d474364e93",
+    "reference/server/Server/src/main/core/game/world/map/Direction.java": "d42e5990b258fdc00aaa18dd5f236e54d5eda1e66ac1bf8c1fb0ce76d6ef9103",
+    "reference/server/Server/src/main/core/game/world/map/Location.kt": "6495834e7e55b54ca638cd83a7ffb8927df04242e2688efce7a89e40f3a6f86c",
+    "reference/server/Server/src/main/core/game/world/map/Point.java": "97f4db2276053947fdcabd78ae1207ea7fa6a630b235458d0b579fa100b8314b",
+    "reference/server/Server/src/main/core/game/world/map/RegionManager.kt": "c2b3bbc5b205e9ea6e8322a1eceb53dfc081975706db23a182b48af68707f7e3",
+    "reference/server/Server/src/main/core/game/world/map/path/ClipMaskSupplier.java": "93eddf62306b1f5a373dac01d149abcf6727b1e4ccd17c72c07d60709e97fa1b",
+    "reference/server/Server/src/main/core/plugin/Initializable.java": "46ae44725f9a53d802cc6d9d083c1657ae2186c88cb9938e72a199658b8dde5c",
+    "reference/server/Server/src/main/core/plugin/Plugin.java": "642ad4f3a2999d3d1194916fd323c7e7c508e20aaa308d024822694ab4a1f764",
+    "reference/server/Server/src/main/core/tools/RandomFunction.java": "054fb47b8718ce25da6fe35af85765f3cdea3b2056ef0e4d678435b230ad559e",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}
