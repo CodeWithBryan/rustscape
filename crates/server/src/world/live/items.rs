@@ -57,6 +57,7 @@ pub mod fletching_assembly;
 pub mod milking;
 pub mod mining;
 pub mod otto;
+pub mod pick_doors;
 pub mod pickpocket;
 mod slots;
 pub mod smelting;

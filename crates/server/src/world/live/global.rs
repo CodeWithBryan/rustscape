@@ -1755,6 +1755,13 @@ impl Live {
                         .map_err(|e| Error::Binding(Some(format!("{e:?}")))),
                     None => Err(Error::Null),
                 },
+                // PickableDoorHandler.handle(player, node, option).
+                super::scenery::SceneryPlugin::PickDoor => match call.target.as_ref() {
+                    Some(door) => self
+                        .pick_door_handle(&p, door, &call.option)
+                        .map_err(|e| Error::Binding(Some(format!("{e:?}")))),
+                    None => Err(Error::Null),
+                },
                 // DoorManagingPlugin.handle(player, node, option).
                 super::scenery::SceneryPlugin::Door => match call.target.as_ref() {
                     Some(door) => self

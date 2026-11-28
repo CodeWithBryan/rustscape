@@ -4313,6 +4313,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     stall_part(address, &players).await;
     chest_part(address, &players).await;
     door_part(address, &players).await;
+    pick_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -4473,6 +4474,81 @@ async fn door_part(address: std::net::SocketAddr, players: &std::path::Path) {
         .await;
     eprintln!("doorman opened a Lumbridge door, walked in, closed it, opened it and walked out");
     walker.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The lock part of the gather scenario.
+async fn pick_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    // PickableDoorHandler: the level 1 door of East Ardougne (34812, on
+    // the east edge of its tile). West of it is the locked side.
+    let door = [2672, 3308];
+    let locked = [door[0], door[1], 0];
+    let unlocked = [door[0] + 1, door[1], 0];
+    write_save(players, "traceone", "lockman", locked, &[]);
+    let (code, thief) = Client::login(address, "lockman").await;
+    assert_eq!(code, 2, "lockman's login");
+    let mut thief = thief.unwrap();
+    thief
+        .until(Duration::from_secs(10), "lockman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = thief.messages.len();
+    thief.send(scenery_option1(34812, door[0], door[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(8), "the locked door", |c| {
+            said(c, from, "The door is locked.")
+        })
+        .await;
+    assert_eq!(thief.position(), locked);
+    // A pick succeeds two times in three: click until one does.
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        assert!(attempts <= 12, "lockman never picked the lock");
+        let from = thief.messages.len();
+        thief.send(scenery_option2(34812, door[0], door[1])).await;
+        thief
+            .until_pinging(Duration::from_secs(8), "an attempt at the lock", |c| {
+                said(c, from, "You manage to pick the lock.")
+                    || said(c, from, "You fail to pick the lock.")
+            })
+            .await;
+        assert!(said(&thief, from, "You attempt to pick the lock."));
+        if said(&thief, from, "You manage to pick the lock.") {
+            break;
+        }
+    }
+    thief
+        .until_pinging(
+            Duration::from_secs(8),
+            "the walk through the picked door",
+            |c| c.position() == unlocked,
+        )
+        .await;
+    thief.pump(Duration::from_secs(3)).await;
+    let experience = thief.skills.get(&17).map(|s| s.1);
+    assert_eq!(experience, Some(3), "lockman's thieving experience");
+    let from = thief.messages.len();
+    thief.send(scenery_option2(34812, door[0], door[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(8), "the unlocked side", |c| {
+            said(c, from, "The door is already unlocked.")
+        })
+        .await;
+    assert_eq!(thief.position(), unlocked);
+    thief.send(scenery_option1(34812, door[0], door[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(8), "the way back", |c| {
+            said(c, from, "You go through the door.") && c.position() == locked
+        })
+        .await;
+    eprintln!(
+        "lockman found the door locked, picked it in {attempts} attempts, and opened it from the other side"
+    );
+    thief.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

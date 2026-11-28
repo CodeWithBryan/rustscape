@@ -1099,8 +1099,12 @@ stand-ins); this test checks the production binding end to end.
   and a pair the booted original gives to other content
   (`fixtures/door-claims`, embedded as `world/door_claims.txt`) is
   refused by name instead of opened; the three doors' diary tasks are a
-  named skip; lock-picked doors (PickableDoorHandler)
-  are not ported. Barbarian fishing is installed (`items/barbarian.rs`, no
+  named skip. Lock-picked doors are installed (`items/pick_doors.rs`
+  over `world/thieving_door.rs`, docs/thieving-doors.md; the library is
+  replayed against the JVM corpus `fixtures/thieving-doors`, the live
+  binding is not): PickableDoorHandler's "pick-lock" and "open" on its
+  28 door definitions, with `handleAutowalkDoor` over the door binding.
+  Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
   content tick listener, and "use-rod", the bed's "search" and the knife

@@ -669,6 +669,23 @@ impl player_walk::Services for WalkHost<'_> {
                 super::scenery::SceneryPlugin::Anvil => return Ok(None),
                 super::scenery::SceneryPlugin::Stall => return Ok(None),
                 super::scenery::SceneryPlugin::Chest => return Ok(None),
+                // PickableDoorHandler.getDestination: DoorActionHandler's
+                // side of a scenery whose definition has "pick-lock",
+                // null for any other.
+                super::scenery::SceneryPlugin::PickDoor => {
+                    let Some(mover) = mover else {
+                        return Err(player_walk::Error::Binding(
+                            "PickableDoorHandler.getDestination without an entity".into(),
+                        ));
+                    };
+                    if !super::items::pick_doors::has_action(&object, "pick-lock") {
+                        return Ok(None);
+                    }
+                    let mut side = super::items::doors::Side { state, host: self };
+                    return doors::destination(&mut side, mover, &object)
+                        .map(Some)
+                        .map_err(|e| player_walk::Error::Binding(format!("{e:?}")));
+                }
                 // DoorManagingPlugin.getDestination: DoorActionHandler's
                 // side of a wall-shaped scenery, null for any other.
                 super::scenery::SceneryPlugin::Door => {

@@ -5,7 +5,7 @@
 //! replayed by `tests/thieving_chests.rs` over these functions with the
 //! oracle's declared state. Every outside call is a [`Host`] method.
 //!
-//! Not covered: doors (`PickableDoorHandler`).
+//! Doors (`PickableDoorHandler`) are `world::thieving_door`.
 
 pub const CLASS: &str = "content.global.skill.thieving.ThievableChestPlugin";
 /// The anonymous `Pulse` of `Chest.searchTraps`.

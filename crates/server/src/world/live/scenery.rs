@@ -71,6 +71,8 @@ pub enum SceneryPlugin {
     Chest,
     /// DoorManagingPlugin (super::items::doors).
     Door,
+    /// PickableDoorHandler (super::items::pick_doors).
+    PickDoor,
 }
 impl SceneryPlugin {
     pub fn class(self) -> &'static str {
@@ -82,6 +84,7 @@ impl SceneryPlugin {
             Self::Stall => crate::world::thieving_stall::PLUGIN_CLASS,
             Self::Chest => crate::world::thieving_chest::CLASS,
             Self::Door => crate::world::door_option::CLASS,
+            Self::PickDoor => crate::world::thieving_door::CLASS,
         }
     }
     /// `isWalk()`: OptionHandler's true for a content plugin.
@@ -93,7 +96,8 @@ impl SceneryPlugin {
             | Self::Anvil
             | Self::Stall
             | Self::Chest
-            | Self::Door => true,
+            | Self::Door
+            | Self::PickDoor => true,
         }
     }
     /// `isWalk(player, node)`: OptionHandler's false.
@@ -105,7 +109,8 @@ impl SceneryPlugin {
             | Self::Anvil
             | Self::Stall
             | Self::Chest
-            | Self::Door => false,
+            | Self::Door
+            | Self::PickDoor => false,
         }
     }
     /// `isDelayed(player)`: OptionHandler's true.
@@ -117,7 +122,8 @@ impl SceneryPlugin {
             | Self::Anvil
             | Self::Stall
             | Self::Chest
-            | Self::Door => true,
+            | Self::Door
+            | Self::PickDoor => true,
         }
     }
 }
@@ -169,6 +175,12 @@ impl WalkHost<'_> {
             .is_some()
         {
             return Ok(SceneryPlugin::Door);
+        }
+        if handler
+            .value::<super::items::pick_doors::PickDoorPlugin>()
+            .is_some()
+        {
+            return Ok(SceneryPlugin::PickDoor);
         }
         Err(legacy::Error::Binding(Some(
             "not ported in the live world: a scenery option handler that is not a global handler (other content)".into(),

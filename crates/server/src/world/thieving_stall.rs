@@ -6,8 +6,7 @@
 //! replayed by `tests/thieving_stalls.rs` over these functions with the
 //! oracle's declared state. Every outside call is a [`Host`] method.
 //!
-//! Not covered: doors (`PickableDoorHandler`). Chests are
-//! `super::thieving_chest`.
+//! Chests are `super::thieving_chest` and doors `super::thieving_door`.
 use rs09_game_core::java_lower::lowercase_root;
 
 pub const PLUGIN_CLASS: &str = "content.global.skill.thieving.ThievingOptionPlugin";

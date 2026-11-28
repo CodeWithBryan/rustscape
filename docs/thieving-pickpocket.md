@@ -18,8 +18,8 @@ through `Host::can_roll`, `Host::exclude_clues` and `Host::roll`.
 
 Stalls (`ThievingOptionPlugin`, `Stall`, `StallThiefPulse`) are
 docs/thieving-stalls.md and chests (`ThievableChestPlugin`) are
-docs/thieving-chests.md. Not ported: doors (`PickableDoorHandler`),
-`Pickpockets.getSuccessChance` (nothing calls it) and the Dig Site's two
+docs/thieving-chests.md; doors (`PickableDoorHandler`) are
+docs/thieving-doors.md. Not ported: `Pickpockets.getSuccessChance` (nothing calls it) and the Dig Site's two
 calls of `pickpocketRoll`.
 
 ## Evidence, and what it does not show

@@ -537,6 +537,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_smithing()?;
     live.install_stalls()?;
     live.install_chests()?;
+    live.install_pick_doors()?;
     Ok(Booted {
         live,
         configuration,
