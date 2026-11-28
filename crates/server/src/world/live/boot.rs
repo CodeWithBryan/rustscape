@@ -534,6 +534,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_cow_milking()?;
     live.install_smelting()?;
     live.install_smithing()?;
+    live.install_stalls()?;
     Ok(Booted {
         live,
         configuration,

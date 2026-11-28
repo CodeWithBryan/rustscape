@@ -260,57 +260,11 @@ impl Host for Thief<'_> {
             .map_err(fail)
     }
     fn play_hurt_audio(&mut self, delay: i32) -> Result<()> {
-        // playHurtAudio(player, delay): one of four sounds by gender, drawn
-        // with Kotlin's Random.Default.
-        let male = self
-            .live
-            .inner
-            .canonical(&self.p)
-            .player
-            .appearance()
-            .is_male();
-        let sounds = if male {
-            [516, 517, 518, 522]
-        } else {
-            [506, 507, 508, 510]
-        };
-        let id = sounds[self.live.inner.combat.kotlin_random(4) as usize];
-        self.sound(id, delay);
+        self.live.content_hurt_audio(&self.p, delay);
         Ok(())
     }
     fn stun(&mut self, ticks: i32) -> Result<()> {
-        // ContentAPI stun(entity, ticks, sendMessage = true).
-        self.live.walk_reset(&self.p).map_err(fail)?;
-        cp::Host::pulse_manager_clear(self.live, &self.p).map_err(fail)?;
-        {
-            let state = &mut self.live.inner.state;
-            state
-                .locks(&self.p.0)
-                .map_err(fail)?
-                .lock_kind(
-                    action_locks::Kind::Movement,
-                    ticks,
-                    state,
-                    &mut action_locks::Clock,
-                )
-                .map_err(fail)?;
-        }
-        let until = self.live.inner.ticks.wrapping_add(ticks);
-        self.live
-            .set_script_clock(&self.p, STUN_CLOCK, until)
-            .map_err(fail)?;
-        self.live
-            .entity_visualize(&self.p, None, Some(Graphics::new(80, 96, 0)))
-            .map_err(fail)?;
-        self.sound(2727, 0);
-        let animation = Animation::with(424, 0, Some(Priority::VeryHigh));
-        self.live
-            .entity_visualize(&self.p, Some(animation), None)
-            .map_err(fail)?;
-        self.live
-            .inner
-            .message(&self.p, "You have been stunned!")
-            .map_err(fail)
+        self.live.content_stun(&self.p, ticks, true).map_err(fail)
     }
     fn random(&mut self, a: i32, b: i32) -> Result<i32> {
         Ok(random_range(&mut self.live.inner.generators, a, b))
@@ -350,6 +304,64 @@ impl Host for Thief<'_> {
         let added = cp::Host::add_experience(self.live, &self.p, THIEVING, xp, false);
         self.live.inner.drain(&self.p);
         added.map_err(fail)
+    }
+}
+
+impl Live {
+    /// ContentAPI `playHurtAudio(player, delay)`: one of four sounds by
+    /// gender, drawn with Kotlin's Random.Default.
+    pub fn content_hurt_audio(&mut self, p: &P, delay: i32) {
+        let male = self.inner.canonical(p).player.appearance().is_male();
+        let sounds = if male {
+            [516, 517, 518, 522]
+        } else {
+            [506, 507, 508, 510]
+        };
+        let id = sounds[self.inner.combat.kotlin_random(4) as usize];
+        self.inner
+            .queue_native(p, updates::synth_sound(id, 1, delay));
+    }
+
+    /// ContentAPI `stun(player, ticks, sendMessage)`: the walking reset,
+    /// the pulses cleared, the movement lock, the STUN clock, graphics 80,
+    /// sound 2727, animation 424 and the message.
+    pub fn content_stun(
+        &mut self,
+        p: &P,
+        ticks: i32,
+        message: bool,
+    ) -> std::result::Result<(), String> {
+        let debug = |e: &dyn std::fmt::Debug| format!("{e:?}");
+        self.walk_reset(p).map_err(|e| debug(&e))?;
+        cp::Host::pulse_manager_clear(self, p).map_err(|e| debug(&e))?;
+        {
+            let state = &mut self.inner.state;
+            state
+                .locks(&p.0)
+                .map_err(|e| debug(&e))?
+                .lock_kind(
+                    action_locks::Kind::Movement,
+                    ticks,
+                    state,
+                    &mut action_locks::Clock,
+                )
+                .map_err(|e| debug(&e))?;
+        }
+        let until = self.inner.ticks.wrapping_add(ticks);
+        self.set_script_clock(p, STUN_CLOCK, until)
+            .map_err(|e| debug(&e))?;
+        self.entity_visualize(p, None, Some(Graphics::new(80, 96, 0)))
+            .map_err(|e| debug(&e))?;
+        self.inner.queue_native(p, updates::synth_sound(2727, 1, 0));
+        let animation = Animation::with(424, 0, Some(Priority::VeryHigh));
+        self.entity_visualize(p, Some(animation), None)
+            .map_err(|e| debug(&e))?;
+        if message {
+            self.inner
+                .message(p, "You have been stunned!")
+                .map_err(|e| debug(&e))?;
+        }
+        Ok(())
     }
 }
 

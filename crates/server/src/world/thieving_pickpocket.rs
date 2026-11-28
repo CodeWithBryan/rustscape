@@ -9,9 +9,9 @@
 //! `fixtures/drop-tables`), reached through [`Host::can_roll`],
 //! [`Host::exclude_clues`] and [`Host::roll`].
 //!
-//! Not covered: stalls, chests and doors (`ThievingOptionPlugin`,
-//! `StallThiefPulse`, `ThievableChestPlugin`, `PickableDoorHandler`) and the
-//! Dig Site's two calls of `pickpocketRoll`.
+//! Not covered: chests and doors (`ThievableChestPlugin`,
+//! `PickableDoorHandler`) and the Dig Site's two calls of `pickpocketRoll`.
+//! Stalls are `super::thieving_stall`.
 use super::{drop_tables::WeightedItem, gathering::random::skill_success_chance};
 
 pub const CLASS: &str = "content.global.skill.thieving.ThievingListeners";

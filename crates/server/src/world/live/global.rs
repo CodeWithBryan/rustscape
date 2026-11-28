@@ -1748,6 +1748,13 @@ impl Live {
                     }
                     None => Err(Error::Null),
                 },
+                // ThievingOptionPlugin.handle(player, node, option).
+                super::scenery::SceneryPlugin::Stall => match call.target.as_ref() {
+                    Some(stall) => self
+                        .stall_handle(&p, stall, &call.option)
+                        .map_err(|e| Error::Binding(Some(format!("{e:?}")))),
+                    None => Err(Error::Null),
+                },
             };
             match result {
                 // InteractPlugin: a handler answering false is "Nothing

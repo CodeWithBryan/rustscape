@@ -76,6 +76,8 @@ pub struct Round {
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).
     pub milking: super::items::milking::MilkingWorld,
+    /// ThievingOptionPlugin and StallThiefPulse (super::items::stalls).
+    pub stalls: super::items::stalls::StallWorld,
     /// FurnaceOptionPlugin and SmeltingInterface (super::items::smelting).
     pub smelting: super::items::smelting::SmeltingWorld,
     /// SmithingPlugin and SmithingInterface (super::items::smithing).
@@ -117,6 +119,12 @@ impl super::host::Live {
         self.round.eat.doses.retain(|(_, owner, _)| *owner != node);
         self.milking_logout(node);
         self.smithing_logout(node);
+        self.round.stalls.pulses.retain(|(handle, owner, _, _)| {
+            if *owner == node {
+                crate::pulses::stop_base(handle);
+            }
+            *owner != node
+        });
         self.round.smelting.pulses.retain(|(handle, owner, _)| {
             if *owner == node {
                 crate::pulses::stop_base(handle);

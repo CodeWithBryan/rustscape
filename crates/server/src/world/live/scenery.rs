@@ -65,6 +65,8 @@ pub enum SceneryPlugin {
     Furnace,
     /// SmithingPlugin's anonymous OptionHandler (super::items::smithing).
     Anvil,
+    /// ThievingOptionPlugin (super::items::stalls).
+    Stall,
 }
 impl SceneryPlugin {
     pub fn class(self) -> &'static str {
@@ -73,27 +75,28 @@ impl SceneryPlugin {
             Self::CowMilking => super::items::milking::CLASS,
             Self::Furnace => crate::world::smelting::PLUGIN_CLASS,
             Self::Anvil => crate::world::smithing::OPTION_CLASS,
+            Self::Stall => crate::world::thieving_stall::PLUGIN_CLASS,
         }
     }
     /// `isWalk()`: OptionHandler's true for a content plugin.
     pub fn is_walk(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk(),
-            Self::CowMilking | Self::Furnace | Self::Anvil => true,
+            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall => true,
         }
     }
     /// `isWalk(player, node)`: OptionHandler's false.
     pub fn is_walk_for(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk_for(),
-            Self::CowMilking | Self::Furnace | Self::Anvil => false,
+            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall => false,
         }
     }
     /// `isDelayed(player)`: OptionHandler's true.
     pub fn is_delayed(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_delayed(),
-            Self::CowMilking | Self::Furnace | Self::Anvil => true,
+            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall => true,
         }
     }
 }
@@ -127,6 +130,12 @@ impl WalkHost<'_> {
             .is_some()
         {
             return Ok(SceneryPlugin::Anvil);
+        }
+        if handler
+            .value::<super::items::stalls::StallPlugin>()
+            .is_some()
+        {
+            return Ok(SceneryPlugin::Stall);
         }
         Err(legacy::Error::Binding(Some(
             "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),

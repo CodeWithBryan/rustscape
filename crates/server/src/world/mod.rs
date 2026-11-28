@@ -125,6 +125,7 @@ pub mod spells;
 pub mod system_manager;
 pub mod teleport;
 pub mod thieving_pickpocket;
+pub mod thieving_stall;
 pub mod tick;
 pub mod trade;
 pub mod update;

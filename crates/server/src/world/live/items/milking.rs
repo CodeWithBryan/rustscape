@@ -136,6 +136,10 @@ impl Live {
             if let Some(result) = self.smithing_pulse_stopped(pulse) {
                 return result.map_err(bind);
             }
+            // StallThiefPulse: SkillPulse.stop().
+            if let Some(result) = self.stall_pulse_stopped(pulse) {
+                return result.map_err(bind);
+            }
             // BarbFishingPulse: SkillPulse.stop().
             if let Some(result) = self.barbarian_pulse_stopped(pulse) {
                 return result.map_err(bind);

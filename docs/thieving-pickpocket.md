@@ -16,8 +16,9 @@ original makes outside these two classes is a required method with no
 default. The loot tables are `drop_tables::WeightBasedTable`'s, reached
 through `Host::can_roll`, `Host::exclude_clues` and `Host::roll`.
 
-Not ported: stalls (`ThievingOptionPlugin`, `Stall`, `StallThiefPulse`),
-chests (`ThievableChestPlugin`), doors (`PickableDoorHandler`),
+Stalls (`ThievingOptionPlugin`, `Stall`, `StallThiefPulse`) are
+docs/thieving-stalls.md. Not ported: chests (`ThievableChestPlugin`),
+doors (`PickableDoorHandler`),
 `Pickpockets.getSuccessChance` (nothing calls it) and the Dig Site's two
 calls of `pickpocketRoll`.
 

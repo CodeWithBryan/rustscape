@@ -1613,6 +1613,10 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.smelting_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // StallThiefPulse (super::items::stalls).
+        if let Some(result) = self.stall_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // SmithingPulse (super::items::smithing).
         if let Some(result) = self.smithing_pulse_body(pulse) {
             return result.map_err(fail);

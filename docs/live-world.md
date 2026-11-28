@@ -1078,8 +1078,14 @@ stand-ins); this test checks the production binding end to end.
   live binding is not): ThievingListeners' "pickpocket" option rolls the
   18 Pickpockets tables, made on first use; the treasure trail manager
   and SkillcapePerks are not ported, so `hasClue` is answered from the
-  containers and the smooth hands perk is never set; stalls, chests and
-  doors are not ported. Barbarian fishing is installed (`items/barbarian.rs`, no
+  containers and the smooth hands perk is never set. Market stalls are
+  installed (`items/stalls.rs` over `world/thieving_stall.rs`,
+  docs/thieving-stalls.md; the library is replayed against the JVM
+  corpus `fixtures/thieving-stalls`, the live binding is not):
+  ThievingOptionPlugin's three option names run StallThiefPulse, which
+  empties the stall through the cache scene; no quest is ported, so the
+  Rellekka fur and fish stalls always refuse there; chests and doors
+  are not ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
   content tick listener, and "use-rod", the bed's "search" and the knife
