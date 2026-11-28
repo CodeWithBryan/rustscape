@@ -413,6 +413,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         timers: Default::default(),
         combat: Default::default(),
         interface_listeners: Default::default(),
+        interface_container: Default::default(),
         shops: super::shopping::ShopState {
             personalized: values.get("personalized_shops").and_then(|v| v.as_bool()),
             config_path: Some(config_path.clone()),

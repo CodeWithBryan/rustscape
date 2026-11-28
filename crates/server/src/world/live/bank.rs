@@ -9,8 +9,9 @@
 //! `InterfaceManager.close` (`Inner::close_event`); `BankUtils.transferX`
 //! through the input prompts (super::talk).
 //!
-//! The bank PIN interface, the secondary bank, the deposit box's item
-//! rendering and the bank's help/deposit dialogues are refused by name.
+//! The deposit box's item rendering is `InterfaceContainer.generateItems`
+//! (super::banks). The bank PIN interface, the secondary bank and the bank's
+//! help/deposit dialogues are refused by name.
 use super::{P, host::Live, inner::Inner, now_millis};
 use crate::{
     definitions::item::{Handle as Definition, Registry as Items},
@@ -299,14 +300,18 @@ impl bank::Context for BankUi<'_> {
     }
     fn deposit_items(
         &mut self,
-        _: &NodeHandle,
-        _: ContainerItems,
-        _: &[&str],
-        _: [i32; 4],
+        owner: &NodeHandle,
+        items: ContainerItems,
+        options: &[&str],
+        [iface, child, x, y]: [i32; 4],
     ) -> inv::Result<()> {
-        Err(inv::Error::Binding(
-            "not ported in the live world: the deposit box's item-select rendering (InterfaceContainer.generateItems)".into(),
-        ))
+        // InterfaceContainer.generateItems(player, items.toArray(), options,
+        // iface, child, x, y) (super::banks).
+        let p = self.p(owner)?;
+        let items: Vec<Option<ItemHandle>> = items.read().clone();
+        super::banks::generate_items(self.inner, &p, &items, options, iface, child, x, y)
+            .map(|_| ())
+            .map_err(inv::Error::Binding)
     }
     fn get_varbit(&mut self, owner: &NodeHandle, id: i32) -> inv::Result<i32> {
         self.variable(owner, |ctx, owner| {

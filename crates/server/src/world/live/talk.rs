@@ -985,7 +985,13 @@ impl input::Context for Prompt<'_> {
     }
     fn make_transfer(&mut self, transfer: Transfer) -> input::Result<Script> {
         self.p(&transfer.player)?;
-        if transfer.after.is_some() {
+        // The deposit box's after body is the only one installed
+        // (super::banks::DepositRefresh).
+        if transfer
+            .after
+            .as_ref()
+            .is_some_and(|a| a.value::<super::banks::DepositRefresh>().is_none())
+        {
             return Err(input::Error::Binding(
                 "not ported in the live world: a transfer's after callback".into(),
             ));
@@ -1029,10 +1035,16 @@ impl input::Context for Prompt<'_> {
             .bank_last_amount(&p, &bank, amount)
             .map_err(ierror)
     }
-    fn after(&mut self, _: crate::world::component_objects::Plugin) -> input::Result<()> {
-        Err(input::Error::Binding(
-            "not ported in the live world: a transfer's after callback".into(),
-        ))
+    fn after(&mut self, after: crate::world::component_objects::Plugin) -> input::Result<()> {
+        // { player.bank.refreshDepositBoxInterface() } with its captured
+        // player (super::banks).
+        let Some(refresh) = after.value::<super::banks::DepositRefresh>() else {
+            return Err(input::Error::Binding(
+                "not ported in the live world: a transfer's after callback".into(),
+            ));
+        };
+        let p = self.p(&refresh.0)?;
+        self.live.deposit_refresh(&p).map_err(input::Error::Binding)
     }
 }
 
@@ -1147,6 +1159,20 @@ impl Live {
         result
     }
     /// `BankUtils.transferX(player, slot, withdraw)`.
+    /// `BankUtils.transferX(player, slot, withdraw, after)` with an after
+    /// body (super::banks).
+    pub fn transfer_x_after(
+        &mut self,
+        p: &P,
+        slot: i32,
+        withdraw: bool,
+        after: Option<crate::world::component_objects::Plugin>,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::transfer_x(&mut Prompt { live: self }, &owner, slot, withdraw, after);
+        self.inner.drain(p);
+        result
+    }
     pub fn transfer_x(&mut self, p: &P, slot: i32, withdraw: bool) -> input::Result<()> {
         let owner = p.0.clone();
         let result = input::transfer_x(&mut Prompt { live: self }, &owner, slot, withdraw, None);

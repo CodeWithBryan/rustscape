@@ -201,9 +201,7 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
         // the option, the walk and the arrival's lambda) needs the whole
         // world, so it is deferred to right after this packet's kernel
         // returns (`Live::scenery_listener_run`); its answer, false only
-        // for an interaction-locked player, is computed here. The global
-        // handlers' bank chest and deposit box lambdas are refused by name
-        // where they are invoked (super::items `invoke_on`). With no
+        // for an interaction-locked player, is computed here. With no
         // listener registered the answer is false.
         let registry = self.walk.interactions.clone().ok_or(Error::Null)?;
         let text: Vec<u16> = option.as_deref().unwrap_or("null").encode_utf16().collect();
@@ -218,14 +216,14 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
         // defineInteraction's metadata: an interaction script installed in
         // the player's ScriptProcessor and the walk to the object, made by
         // the same deferred run. Only a handler this world runs
-        // (super::scripts: the gathering listeners'); the bank booths'
-        // stays refused by name.
+        // (super::scripts: the gathering listeners' and the bank booths',
+        // chests' and deposit boxes'); any other stays refused by name.
         let script = !listener
             && match registry.metadata(&casing, id, scenery, &text) {
                 Some(meta) if Live::script_installed(&meta.read().function) => true,
                 Some(_) => {
                     return Err(Error::Binding(
-                        "not ported in the live world: InteractionListeners' defineInteraction scripts for scenery other than the gathering listeners' (the bank booths' interaction scripts)".into(),
+                        "not ported in the live world: InteractionListeners' defineInteraction scripts for scenery other than the gathering listeners' and the bank booths', chests' and deposit boxes'".into(),
                     ));
                 }
                 None => false,

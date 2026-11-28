@@ -1,10 +1,14 @@
 # Modern interaction listener dispatch
 
 `world/interaction_listeners.rs` ports the complete InteractionListeners registry
-and its three run paths. This is a required dependency for natural banker and bank
-booth interactions. It is not yet installed in the canonical live player/scene
-runtime; the current live examples still expose their explicitly empty listener
-and script services. Existing legacy InteractPlugin scheduling remains separate.
+and its three run paths. `rs09-server --world` installs it (world/live): NPC
+and player listeners with their movement and arrival (talk.rs), and for scenery
+the `on` listeners with their walk and the `defineInteraction` metadata
+branch over the canonical script processor, whose handler runs inside the
+script phase (scenery.rs, scripts.rs: the gathering listeners' handlers and the
+bank booths', chests' and deposit boxes' in banks.rs; docs/live-world.md). The controlled examples still expose
+their explicitly empty listener and script services. Existing legacy
+InteractPlugin scheduling remains separate.
 
 The1278-case JVM comparison compiles complete unchanged InteractionListeners.kt,
 InteractionListener.kt, IntType.kt and Script.kt. Entity, scripts, locks, event,

@@ -18,12 +18,13 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   `rs09-server --world` runs `run` with the listener movement and arrival
   for NPC, player and scenery targets (world/live/talk.rs,
   world/live/scenery.rs) and installs a defineInteraction script in the
-  player's ScriptProcessor, whose body runs with the whole world
-  (world/live/scripts.rs: only the woodcutting, mining and fishing
-  listeners' handlers are installed;
-  after touching it run the live_world `gather` scenario); other
-  defineInteraction scripts, content use-with listener bodies, events
-  and booth content are still required runtime joins (only the unhandled
+  player's ScriptProcessor, whose body runs with the whole world inside the
+  script phase (world/live/scripts.rs: the woodcutting, mining and fishing
+  listeners' handlers, and the global handlers' bank booth, chest and
+  deposit box handlers in world/live/banks.rs; after touching them run the
+  live_world `gather`, `booth`, `chest`, `depositbox` and `bankrefusals`
+  scenarios); other defineInteraction scripts, content use-with listener
+  bodies and events are still required runtime joins (only the unhandled
   use-with MovementPulse to NPCs, players and scenery is joined:
   world/live/items/use_with.rs). See docs/interaction-listeners.md.
 
@@ -507,9 +508,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   BankerNPC and ShopNPC are world/npc_classes, next bullet); `rs09-server
   --world` installs the handlers (world/live/global.rs; since the eighth
   round also the Attack and Follow player options, the RequestOption
-  listeners, face, the lock queries and openBankAccount; the dialogue
-  senders, deposit boxes and the other services listed in
-  docs/live-world.md stay refused) (the binding is described in
+  listeners, face, the lock queries and openBankAccount; since the
+  banks round the booth, chest and deposit box bodies and the deposit box
+  interface (world/live/banks.rs); the dialogue senders and the other
+  services listed in docs/live-world.md stay refused) (the binding is described in
   docs/global-handlers.md).
 - For the NPC subclass framework or the global NPC handlers
   (world/npc_classes: AbstractNPC's registry, newInstance, forId, construct
@@ -923,8 +925,8 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   non-null attribute presence, including false/zero. Fresh fixture empty dialogue,
   locks/zones/events and one-shot --bank-probe admission remain explicit test
   boundaries. `rs09-server --world` installs the program with the canonical
-  bank at a banker (world/live/bank.rs); booth, chest and deposit box
-  admission, PIN, help/deposit dialogue and
+  bank at a banker (world/live/bank.rs) and at booths, chests and deposit
+  boxes (world/live/banks.rs); PIN, help/deposit dialogue and
   full login/map/profile/content still need real bindings. Browser pointer and
   native protocol-driven rendering proofs must be labelled separately; neither
   proves native pointer input. See docs/bank-interface.md.
@@ -942,8 +944,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   from an available archive's missing file. Real BankClose retains its bank and
   may differ from the caller. No guards span UI/listener/variable callbacks.
   The later BankInterface stage joins registration and basic live transactions;
-  banker/booth admission, PIN entry, deposit rendering and full input services
-  remain required. See docs/bank-runtime.md and docs/bank-interface.md.
+  banker, booth, chest and deposit box admission and deposit rendering are
+  joined in the live world (world/live/banks.rs); PIN entry and full input
+  services remain required. See docs/bank-runtime.md and docs/bank-interface.md.
 
 - For InterfaceManager lifecycle/ownership changes, run interfaces/owned_player,
   all ownership/player/container/world/ground suites and all three examples;
@@ -1906,9 +1909,16 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   out of the profile for the call, put back around calls into systems that
   read them). Also run dialogue, dialogue_dsl, input_prompt, bank,
   bank_interface, interfaces, shops, trade, consumables,
-  consumables_timers, legacy_interaction and movement. Bank booths
-  (defineInteraction scripts), chests, deposit boxes, the bank PIN,
-  AssistSession and the global handlers' dialogue senders remain refused.
+  consumables_timers, legacy_interaction and movement. Bank booths,
+  chests and deposit boxes run (world/live/banks.rs: defineInteraction
+  scripts on the canonical processor, the deposit box with generateItems
+  through world/grand_exchange's Host; for these also run scripts,
+  script_objects, script_runtime, interaction_listeners, global_handlers,
+  region_queries, projectile and grand_exchange, and reproduce
+  interaction-listeners-, scripts-, script-runtime-, global-handlers-,
+  bank-, bank-interface-, projectile- and grand-exchange-oracle); the bank
+  PIN, AssistSession and the global handlers' dialogue senders remain
+  refused.
   See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh

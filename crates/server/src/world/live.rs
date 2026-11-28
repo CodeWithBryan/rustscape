@@ -32,6 +32,7 @@
 //! ported and is answered by name. See docs/live-world.md.
 pub mod appearance;
 pub mod bank;
+pub mod banks;
 pub mod boot;
 pub mod buttons;
 pub mod combat;
@@ -48,6 +49,7 @@ pub mod ground;
 pub mod ground_items;
 pub mod host;
 pub mod inner;
+pub mod interface_container;
 pub mod items;
 pub mod magic;
 pub mod not_ported;
