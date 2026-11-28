@@ -3,9 +3,10 @@
 //! `GrammarHelpers`) with the zones and attribute key of
 //! `content.global.skill.fletching` they read.
 //!
-//! Ported from the pinned sources without a JVM corpus: the unit tests below
-//! check the calls against the Kotlin by reading, not against a recorded
-//! run. Every outside call is a [`Host`] method.
+//! Differential corpus: `fixtures/fletching` (oracle/fletching), replayed by
+//! `tests/fletching.rs` over these functions with the oracle's declared
+//! state; the unit tests below are a second, hand-read check. Every outside
+//! call is a [`Host`] method.
 //!
 //! Covered: the craft table, the listener's choice of items for a log, the
 //! handler's `create` checks ([`create`]), its `getAll` and the queued
@@ -107,6 +108,11 @@ pub fn for_log_id(log: i32) -> Option<Vec<usize>> {
         .filter(|at| CRAFTS[*at].log == log)
         .collect();
     (!found.is_empty()).then_some(found)
+}
+
+/// The listener's `craftableItems`: the finished item of each craft.
+pub fn finished_items(crafts: &[usize]) -> Vec<i32> {
+    crafts.iter().map(|at| CRAFTS[*at].finished).collect()
 }
 
 /// The quests the listener asks about, with their index in the repository.
