@@ -126,6 +126,25 @@ impl Live {
         self.drain_all();
         sent
     }
+    /// ContentAPI `sendItemDialogue(player, item, msg)` with an Item (the
+    /// Int form builds `Item(id)` first):
+    /// `dialogueInterpreter.sendItemMessage(item, *splitLines(msg))`. Shared
+    /// by every live host that answers it (the global handlers, the
+    /// item-on-object listeners).
+    pub fn content_send_item_dialogue(
+        &mut self,
+        p: &P,
+        item: &<Live as d::Host>::Item,
+        message: &str,
+    ) -> d::Result<()> {
+        let lines = content_split_lines(message)?;
+        let interpreter = self.interpreter_of(p);
+        let sent = interpreter
+            .send_item_message(self, item, &lines)
+            .map(|_| ());
+        self.drain_all();
+        sent
+    }
     /// ContentAPI `sendNPCDialogue(player, npc, msg, expr)`:
     /// `dialogueInterpreter.sendDialogues(npc, expr, hideContinue,
     /// *splitLines(msg))`. Shared by every live host that answers it (the

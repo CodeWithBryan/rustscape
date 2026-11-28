@@ -421,11 +421,9 @@ impl gh::Host for GHost<'_> {
         // interpreter.sendItemMessage(item, *splitLines(message)).
         let p = self.player(player)?;
         let item = crate::world::dialogue::Host::new_item(self.live, item).map_err(bind)?;
-        let lines = super::talk::content_split_lines(text).map_err(bind)?;
-        let interpreter = self.live.interpreter_of(&p);
-        let result = interpreter.send_item_message(self.live, &item, &lines);
-        self.live.drain_all();
-        result.map(|_| ()).map_err(bind)
+        self.live
+            .content_send_item_dialogue(&p, &item, text)
+            .map_err(bind)
     }
     fn double_item_dialogue(
         &mut self,
