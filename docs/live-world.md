@@ -833,6 +833,20 @@ the client-side player and NPC update decoders):
   first tick its region was active. The later moves (every 200 to 389
   ticks), the occupied-tile case, a script's end when its spot moves away
   and the other areas are not asserted through a socket.
+- `barbfish` (the same scenario: a save at 2505,3495 below the Baxtorian
+  Falls with a barbarian rod, 50 feathers and a knife, at Fishing 48,
+  Agility 15 and Strength 15) sees SpotManager's fishing spots (2722)
+  only on SpotManager's locations, takes the nearest one's "Use-rod"
+  (opcode 78): "You cast out your line...", "You attempt to catch a
+  fish.", then BarbFishingPulse catches a leaping trout (11328) with
+  "You catch a leaping trout.", one feather gone and experience added to
+  Fishing, Agility and Strength (each reads 175 afterwards: the save has
+  not completed the tutorial, so `Skills.addExperience` caps it). The knife used on the trout runs FishCuttingPulse:
+  the trout goes, with one of its three outcomes' messages (roe always
+  comes with Cooking experience, offcuts only with roe). The salmon and
+  sturgeon, the other baits, the requirement refusals, the full
+  inventory, a spot's move when its time to live ends and the bed's
+  "search" are not asserted through a socket.
 - `usemilk` (a save beside the dairy cow 8689 at 3252,3275 with two
   buckets) uses the cow's first option (opcode 254): eight ticks later
   "You milk the cow." and a bucket of milk (1927). It then uses the other
@@ -1021,8 +1035,15 @@ stand-ins); this test checks the production binding end to end.
   for it). No forager familiar acts, the Fist of
   Guthix gloves' charges are skipped, barehand fishing's Fremennik diary
   task is a refusal (nothing here sets the barbarian training attribute
-  barehand fishing needs), and barbarian fishing and the legacy
-  `FishingPulse` are not installed. In these bodies the familiar boost
+  barehand fishing needs), and the legacy `FishingPulse` is not
+  installed. Barbarian fishing is installed (`items/barbarian.rs`, no
+  JVM corpus): SpotManager's five spots are made at boot and tick with
+  the whole world right before their NPC kernel, the manager is a
+  content tick listener, and "use-rod", the bed's "search" and the knife
+  on a leaping fish run their bodies; SpotManager's place among the
+  start-up listeners is not reproduced, and the bed never gives a rod
+  because nothing here sets the barbarian training attribute (Otto's
+  dialogue is not ported). In these bodies the familiar boost
   is 0, skillcape perks are inactive and the ResourceProducedEvent is
   skipped; the shooting star's bonus timer is read from the player's
   timers, which nothing here starts (shooting stars are not ported), and

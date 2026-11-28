@@ -467,6 +467,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             follows: Vec::new(),
             content_pulses: Vec::new(),
             stopping_pulses: Vec::new(),
+            barbarian_spots: Vec::new(),
         },
         login_listeners: names("listeners.login"),
         logout_listeners: names("listeners.logout"),

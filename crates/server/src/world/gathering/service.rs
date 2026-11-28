@@ -248,6 +248,10 @@ pub enum Task {
         node: Handle,
         counter: i32,
     },
+    /// `BarbFishingPulse(player)` (super::barbarian).
+    BarbarianFishing { player: Handle },
+    /// `FishCuttingPulse(player, fish)` (super::barbarian).
+    FishCutting { player: Handle, fish: i32 },
 }
 
 pub trait Context {

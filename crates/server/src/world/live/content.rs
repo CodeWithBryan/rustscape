@@ -75,8 +75,11 @@ impl hint_icons::Host for Live {
 
 impl Live {
     /// `GameWorld.tickListeners` that are installed, in the class scan's
-    /// order (`listeners.tick` of `startup/scan_order.txt`): GraveController.
+    /// order (`listeners.tick` of `startup/scan_order.txt`): SpotManager,
+    /// GraveController.
     pub fn content_tick_listeners(&mut self) -> Result<(), String> {
+        // SpotManager (super::items::barbarian).
+        self.barbarian_tick();
         self.graves_tick()
             .map_err(|e| format!("GraveController.tick: {e:?}"))?;
         Ok(())

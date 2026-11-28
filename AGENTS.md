@@ -1130,10 +1130,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   pulses, the listener registry, attributes, messages, scenery, inEquipment,
   bank/beast-of-burden containers and EquipmentContainer's own overrides
   remain required services, and removeItem removes one default-charge unit
-  because the service carries only the id. Barbarian fishing, pickaxe repair
+  because the service carries only the id. Pickaxe repair
   and the FishingPulse option handlers are not ported; spot movement
   (FishingNPC and FishSpots: gathering/fishing_npc.rs, run live by
-  world/live/fishing_spots.rs) is ported without a corpus; of the
+  world/live/fishing_spots.rs) and barbarian fishing
+  (gathering/barbarian.rs, run live by world/live/items/barbarian.rs)
+  are ported without a corpus; of the
   library the listeners are installed in a live world (the woodcutting
   pulse, WoodcuttingListener's, MiningListener's and FishingListener's
   scripts and ProspectListener: world/live/items/woodcutting.rs, mining.rs

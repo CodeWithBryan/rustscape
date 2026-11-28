@@ -509,7 +509,10 @@ pub fn run_task(ctx: &mut (impl Context + ?Sized), task: &Task, _stage: i32) -> 
             ctx.unit(Service::NodeSetActive, &[node.into(), true.into()])?;
             ctx.boolean(Service::ApiStopExecuting, &[])
         }
-        Task::ProspectMessage { .. } | Task::BarehandCatch { .. } => Err(Error::ClassCast),
+        Task::ProspectMessage { .. }
+        | Task::BarehandCatch { .. }
+        | Task::BarbarianFishing { .. }
+        | Task::FishCutting { .. } => Err(Error::ClassCast),
     }
 }
 

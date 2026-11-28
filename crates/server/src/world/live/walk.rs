@@ -70,6 +70,9 @@ pub struct Walk {
     /// The content pulses whose class overrides `stop()` (the milking
     /// pulse, super::items::milking).
     pub stopping_pulses: Vec<crate::pulses::Handle>,
+    /// The BarbFishingSpot NPCs (super::items::barbarian): their class
+    /// overrides `handleTickActions`.
+    pub barbarian_spots: Vec<Node>,
 }
 
 /// `scene::Services` for collision queries. The scenery services (doors,

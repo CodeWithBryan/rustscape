@@ -81,6 +81,10 @@ impl npc_walk::Services for WalkHost<'_> {
                     // FishingNPC.tick, which Live::npc_tick_of ran with the
                     // whole world right before this kernel, answers false.
                     false
+                } else if self.walk.barbarian_spots.contains(&node) {
+                    // BarbFishingSpot overrides handleTickActions, which
+                    // Live::npc_tick_of ran too: nothing else happens here.
+                    false
                 } else {
                     // behavior.tick(this) through the start-up's registry.
                     npc_behaviour::tick::query(&mut *self.npcs, &node, query)
@@ -312,6 +316,10 @@ impl Live {
         // world: it runs here, where the kernel reaches handleTickActions.
         if reaches_entity_tick && self.is_fishing_spot(node) {
             self.fishing_spot_tick(p)?;
+        }
+        // BarbFishingSpot.handleTickActions (super::items::barbarian).
+        if reaches_entity_tick && self.walk.barbarian_spots.contains(&node) {
+            self.barbarian_spot_tick(p)?;
         }
         let result = self.with_walk_host(|state, host| npc_walk::tick(state, host, node));
         // timers.processTimers(), the last step of Entity.tick before

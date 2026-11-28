@@ -3470,6 +3470,147 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     eprintln!("movespot saw a Fishing Guild fishing spot off its spawn tile, at {tile:?}");
     guild.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Barbarian fishing: SpotManager's five fishing spots (2722) below the
+    // Baxtorian Falls, "Use-rod" with a barbarian rod and feathers at
+    // Fishing 48, Agility 15 and Strength 15, then the knife on the catch.
+    let start = [2505, 3495, 0];
+    let inventory = [(0, 11323, 1), (1, 314, 50), (2, 946, 1)];
+    write_save_with(
+        &players,
+        "traceone",
+        "barbfish",
+        start,
+        &inventory,
+        |save| {
+            for (skill, level, experience) in [
+                (10, "48", "83014.0"),
+                (16, "15", "2411.0"),
+                (2, "15", "2411.0"),
+            ] {
+                save["skills"][skill]["static"] = Value::String(level.into());
+                save["skills"][skill]["dynamic"] = Value::String(level.into());
+                save["skills"][skill]["experience"] = Value::String(experience.into());
+            }
+        },
+    );
+    let (code, barb) = Client::login(address, "barbfish").await;
+    assert_eq!(code, 2, "barbfish's login");
+    let mut barb = barb.unwrap();
+    barb.until(Duration::from_secs(10), "barbfish's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let spots = |c: &Client| {
+        let Some(base) = c.base else {
+            return Vec::new();
+        };
+        c.npcs
+            .actors
+            .iter()
+            .filter(|(_, n)| n.type_id == 2722)
+            .map(|(i, n)| (*i as i32, [base[0] + n.tile[0], base[1] + n.tile[1]]))
+            .collect::<Vec<_>>()
+    };
+    barb.until_pinging(
+        Duration::from_secs(15),
+        "the barbarian fishing spots",
+        |c| !spots(c).is_empty(),
+    )
+    .await;
+    let seen = spots(&barb);
+    let listed = [
+        [2506, 3494],
+        [2504, 3497],
+        [2500, 3506],
+        [2500, 3509],
+        [2500, 3512],
+        [2504, 3516],
+    ];
+    assert!(
+        seen.iter().all(|(_, tile)| listed.contains(tile)),
+        "every barbarian fishing spot stands on a SpotManager location: {seen:?}"
+    );
+    // The nearest spot.
+    let (index, tile) = *seen
+        .iter()
+        .min_by_key(|(_, t)| (t[0] - start[0]).abs().max((t[1] - start[1]).abs()))
+        .unwrap();
+    let amount = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, n)| *n)
+                    .sum::<i32>()
+            })
+            .unwrap_or(0)
+    };
+    let from = barb.messages.len();
+    let before = [10, 16, 2].map(|skill| barb.skills.get(&skill).map_or(0, |s| s.1));
+    barb.send(npc_option1(index)).await;
+    barb.until_pinging(Duration::from_secs(30), "the cast", |c| {
+        said(c, from, "You attempt to catch a fish.")
+    })
+    .await;
+    assert!(
+        said(&barb, from, "You cast out your line..."),
+        "barbfish's messages: {:?}",
+        &barb.messages[from..]
+    );
+    // The first pulse only sets the delay; then a roll every five ticks.
+    barb.until_pinging(Duration::from_secs(300), "a leaping trout", |c| {
+        held(c, 11328) >= 1
+    })
+    .await;
+    assert!(
+        said(&barb, from, "You catch a leaping trout."),
+        "barbfish's messages: {:?}",
+        &barb.messages[from..]
+    );
+    assert_eq!(amount(&barb, 314), 49, "one feather was used as bait");
+    // The catch adds experience to the three skills; this save has not
+    // completed the tutorial, so `Skills.addExperience` caps each at 175.
+    let after = [10, 16, 2].map(|skill| barb.skills.get(&skill).map_or(0, |s| s.1));
+    assert_eq!(
+        after,
+        [175, 175, 175],
+        "fishing, agility and strength experience after the catch (before: {before:?})"
+    );
+    // KnifeWithFish: FishCuttingPulse replaces the fishing pulse.
+    let slot = barb.slot_of(93, 11328).unwrap();
+    let trout = held(&barb, 11328);
+    let from = barb.messages.len();
+    let cooking = barb.skills.get(&7).map_or(0, |s| s.1);
+    barb.send(use_item_on_item(946, 2, 11328, slot)).await;
+    barb.until_pinging(Duration::from_secs(20), "the cut fish", |c| {
+        held(c, 11328) < trout
+            && (said(c, from, "usable as bait.")
+                || said(c, from, "useless fragments, which you discard.")
+                || said(
+                    c,
+                    from,
+                    "You cut open the fish and extract some fish cuts and roe.",
+                ))
+    })
+    .await;
+    let roe = amount(&barb, 11324);
+    let offcuts = amount(&barb, 11334);
+    let cooked = barb.skills.get(&7).map_or(0, |s| s.1);
+    assert_eq!(
+        roe > 0,
+        cooked > cooking,
+        "roe comes with cooking experience"
+    );
+    assert!(offcuts == 0 || roe > 0, "offcuts only come with roe");
+    eprintln!(
+        "barbfish used the rod on the spot 2722 at {tile:?} from {start:?} (stood at {:?}), caught a leaping trout (experience {before:?} -> {after:?}) and cut it: roe {roe}, offcuts {offcuts}",
+        barb.position()
+    );
+    barb.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

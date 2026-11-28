@@ -895,6 +895,9 @@ impl super::super::host::Live {
         let mut cooking = false;
         let mut woodcutting = false;
         let (mut mining, mut prospect, mut fishing) = (false, false, false);
+        let (mut barbarian_listeners, mut barbarian_knife, mut barbarian_manager) =
+            (false, false, false);
+        use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
                 // CookingRewrite.defineListeners (super::cooking).
@@ -912,6 +915,15 @@ impl super::super::host::Live {
             if name == super::fishing::LISTENER_CLASS {
                 // FishingListener.defineListeners (super::fishing).
                 fishing = true;
+            }
+            if name == barbarian::LISTENERS_CLASS {
+                barbarian_listeners = true;
+            }
+            if name == barbarian::KNIFE_CLASS {
+                barbarian_knife = true;
+            }
+            if name == barbarian::MANAGER_CLASS {
+                barbarian_manager = true;
             }
             if name == super::mining::PROSPECT_CLASS {
                 // ProspectListener.defineListeners (super::mining).
@@ -953,6 +965,18 @@ impl super::super::host::Live {
             // The only generic "prospect" listener, so its place among
             // the other registrations is not observable either.
             self.define_prospect_listener()?;
+        }
+        // Barbarian fishing (super::barbarian): each registration has its
+        // own key, so their place among the others is not observable.
+        if barbarian_listeners {
+            self.define_barbarian_listeners()?;
+        }
+        if barbarian_knife {
+            self.define_knife_with_fish()?;
+        }
+        if barbarian_manager {
+            // SpotManager.startup().
+            self.barbarian_startup()?;
         }
         Ok(())
     }
@@ -1035,6 +1059,14 @@ impl super::super::host::Live {
         }
         if f.value::<crate::world::cooking::Interaction>().is_some() {
             return Some(self.cooking_use(player, used, with));
+        }
+        if f.value::<super::barbarian::KnifeWithFish>().is_some() {
+            // KnifeWithFish: `fish.id` of the node the knife was used with.
+            let fish = match Base::id(&mut Ctx(self), with) {
+                Ok(id) => id,
+                Err(e) => return Some(Err(bind(e))),
+            };
+            return Some(self.barbarian_knife_with_fish(player, fish).map_err(bind));
         }
         if let Some(interaction) = f.value::<item_on_npc::Interaction>() {
             let mut host = Everyday(Ctx(self));

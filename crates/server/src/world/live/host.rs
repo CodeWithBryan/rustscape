@@ -1621,6 +1621,13 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.woodcutting_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // BarbFishingPulse and FishCuttingPulse (super::items::barbarian).
+        if let Some(result) = self.barbarian_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
+        if let Some(result) = self.fish_cutting_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // ProspectListener's message pulse (super::items::mining).
         if let Some(result) = self.prospect_pulse_body(pulse) {
             return result.map_err(fail);

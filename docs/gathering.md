@@ -23,9 +23,15 @@ controlled examples do not use the library: the bronze-axe stand-in under
 port. Fishing-spot movement (`FishingNPC` and the `FishSpots` table,
 `gathering/fishing_npc.rs`) is ported without a JVM corpus (unit tests against
 the source's control flow only) and runs in the live world
-(`world/live/fishing_spots.rs`). **Not ported:** barbarian fishing
-(`fishing/barbfishing/`), `PickaxeRepairPlugin` and the option handlers that
-start `FishingPulse`.
+(`world/live/fishing_spots.rs`). Barbarian fishing (`fishing/barbfishing/`:
+`SpotManager` and its `BarbFishingSpot` NPCs, `BarbFishInteractionListeners`,
+`BarbFishingPulse`, `KnifeWithFish` and `FishCuttingPulse`,
+`gathering/barbarian.rs`) is ported the same way, without a JVM corpus, and
+runs in the live world (`world/live/items/barbarian.rs`); `SpotManager`
+picks locations with Kotlin's `Collection.random()`, which this port takes
+to be the thread-local generator, and nothing checks that against a JVM.
+**Not ported:** `PickaxeRepairPlugin` and the option handlers that start
+`FishingPulse`.
 
 ## Shape
 
@@ -284,7 +290,7 @@ python tools/port_gathering.py --check
 Remaining work: bind the script, clock, pulse, listener-registry, attribute,
 scenery and `EquipmentContainer` services to their native modules and verify
 that composition against the original processors; `api.inEquipment` over the
-item configuration; barbarian fishing; pickaxe repair; a JVM corpus for
-fishing-spot movement; the pulse's option handlers; `FruitTreeChopper` and other consumers of
+item configuration; pickaxe repair; a JVM corpus for fishing-spot movement
+and barbarian fishing; the pulse's option handlers; `FruitTreeChopper` and other consumers of
 `SkillingResource`; random events, diaries and familiars behind the services;
 a live session. Nothing here marks a source file as replaced.
