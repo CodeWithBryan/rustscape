@@ -9,7 +9,28 @@
 use super::*;
 
 impl Game {
+    /// Whether this frame's redraw writes the capture files: the frame asked
+    /// for, or the end of a travel capture. `build_menu` asks too, so that
+    /// `--pick-probe` is taken in the frame it is written with.
+    pub(super) fn capture_due(&self) -> bool {
+        self.capture
+            && (self.captured_journey_finished
+                || self.frame
+                    == self.capture_frame.unwrap_or(if self.capture_npcs {
+                        400
+                    } else if self.capture_animation {
+                        180
+                    } else if self.capture_route {
+                        300
+                    } else {
+                        100
+                    }))
+    }
+
     pub(super) async fn redraw(&mut self) -> bool {
+        let capture_due = self.capture_due();
+        #[cfg(not(target_arch = "wasm32"))]
+        let pick_probe = self.pick_probe.take();
         let mut workbench = &mut self.workbench;
         let npc_replay = &mut self.npc_replay;
         let replay = &mut self.replay;
@@ -105,7 +126,6 @@ impl Game {
         let plane = self.plane;
         let at_title = self.at_title;
         let viewport = self.viewport;
-        let captured_journey_finished = self.captured_journey_finished;
         let mut route_status = std::mem::take(&mut self.route_status);
         let mut click_cross = std::mem::take(&mut self.click_cross);
         let mut last_render_metrics = std::mem::take(&mut self.last_render_metrics);
@@ -1674,19 +1694,7 @@ impl Game {
                 (frame - 100) / 5
             ));
         }
-        if capture
-            && (captured_journey_finished
-                || frame
-                    == capture_frame.unwrap_or(if capture_npcs {
-                        400
-                    } else if capture_animation {
-                        180
-                    } else if capture_route {
-                        300
-                    } else {
-                        100
-                    }))
-        {
+        if capture_due {
             #[cfg(not(target_arch = "wasm32"))]
             {
                 std::fs::create_dir_all("runs/visual").unwrap();
@@ -1726,29 +1734,9 @@ impl Game {
                     menu_snapshot(&context_menu.menu).to_string(),
                 )
                 .unwrap();
-                if std::env::args().any(|arg| arg == "--pick-probe") {
-                    let rect = viewport.map_or(
-                        [0.0, 0.0, screen_width(), screen_height()],
-                        |(whole, _)| {
-                            [
-                                whole.x as f32,
-                                whole.y as f32,
-                                whole.w as f32,
-                                whole.h as f32,
-                            ]
-                        },
-                    );
-                    let picks = world_pick::probe(
-                        &mut world_picker,
-                        &world_pick::Sources {
-                            world: &workbench,
-                            players: &player_picks,
-                            piles: &ground_renderer,
-                        },
-                        &input_camera,
-                        rect,
-                        roofs,
-                    );
+                // Taken by `build_menu` at the frame's mouse pick: by now the
+                // draw has replaced the NPCs' and players' pick meshes.
+                if let Some(picks) = pick_probe {
                     std::fs::write(
                         "runs/visual/pick-state.json",
                         serde_json::to_vec_pretty(&picks).unwrap(),

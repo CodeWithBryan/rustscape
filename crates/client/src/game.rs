@@ -180,6 +180,10 @@ pub(super) struct Game {
     pub(super) at_title: bool,
     pub(super) viewport: Option<(Rect, Rect)>,
     pub(super) captured_journey_finished: bool,
+    /// `--pick-probe`'s result, taken by `build_menu` right after the
+    /// frame's mouse pick and written with the redraw's capture.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(super) pick_probe: Option<serde_json::Value>,
 
     // What ties a click to the menu a redraw built.
     /// `MiniMenu.clickProcessingState` and where the menu was built.

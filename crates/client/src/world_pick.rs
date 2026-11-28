@@ -18,7 +18,7 @@
 //! Roof removal: a tile is walked only when `roof_render` draws it this frame
 //! (`ScriptRunner.roofVisibility` through `SceneGraph.setShapedTile`), so
 //! nothing on a removed roof is offered and every level left standing is.
-use crate::{PlayerPick, Workbench, scene_camera::SceneCamera};
+use crate::{NpcActor, PlayerPick, Workbench, scene_camera::SceneCamera};
 use macroquad::prelude::*;
 use rs09_client::{
     entity_menu,
@@ -129,6 +129,28 @@ pub(crate) struct Picker {
     /// What the last replay for drawing was made for, and its result.
     verdict_key: Option<[u64; 2]>,
     verdict: crate::scene_cull::Verdict,
+}
+
+/// Whether an NPC of the frame's list goes into the pick scene: it needs a
+/// model and the triangles of a drawn pose.
+fn npc_enters_pick(npc: &NpcActor) -> bool {
+    !npc.pick_triangles.is_empty() && npc.render_id.is_some()
+}
+
+/// `--pick-probe`'s row for each NPC of the frame's list, as the pick sees it.
+#[cfg(not(target_arch = "wasm32"))]
+fn npc_rows(npcs: &[NpcActor]) -> Vec<serde_json::Value> {
+    npcs.iter()
+        .map(|npc| {
+            serde_json::json!({
+                "index": npc.index,
+                "id": npc.id,
+                "render_id": npc.render_id,
+                "pick_triangles": npc.pick_triangles.len(),
+                "enters_pick": npc_enters_pick(npc),
+            })
+        })
+        .collect()
 }
 
 fn fine(world: f32, origin: i32) -> i32 {
@@ -788,7 +810,7 @@ impl Picker {
                 else {
                     continue;
                 };
-                if npc.pick_triangles.is_empty() || npc.render_id.is_none() {
+                if !npc_enters_pick(npc) {
                     continue;
                 }
                 let size = world.npc_definitions.get(&npc.id).map_or(1, |d| d.size);
@@ -950,6 +972,11 @@ impl Picker {
 /// `--pick-probe`: what a mouse at each point of a grid over the view would
 /// pick, as if the local player stood on each level in turn. Written with a
 /// capture so a run can show which locations are offered where.
+///
+/// `build_menu` calls it right after the frame's mouse pick with that pick's
+/// sources, camera and rectangle, so it answers what a click would get. The
+/// redraw that follows replaces the actors' pick meshes; a probe taken there
+/// once offered live NPCs that no click could reach.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn probe(
     picker: &mut Picker,
@@ -1040,7 +1067,66 @@ pub(crate) fn probe(
             "replay_for_drawing_microseconds": replay,
         },
         "drawing": world.roofs.summary(world),
-        "scope": "World picks only: the menu lists are the location entries MiniMenu.addEntries would add for the picked keys, top entry first, without walk, actor or interface entries. Roof removal is the frame's own (the real player level's), whatever level is probed.",
+        "npcs": npc_rows(&world.npcs),
+        "scope": "Taken in the frame's menu build right after its mouse pick, from the same inputs. World picks only; npcs is the frame's NPC list as that pick sees it. The menu lists are the location entries MiniMenu.addEntries would add for the picked keys, top entry first, without walk, actor or interface entries. Roof removal is the frame's own (the real player level's), whatever level is probed.",
         "levels": levels,
     })
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests {
+    use super::*;
+
+    /// An NPC at the frame's mouse pick as the live rebuild before
+    /// CodeWithBryan/rustscape#11 left it: `update_npc_views` has given it a
+    /// model, but its pick triangles are empty until the draw.
+    fn rebuilt(index: usize) -> NpcActor {
+        NpcActor {
+            index,
+            id: 3,
+            render_id: Some(3),
+            motion: rs09_client::walking::Movement::new([3222, 3218]),
+            animation: None,
+            home: [3222, 3218],
+            walks: false,
+            phase: 0,
+            pick_triangles: Vec::new(),
+            model_height: 200,
+            terrain: Default::default(),
+        }
+    }
+
+    /// What `npc_meshes` does for that NPC later in the frame.
+    fn drawn(npc: &mut NpcActor) {
+        npc.pick_triangles.push([Vec3::ZERO, Vec3::X, Vec3::Z]);
+    }
+
+    /// What the probe's NPC rows must say at the pick. This does not catch
+    /// the probe moving back after the draw: when in the frame it runs rests
+    /// on the call in `build_menu`, which needs a loaded `Workbench` to test.
+    #[test]
+    fn npc_rows_at_pick_time_leave_an_undrawn_npc_out() {
+        let mut npcs = vec![rebuilt(7)];
+        // `build_menu`: the frame's mouse pick, then the probe from its inputs.
+        let at_pick = npc_rows(&npcs);
+        // The redraw refills the pick mesh before the capture is written.
+        drawn(&mut npcs[0]);
+        let at_redraw = npc_rows(&npcs);
+        assert_eq!(at_pick[0]["index"], 7);
+        assert_eq!(at_pick[0]["enters_pick"], false);
+        assert_eq!(at_pick[0]["pick_triangles"], 0);
+        // A probe taken at the redraw (where it used to be) would have
+        // called the NPC pickable although no click in that frame could be.
+        assert_eq!(at_redraw[0]["enters_pick"], true);
+    }
+
+    #[test]
+    fn a_drawn_npc_enters_the_pick() {
+        let mut npc = rebuilt(1);
+        assert!(!npc_enters_pick(&npc), "a model without triangles");
+        drawn(&mut npc);
+        assert!(npc_enters_pick(&npc));
+        npc.render_id = None;
+        assert!(!npc_enters_pick(&npc), "triangles without a model");
+    }
 }

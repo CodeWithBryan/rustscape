@@ -4678,6 +4678,8 @@ async fn main() {
         at_title: false,
         viewport: None,
         captured_journey_finished: false,
+        #[cfg(not(target_arch = "wasm32"))]
+        pick_probe: None,
         menu_click: Default::default(),
         walk: Default::default(),
         walk_spell: None,
