@@ -904,10 +904,12 @@ the client-side player and NPC update decoders):
   settings tab's 261:16 and 261:18 open 742 and 743 and Close closes each;
   the stats tab's Attack (320:125) opens the skill guide 499 and sends
   varp 965 = 1.
-- `ifacefight` (full hitpoints, `allow_admin_aggression`, next to the
-  Lumbridge swamp's giant rats) opens the equipment stats until a rat's
-  attack closes them: `CombatPulse.setCombatFlags`' close through the
-  world's context runs 667's onClose (670 closed, then 667).
+- `ifacefight` (full hitpoints, next to the Lumbridge swamp's giant rats)
+  attacks the nearest giant rat itself, then opens the equipment stats; the
+  fight's next swing (`CombatPulse.setCombatFlags` closes the attacking
+  player's interfaces, and a victim player's) closes them through the
+  world's context and runs 667's onClose (670 closed, then 667). It used to
+  wait for an aggressive rat, which made it depend on the aggression roll.
 - `stairup`, `stairdown`, `stairleave` and `stairwalk` (saves on Lumbridge castle's
   middle floor at 3206,3229,1) use the north staircase 36777's first
   option, Climb (opcode 254 at 3204,3229): ClimbActionHandler finds a

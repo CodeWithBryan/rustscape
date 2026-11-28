@@ -2547,14 +2547,16 @@ async fn interfaces_scenario(address: std::net::SocketAddr, saves: &std::path::P
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
-/// The combat close path: `CombatPulse.setCombatFlags` closes the victim's
-/// interfaces (`victim.interfaceManager.close()`, world/live/combat/host.rs)
-/// with the world's interface context, so the equipment screen's onClose
-/// runs there too. `ifacefight` (full hitpoints, `allow_admin_aggression`,
-/// next to the Lumbridge swamp's giant rats) opens the equipment stats
-/// (667 with its single tab 670); when a rat attacks, 670 is closed (149 to
-/// child 80) and then 667.
+/// The combat close path: `CombatPulse.setCombatFlags` closes the
+/// attacking player's interfaces (`entity.interfaceManager.close()`) and a
+/// victim player's (world/live/combat/host.rs) with the world's interface
+/// context, so the equipment screen's onClose runs there too. `ifacefight`
+/// (full hitpoints, next to the Lumbridge swamp's giant rats) attacks the
+/// nearest giant rat itself (no random aggressor), then opens the equipment
+/// stats (667 with its single tab 670); the next swing of the fight, its
+/// own or the rat's, closes 670 (149 to child 80) and then 667.
 async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    const GIANT_RATS: [i32; 4] = [86, 87, 446, 950];
     let players = saves.join("players");
     let at = [3196, 3206, 0];
     write_save_with(&players, "traceone", "ifacefight", at, &[], |save| {
@@ -2563,11 +2565,9 @@ async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::
             .unwrap()
             .entry("attributes")
             .or_insert_with(|| Value::Array(vec![]));
-        for key in ["allow_admin_aggression", "tutorial:complete"] {
-            list.as_array_mut()
-                .unwrap()
-                .push(serde_json::json!({"key": key, "type": "bool", "value": true}));
-        }
+        list.as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"key": "tutorial:complete", "type": "bool", "value": true}));
     });
     let (code, one) = Client::login(address, "ifacefight").await;
     assert_eq!(code, 2, "ifacefight's login");
@@ -2579,18 +2579,28 @@ async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::
     one.send(button(378, 140)).await;
     one.until(
         Duration::from_secs(10),
-        "ifacefight in the game world",
-        |c| !c.updates.is_empty(),
+        "ifacefight in the game world with giant rats in view",
+        |c| {
+            !c.updates.is_empty()
+                && c.npcs
+                    .actors
+                    .values()
+                    .any(|n| GIANT_RATS.contains(&n.type_id))
+        },
     )
     .await;
-    // Open the equipment screen until a rat's attack closes it (an attack
-    // that lands while 667 is not open closes nothing of it).
+    // Attack a giant rat, then open the equipment screen while the fight
+    // goes on; a rat that dies before a swing lands while 667 is open is
+    // replaced by the next nearest (at most three fights).
     let started = Instant::now();
-    loop {
+    let mut fights = 0;
+    'fight: loop {
+        fights += 1;
         assert!(
-            started.elapsed() < Duration::from_secs(120),
-            "ifacefight: no attack closed the equipment screen"
+            fights <= 3,
+            "ifacefight: three fights and no swing closed the equipment screen"
         );
+        let rat = attack_nearest(&mut one, &GIANT_RATS, "giant rat").await;
         let opened = one.opened.len();
         one.send(button(387, 55)).await;
         one.until(Duration::from_secs(10), "the equipment stats screen", |c| {
@@ -2599,7 +2609,6 @@ async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::
         .await;
         let frames = one.frames.len();
         let end = Instant::now() + Duration::from_secs(20);
-        let mut closed = false;
         while Instant::now() < end {
             one.pump(Duration::from_secs(1)).await;
             one.send(Frame {
@@ -2620,18 +2629,14 @@ async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::
                     tab.is_some_and(|t| t < main),
                     "the combat close runs 667's onClose (670 closed first): {closes:?}"
                 );
-                closed = true;
-                break;
+                eprintln!(
+                    "ifacefight: the fight with giant rat {rat} closed the equipment screen after {:.1} s: 670, then 667",
+                    started.elapsed().as_secs_f64()
+                );
+                break 'fight;
             }
         }
-        if closed {
-            break;
-        }
     }
-    eprintln!(
-        "ifacefight: a giant rat's attack closed the equipment screen after {:.1} s: 670, then 667",
-        started.elapsed().as_secs_f64()
-    );
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
