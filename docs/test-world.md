@@ -9,7 +9,7 @@ It has three parts:
 
 | part | command | what it does |
 | --- | --- | --- |
-| disposable world | `cargo xtask test-world start/stop/list` | a release server on a free loopback port, its own saves folder |
+| disposable world | `cargo xtask test-world start/stop/list` | its own copy of the release server on a free loopback port, its own saves folder |
 | character placement | the `character` of a script | a save written before login: location, items, equipment, skill levels |
 | agent runner | `cargo run --release -p rs09-headless --example agent_run` | logs the character in, runs JSON steps, prints the `View` and events as JSON |
 
@@ -25,6 +25,13 @@ agent has no renderer and no cache definitions; see
 not use `tools/play.ps1` (whose server-only mode is `-NoClient`). A
 visual-client check is a separate, deliberate step that someone chooses to
 take, and it runs the client with `--mute`.
+
+**It never drives the play world.** `test-world start` refuses port 43594
+(the port `cargo xtask play` uses) and never picks it. `agent_run` and the
+runner refuse an address on port 43594, and refuse to seed unless the saves
+folder belongs to a test world: under `runs/test-world/`, or in a folder
+that has a `world.json` (seeding replaces `players/<name>.json`). `stop`
+kills only a process this command started (below).
 
 ## 1. A disposable world
 
@@ -44,14 +51,19 @@ This:
    command made (it holds `world.json`), so every start has empty saves;
 4. builds the release server (`cargo build --release -p rs09-server`;
    `--no-build` skips it);
-5. picks a free port on 127.0.0.1 (never 43594, which `--port` refuses
+5. copies `target/release/rs09-server` into `runs/test-world/<name>/` and
+   runs that copy, so a running world never locks the build's exe (Windows
+   locks a running exe) and worlds do not share a binary across rebuilds;
+6. picks a free port on 127.0.0.1 (never 43594, which `--port` refuses
    too) and starts, detached,
-   `rs09-server --world --cache C --saves runs/test-world/<name>/saves --data D --tcp 127.0.0.1:<port> --verbose`
+   `runs/test-world/<name>/rs09-server --world --cache C --saves runs/test-world/<name>/saves --data D --tcp 127.0.0.1:<port> --verbose`
    with its output in `runs/test-world/<name>/server.log` and
    `server.err.log`;
-6. waits for the server's `Native world listening on TCP` line (a server
+7. waits for the server's `Native world listening on TCP` line (a server
    that exits first, or listens elsewhere, is an error; `--timeout SECS`,
-   default 300) and prints `world.json`:
+   default 300) and prints `world.json`. Any failure after the spawn
+   (including writing `world.json`) stops the child before the command
+   returns its error:
 
 ```json
 {
@@ -78,9 +90,20 @@ cargo xtask test-world stop --all
 
 `stop` kills only the pid in that world's `world.json`, and only while that
 process is still `rs09-server` with that world's saves folder on its command
-line; anything else is reported as not running and left alone. `--clean`
-also removes the folder (logs and saves); without it they stay for reading.
-`runs/` is git-ignored.
+line; anything else is reported as not running and left alone. A failure to
+read a process's command line (PowerShell's `Get-CimInstance` on Windows,
+`ps` on Unix) is an error, never "not running", so `start` does not replace
+the folder of a world it could not check. A process still running 10 seconds
+after the kill is an error. `--clean` also removes the folder (logs, saves
+and the exe copy); without it they stay for reading. With several worlds
+(`--all`, or `--name` repeated), a folder with a bad name or `world.json`, a
+failed kill or a failed removal is reported and the others are still
+stopped; the command then exits with an error naming each. `runs/` is
+git-ignored.
+
+Only the Windows path has been run. The Unix path (`ps -o args=` for the
+command line, `kill` sending SIGTERM, `process_group(0)` for detaching)
+compiles but has not been tested.
 
 ## 2. A script
 
@@ -201,7 +224,7 @@ cargo run --release -p rs09-headless --example agent_run -- --world runs/test-wo
 `--no-seed`). Progress and every event go to stderr; the report goes to
 stdout (and to `--output FILE`):
 
-- `ok`, `character`;
+- `ok`, `error` (null, or what went wrong besides a failed wait), `character`;
 - `steps`: each step's spec, `ok`, seconds and detail (the action sent, the
   NPC index picked, the condition, or the snapshot);
 - `experienceGained` per skill since login;
@@ -210,9 +233,17 @@ stdout (and to `--output FILE`):
   interfaces);
 - `start` and `view`: the `View` snapshot right after login and at the end.
 
-The run stops at the first failed step. Exit status: 0 when every step
-passed, 1 when a wait or assertion failed (or a `continue`/`choose` found no
-dialogue), 2 on an error (a bad script, no server, a failed login).
+The run stops at the first failed step. A step that errors (a bad step, a
+lost connection) is a failed step with its error in `detail` and in
+`error`; the report and the final view are still printed, and the character
+is always logged out. The run then waits up to 20 seconds for the server to
+write the character's logout save; if it does not, that is an error too.
+Exit status: 0 when every step passed, 1 when a wait or assertion failed (or
+a `continue`/`choose` found no dialogue), 2 on an error (a bad script, no
+server, a failed login, a step's error, a failed logout or a missing logout
+save). Every login attempt has a 20-second limit. With `--world`, a run that
+does not exit 0 also prints the last 40 lines of the world's `server.log` to
+stderr.
 
 ## Worked example: a Lumbridge goblin
 
@@ -252,20 +283,37 @@ The same script is a test that boots the world in-process (as
 cargo test --release -p rs09-headless --test test_world_kit -- --nocapture
 ```
 
-It runs in debug and release builds. One stall has been seen, in the
-first debug run (2026-11-27): the goblin took one hit, then neither side
-attacked again (no further hits, no retaliation, no experience) until the
-90-second wait ran out, while the server kept sending frames. It did not come
-back in about 75 later attacks: six more debug and seven release runs of the
-test, and 60 kills in a row from one character in a release `--world` server
-(fights took 1 to 16 seconds). It is not a timeout set too short for a debug
-build. It looks like server behaviour, so far unexplained; when the test fails
-it prints the final view (the player's tile, the target's tile, health bar and
-facing) to make a recurrence readable.
+It runs in debug and release builds. When it fails it prints the error, the
+run's events and the final view (the player's tile, the target's tile,
+health bar and facing); `RS09_LIVE_VERBOSE=1` adds the server's own log.
+
+**Open issue: a stall, unexplained.** It was seen once, in the first debug
+run (2026-11-27). The goblin (type 1771) took one hit from the character
+(damage 1, health bar 204 of 255, 4 attack experience), then neither side
+hit again (no further hits, no retaliation, no experience) until the
+90-second wait ran out, while frames kept arriving. What is known:
+
+- It is not the wait being too short for a debug build: fights took 1 to 16
+  seconds, and it did not come back in about 75 later attacks (six more
+  debug and seven release runs of the test, and 60 kills in a row from one
+  character in a release `--world` server).
+- The `attack` step picked an NPC that could be attacked: that goblin took
+  the character's hit. The selector does check the type and that the health
+  bar is not empty, but not the option label (the agent has no
+  definitions), so a script that lists a type with no Attack in slot 1 gets
+  whatever the server does with that option.
+- The cause is unknown. The run kept no server log, so nothing shows whether
+  the server, the client side of the kit or the goblin's movement stopped the
+  fight. A hand-driven client was not
+  tried (test runs open no window). Until a recurrence is read, treat it
+  as unexplained, not as server behaviour.
 
 It needs `assets/cache` and a world folder (`RS09_STARTUP_WORLD`, else
 `runs/startup-loaders-oracle/template`, `runs/world-trace-oracle/template` or
-`runs/play/world-data`); without them it prints SKIPPED and checks nothing.
+`runs/play/world-data`); without them it prints SKIPPED and checks nothing,
+unless `RS09_REQUIRE_LIVE=1` is set, which makes a missing input fail the
+test. Set it wherever the inputs should be present, so a skip cannot pass
+as a check.
 
 ## Limits
 

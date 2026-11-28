@@ -2,9 +2,10 @@
 //! without a person present (docs/test-world.md).
 //!
 //! `start` picks a free loopback port, makes `runs/test-world/<name>/` with an
-//! empty saves folder, starts the release server there with its output in
-//! `server.log`, waits for its "listening" line and writes `world.json`
-//! (address, pid, saves, data, log). `stop` kills only a server this command
+//! empty saves folder and a copy of the release server, starts that copy with
+//! its output in `server.log`, waits for its "listening" line and writes
+//! `world.json` (address, pid, exe, saves, data, log). A failure after the
+//! spawn stops the child. `stop` kills only a server this command
 //! started: the pid in `world.json`, and only while that process is still
 //! `rs09-server` with this world's saves folder on its command line. Port 43594
 //! is never chosen or accepted.
@@ -136,13 +137,19 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
             return Err(format!("cargo build --release -p rs09-server failed ({status})").into());
         }
     }
-    let server = root.join(format!(
+    let built = root.join(format!(
         "target/release/rs09-server{}",
         std::env::consts::EXE_SUFFIX
     ));
-    if !server.is_file() {
-        return Err(format!("missing {}; run without --no-build", server.display()).into());
+    if !built.is_file() {
+        return Err(format!("missing {}; run without --no-build", built.display()).into());
     }
+    // Each world runs its own copy: a running exe is locked on Windows, so a
+    // world running target/release's would make the next build fail, and
+    // worlds would share one binary across rebuilds.
+    let server = dir.join(format!("rs09-server{}", std::env::consts::EXE_SUFFIX));
+    fs::copy(&built, &server)
+        .map_err(|e| format!("copy {} to {}: {e}", built.display(), server.display()))?;
 
     let port = match port {
         Some(port) => port,
@@ -172,46 +179,55 @@ fn start(root: &Path, args: &[String]) -> Result<()> {
         "address": address,
         "pid": pid,
         "dir": dir,
+        "exe": server,
         "saves": saves,
         "data": data,
         "cache": cache,
         "log": log,
         "errorLog": error_log,
     });
-    fs::write(
-        dir.join("world.json"),
-        serde_json::to_string_pretty(&world)?,
-    )?;
-
-    let deadline = Instant::now() + timeout;
-    loop {
-        if let Some(status) = child.try_wait()? {
-            return Err(format!(
-                "the server exited ({status}) before listening; see {} and {}",
-                log.display(),
-                error_log.display()
-            )
-            .into());
-        }
-        let mut text = String::new();
-        fs::File::open(&log)?.read_to_string(&mut text)?;
-        if let Some(line) = text.lines().find(|line| line.contains(LISTENING)) {
-            if !line.trim_end().ends_with(&address) {
-                kill(pid)?;
-                return Err(format!("the server listens elsewhere: {line}").into());
+    let ready = (|| -> Result<()> {
+        fs::write(
+            dir.join("world.json"),
+            serde_json::to_string_pretty(&world)?,
+        )?;
+        let deadline = Instant::now() + timeout;
+        loop {
+            if let Some(status) = child.try_wait()? {
+                return Err(format!(
+                    "the server exited ({status}) before listening; see {} and {}",
+                    log.display(),
+                    error_log.display()
+                )
+                .into());
             }
-            break;
+            let mut text = String::new();
+            fs::File::open(&log)?.read_to_string(&mut text)?;
+            if let Some(line) = text.lines().find(|line| line.contains(LISTENING)) {
+                if !line.trim_end().ends_with(&address) {
+                    return Err(format!("the server listens elsewhere: {line}").into());
+                }
+                return Ok(());
+            }
+            if Instant::now() > deadline {
+                return Err(format!(
+                    "the server did not listen within {}s; see {}",
+                    timeout.as_secs(),
+                    log.display()
+                )
+                .into());
+            }
+            std::thread::sleep(Duration::from_millis(250));
         }
-        if Instant::now() > deadline {
-            kill(pid)?;
-            return Err(format!(
-                "the server did not listen within {}s; see {}",
-                timeout.as_secs(),
-                log.display()
-            )
-            .into());
+    })();
+    if let Err(e) = ready {
+        // Every failure after the spawn stops the child through its own
+        // handle (no pid lookup), so no server is left running unrecorded.
+        if !matches!(child.try_wait(), Ok(Some(_))) {
+            let _ = child.kill();
+            let _ = child.wait();
         }
-        std::thread::sleep(Duration::from_millis(250));
+        return Err(e);
     }
     eprintln!(
         "Test world {name} is up on {address} (pid {pid}; log {}).\nStop it with: cargo xtask test-world stop --name {name}",
@@ -294,8 +310,23 @@ fn command_line(pid: u32) -> Result<Option<String>> {
     #[cfg(not(windows))]
     let output = Command::new("ps")
         .args(["-o", "args=", "-p", &pid.to_string()])
-        .output()?;
+        .output()
+        .map_err(|e| format!("cannot ask for pid {pid}'s command line: {e}"))?;
     let text = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    if !output.status.success() {
+        // `ps -p` answers a missing pid with status 1 and no output; any
+        // other failure (as every PowerShell failure) is an error, never "not
+        // running": a world taken for stopped can have its folder replaced.
+        if cfg!(not(windows)) && text.is_empty() && output.stderr.is_empty() {
+            return Ok(None);
+        }
+        return Err(format!(
+            "cannot read pid {pid}'s command line ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        )
+        .into());
+    }
     Ok((!text.is_empty()).then_some(text))
 }
 
@@ -349,28 +380,57 @@ fn stop(root: &Path, args: &[String]) -> Result<()> {
     } else if names.is_empty() {
         return Err(USAGE.into());
     }
+    // One world's problem never stops the others: every failure is reported
+    // and the command fails at the end.
+    let mut errors = Vec::new();
     for name in names {
-        valid_name(&name)?;
-        let dir = worlds(root).join(&name);
-        let Some(world) = read_world(&dir)? else {
-            eprintln!("{name}: not a test world (no world.json); left alone");
-            continue;
-        };
-        if alive(&world)? {
-            let pid = world["pid"].as_u64().unwrap() as u32;
-            kill(pid)?;
-            let end = Instant::now() + Duration::from_secs(10);
-            while alive(&world)? && Instant::now() < end {
-                std::thread::sleep(Duration::from_millis(200));
+        if let Err(e) = stop_one(root, &name, clean) {
+            eprintln!("{name}: {e}");
+            errors.push(format!("{name}: {e}"));
+        }
+    }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("test-world stop failed for: {}", errors.join("; ")).into())
+    }
+}
+
+fn stop_one(root: &Path, name: &str, clean: bool) -> Result<()> {
+    valid_name(name)?;
+    let dir = worlds(root).join(name);
+    let Some(world) = read_world(&dir)? else {
+        eprintln!("{name}: not a test world (no world.json); left alone");
+        return Ok(());
+    };
+    if alive(&world)? {
+        let pid = world["pid"].as_u64().unwrap() as u32;
+        kill(pid)?;
+        let end = Instant::now() + Duration::from_secs(10);
+        while alive(&world)? {
+            if Instant::now() > end {
+                return Err(format!("pid {pid} is still running 10 s after the kill").into());
             }
-            println!("{name}: stopped pid {pid}");
-        } else {
-            println!("{name}: not running");
+            std::thread::sleep(Duration::from_millis(200));
         }
-        if clean {
-            fs::remove_dir_all(&dir)?;
-            println!("{name}: removed {}", dir.display());
+        println!("{name}: stopped pid {pid}");
+    } else {
+        println!("{name}: not running");
+    }
+    if clean {
+        // The exe can stay locked for a moment after its process exits.
+        let mut tries = 0;
+        loop {
+            match fs::remove_dir_all(&dir) {
+                Ok(()) => break,
+                Err(_) if tries < 10 => {
+                    tries += 1;
+                    std::thread::sleep(Duration::from_millis(300));
+                }
+                Err(e) => return Err(format!("cannot remove {}: {e}", dir.display()).into()),
+            }
         }
+        println!("{name}: removed {}", dir.display());
     }
     Ok(())
 }
@@ -380,15 +440,26 @@ fn list(root: &Path) -> Result<()> {
         return Ok(());
     };
     for entry in entries.flatten() {
-        if let Some(world) = read_world(&entry.path())? {
-            let state = if alive(&world)? { "running" } else { "stopped" };
-            println!(
-                "{} {} {state} pid {}",
-                world["name"].as_str().unwrap_or("?"),
-                world["address"].as_str().unwrap_or("?"),
-                world["pid"]
-            );
-        }
+        let folder = entry.file_name().to_string_lossy().into_owned();
+        let world = match read_world(&entry.path()) {
+            Ok(Some(world)) => world,
+            Ok(None) => continue,
+            Err(e) => {
+                eprintln!("{folder}: unreadable world.json: {e}");
+                continue;
+            }
+        };
+        let state = match alive(&world) {
+            Ok(true) => "running".to_owned(),
+            Ok(false) => "stopped".to_owned(),
+            Err(e) => format!("unknown ({e})"),
+        };
+        println!(
+            "{} {} {state} pid {}",
+            world["name"].as_str().unwrap_or(&folder),
+            world["address"].as_str().unwrap_or("?"),
+            world["pid"]
+        );
     }
     Ok(())
 }

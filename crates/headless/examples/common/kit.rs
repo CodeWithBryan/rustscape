@@ -13,7 +13,7 @@
 use rs09_headless::{
     agent::{Action, Agent, EQUIPMENT, Event, Held, View},
     protocol::game::Frame,
-    session::{SceneryAction, Session},
+    session::{LoginRejected, SceneryAction, Session},
 };
 use serde_json::{Map, Value, json};
 use std::{
@@ -29,6 +29,8 @@ pub const TEMPLATE: &str = "kitseed";
 const TEMPLATE_PASSWORD: &str = "kitseed";
 const DEFAULT_PASSWORD: &str = "test";
 const DEFAULT_TIMEOUT: f64 = 20.0;
+/// The port of the world people play on (`cargo xtask play`); never driven.
+pub const PLAY_PORT: u16 = 43594;
 
 pub const SKILLS: [&str; 24] = [
     "attack",
@@ -229,9 +231,25 @@ pub async fn login(address: SocketAddr, name: &str, password: &str) -> io::Resul
     // Code 5 (already logged in): the world has not yet removed this
     // character's previous session; it does a few ticks after a logout.
     let give_up = Instant::now() + Duration::from_secs(15);
+    let already_logged_in = |e: &io::Error| {
+        e.get_ref()
+            .and_then(|e| e.downcast_ref::<LoginRejected>())
+            .is_some_and(|r| r.code == 5)
+    };
     let session = loop {
-        match Session::connect(address, false, name, password).await {
-            Err(e) if e.to_string().ends_with("code 5") && Instant::now() < give_up => {
+        let attempt = tokio::time::timeout(
+            Duration::from_secs(20),
+            Session::connect(address, false, name, password),
+        )
+        .await
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::TimedOut,
+                format!("{name}'s login: no reply from {address} within 20 s"),
+            )
+        })?;
+        match attempt {
+            Err(e) if already_logged_in(&e) && Instant::now() < give_up => {
                 tokio::time::sleep(Duration::from_millis(600)).await;
             }
             other => break other?,
@@ -284,10 +302,39 @@ async fn wait_for_save(path: &Path) -> io::Result<String> {
     }
 }
 
+/// Whether `saves` belongs to a disposable world: it is under
+/// `runs/test-world/`, or the folder holding it has a `world.json` (as
+/// `cargo xtask test-world start` and the kit's test make).
+pub fn is_test_world_saves(saves: &Path) -> bool {
+    let Ok(saves) = std::path::absolute(saves) else {
+        return false;
+    };
+    let names: Vec<_> = saves
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().to_ascii_lowercase())
+        .collect();
+    let under_runs = names
+        .windows(2)
+        .any(|pair| pair[0] == "runs" && pair[1] == "test-world");
+    under_runs
+        || saves
+            .parent()
+            .is_some_and(|p| p.join("world.json").is_file())
+}
+
 /// Write `character`'s save into `saves/players` before it logs in. The first
 /// call for a saves folder logs the template character in and out so the
-/// server writes a new character's save with its own writer.
+/// server writes a new character's save with its own writer. Refused unless
+/// `saves` is a test world's ([`is_test_world_saves`]): seeding replaces the
+/// character's save file.
 pub async fn seed(address: SocketAddr, saves: &Path, character: &Character) -> io::Result<()> {
+    if !is_test_world_saves(saves) {
+        return Err(bad(format!(
+            "{} is not a test world's saves folder (under runs/test-world/, or beside a world.json); seeding would replace {}'s save there",
+            saves.display(),
+            character.name
+        )));
+    }
     let players = saves.join("players");
     let template = players.join(format!("{TEMPLATE}.json"));
     if !template.exists() {
@@ -535,7 +582,12 @@ impl Run {
 
 /// The result of a script run.
 pub struct Outcome {
+    /// Every step passed and nothing went wrong.
     pub ok: bool,
+    /// What went wrong outside a failed wait or assertion: a step's error
+    /// (bad step, lost connection), the logout or the logout save. Also in
+    /// the report as `error`.
+    pub error: Option<String>,
     pub report: Value,
 }
 
@@ -659,6 +711,11 @@ pub async fn run(
     script: &Value,
     seed_character: bool,
 ) -> io::Result<Outcome> {
+    if address.port() == PLAY_PORT {
+        return Err(bad(format!(
+            "port {PLAY_PORT} is the play world's; the kit drives only test worlds (cargo xtask test-world start)"
+        )));
+    }
     let character = Character::parse(&script["character"])?;
     if seed_character {
         let saves = saves.ok_or_else(|| bad("seeding needs the world's saves folder"))?;
@@ -689,16 +746,26 @@ pub async fn run(
     let start = run.agent.view.snapshot();
     let mut steps = Vec::new();
     let mut ok = true;
+    let mut errors = Vec::new();
     for (i, s) in script["steps"].as_array().into_iter().flatten().enumerate() {
-        let map = s
-            .as_object()
-            .ok_or_else(|| bad(format!("step {i} is not an object")))?;
         let began = Instant::now();
-        let (passed, detail) = step(&mut run, map).await?;
+        // A step's error (a bad step, a lost connection) fails the step; the
+        // report and the view are kept.
+        let result = match s.as_object() {
+            Some(map) => step(&mut run, map).await,
+            None => Err(bad(format!("step {i} is not an object"))),
+        };
+        let (passed, detail) = match result {
+            Ok(result) => result,
+            Err(e) => {
+                errors.push(format!("step {i}: {e}"));
+                (false, json!({"error": e.to_string()}))
+            }
+        };
         let took = began.elapsed().as_secs_f64();
         eprintln!(
             "step {i} {} {} ({took:.1} s)",
-            map.get("do").and_then(Value::as_str).unwrap_or("?"),
+            s.get("do").and_then(Value::as_str).unwrap_or("?"),
             if passed { "ok" } else { "FAILED" },
         );
         steps.push(json!({"step": i, "spec": s, "ok": passed, "seconds": took, "detail": detail}));
@@ -717,15 +784,8 @@ pub async fn run(
             (now != before).then(|| (name.to_string(), json!(now - before)))
         })
         .collect();
-    let report = json!({
-        "ok": ok,
-        "character": character.name,
-        "steps": steps,
-        "experienceGained": gained,
-        "events": run.history.iter().map(Event::json).collect::<Vec<_>>(),
-        "start": start,
-        "view": run.agent.view.snapshot(),
-    });
+    let events: Vec<Value> = run.history.iter().map(Event::json).collect();
+    let view = run.agent.view.snapshot();
     // Wait for the logout save, so a later seed of this character is not
     // overwritten by it and a later login is not refused as a second one.
     let saved = saves.map(|saves| {
@@ -735,14 +795,37 @@ pub async fn run(
     });
     let modified = |path: &Path| std::fs::metadata(path).and_then(|m| m.modified()).ok();
     let before = saved.as_deref().and_then(modified);
-    run.agent.close().await?;
-    if let Some(path) = saved {
-        let end = Instant::now() + Duration::from_secs(20);
-        while modified(&path) == before && Instant::now() < end {
-            tokio::time::sleep(Duration::from_millis(200)).await;
+    match run.agent.close().await {
+        Err(e) => errors.push(format!("logout: {e}")),
+        Ok(()) => {
+            if let Some(path) = saved {
+                let end = Instant::now() + Duration::from_secs(20);
+                while modified(&path) == before && Instant::now() < end {
+                    tokio::time::sleep(Duration::from_millis(200)).await;
+                }
+                if modified(&path) == before {
+                    errors.push(format!(
+                        "the server did not write the logout save {} within 20 s",
+                        path.display()
+                    ));
+                } else {
+                    // The disconnection queue removes the character a few ticks later.
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                }
+            }
         }
-        // The disconnection queue removes the character a few ticks later.
-        tokio::time::sleep(Duration::from_secs(2)).await;
     }
-    Ok(Outcome { ok, report })
+    let error = (!errors.is_empty()).then(|| errors.join("; "));
+    let ok = ok && error.is_none();
+    let report = json!({
+        "ok": ok,
+        "error": error,
+        "character": character.name,
+        "steps": steps,
+        "experienceGained": gained,
+        "events": events,
+        "start": start,
+        "view": view,
+    });
+    Ok(Outcome { ok, error, report })
 }

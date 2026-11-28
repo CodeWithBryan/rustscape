@@ -10,7 +10,14 @@
 //! `cargo xtask test-world start`. `--no-seed` logs in an existing character
 //! without writing its save. Progress goes to stderr, the report to stdout
 //! (`--output FILE` writes it there too). Exit 0 when every step passed, 1
-//! when a wait or assertion failed, 2 on an error (bad script, no server).
+//! when a wait or assertion failed, 2 on an error (bad script, no server, a
+//! step's error, the logout save not written); the report is printed whenever
+//! the character logged in. On a failure with `--world`, the last 40 lines of
+//! the world's `server.log` follow on stderr.
+//!
+//! Port 43594 (the play world) is refused, and seeding is refused unless the
+//! saves folder is a test world's (under `runs/test-world/`, or beside a
+//! `world.json`): seeding replaces the character's save.
 #[path = "common/kit.rs"]
 mod kit;
 
@@ -30,6 +37,7 @@ fn main() -> ExitCode {
     let mut script: Option<PathBuf> = None;
     let mut output: Option<PathBuf> = None;
     let mut seed = true;
+    let mut server_log: Option<PathBuf> = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         let result: Result<(), String> = (|| {
@@ -47,14 +55,21 @@ fn main() -> ExitCode {
                             .map_err(|e| format!("{e}"))?,
                     );
                     saves = world["saves"].as_str().map(PathBuf::from);
+                    server_log = world["log"].as_str().map(PathBuf::from);
                 }
                 "--address" => {
-                    address = Some(
-                        args.next()
-                            .ok_or("missing --address IP:PORT")?
-                            .parse()
-                            .map_err(|e| format!("{e}"))?,
-                    )
+                    let parsed: SocketAddr = args
+                        .next()
+                        .ok_or("missing --address IP:PORT")?
+                        .parse()
+                        .map_err(|e| format!("{e}"))?;
+                    if parsed.port() == kit::PLAY_PORT {
+                        return Err(format!(
+                            "port {} is the play world's; drive a test world (cargo xtask test-world start)",
+                            kit::PLAY_PORT
+                        ));
+                    }
+                    address = Some(parsed);
                 }
                 "--saves" => saves = Some(args.next().ok_or("missing --saves DIR")?.into()),
                 "--output" => output = Some(args.next().ok_or("missing --output FILE")?.into()),
@@ -91,7 +106,8 @@ fn main() -> ExitCode {
         .enable_all()
         .build()
         .expect("tokio runtime");
-    match runtime.block_on(kit::run(address, saves.as_deref(), &script, seed)) {
+    let result = runtime.block_on(kit::run(address, saves.as_deref(), &script, seed));
+    let code = match result {
         Ok(outcome) => {
             let text = serde_json::to_string_pretty(&outcome.report).unwrap();
             println!("{text}");
@@ -100,16 +116,44 @@ fn main() -> ExitCode {
             {
                 eprintln!("{}: {e}", path.display());
             }
-            if outcome.ok {
-                ExitCode::SUCCESS
-            } else {
-                eprintln!("FAILED: a wait or assertion did not hold");
-                ExitCode::from(1)
+            match (&outcome.error, outcome.ok) {
+                (Some(error), _) => {
+                    eprintln!("error: {error}");
+                    ExitCode::from(2)
+                }
+                (None, true) => return ExitCode::SUCCESS,
+                (None, false) => {
+                    eprintln!("FAILED: a wait or assertion did not hold");
+                    ExitCode::from(1)
+                }
             }
         }
         Err(e) => {
             eprintln!("error: {e}");
             ExitCode::from(2)
         }
+    };
+    if let Some(log) = server_log {
+        tail(&log, 40);
+    }
+    code
+}
+
+/// The last `lines` lines of the world's server log, to stderr.
+fn tail(log: &std::path::Path, lines: usize) {
+    match std::fs::read(log) {
+        Ok(bytes) => {
+            let text = String::from_utf8_lossy(&bytes);
+            let all: Vec<&str> = text.lines().collect();
+            eprintln!(
+                "--- last {} lines of {} ---",
+                lines.min(all.len()),
+                log.display()
+            );
+            for line in &all[all.len().saturating_sub(lines)..] {
+                eprintln!("{line}");
+            }
+        }
+        Err(e) => eprintln!("{}: {e}", log.display()),
     }
 }

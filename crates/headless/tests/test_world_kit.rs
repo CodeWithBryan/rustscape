@@ -8,7 +8,8 @@
 //! Needs the pinned cache (`assets/cache`) and a world folder
 //! (`RS09_STARTUP_WORLD`, else `runs/startup-loaders-oracle/template`,
 //! `runs/world-trace-oracle/template` or `runs/play/world-data`); without
-//! them the test prints SKIPPED and checks nothing.
+//! them the test prints SKIPPED and checks nothing, unless `RS09_REQUIRE_LIVE=1`
+//! is set: then a missing input fails it.
 #[path = "../examples/common/kit.rs"]
 mod kit;
 
@@ -45,13 +46,18 @@ fn inputs() -> Option<(PathBuf, PathBuf)> {
     (cache.join("main_file_cache.dat2").exists() && world(&data)).then_some((cache, data))
 }
 
-// One stall was seen (2026-11-27, debug build): the goblin took one hit and
-// both sides stopped fighting until the 90-second wait ran out. About 75 later
-// attacks, debug and release, did not repeat it (docs/test-world.md). A
-// failure prints the final view so a recurrence can be read.
+// Open, unexplained: one stall was seen (2026-11-27, debug build). The goblin
+// took one hit, then neither side hit again until the 90-second wait ran out,
+// while frames kept arriving. About 75 later attacks, debug and release, did
+// not repeat it (docs/test-world.md). A failure prints the events and the final
+// view; set RS09_LIVE_VERBOSE=1 for the server's own log.
 #[test]
 fn seeded_character_kills_a_lumbridge_goblin_and_gains_experience() {
     let Some((cache, data)) = inputs() else {
+        assert!(
+            std::env::var_os("RS09_REQUIRE_LIVE").is_none_or(|v| v != "1"),
+            "RS09_REQUIRE_LIVE=1: the live world needs assets/cache and a world folder (RS09_STARTUP_WORLD or runs/*/template)"
+        );
         eprintln!(
             "SKIPPED: the live world needs assets/cache and a world folder (RS09_STARTUP_WORLD or runs/*/template)"
         );
@@ -61,8 +67,12 @@ fn seeded_character_kills_a_lumbridge_goblin_and_gains_experience() {
     std::env::set_current_dir("/").unwrap();
     let cache = std::path::absolute(root().join(cache)).unwrap();
     let data = std::path::absolute(root().join(data)).unwrap();
-    let saves = std::env::temp_dir().join(format!("rs09-test-world-kit-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&saves);
+    // A test world's folder: the runner seeds only saves beside a world.json.
+    let world = std::env::temp_dir().join(format!("rs09-test-world-kit-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&world);
+    let saves = world.join("saves");
+    std::fs::create_dir_all(&saves).unwrap();
+    std::fs::write(world.join("world.json"), r#"{"name":"test_world_kit"}"#).unwrap();
     let running = server::start(Options {
         data,
         cache: cache.clone(),
@@ -116,8 +126,11 @@ fn seeded_character_kills_a_lumbridge_goblin_and_gains_experience() {
     eprintln!("steps: {}", report["steps"]);
     eprintln!("experience gained: {}", report["experienceGained"]);
     if !outcome.ok {
+        eprintln!("error: {}", report["error"]);
+        eprintln!("events: {}", report["events"]);
         eprintln!("final view: {}", report["view"]);
     }
+    assert!(outcome.error.is_none(), "no error: {:?}", outcome.error);
     assert!(outcome.ok, "every step passed: {}", report["steps"]);
     // The seeded fields reached the character: the start snapshot is the
     // server's own view of the login.
@@ -140,5 +153,52 @@ fn seeded_character_kills_a_lumbridge_goblin_and_gains_experience() {
     );
     assert!(report["experienceGained"]["attack"].as_i64().unwrap() > 0);
     assert!(report["experienceGained"]["hitpoints"].as_i64().unwrap() > 0);
-    let _ = std::fs::remove_dir_all(&saves);
+    let _ = std::fs::remove_dir_all(&world);
+}
+
+// The guards need no server: both refuse before connecting.
+#[test]
+fn seeding_and_the_play_port_are_refused_outside_test_worlds() {
+    let tokio = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let plain = std::env::temp_dir().join(format!("rs09-kit-not-a-world-{}", std::process::id()));
+    let saves = plain.join("saves");
+    std::fs::create_dir_all(&saves).unwrap();
+    assert!(!kit::is_test_world_saves(&saves));
+    let character = kit::Character::parse(&serde_json::json!({
+        "name": "kitguard", "location": [3222, 3218, 0]
+    }))
+    .unwrap();
+    let refused = tokio
+        .block_on(kit::seed(
+            "127.0.0.1:9".parse().unwrap(),
+            &saves,
+            &character,
+        ))
+        .unwrap_err();
+    assert!(
+        refused.to_string().contains("not a test world"),
+        "{refused}"
+    );
+    assert!(!saves.join("players/kitguard.json").exists());
+    // Beside a world.json, or under runs/test-world/, it is a test world.
+    std::fs::write(plain.join("world.json"), "{}").unwrap();
+    assert!(kit::is_test_world_saves(&saves));
+    assert!(kit::is_test_world_saves(
+        &root().join("runs/test-world/x/saves")
+    ));
+    let script = serde_json::json!({"character": {"name": "kitguard", "location": [3222, 3218, 0]}, "steps": []});
+    let play = tokio
+        .block_on(kit::run(
+            "127.0.0.1:43594".parse().unwrap(),
+            Some(&saves),
+            &script,
+            true,
+        ))
+        .err()
+        .expect("port 43594 is refused");
+    assert!(play.to_string().contains("43594"), "{play}");
+    let _ = std::fs::remove_dir_all(&plain);
 }
