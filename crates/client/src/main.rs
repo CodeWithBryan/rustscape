@@ -3709,6 +3709,9 @@ fn click_cross_uses_four_frames_for_each_action_and_expires() {
 
 #[macroquad::main(configuration)]
 async fn main() {
+    // `--capture-npc-menu`: the window and its context exist.
+    #[cfg(not(target_arch = "wasm32"))]
+    game::npc_menu_started();
     let launch = rs09_client::launch::read().expect("live launch configuration");
     let live_mode = launch.is_some();
     let capture_realtime = std::env::args().any(|arg| arg == "--capture-realtime");

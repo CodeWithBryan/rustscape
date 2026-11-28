@@ -24,7 +24,7 @@ mod inject;
 #[cfg(not(target_arch = "wasm32"))]
 mod npc_menu_capture;
 #[cfg(not(target_arch = "wasm32"))]
-pub(super) use npc_menu_capture::Driver as NpcMenuDriver;
+pub(super) use npc_menu_capture::{Driver as NpcMenuDriver, mark_started as npc_menu_started};
 mod packets;
 #[cfg(not(target_arch = "wasm32"))]
 mod pose_dump;

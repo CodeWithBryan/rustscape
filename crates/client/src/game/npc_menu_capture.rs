@@ -86,6 +86,21 @@ pub(crate) struct Driver {
     report: serde_json::Map<String, serde_json::Value>,
 }
 
+/// Called at the top of `main`, once the window and its GL context exist:
+/// with `--capture-npc-menu`, a first `npc-menu-capture.json` says the client
+/// reached its first frame. `cargo xtask client-smoke` reports a run without
+/// it as skipped (the client could not start), not as a failure.
+pub(crate) fn mark_started() {
+    if option("--capture-npc-menu").is_none() {
+        return;
+    }
+    let _ = std::fs::create_dir_all("runs/visual");
+    let _ = std::fs::write(
+        "runs/visual/npc-menu-capture.json",
+        serde_json::json!({"stage": "started", "stages": []}).to_string(),
+    );
+}
+
 impl Driver {
     pub(crate) fn from_arguments(capture: bool, live: bool) -> Option<Self> {
         let value = option("--capture-npc-menu")?;

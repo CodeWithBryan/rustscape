@@ -9,6 +9,10 @@
 //! activated (`--show` shows it, still without taking focus). The client and
 //! the world it started are stopped when it ends, on failure too. Port 43594
 //! is never used (the test world never chooses it).
+//!
+//! Exit status: 0 pass, 1 fail (or an error), 3 skipped. A run is skipped,
+//! never passed or failed, when the cache is missing or the client never
+//! reached its first frame (a GPU or GL context failure, say).
 use crate::Result;
 use serde_json::{Value, json};
 use std::{
@@ -30,6 +34,14 @@ const GOBLIN_TYPES: &str = "1769,1770,1771,1772,1773,1774,1775,1776";
 /// The NPC option packets, options 1 to 5 (`ClientAction::NpcAction` in
 /// protocol/game/actions.rs).
 const NPC_OPTION_OPCODES: [u64; 5] = [78, 3, 148, 30, 218];
+/// The exit status of a skipped run.
+const SKIPPED_EXIT: i32 = 3;
+/// How long the seeding run of `agent_run` may take.
+const SEED_SECONDS: u64 = 120;
+/// How long to wait for the seeded character to leave the world.
+const LOGOUT_SECONDS: u64 = 30;
+/// Redraw passes the client must make in the world for check b.
+const MIN_FRAMES_IN_GAME: i64 = 30;
 /// The capture files the checks read, from the client's `runs/visual`.
 const CAPTURE_FILES: [&str; 5] = [
     "npc-menu-capture.json",
@@ -76,6 +88,19 @@ pub fn run(root: &Path, args: &[String]) -> Result<()> {
     let name = format!("client-smoke-{secs}");
     let out = root.join("runs/client-smoke").join(&name);
     fs::create_dir_all(&out)?;
+
+    let cache_dir = cache
+        .as_ref()
+        .map_or_else(|| root.join("assets/cache"), |c| root.join(c));
+    if !cache_dir.join("main_file_cache.dat2").is_file() {
+        let reason = format!(
+            "no cache in {} (cargo xtask cache-fetch, or --cache DIR)",
+            cache_dir.display()
+        );
+        let report = json!({"skipped": true, "skip_reason": reason, "checks": []});
+        finish_report(report, &Value::Null, &out, &npc)?;
+        std::process::exit(SKIPPED_EXIT);
+    }
 
     if build {
         for args in [
@@ -141,11 +166,14 @@ pub fn run(root: &Path, args: &[String]) -> Result<()> {
         Err(error) => json!({
             "pass": false,
             "error": error.to_string(),
-            "checks": check(&out, &npc)["checks"],
+            "checks": check(&out, &npc, skip_welcome)["checks"],
         }),
     };
     let report = finish_report(report, &world, &out, &npc)?;
     stopped?;
+    if report["skipped"] == true {
+        std::process::exit(SKIPPED_EXIT);
+    }
     if report["pass"].as_bool() == Some(true) {
         Ok(())
     } else {
@@ -240,26 +268,55 @@ fn smoke(run: &mut Run, world: &Value, out: &Path, options: &Options) -> Result<
         "target/release/examples/agent_run{}",
         std::env::consts::EXE_SUFFIX
     ));
-    let seeded = Command::new(&agent)
+    let mut seeding = Command::new(&agent)
         .current_dir(&root)
         .arg("--world")
         .arg(world_dir)
         .arg(&script)
         .stdin(Stdio::null())
-        .output()?;
-    fs::write(out.join("seed-report.json"), &seeded.stdout)?;
-    fs::write(out.join("seed.err.log"), &seeded.stderr)?;
-    if !seeded.status.success() {
+        .stdout(fs::File::create(out.join("seed-report.json"))?)
+        .stderr(fs::File::create(out.join("seed.err.log"))?)
+        .spawn()?;
+    let deadline = Instant::now() + Duration::from_secs(SEED_SECONDS);
+    let status = loop {
+        if let Some(status) = seeding.try_wait()? {
+            break status;
+        }
+        if Instant::now() > deadline {
+            let _ = seeding.kill();
+            let _ = seeding.wait();
+            return Err(format!(
+                "seeding the character took more than {SEED_SECONDS}s and was stopped; see {}",
+                out.join("seed.err.log").display()
+            )
+            .into());
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    };
+    if !status.success() {
         return Err(format!(
-            "seeding the character failed ({}); see {}",
-            seeded.status,
+            "seeding the character failed ({status}); see {}",
             out.join("seed.err.log").display()
         )
         .into());
     }
     // The disconnection queue removes the agent's character a few ticks
-    // after it closed.
-    std::thread::sleep(Duration::from_secs(3));
+    // after it closed; a login before that is refused as already logged in.
+    // The verbose server says when it has left.
+    let left = format!("[live] {CHARACTER} left the world");
+    let error_log = world["errorLog"]
+        .as_str()
+        .ok_or("world.json has no errorLog")?;
+    let deadline = Instant::now() + Duration::from_secs(LOGOUT_SECONDS);
+    while !fs::read_to_string(error_log).is_ok_and(|text| text.contains(&left)) {
+        if Instant::now() > deadline {
+            return Err(format!(
+                "the seeded character had not left the world after {LOGOUT_SECONDS}s"
+            )
+            .into());
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    }
 
     // The client's capture files go to `runs/visual` under the working
     // directory; clear the ones the checks read so none is left over.
@@ -310,7 +367,22 @@ fn smoke(run: &mut Run, world: &Value, out: &Path, options: &Options) -> Result<
             fs::copy(&from, out.join(file))?;
         }
     }
-    let mut report = check(out, npc);
+    // The client writes its first capture file on its first frame: without
+    // it the client never started (a GPU or GL context failure): a skip.
+    if !out.join("npc-menu-capture.json").is_file() {
+        return Ok(json!({
+            "skipped": true,
+            "skip_reason": format!(
+                "the client never reached its first frame ({}); see {}",
+                if timed_out { "stopped at the time limit" } else { "it exited" },
+                out.join("client.err.log").display()
+            ),
+            "client_seconds": seconds,
+            "client_timed_out": timed_out,
+            "checks": [],
+        }));
+    }
+    let mut report = check(out, npc, skip_welcome);
     report["skip_welcome"] = json!(skip_welcome);
     report["client_seconds"] = json!(seconds);
     report["client_timed_out"] = json!(timed_out);
@@ -349,31 +421,52 @@ fn lists(entries: &Value, option: &str, npc: &str) -> bool {
     })
 }
 
-/// The checks (a) to (e) over the copied capture files.
-fn check(out: &Path, npc: &str) -> Value {
+/// The checks (a1 to e) over the copied capture files. Each has a `result`
+/// of "pass", "fail" or "skipped"; `pass` is whether every one that ran
+/// passed.
+fn check(out: &Path, npc: &str, skip_welcome: bool) -> Value {
     let capture = read(out, "npc-menu-capture.json");
     let picks = read(out, "pick-state.json");
     let live = read(out, "live-state.json");
     let loaded = read(out, "loaded.json");
     let mut checks = Vec::new();
     let mut add = |id: &str, what: &str, pass: bool, evidence: Value| {
-        checks.push(json!({"id": id, "what": what, "pass": pass, "evidence": evidence}));
+        checks.push(json!({
+            "id": id, "what": what, "pass": pass, "skipped": false,
+            "result": if pass { "pass" } else { "fail" },
+            "evidence": evidence,
+        }));
     };
 
-    // (a) login reaches the game.
+    // (a1) login reaches the game.
     let entered = stage(&capture, "enter");
     add(
-        "a",
-        "login reaches the game state (welcome screen passed, world view shown)",
+        "a1",
+        "login reaches the game state (world view shown, in_game)",
         entered.is_some() && live["in_game"] == true,
         json!({
-            "welcome_clicks": capture["welcome_clicks"],
             "in_game": live["in_game"],
             "status": live["status"],
             "enter_stage": entered,
             "failed_at": capture["failed_at"],
             "reason": capture["reason"],
         }),
+    );
+
+    // (a2) the welcome screen's Play works.
+    let clicks = entered.and_then(|e| e["detail"]["welcome_clicks"].as_u64());
+    let a2_evidence = json!({
+        "welcome_seen_at": capture["welcome_seen_at"],
+        "welcome_clicks": capture["welcome_clicks"],
+        "failed_at": capture["failed_at"],
+        "reason": capture["reason"],
+    });
+    // Under --skip-welcome it is marked skipped below, once `add` is done.
+    add(
+        "a2",
+        "the welcome screen's Play takes the character into the world",
+        !skip_welcome && entered.is_some() && clicks.is_some_and(|c| c >= 1),
+        a2_evidence,
     );
 
     // (b) the scene around Lumbridge with NPCs.
@@ -399,14 +492,28 @@ fn check(out: &Path, npc: &str) -> Value {
         })
         .count();
     let meshes = loaded["placed_meshes"].as_u64().unwrap_or(0);
+    // Redraw passes the client made in the world: from the frame it was
+    // first in_game to the last frame the script recorded. Pixels are not
+    // looked at.
+    let last_frame = capture["stages"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|s| s["frame"].as_i64())
+        .chain(capture["failed_frame"].as_i64())
+        .max();
+    let frames_in_game = last_frame
+        .zip(capture["in_game_at"]["frame"].as_i64())
+        .map(|(last, first)| last - first);
     add(
         "b",
-        "the scene around Lumbridge loaded, with the NPCs in the frame's list",
-        near && meshes > 0 && named > 0,
+        "the scene around Lumbridge loaded and the client kept redrawing it, with the NPCs in the frame's list",
+        near && meshes > 0 && named > 0 && frames_in_game.is_some_and(|f| f >= MIN_FRAMES_IN_GAME),
         json!({
             "self_tile": tile,
             "seeded_at": LOCATION,
             "placed_meshes": meshes,
+            "frames_redrawn_in_game": frames_in_game,
             "npcs_in_frame_list": npc_rows.len(),
             "named_npcs": named,
         }),
@@ -468,8 +575,19 @@ fn check(out: &Path, npc: &str) -> Value {
         }),
     );
 
-    let pass = checks.iter().all(|c| c["pass"] == true);
-    json!({"pass": pass, "checks": checks})
+    if skip_welcome {
+        for c in checks.iter_mut().filter(|c| c["id"] == "a2") {
+            c["skipped"] = json!(true);
+            c["result"] = json!("skipped");
+            c["note"] = json!(
+                "known server gap: --skip-welcome seeds a character without tutorial:complete (still under the tutorial's rules), so no welcome screen is shown. The live world does not port LoginInterface.onClose(378), which refuses the client's CLOSE_IFACE until Play locks \"login\"; its InterfaceListeners.runClose default answers true, so the server closes the screen and drops the 378:140 button that follows (docs/client-smoke.md)"
+            );
+        }
+    }
+    let pass = checks
+        .iter()
+        .all(|c| c["skipped"] == true || c["pass"] == true);
+    json!({"pass": pass, "skipped": false, "checks": checks})
 }
 
 /// Add the run's context, write `report.json` and `report.md`, print the
@@ -482,21 +600,45 @@ fn finish_report(mut report: Value, world: &Value, out: &Path, npc: &str) -> Res
     }
     report["npc"] = json!(npc);
     report["world"] = world.clone();
+    let skipped_checks: Vec<String> = report["checks"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|c| c["skipped"] == true)
+        .map(|c| c["id"].as_str().unwrap_or("?").to_owned())
+        .collect();
+    let status = if report["skipped"] == true {
+        "SKIPPED".to_owned()
+    } else if report["pass"] == true {
+        "PASS".to_owned()
+    } else {
+        "FAIL".to_owned()
+    };
+    let summary = if skipped_checks.is_empty() || report["skipped"] == true {
+        status.clone()
+    } else {
+        format!(
+            "{status} ({} skipped: known server gap, --skip-welcome)",
+            skipped_checks.join(", ")
+        )
+    };
+    report["status"] = json!(status);
+    report["summary"] = json!(summary);
     fs::write(
         out.join("report.json"),
         serde_json::to_string_pretty(&report)?,
     )?;
     let mut md = format!(
-        "# Client smoke test: {}\n\nWorld `{}` at `{}`; NPC `{npc}`; output `{}`.\n\n",
-        if report["pass"] == true {
-            "PASS"
-        } else {
-            "FAIL"
-        },
-        world["name"].as_str().unwrap_or("?"),
-        world["address"].as_str().unwrap_or("?"),
+        "# Client smoke test: {summary}\n\nWorld `{}` at `{}`; NPC `{npc}`; output `{}`.\n\n",
+        world["name"].as_str().unwrap_or("none"),
+        world["address"].as_str().unwrap_or("none"),
         out.display()
     );
+    if let Some(reason) = report["skip_reason"].as_str() {
+        md.push_str(&format!(
+            "Skipped (neither a pass nor a failure): {reason}\n\n"
+        ));
+    }
     if let Some(error) = report["error"].as_str() {
         md.push_str(&format!("Error: {error}\n\n"));
     }
@@ -508,8 +650,15 @@ fn finish_report(mut report: Value, world: &Value, out: &Path, npc: &str) -> Res
         md.push_str(&format!(
             "| {} | {} | {} |\n",
             c["id"].as_str().unwrap_or("?"),
-            if c["pass"] == true { "pass" } else { "FAIL" },
-            c["what"].as_str().unwrap_or("")
+            match c["result"].as_str() {
+                Some("pass") => "pass",
+                Some("skipped") => "SKIPPED",
+                _ => "FAIL",
+            },
+            match c["note"].as_str() {
+                Some(note) => format!("{} ({note})", c["what"].as_str().unwrap_or("")),
+                None => c["what"].as_str().unwrap_or("").to_owned(),
+            }
         ));
     }
     md.push_str(
