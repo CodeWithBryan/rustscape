@@ -1,0 +1,17 @@
+{
+  "character": {
+    "name": "kitgoblin",
+    "location": [3250, 3235, 0],
+    "skills": { "attack": 20, "strength": 20, "defence": 20, "hitpoints": 20 },
+    "equipment": [{ "slot": 3, "id": 1277 }],
+    "inventory": [{ "id": 1925 }]
+  },
+  "steps": [
+    { "do": "assert", "that": { "wearing": 1277 } },
+    { "do": "attack", "npc": { "types": [1769, 1770, 1771, 1772, 1773, 1774, 1775, 1776] } },
+    { "do": "wait", "until": { "npcHit": "target" }, "timeout": 20 },
+    { "do": "wait", "until": { "npcDied": "target" }, "timeout": 90 },
+    { "do": "wait", "until": { "all": [{ "xpGained": "attack" }, { "xpGained": "hitpoints" }] }, "timeout": 5 },
+    { "do": "snapshot" }
+  ]
+}
