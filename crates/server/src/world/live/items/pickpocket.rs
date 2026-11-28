@@ -389,7 +389,12 @@ impl Live {
             p: p.clone(),
             npc,
         };
-        let result = pick::pickpocket(&mut thief, id);
+        // `Pickpockets.forID` is the lambda's first statement: the enum is
+        // initialised there, before the combat and level checks and for an
+        // id it does not list.
+        let result = thief
+            .table(0)
+            .and_then(|_| pick::pickpocket(&mut thief, id));
         self.inner.drain(&p);
         result.map_err(bind)
     }

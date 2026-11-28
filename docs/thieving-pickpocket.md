@@ -75,8 +75,9 @@ calls of `pickpocketRoll`.
 
 `world/live/items/pickpocket.rs` registers the listener for both options at
 boot when `ThievingListeners` is in the scan. The 18 tables are made from
-the shared generator the first time the lambda runs, in declaration order,
-as the enum's class initialiser makes them on the first `forID`; nothing
+the shared generator the first time the lambda runs, in declaration order
+and before any of its checks (also for an NPC id no constant lists), as the
+enum's class initialiser makes them on the first `forID`; nothing
 else in this world touches `Pickpockets` earlier (the original's
 `VarrockGuardSignpost` and `GlobalStats`, which also read it, are not
 ported). `roll()` has no receiver. No clue scroll is registered in this
