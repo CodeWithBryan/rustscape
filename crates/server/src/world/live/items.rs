@@ -48,6 +48,7 @@ pub mod everyday;
 pub mod fishing;
 pub mod milking;
 pub mod mining;
+pub mod otto;
 mod slots;
 pub mod smelting;
 pub mod smithing;
@@ -1438,6 +1439,10 @@ impl listeners::Context for Ctx<'_> {
         }
         if f.value::<barbarian::UseRod>().is_some() {
             return self.0.barbarian_use_rod(p, n).map_err(lerr);
+        }
+        // OttoGodblessedDialogue's "talk-to" (super::otto).
+        if f.value::<otto::OttoTalk>().is_some() {
+            return self.0.otto_talk(p, n).map_err(lerr);
         }
         // ProspectListener's "prospect" (super::mining).
         if f.value::<mining::Prospect>().is_some() {

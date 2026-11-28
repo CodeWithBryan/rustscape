@@ -21,6 +21,10 @@ content dialogues are written in, on top of the native interpreter in
 - `banker.rs`: BankerNPC's `BankerDialogueLabellerFile` and the companion's
   `canAccessBank`, written against the native labeller, plus `talk_to`, the
   "talk-to" listener body.
+- `otto.rs`: OttoGodblessedDialogue's "talk-to" listener body and
+  `OttoGodblessedDialogueFile` (barbarian training), written against the
+  native labeller from the Kotlin source. It has no JVM corpus; the live
+  world installs it (`world/live/items/otto.rs`).
 
 DialogueTopic.kt (Topic/IfTopic) was already ported in `world/dialogue`.
 

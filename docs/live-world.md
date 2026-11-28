@@ -1034,16 +1034,24 @@ stand-ins); this test checks the production binding end to end.
   through the start-up's behaviour registry, and there is no JVM corpus
   for it). No forager familiar acts, the Fist of
   Guthix gloves' charges are skipped, barehand fishing's Fremennik diary
-  task is a refusal (nothing here sets the barbarian training attribute
-  barehand fishing needs), and the legacy `FishingPulse` is not
-  installed. Barbarian fishing is installed (`items/barbarian.rs`, no
+  task is joined (Otto's conversation sets the training attribute
+  barehand fishing needs; no live check catches a fish barehanded), and
+  the legacy `FishingPulse` is not installed. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
   content tick listener, and "use-rod", the bed's "search" and the knife
   on a leaping fish run their bodies; SpotManager's place among the
-  start-up listeners is not reproduced, and the bed never gives a rod
-  because nothing here sets the barbarian training attribute (Otto's
-  dialogue is not ported). In these bodies the familiar boost
+  start-up listeners is not reproduced. Otto Godblessed's conversation
+  (`OttoGodblessedDialogue` and its DialogueLabeller file,
+  `dialogue_dsl/otto.rs`, installed by `items/otto.rs`, no JVM corpus)
+  sets the training attributes and varbits, hands out its two books and
+  finishes the Fremennik diary task, so the bed gives the rod after the
+  rod topic; `hasRequirement` answers false (no quest is registered), so
+  the spear topic always takes its Tai Bwo Wannai Trio rejection, the
+  other trainings' stage 2 is set by content that is not ported (barehand
+  fishing's is, barbarian mixes, spear smithing, bow firemaking and pyre
+  ships are not), and `BarbarianSkillsBook` and `MyNotesBook` (reading the
+  books) are not ported. In these bodies the familiar boost
   is 0, skillcape perks are inactive and the ResourceProducedEvent is
   skipped; the shooting star's bonus timer is read from the player's
   timers, which nothing here starts (shooting stars are not ported), and

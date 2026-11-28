@@ -897,6 +897,7 @@ impl super::super::host::Live {
         let (mut mining, mut prospect, mut fishing) = (false, false, false);
         let (mut barbarian_listeners, mut barbarian_knife, mut barbarian_manager) =
             (false, false, false);
+        let mut otto = false;
         use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -915,6 +916,9 @@ impl super::super::host::Live {
             if name == super::fishing::LISTENER_CLASS {
                 // FishingListener.defineListeners (super::fishing).
                 fishing = true;
+            }
+            if name == crate::world::dialogue_dsl::otto::CLASS {
+                otto = true;
             }
             if name == barbarian::LISTENERS_CLASS {
                 barbarian_listeners = true;
@@ -977,6 +981,10 @@ impl super::super::host::Live {
         if barbarian_manager {
             // SpotManager.startup().
             self.barbarian_startup()?;
+        }
+        if otto {
+            // OttoGodblessedDialogue.defineListeners (super::otto).
+            self.define_otto_listener()?;
         }
         Ok(())
     }

@@ -14,6 +14,7 @@ pub mod banker;
 pub mod builder;
 pub mod gem;
 pub mod labeller;
+pub mod otto;
 pub mod skill;
 
 pub use crate::world::dialogue::{

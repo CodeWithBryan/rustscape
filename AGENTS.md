@@ -1135,7 +1135,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (FishingNPC and FishSpots: gathering/fishing_npc.rs, run live by
   world/live/fishing_spots.rs) and barbarian fishing
   (gathering/barbarian.rs, run live by world/live/items/barbarian.rs)
-  are ported without a corpus; of the
+  are ported without a corpus, as is Otto Godblessed's barbarian
+  training conversation (dialogue_dsl/otto.rs, run live by
+  world/live/items/otto.rs; its spear topic always rejects because no
+  quest is registered, and the two books cannot be read); of the
   library the listeners are installed in a live world (the woodcutting
   pulse, WoodcuttingListener's, MiningListener's and FishingListener's
   scripts and ProspectListener: world/live/items/woodcutting.rs, mining.rs
