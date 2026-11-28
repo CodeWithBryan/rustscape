@@ -216,6 +216,9 @@ fn main() -> Result<()> {
         Some("thieving-doors-oracle") => profile_oracle::generate(root, &args, "thieving-doors")?,
         Some("herblore-oracle") => profile_oracle::generate(root, &args, "herblore")?,
         Some("crafting-tools-oracle") => profile_oracle::generate(root, &args, "crafting-tools")?,
+        Some("crafting-jewellery-oracle") => {
+            profile_oracle::generate(root, &args, "crafting-jewellery")?
+        }
         Some("crafting-stations-oracle") => {
             profile_oracle::generate(root, &args, "crafting-stations")?
         }

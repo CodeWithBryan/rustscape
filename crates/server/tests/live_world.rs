@@ -4319,6 +4319,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     gem_part(address, &players).await;
     wares_part(address, &players).await;
     stations_part(address, &players).await;
+    jewellery_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -5301,6 +5302,104 @@ async fn stations_part(address: std::net::SocketAddr, players: &std::path::Path)
     );
     eprintln!("silverman was refused a tiara and cast two unstrung symbols at the furnace");
     silver.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The jewellery part of the gather scenario: JewelleryCraftPlugin and
+/// JewelleryInterface at the Al Kharid furnace 11666.
+async fn jewellery_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, amount)| *amount)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    // Two gold bars, a ring mould and a sapphire, at Crafting 10.
+    let start = [3274, 3187, 0];
+    let inventory = [(0, 2357, 1), (1, 2357, 1), (2, 1592, 1), (3, 1607, 1)];
+    write_save_with(players, "traceone", "ringman", start, &inventory, |save| {
+        save["skills"][12]["static"] = Value::String("10".into());
+        save["skills"][12]["dynamic"] = Value::String("10".into());
+        // The experience stays under the 175 an unfinished tutorial caps it at.
+        save["skills"][12]["experience"] = Value::String("0.0".into());
+    });
+    let (code, ring) = Client::login(address, "ringman").await;
+    assert_eq!(code, 2, "ringman's login");
+    let mut ring = ring.unwrap();
+    ring.until(Duration::from_secs(10), "ringman's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = ring.messages.len();
+    let (opened, frames) = (ring.opened.len(), ring.frames.len());
+    ring.send(use_with_scenery(2357, 0, 11666, 3272, 3185))
+        .await;
+    ring.until_pinging(Duration::from_secs(20), "the jewellery interface", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 446)
+    })
+    .await;
+    // open(): an item model (server opcode 50) for each of the eight rings
+    // and none for the necklaces, amulets and bracelets without a mould.
+    ring.pump(Duration::from_secs(1)).await;
+    assert_eq!(
+        ring.frames[frames..]
+            .iter()
+            .filter(|f| f.opcode == 50)
+            .count(),
+        8,
+        "the item models of the eight rings"
+    );
+    // A sapphire ring needs Crafting 20; a necklace needs its mould.
+    ring.send(button(446, 22)).await;
+    ring.until_pinging(
+        Duration::from_secs(20),
+        "the sapphire ring's refusal",
+        |c| {
+            said(
+                c,
+                from,
+                "You need a crafting level of 20 to craft a sapphire ring.",
+            )
+        },
+    )
+    .await;
+    ring.send(button(446, 42)).await;
+    ring.until_pinging(Duration::from_secs(20), "the necklace's refusal", |c| {
+        said(c, from, "You don't have the required mould to make this.")
+    })
+    .await;
+    // "Make All" (opcode 124) of the gold ring (button 20): one every five
+    // ticks.
+    ring.send(if_button(124, 446, 20, -1)).await;
+    ring.until_pinging(Duration::from_secs(40), "two gold rings", |c| {
+        amount(c, 1635) == 2
+    })
+    .await;
+    ring.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (
+            amount(&ring, 2357),
+            amount(&ring, 1592),
+            amount(&ring, 1607)
+        ),
+        (0, 1, 1),
+        "both bars are cast and the mould and the sapphire stay"
+    );
+    assert_eq!(
+        ring.skills.get(&12).map(|s| s.1),
+        Some(30),
+        "two gold rings are 30 experience"
+    );
+    eprintln!("ringman was refused a sapphire ring and a necklace and cast two gold rings");
+    ring.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

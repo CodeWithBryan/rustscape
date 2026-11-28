@@ -7,9 +7,10 @@ Scope: the pinned `content/global/handlers/scenery/SpinSpinningWheelPlugin.java`
 `silver/SilverCraftingPulse.kt` and `silver/SilverProduct.kt`'s rows and
 `forButtonID`, with `SkillPulse`'s `start`, `pulse` and `stop`. Silver
 stringing, gem cutting and limestone are docs/crafting-tools.md;
-battlestaves, glass and spiky vambraces are docs/crafting-wares.md. The
-rest of the crafting package (jewellery casting, leather, pottery,
-weaving, light sources, snelms, snakeskin) is not ported.
+battlestaves, glass and spiky vambraces are docs/crafting-wares.md;
+jewellery casting is docs/crafting-jewellery.md. The rest of the crafting
+package (leather, pottery, weaving, light sources, snelms, snakeskin) is
+not ported.
 
 | original | here |
 |---|---|

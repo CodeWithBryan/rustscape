@@ -6,9 +6,9 @@ Scope: the pinned `content/global/skill/crafting/BattlestaffListener.kt`
 `glass/GlassMakePulse.kt`, `glass/GlassProduct.kt` and
 `leather/SpikyVambraces.kt`. Gem cutting, limestone and stringing are
 docs/crafting-tools.md; spinning and silver casting are
-docs/crafting-stations.md. The rest of the crafting package (jewellery
-casting, leather, pottery, weaving, light sources, snelms, snakeskin) is
-not ported.
+docs/crafting-stations.md; jewellery casting is
+docs/crafting-jewellery.md. The rest of the crafting package (leather,
+pottery, weaving, light sources, snelms, snakeskin) is not ported.
 
 | original | here |
 |---|---|
