@@ -1195,8 +1195,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   molten glass and spiky vambraces (world/crafting_wares.rs, run live by
   world/live/items/crafting_wares.rs; replayed against the JVM corpus
   fixtures/crafting-wares from oracle/crafting-wares, the live binding is
-  not; the rest of the crafting package is not ported;
-  docs/crafting-wares.md) and Otto
+  not; docs/crafting-wares.md), crafting's spinning and silver casting
+  (world/crafting_stations.rs, run live by
+  world/live/items/crafting_stations.rs; replayed against the JVM corpus
+  fixtures/crafting-stations from oracle/crafting-stations, the live
+  binding is not; the rest of the crafting package is not ported;
+  docs/crafting-stations.md) and Otto
   Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no

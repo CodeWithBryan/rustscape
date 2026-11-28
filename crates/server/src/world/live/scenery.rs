@@ -73,6 +73,8 @@ pub enum SceneryPlugin {
     Door,
     /// PickableDoorHandler (super::items::pick_doors).
     PickDoor,
+    /// SpinSpinningWheelPlugin (super::items::crafting_stations).
+    Wheel,
 }
 impl SceneryPlugin {
     pub fn class(self) -> &'static str {
@@ -85,6 +87,7 @@ impl SceneryPlugin {
             Self::Chest => crate::world::thieving_chest::CLASS,
             Self::Door => crate::world::door_option::CLASS,
             Self::PickDoor => crate::world::thieving_door::CLASS,
+            Self::Wheel => crate::world::crafting_stations::WHEEL_CLASS,
         }
     }
     /// `isWalk()`: OptionHandler's true for a content plugin.
@@ -97,7 +100,8 @@ impl SceneryPlugin {
             | Self::Stall
             | Self::Chest
             | Self::Door
-            | Self::PickDoor => true,
+            | Self::PickDoor
+            | Self::Wheel => true,
         }
     }
     /// `isWalk(player, node)`: OptionHandler's false.
@@ -110,7 +114,8 @@ impl SceneryPlugin {
             | Self::Stall
             | Self::Chest
             | Self::Door
-            | Self::PickDoor => false,
+            | Self::PickDoor
+            | Self::Wheel => false,
         }
     }
     /// `isDelayed(player)`: OptionHandler's true.
@@ -123,7 +128,8 @@ impl SceneryPlugin {
             | Self::Stall
             | Self::Chest
             | Self::Door
-            | Self::PickDoor => true,
+            | Self::PickDoor
+            | Self::Wheel => true,
         }
     }
 }
@@ -181,6 +187,12 @@ impl WalkHost<'_> {
             .is_some()
         {
             return Ok(SceneryPlugin::PickDoor);
+        }
+        if handler
+            .value::<super::items::crafting_stations::WheelPlugin>()
+            .is_some()
+        {
+            return Ok(SceneryPlugin::Wheel);
         }
         Err(legacy::Error::Binding(Some(
             "not ported in the live world: a scenery option handler that is not a global handler (other content)".into(),

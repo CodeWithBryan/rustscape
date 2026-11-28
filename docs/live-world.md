@@ -1003,7 +1003,7 @@ stand-ins); this test checks the production binding end to end.
 
 - Content use-with: of the pinned source's 157 listener files that call
   `onUseWith`/`onUseAnyWith`/`onUseWithWildcard` and 36 `UseWithHandler`
-  classes, eighteen listener classes are installed (above; CookingRewrite
+  classes, nineteen listener classes are installed (above; CookingRewrite
   and the nine of docs/item-on-object.md are ported without a JVM corpus).
   Not installed:
   the `UseWithHandler` classes
@@ -1139,8 +1139,15 @@ stand-ins); this test checks the production binding end to end.
   GlassCraftingListener's and GlassMakeListener's use-with registrations,
   GlassCraftingListener's `on(542)` with its amount prompt, the two skill
   dialogues, `runTask`'s pulse and the two glass pulses, and
-  SpikyVambraces in `UseWithHandler.HANDLERS`. The rest of the crafting
-  package is not ported.
+  SpikyVambraces in `UseWithHandler.HANDLERS`.
+  Spinning and silver casting are installed (`items/crafting_stations.rs`
+  over `world/crafting_stations.rs`, docs/crafting-stations.md; the
+  library is replayed against the JVM corpus `fixtures/crafting-stations`,
+  the live binding is not): SpinSpinningWheelPlugin on the ten wheels'
+  "option:spin", SpinningInterface as the component plugin of 459 with
+  its amount prompt, SpinningPulse, SilverCraftingListener's use-with
+  registration, `onOpen(438)` and `on(438)` with its amount prompt, and
+  SilverCraftingPulse. The rest of the crafting package is not ported.
   Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

@@ -907,6 +907,7 @@ impl super::super::host::Live {
         let mut barbarian_mix = false;
         let mut silver_stringing = false;
         let (mut battlestaff, mut glass, mut glass_make) = (false, false, false);
+        let mut silver_crafting = false;
         let mut log_fletching = false;
         let (mut stringing, mut arrows) = (false, false);
         let mut ammo = Vec::new();
@@ -965,6 +966,9 @@ impl super::super::host::Live {
             }
             if name == crate::world::crafting_wares::GLASS_MAKE_CLASS {
                 glass_make = true;
+            }
+            if name == crate::world::crafting_stations::SILVER_CLASS {
+                silver_crafting = true;
             }
             if name == crate::world::herblore_tools::MIX_CLASS {
                 barbarian_mix = true;
@@ -1087,6 +1091,11 @@ impl super::super::host::Live {
         }
         if glass_make {
             self.define_glass_make_listener()?;
+        }
+        if silver_crafting {
+            // SilverCraftingListener (super::crafting_stations): scanned
+            // after GlassMakeListener.
+            self.define_silver_crafting_listener()?;
         }
         if silver_stringing {
             // SilverStringingListener.defineListeners
@@ -1228,6 +1237,9 @@ impl super::super::host::Live {
             .is_some()
         {
             return Some(self.silver_stringing_use(player, used, with).map_err(bind));
+        }
+        if let Some(result) = self.crafting_station_use(f, player, with) {
+            return Some(result.map_err(bind));
         }
         if let Some(result) = self.crafting_ware_use(f, player, used, with) {
             return Some(result.map_err(bind));

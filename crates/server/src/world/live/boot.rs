@@ -537,6 +537,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_smithing()?;
     live.install_crafting_tools()?;
     live.install_crafting_wares()?;
+    live.install_crafting_stations()?;
     live.install_herblore_tools()?;
     live.install_stalls()?;
     live.install_chests()?;

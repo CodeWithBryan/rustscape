@@ -83,6 +83,10 @@ impl interface_listeners::Context for Buttons<'_> {
         if let Some(result) = self.live.glass_button(&callback, player, button) {
             return result.map_err(ui);
         }
+        // SilverCraftingListener's on(438) (super::items::crafting_stations).
+        if let Some(result) = self.live.silver_button(&callback, player, button) {
+            return result.map_err(ui);
+        }
         let Some(listener) = callback.value::<registry::Listener>().map(|l| *l) else {
             return Err(interfaces::Error::Binding(
                 "a button listener this world did not register".into(),
@@ -181,6 +185,13 @@ impl interface_packets::Context for Buttons<'_> {
             .is_some()
         {
             return self.live.smithing_button(&Self::p(p), b.button).map_err(ui);
+        }
+        // SpinningInterface on 459 (super::items::crafting_stations).
+        if plugin
+            .value::<super::items::crafting_stations::SpinPlugin>()
+            .is_some()
+        {
+            return self.live.spin_button(&Self::p(p), b).map_err(ui);
         }
         let Some(plugin) = plugin.value::<registry::ComponentPlugin>().map(|p| *p) else {
             return Err(interfaces::Error::Binding(
