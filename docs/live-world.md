@@ -1009,8 +1009,9 @@ stand-ins); this test checks the production binding end to end.
   the `UseWithHandler` classes
   other than CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's
   SmeltUseWithHandler, SmithingPlugin, GrindItemPlugin, HerbTarPlugin,
-  AmuletStringingPlugin, ChiselLimestonePlugin and GemCutPlugin
-  (the eight handlers in `UseWithHandler.HANDLERS` here; smelting and
+  AmuletStringingPlugin, ChiselLimestonePlugin, GemCutPlugin and
+  SpikyVambraces (docs/crafting-wares.md)
+  (the nine handlers in `UseWithHandler.HANDLERS` here; smelting and
   smithing are ported without a JVM corpus, docs/smelting.md and
   docs/smithing.md; the two herblore plugins are docs/herblore-tools.md
   and the three crafting plugins docs/crafting-tools.md),
@@ -1130,7 +1131,16 @@ stand-ins); this test checks the production binding end to end.
   ChiselLimestonePlugin and AmuletStringingPlugin in
   `UseWithHandler.HANDLERS`, reached through the item-on-item pulse, with
   the gem dialogue and the two pulses, and SilverStringingListener's
-  use-with registration. The rest of the crafting package is not ported.
+  use-with registration.
+  Battlestaves, glassblowing, molten glass and spiky vambraces are
+  installed (`items/crafting_wares.rs` over `world/crafting_wares.rs`,
+  docs/crafting-wares.md; the library is replayed against the JVM corpus
+  `fixtures/crafting-wares`, the live binding is not): BattlestaffListener's,
+  GlassCraftingListener's and GlassMakeListener's use-with registrations,
+  GlassCraftingListener's `on(542)` with its amount prompt, the two skill
+  dialogues, `runTask`'s pulse and the two glass pulses, and
+  SpikyVambraces in `UseWithHandler.HANDLERS`. The rest of the crafting
+  package is not ported.
   Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

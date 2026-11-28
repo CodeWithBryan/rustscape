@@ -48,6 +48,7 @@ pub mod chests;
 mod component_use;
 pub mod cooking;
 pub mod crafting_tools;
+pub mod crafting_wares;
 pub mod doors;
 pub mod everyday;
 pub mod firemaking;

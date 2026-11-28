@@ -4317,6 +4317,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     herb_part(address, &players).await;
     grind_part(address, &players).await;
     gem_part(address, &players).await;
+    wares_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -5131,6 +5132,220 @@ async fn gem_part(address: std::net::SocketAddr, players: &std::path::Path) {
         "gemman cut two sapphires and an opal, was refused a diamond, made a limestone brick and strung an amulet and a symbol"
     );
     gem.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The crafting wares part of the gather scenario.
+async fn wares_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let count = |c: &Client, from: usize, line: &str| {
+        c.messages[from..].iter().filter(|(_, m)| m == line).count()
+    };
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, amount)| *amount)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    let slot_of = |c: &Client, id: i32| -> i32 {
+        c.containers[&93]
+            .iter()
+            .filter(|(_, (item, _))| *item == id)
+            .map(|(slot, _)| *slot)
+            .min()
+            .expect("the item's slot")
+    };
+    let shown = |c: &Client, from: usize, pointer: i32, what: &str| {
+        c.texts[from..]
+            .iter()
+            .any(|(_, at, t)| *at == pointer && t.contains(what))
+    };
+    // GlassMakeListener and GlassCraftingListener: two heaps of soda ash and
+    // two buckets of sand at the Al Kharid furnace 11666, then the pipe.
+    let start = [3274, 3187, 0];
+    let inventory = [
+        (0, 1781, 1),
+        (1, 1781, 1),
+        (2, 1783, 1),
+        (3, 1783, 1),
+        (4, 1785, 1),
+    ];
+    write_save_with(players, "traceone", "glassman", start, &inventory, |save| {
+        save["skills"][12]["static"] = Value::String("10".into());
+        save["skills"][12]["dynamic"] = Value::String("10".into());
+        // The experience stays under the 175 an unfinished tutorial caps it at.
+        save["skills"][12]["experience"] = Value::String("0.0".into());
+    });
+    let (code, glass) = Client::login(address, "glassman").await;
+    assert_eq!(code, 2, "glassman's login");
+    let mut glass = glass.unwrap();
+    glass
+        .until(Duration::from_secs(10), "glassman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = glass.messages.len();
+
+    // Soda ash on the furnace: the dialogue, and "All" makes two.
+    let texts = glass.texts.len();
+    glass
+        .send(use_with_scenery(1781, 0, 11666, 3272, 3185))
+        .await;
+    glass
+        .until_pinging(Duration::from_secs(20), "the molten glass dialogue", |c| {
+            shown(c, texts, (309 << 16) | 6, "olten")
+        })
+        .await;
+    glass.send(continue_option(309, 3)).await;
+    glass
+        .until_pinging(Duration::from_secs(30), "two molten glass", |c| {
+            amount(c, 1775) == 2
+        })
+        .await;
+    glass.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (
+            amount(&glass, 1781),
+            amount(&glass, 1783),
+            amount(&glass, 1925),
+            count(
+                &glass,
+                from,
+                "You heat the sand and soda ash in the furnace to make glass."
+            )
+        ),
+        (0, 0, 2, 2),
+        "the ash and the sand are used and the buckets are back"
+    );
+    assert_eq!(
+        glass.skills.get(&12).map(|s| s.1),
+        Some(40),
+        "two molten glass are 40 experience"
+    );
+
+    // The pipe on the molten glass: the interface. A vial needs Crafting 33.
+    let opened = glass.opened.len();
+    let (pipe, molten) = (slot_of(&glass, 1785), slot_of(&glass, 1775));
+    glass.send(use_item_on_item(1785, pipe, 1775, molten)).await;
+    glass
+        .until_pinging(Duration::from_secs(20), "the glassblowing interface", |c| {
+            c.opened[opened..].iter().any(|(_, id)| *id == 542)
+        })
+        .await;
+    glass.send(button(542, 38)).await;
+    glass
+        .until_pinging(Duration::from_secs(20), "the vial's refusal", |c| {
+            said(c, from, "You need a Crafting level of 33 to make this.")
+        })
+        .await;
+    // "Make All" (opcode 124) of the beer glass (button 40).
+    glass.send(if_button(124, 542, 40, -1)).await;
+    glass
+        .until_pinging(Duration::from_secs(40), "two beer glasses", |c| {
+            amount(c, 1919) == 2
+        })
+        .await;
+    glass.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (
+            amount(&glass, 1775),
+            amount(&glass, 1785),
+            count(&glass, from, "You make a beer glass.")
+        ),
+        (0, 1, 2),
+        "both molten glass are blown and the pipe stays"
+    );
+    assert_eq!(
+        glass.skills.get(&12).map(|s| s.1),
+        Some(75),
+        "two beer glasses are 35 experience"
+    );
+    eprintln!("glassman made two molten glass at the furnace and blew two beer glasses");
+    glass.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // SpikyVambraces and BattlestaffListener, at Crafting 54.
+    let start = [3222, 3218, 0];
+    let inventory = [
+        (0, 10113, 1),
+        (1, 1063, 1),
+        (2, 571, 1),
+        (3, 571, 1),
+        (4, 1391, 1),
+        (5, 1391, 1),
+    ];
+    write_save_with(players, "traceone", "staffman", start, &inventory, |save| {
+        save["skills"][12]["static"] = Value::String("54".into());
+        save["skills"][12]["dynamic"] = Value::String("54".into());
+        save["skills"][12]["experience"] = Value::String("0.0".into());
+    });
+    let (code, staff) = Client::login(address, "staffman").await;
+    assert_eq!(code, 2, "staffman's login");
+    let mut staff = staff.unwrap();
+    staff
+        .until(Duration::from_secs(10), "staffman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = staff.messages.len();
+    staff.send(use_item_on_item(10113, 0, 1063, 1)).await;
+    staff
+        .until_pinging(Duration::from_secs(20), "the spiky vambraces", |c| {
+            amount(c, 10077) == 1
+                && said(
+                    c,
+                    from,
+                    "You carefully attach the sharp claws to the leather vambraces.",
+                )
+        })
+        .await;
+    assert_eq!(
+        (
+            amount(&staff, 10113),
+            amount(&staff, 1063),
+            staff.skills.get(&12).map(|s| s.1)
+        ),
+        (0, 0, Some(6)),
+        "the claws and the vambraces are used for 6 experience"
+    );
+
+    // A water orb on one of two battlestaves: the dialogue, and "All"
+    // makes two, two ticks apart.
+    let texts = staff.texts.len();
+    let (orb, stick) = (slot_of(&staff, 571), slot_of(&staff, 1391));
+    staff.send(use_item_on_item(571, orb, 1391, stick)).await;
+    staff
+        .until_pinging(Duration::from_secs(20), "the battlestaff dialogue", |c| {
+            shown(c, texts, (309 << 16) | 6, "attlestaff")
+        })
+        .await;
+    staff.send(continue_option(309, 3)).await;
+    staff
+        .until_pinging(Duration::from_secs(30), "two water battlestaves", |c| {
+            amount(c, 1395) == 2
+        })
+        .await;
+    staff.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&staff, 571), amount(&staff, 1391)),
+        (0, 0),
+        "both orbs and both battlestaves are used"
+    );
+    // 6 and two times 100, capped at the 175 of an unfinished tutorial.
+    assert_eq!(
+        staff.skills.get(&12).map(|s| s.1),
+        Some(175),
+        "the battlestaves' experience up to the tutorial's cap"
+    );
+    eprintln!("staffman made spiky vambraces and two water battlestaves");
+    staff.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

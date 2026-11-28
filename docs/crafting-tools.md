@@ -6,9 +6,10 @@ Scope: the pinned `content/global/skill/crafting/GemCutPlugin.java`,
 `limestone/ChiselLimestonePulse.java`,
 `silver/SilverStringingListener.kt` and `silver/SilverProduct.kt`'s
 `forProductID`, with `SkillPulse`'s `start`, `pulse` and `stop` and the
-`JewelleryItem` rows AmuletStringingPlugin reads. The rest of the
-crafting package (jewellery and silver casting, spinning, leather,
-pottery, glass, battlestaves, weaving and the rest) is not ported.
+`JewelleryItem` rows AmuletStringingPlugin reads. Battlestaves, glass and
+spiky vambraces are docs/crafting-wares.md. The rest of the crafting
+package (jewellery and silver casting, spinning, leather, pottery,
+weaving and the rest) is not ported.
 
 | original | here |
 |---|---|

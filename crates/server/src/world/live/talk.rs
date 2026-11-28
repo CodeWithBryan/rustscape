@@ -750,6 +750,8 @@ pub enum Script {
     Smelt(super::items::smelting::SmeltScript),
     /// SmithingInterface's amount handler (`smithing::AmountInput::run`).
     Smith(super::items::smithing::SmithScript),
+    /// GlassCraftingListener's amount handler (`crafting_wares::glass_input`).
+    Glass(super::items::crafting_wares::GlassScript),
 }
 
 struct Prompt<'a> {
@@ -892,6 +894,16 @@ impl input::Context for Prompt<'_> {
                     }
                 };
                 self.live.smithing_amount(&script, &value).map_err(ierror)
+            }
+            Script::Glass(script) => {
+                // `Integer.parseInt(value.toString())`.
+                let amount = match &value {
+                    Response::Int(n) => *n,
+                    Response::Text(text) => String::from_utf16_lossy(text)
+                        .parse::<i32>()
+                        .map_err(|_| input::Error::Number)?,
+                };
+                self.live.glass_amount(&script, amount).map_err(ierror)
             }
             Script::Shop(script) => self
                 .live
@@ -1118,6 +1130,25 @@ impl Live {
             InputType::Numeric,
             utf16(prompt),
             Script::Smith(script),
+        );
+        self.inner.drain(p);
+        result
+    }
+    /// `sendInputDialogue(player, InputType.AMOUNT, prompt, handler)` of
+    /// GlassCraftingListener's Make-X.
+    pub fn glass_prompt(
+        &mut self,
+        p: &P,
+        prompt: &str,
+        script: super::items::crafting_wares::GlassScript,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::send(
+            &mut Prompt { live: self },
+            &owner,
+            InputType::Amount,
+            utf16(prompt),
+            Script::Glass(script),
         );
         self.inner.drain(p);
         result

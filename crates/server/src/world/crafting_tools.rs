@@ -16,8 +16,9 @@
 //! dialogue's callbacks ([`gem_get_all`], [`gem_create`]), the two pulses
 //! with `SkillPulse`'s `start`, `pulse` and `stop` ([`Pulse`]) and the
 //! listener's lambda ([`string_silver`]). Not covered: the rest of
-//! crafting (jewellery and silver casting, leather, pottery, glass,
-//! spinning, weaving, battlestaves, light sources, snelms, snakeskin).
+//! crafting (battlestaves and glass are `super::crafting_wares`; jewellery
+//! and silver casting, leather, pottery, spinning, weaving, light sources,
+//! snelms and snakeskin are not ported).
 
 /// `Skills.CRAFTING`.
 pub const CRAFTING: i32 = 12;
