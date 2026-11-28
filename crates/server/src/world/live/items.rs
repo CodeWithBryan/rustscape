@@ -41,6 +41,7 @@ use rs09_game_core::java_lower::lowercase_root;
 use rs09_protocol::game::{ClientAction, Frame, updates};
 use std::collections::HashMap;
 
+pub mod altar;
 pub mod barbarian;
 pub mod bones;
 mod component_use;
@@ -1441,6 +1442,10 @@ impl listeners::Context for Ctx<'_> {
         }
         if f.value::<barbarian::UseRod>().is_some() {
             return self.0.barbarian_use_rod(p, n).map_err(lerr);
+        }
+        // PrayerAltarListener's "pray" and "pray-at" (super::altar).
+        if f.value::<altar::Pray>().is_some() {
+            return self.0.altar_pray(p, n).map_err(lerr);
         }
         // BoneBuryListener's "bury" (super::bones).
         if f.value::<bones::Bury>().is_some() {

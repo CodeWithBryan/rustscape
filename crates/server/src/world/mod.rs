@@ -94,6 +94,7 @@ pub mod player_render;
 pub mod player_tabs;
 pub mod player_walk;
 pub mod prayer;
+pub mod prayer_altar;
 pub mod prepared_animation;
 pub mod prepared_masks;
 pub mod projectiles;

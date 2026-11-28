@@ -80,6 +80,8 @@ pub enum Queued {
     ),
     /// BoneBuryListener's script: the bones' id and the item.
     BoneBury(i32, crate::inventory::item::Handle),
+    /// PrayerAltarListener's script: the chaos altar's trap.
+    AltarTrap,
 }
 impl NativeObject for Queued {}
 
@@ -412,6 +414,7 @@ impl Live {
                     self.woodcutting_queued(&p, task, tree, stage)
                 }
                 Some(Queued::BoneBury(id, item)) => self.bone_bury_queued(&p, *id, item),
+                Some(Queued::AltarTrap) => self.altar_trap_queued(&p),
                 None => Err(refused("a queued script this world did not queue")),
             },
             Arguments::UseWith { .. } => Err(refused("use-with interaction scripts")),

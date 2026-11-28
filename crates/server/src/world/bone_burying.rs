@@ -9,7 +9,7 @@
 //!
 //! Covered: the listener's lambda ([`bury`]) and its queued script
 //! ([`buried`]) with `removeBones`. Not covered: `Bones.forBoneMeal` and the
-//! bonemeal ids (the Ectofuntus is not ported), and PrayerAltarListener.
+//! bonemeal ids (the Ectofuntus is not ported).
 
 /// `Skills.PRAYER`.
 pub const PRAYER: i32 = 5;

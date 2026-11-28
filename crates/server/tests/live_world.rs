@@ -3864,6 +3864,50 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     eprintln!("burybones buried two bones and big bones at {start:?}, prayer experience 24");
     bury.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // PrayerAltarListener: Lumbridge church's altar 36972 recharges a drained
+    // player (level 43, 3 points left), and says so when the points are full.
+    let church = [ALTAR_STAND[0], ALTAR_STAND[1], 0];
+    write_save_with(&players, "traceone", "prayaltar", church, &[], |save| {
+        save["skills"][5]["static"] = Value::String("43".into());
+        save["skills"][5]["dynamic"] = Value::String("43".into());
+        save["skills"][5]["experience"] = Value::String("51000.0".into());
+        save["skills"][5]["prayerPoints"] = Value::String("3.0".into());
+    });
+    let (code, pray) = Client::login(address, "prayaltar").await;
+    assert_eq!(code, 2, "prayaltar's login");
+    let mut pray = pray.unwrap();
+    pray.until(Duration::from_secs(10), "prayaltar's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    assert_eq!(
+        pray.skills.get(&5).map(|s| s.0),
+        Some(3),
+        "prayaltar starts with three prayer points"
+    );
+    let from = pray.messages.len();
+    pray.send(scenery_option1(36972, ALTAR[0], ALTAR[1])).await;
+    pray.until_pinging(Duration::from_secs(30), "the recharge", |c| {
+        said(c, from, "You recharge your prayer points.")
+            && c.skills.get(&5).is_some_and(|s| s.0 == 43)
+    })
+    .await;
+    // The lock of three ticks runs out, then the altar has nothing to give.
+    tokio::time::sleep(Duration::from_secs(3)).await;
+    let from = pray.messages.len();
+    pray.send(scenery_option1(36972, ALTAR[0], ALTAR[1])).await;
+    pray.until_pinging(Duration::from_secs(30), "the full points", |c| {
+        said(c, from, "You already have full prayer points.")
+    })
+    .await;
+    assert!(
+        !said(&pray, from, "You recharge your prayer points."),
+        "a full player is not recharged"
+    );
+    eprintln!("prayaltar recharged 3 to 43 prayer points at the altar 36972 at {ALTAR:?}");
+    pray.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
@@ -4465,6 +4509,9 @@ fn use_with_scenery(item: i32, slot: i32, id: i32, x: i32, y: i32) -> Frame {
         ],
     )
 }
+/// Lumbridge church's altar 36972 and a tile in front of it.
+const ALTAR: [i32; 2] = [3243, 3206];
+const ALTAR_STAND: [i32; 2] = [3243, 3208];
 /// Otto's bed (scenery 25268) in his grotto.
 const OTTO_BED: [i32; 2] = [2500, 3490];
 /// NPC_ACTION_1 (78): an NPC's first option.

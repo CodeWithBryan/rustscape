@@ -900,6 +900,7 @@ impl super::super::host::Live {
         let mut otto = false;
         let mut firemaking = false;
         let mut bones = false;
+        let mut altar = false;
         use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -921,6 +922,9 @@ impl super::super::host::Live {
             }
             if name == crate::world::firemaking::LISTENER_CLASS {
                 firemaking = true;
+            }
+            if name == crate::world::prayer_altar::LISTENER_CLASS {
+                altar = true;
             }
             if name == crate::world::bone_burying::LISTENER_CLASS {
                 bones = true;
@@ -993,6 +997,10 @@ impl super::super::host::Live {
         if firemaking {
             // FiremakingListener.defineListeners (super::firemaking).
             self.define_firemaking_listener()?;
+        }
+        if altar {
+            // PrayerAltarListener.defineListeners (super::altar).
+            self.define_prayer_altar_listener()?;
         }
         if bones {
             // BoneBuryListener.defineListeners (super::bones).

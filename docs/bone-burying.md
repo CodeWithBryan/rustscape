@@ -12,8 +12,7 @@ Scope: the pinned `content/global/skill/prayer/BoneBuryListener.kt` and the
 The bodies are functions over `bone_burying::Host`; every call the original
 makes outside these classes is a required method with no default.
 
-Not ported: `Bones.forBoneMeal` and the bonemeal ids (the Ectofuntus), and
-`PrayerAltarListener` (bones used on an altar).
+Not ported: `Bones.forBoneMeal` and the bonemeal ids (the Ectofuntus).
 
 ## Evidence, and what it does not show
 
