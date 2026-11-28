@@ -1628,6 +1628,10 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.fish_cutting_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // FireMakingPulse and BarbFirePulse (super::items::firemaking).
+        if let Some(result) = self.firemaking_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // ProspectListener's message pulse (super::items::mining).
         if let Some(result) = self.prospect_pulse_body(pulse) {
             return result.map_err(fail);
@@ -1674,9 +1678,13 @@ impl driver::Host<P> for Live {
             Some(slot) => Ok(slot.active),
             // An NPC checked by a combat or death pulse.
             None if self.inner.npcs.rows.contains_key(&node) => Ok(self.inner.node_active(node)),
-            None => Err(driver::Error::Native(format!(
-                "a world pulse checks node {node}, which is not a live player"
-            ))),
+            None => match self.walk.scene.checked_active(node) {
+                // The scenery a SceneryBuilder pulse checks (a fire).
+                Some(active) => Ok(active),
+                None => Err(driver::Error::Native(format!(
+                    "a world pulse checks node {node}, which is not a live player"
+                ))),
+            },
         }
     }
     fn tick_listeners(&mut self) -> driver::Result<()> {

@@ -3744,6 +3744,68 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     otto.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Firemaking: a tinderbox used with logs. The log goes to the ground,
+    // FireMakingPulse rolls every third tick (at level 1 normal logs always
+    // light), the fire replaces the log, the player steps off it and gains
+    // 40 experience; the fire burns 180 ticks and leaves ashes.
+    let start = [3226, 3146, 0];
+    let inventory = [(0, 590, 1), (1, 1511, 1), (2, 1511, 1)];
+    write_save(&players, "traceone", "firelog", start, &inventory);
+    let (code, fire) = Client::login(address, "firelog").await;
+    assert_eq!(code, 2, "firelog's login");
+    let mut fire = fire.unwrap();
+    fire.until(Duration::from_secs(10), "firelog's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = fire.messages.len();
+    fire.send(use_item_on_item(590, 0, 1511, 1)).await;
+    fire.until_pinging(Duration::from_secs(20), "the log on the ground", |c| {
+        said(c, from, "You attempt to light the logs..")
+    })
+    .await;
+    assert_eq!(held(&fire, 1511), 1, "one log left the inventory");
+    fire.until_pinging(Duration::from_secs(30), "the fire", |c| {
+        said(c, from, "The fire catches and the logs begin to burn.")
+            && c.skills.get(&11).is_some_and(|s| s.1 == 40)
+    })
+    .await;
+    fire.until_pinging(Duration::from_secs(10), "the step off the fire", |c| {
+        c.position() != start
+    })
+    .await;
+    let stood = fire.position();
+    assert_eq!(
+        (stood[0] - start[0]).abs() + (stood[1] - start[1]).abs(),
+        1,
+        "firelog stepped one tile off the fire: {stood:?}"
+    );
+    assert!(
+        !fire.ground_ids(start).contains(&1511),
+        "the log on the ground was burnt"
+    );
+    // Fires cannot be stacked: the fire is an object on its tile. The
+    // second log is lit from the new tile at once (`last-firemake`) or on a
+    // later roll.
+    let from = fire.messages.len();
+    fire.send(use_item_on_item(590, 0, 1511, 2)).await;
+    fire.until_pinging(Duration::from_secs(30), "the second fire", |c| {
+        said(c, from, "The fire catches and the logs begin to burn.")
+            && c.skills.get(&11).is_some_and(|s| s.1 == 80)
+    })
+    .await;
+    assert_eq!(held(&fire, 1511), 0, "both logs were burnt");
+    // 180 ticks later the first fire goes out and leaves its ashes.
+    fire.until_pinging(Duration::from_secs(150), "the ashes", |c| {
+        c.ground_ids(start).contains(&592)
+    })
+    .await;
+    eprintln!(
+        "firelog lit two logs with a tinderbox from {start:?} (stepped to {stood:?}), firemaking experience 80, and the first fire left ashes"
+    );
+    fire.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

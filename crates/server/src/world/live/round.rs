@@ -68,6 +68,8 @@ pub struct Round {
     pub fishing_spots: super::fishing_spots::FishingSpotWorld,
     /// Barbarian fishing (super::items::barbarian).
     pub barbarian: super::items::barbarian::BarbarianWorld,
+    /// Firemaking (super::items::firemaking).
+    pub firemaking: super::items::firemaking::FiremakingWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).
