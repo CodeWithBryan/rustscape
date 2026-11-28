@@ -643,7 +643,7 @@ impl player_walk::Services for WalkHost<'_> {
     fn destination(
         &mut self,
         state: &mut State,
-        _: Option<Node>,
+        mover: Option<Node>,
         target: Option<Node>,
         service: crate::world::movement::DestinationService,
     ) -> player_walk::Result<Option<Location>> {
@@ -669,6 +669,23 @@ impl player_walk::Services for WalkHost<'_> {
                 super::scenery::SceneryPlugin::Anvil => return Ok(None),
                 super::scenery::SceneryPlugin::Stall => return Ok(None),
                 super::scenery::SceneryPlugin::Chest => return Ok(None),
+                // DoorManagingPlugin.getDestination: DoorActionHandler's
+                // side of a wall-shaped scenery, null for any other.
+                super::scenery::SceneryPlugin::Door => {
+                    let shape = object.read().shape;
+                    let Some(mover) = mover else {
+                        return Err(player_walk::Error::Binding(
+                            "DoorManagingPlugin.getDestination without a player".into(),
+                        ));
+                    };
+                    if shape >= 4 && shape != 9 {
+                        return Ok(None);
+                    }
+                    let mut side = super::items::doors::Side { state, host: self };
+                    return doors::destination(&mut side, mover, &object)
+                        .map(Some)
+                        .map_err(|e| player_walk::Error::Binding(format!("{e:?}")));
+                }
             };
             let mut geometry = super::destination::Geometry {
                 walk: &mut *self.walk,

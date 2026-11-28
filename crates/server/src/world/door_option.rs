@@ -36,11 +36,9 @@ impl Program {
         destination(ctx, player, object)
     }
 }
+pub const CLASS: &str = "content.global.handlers.scenery.DoorManagingPlugin";
 pub fn native_handler() -> crate::definitions::option_handler::Handle {
-    crate::definitions::option_handler::Handler::new(
-        "content.global.handlers.scenery.DoorManagingPlugin",
-        Program,
-    )
+    crate::definitions::option_handler::Handler::new(CLASS, Program)
 }
 
 pub trait Context {

@@ -520,11 +520,11 @@ impl repository::Host<P> for Live {
             .skip("WalkingQueue.reset at logout (player_walk does not expose it)");
         Ok(())
     }
-    fn player_logout_listeners(&mut self, _: &P) -> repository::Result<()> {
-        self.inner
-            .not_ported
-            .default_answer("Player.logoutListeners (content adds none: empty)");
-        Ok(())
+    fn player_logout_listeners(&mut self, p: &P) -> repository::Result<()> {
+        // The "autowalk" listener of a door (super::items::doors); no other
+        // content of this world adds one.
+        self.door_logout_listener(p)
+            .map_err(|e| repository::Error::Exception(format!("autowalk logout listener: {e}")))
     }
     fn has_familiar(&mut self, _: &P) -> repository::Result<bool> {
         self.inner
@@ -1593,6 +1593,10 @@ impl driver::Host<P> for Live {
         }
         // The cooking pulses (super::items::cooking).
         if let Some(result) = self.cooking_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
+        // DoorActionHandler's pulses (super::items::doors).
+        if let Some(result) = self.door_pulse_body(pulse) {
             return result.map_err(fail);
         }
         // SceneryBuilder's pulses (the scene submitted them to this runner).
