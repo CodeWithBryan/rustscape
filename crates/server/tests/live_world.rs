@@ -3782,11 +3782,20 @@ async fn use_content_scenario(address: std::net::SocketAddr, saves: &std::path::
             c.base.is_some() && !c.updates.is_empty()
         })
         .await;
+    // The patron nearest the middle of the pub: the lambda asks that the
+    // player stands inside the pub (2689,3488 to 2700,3498), and the same
+    // NPC types walk the village outside it, so the first one in view can
+    // lead the player out of the door.
     let patron = |c: &Client| {
+        let base = c.base?;
         c.npcs
             .actors
             .iter()
-            .find(|(_, n)| (1..=5).contains(&n.type_id))
+            .filter(|(_, n)| (1..=5).contains(&n.type_id))
+            .min_by_key(|(_, n)| {
+                let (dx, dy) = (base[0] + n.tile[0] - 2694, base[1] + n.tile[1] - 3493);
+                dx.abs().max(dy.abs())
+            })
             .map(|(i, _)| *i as i32)
     };
     cider
