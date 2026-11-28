@@ -22,15 +22,28 @@ tips and grapples.
 
 ## Evidence, and what it does not show
 
-**There is no JVM differential corpus for this module.** It was ported by
-reading the pinned sources.
-
+- `fixtures/fletching/oracle.jsonl` (1,433 cases, about 7,500 operations) is
+  recorded from the unmodified Kotlin sources compiled with Kotlin
+  1.8.20/JDK 11 (`oracle/fletching/generate.py`, `cargo xtask
+  fletching-oracle`), and `cargo test -p rs09-server --test fletching`
+  replays every case over this module and compares each result and each
+  recorded call in order. The corpus covers logs, stringing and arrows.
+- What the corpus does not establish (see `scope` in
+  `fixtures/fletching/provenance.json`): the player, inventory, levels,
+  quest stages, clock, attributes, diary, slayer flags, messages and script
+  queue are recording adapters answering from declared case state, the
+  SkillDialogueHandler is an adapter that records `open()` only, and the
+  driver calls a handler through a declared use-with lookup and runs a
+  script at the stage a case names. The original Container, Skills,
+  InteractionListeners, ScriptProcessor and dialogue interpreter are not
+  run. The generator is not in `oracle/ci.toml`: CI replays the committed
+  fixture but does not regenerate it.
 - `cargo test -p rs09-server --lib fletching_logs`: a recording host written
   from the same sources checks the table's grouping, the grammar helpers,
   `create`'s level and quest checks, the script's calls in order, its clock
   wait, its level recheck, the ogre shaft roll, the comp bow's wolf bones
   and the Seers' Village attribute. It shows agreement with one reading of
-  the sources, not with the original classes running.
+  the sources.
 - The live world's `gather` scenario (`fletchlog`) uses a knife on logs,
   reads the four names of the make-X dialogue (interface 305), is refused a
   shortbow at level 1, and cuts three logs into 45 arrow shafts with

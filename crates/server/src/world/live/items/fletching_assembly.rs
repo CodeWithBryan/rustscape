@@ -1,5 +1,6 @@
 //! Stringing bows and assembling arrows in the live world
-//! (`world::fletching_assembly`, ported without a JVM corpus):
+//! (`world::fletching_assembly`, whose library has the JVM corpus
+//! `fixtures/fletching`; this binding has none):
 //! StringingListeners' and ArrowListeners' four `onUseWith` lambdas, the
 //! SkillDialogueHandlers they open and their four WEAK scripts on the
 //! player's ScriptProcessor (super::super::scripts).
@@ -25,7 +26,7 @@ use crate::{
     scripts::{self, Strength},
     world::{
         dialogue::{self as d, NodeHandle},
-        dialogue_dsl::skill::{Handler, HandlerBody, SkillDialogue},
+        dialogue_dsl::skill::{Handler, HandlerBody},
         fletching_assembly::{self as assembly, Host, Job},
         fletching_logs::{self as logs, Error, Quest, Result},
         interaction_listeners::{self as listeners, Function, FunctionKind},
@@ -33,18 +34,8 @@ use crate::{
     },
 };
 
-/// The four `onUseWith(IntType.ITEM, ...)` lambdas.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Assembly {
-    /// A string with an unstrung bow.
-    Stringing,
-    /// An arrow shaft with a feather.
-    Headless,
-    /// A headless arrow with arrow tips.
-    Tipped,
-    /// An ogre arrow shaft with a feather.
-    Ogre,
-}
+/// The four lambdas' marker.
+pub use assembly::Listener as Assembly;
 impl crate::world::component_objects::NativeObject for Assembly {}
 
 /// `fletching_assembly::Host` over the live world, for one player: the
@@ -177,61 +168,31 @@ impl HandlerBody<Live> for AssemblyHandler {
 }
 
 impl Live {
-    fn define_assembly(
-        &mut self,
-        class: &str,
-        used: &[i32],
-        with: &[i32],
-        lambda: &'static str,
-        which: Assembly,
-    ) -> std::result::Result<(), String> {
+    fn define_assembly(&mut self, class: &str, which: Assembly) -> std::result::Result<(), String> {
+        let (used, with) = which.ids();
         self.item_actions
             .listeners
             .clone()
             .add_use_arrays(
                 listeners::Kind::Item.ordinal(),
-                used,
-                with,
-                Function::new(FunctionKind::UseWith, lambda, which),
+                &used,
+                &with,
+                Function::new(FunctionKind::UseWith, which.lambda(), which),
             )
             .map_err(|e| format!("{class}: {e:?}"))
     }
 
     /// `StringingListeners.defineListeners`.
     pub fn define_stringing_listener(&mut self) -> std::result::Result<(), String> {
-        self.define_assembly(
-            assembly::STRINGING_CLASS,
-            &assembly::STRINGS,
-            &assembly::unstrung_ids(),
-            assembly::STRINGING_LAMBDA,
-            Assembly::Stringing,
-        )
+        self.define_assembly(assembly::STRINGING_CLASS, Assembly::Stringing)
     }
 
     /// `ArrowListeners.defineListeners`.
     pub fn define_arrow_listeners(&mut self) -> std::result::Result<(), String> {
-        let class = assembly::ARROW_CLASS;
-        self.define_assembly(
-            class,
-            &[assembly::ARROW_SHAFT],
-            &assembly::FEATHERS,
-            assembly::HEADLESS_LAMBDA,
-            Assembly::Headless,
-        )?;
-        self.define_assembly(
-            class,
-            &[assembly::HEADLESS_ARROW],
-            &assembly::tip_ids(),
-            assembly::TIPPED_LAMBDA,
-            Assembly::Tipped,
-        )?;
-        self.define_assembly(
-            class,
-            &[assembly::OGRE_ARROW_SHAFT],
-            &assembly::FEATHERS,
-            assembly::OGRE_LAMBDA,
-            Assembly::Ogre,
-        )
+        for which in [Assembly::Headless, Assembly::Tipped, Assembly::Ogre] {
+            self.define_assembly(assembly::ARROW_CLASS, which)?;
+        }
+        Ok(())
     }
 
     /// One of the four lambdas: its checks, then its SkillDialogueHandler,
@@ -251,31 +212,20 @@ impl Live {
         };
         let p = P(player.clone());
         let (used, with) = (used.read().id(), with.read().id());
-        let job = match which {
-            Assembly::Stringing => {
-                let mut host = Assemble(Fletch {
-                    live: self,
-                    p: p.clone(),
-                });
-                let checked = assembly::string_use(&mut host, used, with);
-                self.inner.drain(&p);
-                match checked.map_err(bind)? {
-                    None => return Ok(false),
-                    Some(None) => return Ok(true),
-                    Some(Some(bow)) => Job::String(bow),
-                }
-            }
-            Assembly::Headless => Job::Headless(with),
-            Assembly::Tipped => match assembly::from_tip(with) {
-                Some(arrow) => Job::Tipped(arrow),
+        let job = {
+            let mut host = Assemble(Fletch {
+                live: self,
+                p: p.clone(),
+            });
+            let checked = assembly::use_with(&mut host, which, used, with);
+            self.inner.drain(&p);
+            match checked.map_err(bind)? {
                 None => return Ok(false),
-            },
-            Assembly::Ogre => Job::Ogre(with),
+                Some(None) => return Ok(true),
+                Some(Some(job)) => job,
+            }
         };
-        let kind = match which {
-            Assembly::Stringing => SkillDialogue::OneOption,
-            _ => SkillDialogue::MakeSetOneOption,
-        };
+        let kind = job.kind();
         let product = job.product().map_err(bind)?;
         let items = vec![Everyday(Ctx(self)).native(product, 1)];
         let body = AssemblyHandler { job, string: used };

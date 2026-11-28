@@ -23,15 +23,26 @@ Flesh Eaters fletching listeners.
 
 ## Evidence, and what it does not show
 
-**There is no JVM differential corpus for this module.** It was ported by
-reading the pinned sources.
-
+- `fixtures/fletching/oracle.jsonl` (1,433 cases, about 7,500 operations) is
+  recorded from the unmodified Kotlin sources compiled with Kotlin
+  1.8.20/JDK 11 (`oracle/fletching/generate.py`, `cargo xtask
+  fletching-oracle`), and `cargo test -p rs09-server --test fletching`
+  replays every case over this module and compares each result and each
+  recorded call in order. The corpus covers logs, stringing and arrows.
+- What the corpus does not establish (see `scope` in
+  `fixtures/fletching/provenance.json`): the player, inventory, levels,
+  quest stages, clock, attributes, diary, slayer flags, messages and script
+  queue are recording adapters answering from declared case state, the
+  SkillDialogueHandler is an adapter that records `open()` only, and the
+  driver calls a handler through a declared use-with lookup and runs a
+  script at the stage a case names. The original Container, Skills,
+  InteractionListeners, ScriptProcessor and dialogue interpreter are not
+  run. The generator is not in `oracle/ci.toml`: CI replays the committed
+  fixture but does not regenerate it.
 - `cargo test -p rs09-server --lib fletching_assembly`: a recording host
   written from the same sources checks both tables, the string and quest
   refusals, each `create`'s checks in order, `getAll`, each script's calls
-  in order with its set sizes and delays, and the Seers' Village task. It
-  shows agreement with one reading of the sources, not with the original
-  classes running.
+  in order with its set sizes and delays, and the Seers' Village task. It shows agreement with one reading of the sources.
 - The live world's `gather` scenario (`fletcharrow`) is refused a crossbow
   string on a shortbow (u), strings it with a bow string through the
   one-option dialogue (interface 309), makes one set of 15 headless arrows

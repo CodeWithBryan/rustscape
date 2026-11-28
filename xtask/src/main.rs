@@ -210,6 +210,7 @@ fn main() -> Result<()> {
         Some("game-packets-oracle") => profile_oracle::generate(root, &args, "game-packets")?,
         Some("doors-oracle") => profile_oracle::generate(root, &args, "doors")?,
         Some("gathering-oracle") => profile_oracle::generate(root, &args, "gathering")?,
+        Some("fletching-oracle") => profile_oracle::generate(root, &args, "fletching")?,
         Some("scenery-oracle") => profile_oracle::generate(root, &args, "scenery")?,
         Some("clipping-oracle") => profile_oracle::generate(root, &args, "clipping")?,
         Some("chunk-oracle") => profile_oracle::generate(root, &args, "chunk")?,

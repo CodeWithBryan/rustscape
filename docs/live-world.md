@@ -1054,14 +1054,16 @@ stand-ins); this test checks the production binding end to end.
   statue never recharges, `PrayerPointsRechargeEvent` is skipped and the
   chaos altar 61's "check" (Merlin's Crystal) is not installed. Fletching
   logs with a knife is installed (`items/fletching.rs` over
-  `world/fletching_logs.rs`, no JVM corpus, docs/fletching-logs.md):
+  `world/fletching_logs.rs`, docs/fletching-logs.md; the library is
+  replayed against the JVM corpus `fixtures/fletching`, the live binding
+  is not):
   LogCraftableListeners opens the make-X SkillDialogueHandler
   (`dialogue_dsl/skill.rs`; SkillDialoguePlugin is registered in the
   dialogue registry at boot, the first plugin there) and
   CraftItemWithLogScript cuts a log every three ticks; the ogre crafts
   read quest stages nothing here advances. Stringing and the three arrow
   assemblies are installed (`items/fletching_assembly.rs` over
-  `world/fletching_assembly.rs`, no JVM corpus,
+  `world/fletching_assembly.rs`, same corpus,
   docs/fletching-assembly.md): StringingListeners and ArrowListeners open
   their one-option and make-sets dialogues and their four scripts run;
   SlayerFlags is not ported, so broad arrows are always refused, and the

@@ -1,5 +1,6 @@
 //! Fletching logs with a knife in the live world (`world::fletching_logs`,
-//! ported without a JVM corpus): LogCraftableListeners' `onUseWith` of a
+//! whose library has the JVM corpus `fixtures/fletching`; this binding has
+//! none): LogCraftableListeners' `onUseWith` of a
 //! knife and the nine logs, the SkillDialogueHandler it opens
 //! (`dialogue_dsl::skill`, with SkillDialoguePlugin registered in the
 //! dialogue registry at boot) and CraftItemWithLogScript's WEAK script on
@@ -261,9 +262,9 @@ impl Live {
         };
         let items = {
             let everyday = Everyday(Ctx(self));
-            crafts
-                .iter()
-                .map(|craft| everyday.native(logs::CRAFTS[*craft].finished, 1))
+            logs::finished_items(&crafts)
+                .into_iter()
+                .map(|id| everyday.native(id, 1))
                 .collect::<Vec<_>>()
         };
         let kind = SkillDialogue::for_length(crafts.len() as i32);

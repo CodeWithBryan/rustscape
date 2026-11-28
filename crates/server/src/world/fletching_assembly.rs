@@ -4,9 +4,10 @@
 //! `HeadlessArrowCraftScript`, `TippedArrowCraftScript`,
 //! `FlightedOgreArrowCraftScript`, `ArrowCraftInfo`, `Feathers`).
 //!
-//! Ported from the pinned sources without a JVM corpus: the unit tests below
-//! check the calls against the Kotlin by reading, not against a recorded
-//! run. Every outside call is a [`Host`] method.
+//! Differential corpus: `fixtures/fletching` (oracle/fletching), replayed by
+//! `tests/fletching.rs` over these functions with the oracle's declared
+//! state; the unit tests below are a second, hand-read check. Every outside
+//! call is a [`Host`] method.
 //!
 //! Covered: both tables, each listener's checks before its
 //! SkillDialogueHandler ([`string_use`]), each handler's `create` and
@@ -14,7 +15,10 @@
 //! ([`script`]). The SkillDialogueHandler itself is `dialogue_dsl::skill`'s.
 //! Not covered: the rest of fletching (bolts, darts, crossbow limbs, gems,
 //! grapples).
-use super::fletching_logs::{Error, Quest, Result, SEERS_ZONES};
+use super::{
+    dialogue_dsl::skill::SkillDialogue,
+    fletching_logs::{Error, Quest, Result, SEERS_ZONES},
+};
 
 pub const BOW_STRING: i32 = 1777;
 pub const CROSSBOW_STRING: i32 = 9438;
@@ -195,6 +199,71 @@ impl Job {
             Self::Ogre(_) => FLIGHTED_OGRE_ARROW,
         })
     }
+}
+
+impl Job {
+    /// The handler's `SkillDialogue`.
+    pub fn kind(self) -> SkillDialogue {
+        match self {
+            Self::String(_) => SkillDialogue::OneOption,
+            _ => SkillDialogue::MakeSetOneOption,
+        }
+    }
+}
+
+/// The four `onUseWith(IntType.ITEM, ...)` lambdas, in registration order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Listener {
+    /// A string with an unstrung bow.
+    Stringing,
+    /// An arrow shaft with a feather.
+    Headless,
+    /// A headless arrow with arrow tips.
+    Tipped,
+    /// An ogre arrow shaft with a feather.
+    Ogre,
+}
+impl Listener {
+    pub const ALL: [Self; 4] = [Self::Stringing, Self::Headless, Self::Tipped, Self::Ogre];
+    /// The ids the listener registers: the used ones, then the others.
+    pub fn ids(self) -> (Vec<i32>, Vec<i32>) {
+        match self {
+            Self::Stringing => (STRINGS.to_vec(), unstrung_ids()),
+            Self::Headless => (vec![ARROW_SHAFT], FEATHERS.to_vec()),
+            Self::Tipped => (vec![HEADLESS_ARROW], tip_ids()),
+            Self::Ogre => (vec![OGRE_ARROW_SHAFT], FEATHERS.to_vec()),
+        }
+    }
+    /// The `onUseWith` lambda.
+    pub fn lambda(self) -> &'static str {
+        match self {
+            Self::Stringing => STRINGING_LAMBDA,
+            Self::Headless => HEADLESS_LAMBDA,
+            Self::Tipped => TIPPED_LAMBDA,
+            Self::Ogre => OGRE_LAMBDA,
+        }
+    }
+}
+
+/// A lambda up to its handler: `None` is the lambda's `false`, `Some(None)`
+/// its `true` without a handler and `Some(Some(job))` the job whose handler
+/// opens.
+pub fn use_with<H: Host>(
+    host: &mut H,
+    listener: Listener,
+    used: i32,
+    with: i32,
+) -> Result<Option<Option<Job>>> {
+    Ok(match listener {
+        Listener::Stringing => match string_use(host, used, with)? {
+            None => None,
+            Some(None) => Some(None),
+            Some(Some(bow)) => Some(Some(Job::String(bow))),
+        },
+        Listener::Headless => Some(Some(Job::Headless(with))),
+        Listener::Tipped => from_tip(with).map(|arrow| Some(Job::Tipped(arrow))),
+        Listener::Ogre => Some(Some(Job::Ogre(with))),
+    })
 }
 
 /// What the listeners and their scripts ask of the world, for their one
