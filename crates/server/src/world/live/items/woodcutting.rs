@@ -129,6 +129,8 @@ pub(super) enum Target {
     Scenery(doors::Handle),
     /// A fishing spot.
     Npc(P),
+    /// A body with no node (super::barbarian's pulses and its knife).
+    None,
 }
 
 /// The gathering bodies' services over the live world, for one player and
@@ -169,6 +171,7 @@ impl Gather<'_> {
                 Target::Scenery(object) => Ok(object.clone()),
                 // `node as Scenery` of an NPC.
                 Target::Npc(_) => Err(Error::ClassCast),
+                Target::None => Err(Error::Reply),
             },
             Arg::Int(MADE) => self.made.clone().ok_or(Error::Reply),
             _ => Err(Error::Reply),
@@ -963,6 +966,24 @@ impl Context for Gather<'_> {
         // queueScript(player, delay, strength) { ... }: the lambda with
         // the tree it captured, in the player's script queue.
         if service == Service::PulseManagerRun {
+            // submitIndividualPulse of barbarian fishing (super::barbarian).
+            match task {
+                Task::BarbarianFishing { .. } => {
+                    let p = self.p.clone();
+                    return match self.live.run_barbarian_pulse(&p) {
+                        Ok(()) => Ok(()),
+                        Err(e) => self.fail(e),
+                    };
+                }
+                Task::FishCutting { fish, .. } => {
+                    let p = self.p.clone();
+                    return self
+                        .live
+                        .run_fish_cutting_pulse(&p, fish)
+                        .or_else(|e| self.fail(e));
+                }
+                _ => {}
+            }
             // player.pulseManager.run(object : Pulse(delay) { ... }):
             // ProspectListener's message (super::mining).
             let p = self.p.clone();

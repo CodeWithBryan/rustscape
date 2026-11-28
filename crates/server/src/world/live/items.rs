@@ -41,6 +41,7 @@ use rs09_game_core::java_lower::lowercase_root;
 use rs09_protocol::game::{ClientAction, Frame, updates};
 use std::collections::HashMap;
 
+pub mod barbarian;
 mod component_use;
 pub mod cooking;
 pub mod everyday;
@@ -1430,6 +1431,13 @@ impl listeners::Context for Ctx<'_> {
                 n,
             )
             .map_err(lerr);
+        }
+        // BarbFishInteractionListeners (super::barbarian).
+        if f.value::<barbarian::SearchBed>().is_some() {
+            return self.0.barbarian_search_bed(p, n).map_err(lerr);
+        }
+        if f.value::<barbarian::UseRod>().is_some() {
+            return self.0.barbarian_use_rod(p, n).map_err(lerr);
         }
         // ProspectListener's "prospect" (super::mining).
         if f.value::<mining::Prospect>().is_some() {

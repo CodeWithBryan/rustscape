@@ -5,8 +5,8 @@
 //! barehand fishing) and each keeps its own source's behaviour.
 //!
 //! Spot movement (`FishingNPC`, `FishSpots`) is `super::fishing_npc`.
-//! Barbarian fishing and the option handlers that start the pulse are not
-//! ported.
+//! Barbarian fishing is `super::barbarian`. The option handlers that start
+//! the pulse are not ported.
 use super::{
     random,
     service::{Arg, Calls, Context, Error, Handle, Result, Service, Task},

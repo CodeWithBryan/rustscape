@@ -66,6 +66,8 @@ pub struct Round {
     pub mining: super::items::mining::MiningWorld,
     /// FishingNPC's attributes (super::fishing_spots).
     pub fishing_spots: super::fishing_spots::FishingSpotWorld,
+    /// Barbarian fishing (super::items::barbarian).
+    pub barbarian: super::items::barbarian::BarbarianWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).

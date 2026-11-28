@@ -7,8 +7,10 @@
 //! script), mining (the listener's script and the prospect option) and
 //! fishing (the listener's script) run in the live world
 //! (`world::live::items::{woodcutting, mining, fishing}`), as does the
-//! fishing spots' movement (`fishing_npc`, `world::live::fishing_spots`). See
+//! fishing spots' movement (`fishing_npc`, `world::live::fishing_spots`) and
+//! barbarian fishing (`barbarian`, `world::live::items::barbarian`). See
 //! docs/gathering.md for what the JVM corpus does and does not establish.
+pub mod barbarian;
 pub mod binding;
 pub mod fishing;
 pub mod fishing_npc;
