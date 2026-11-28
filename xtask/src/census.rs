@@ -24,9 +24,9 @@ use rs09_cache::{
 };
 use serde_json::{Map, Value, json};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     fs,
-    io::{Read, Seek, SeekFrom},
+    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::{
@@ -36,12 +36,18 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-const USAGE: &str = "cargo xtask census <tours [--check] [--data DIR] | run [--data DIR] [--only NAME,...] [--no-build] [--output DIR] | report [--output DIR]>";
+const USAGE: &str = "cargo xtask census <tours [--check] [--data DIR] | run [--data DIR] [--only NAME,...] [--no-build] [--output DIR] [--tour-timeout SECS] | report [--output DIR]>";
 const TOURS: &str = "crates/headless/scenarios/census";
 const WORLD: &str = "census";
 /// The label of each tour's first step: the character stands still, so what
 /// the server logs then happens every tick whatever a player does.
 const IDLE: &str = "(idle baseline)";
+/// How long the idle baseline lasts.
+const IDLE_SECONDS: f64 = 20.0;
+/// Lines before a tour's first step (its login).
+const LOGIN: &str = "(login)";
+/// Lines outside every tour's window.
+const OUTSIDE: &str = "(outside tours)";
 
 /// One tour: an area of the world, where the character starts, and how far
 /// from the centre scenery, NPC spawns and ground spawns are taken.
@@ -558,7 +564,7 @@ fn tour(area: &Area, defs: &mut Definitions, maps: &Maps, data: &Path) -> Result
     let [cx, cy, cz] = area.centre;
     let r = area.radius;
     let centre = [cx, cy];
-    let mut steps = vec![step(json!({"do": "pump", "seconds": 12.0}), IDLE)];
+    let mut steps = vec![step(json!({"do": "pump", "seconds": IDLE_SECONDS}), IDLE)];
 
     if area.tabs {
         for &(interface, child) in TAB_BUTTONS {
@@ -859,9 +865,9 @@ fn unix_ms() -> u64 {
 #[derive(Default)]
 struct Lines {
     texts: Vec<String>,
-    index: std::collections::HashMap<String, usize>,
+    index: HashMap<String, u32>,
     /// (unix ms, text index, 0 stderr / 1 stdout)
-    events: Vec<(u64, usize, u8)>,
+    events: Vec<(u64, u32, u8)>,
 }
 impl Lines {
     fn push(&mut self, ms: u64, source: &str, line: &str) {
@@ -869,51 +875,59 @@ impl Lines {
         let id = match self.index.get(text) {
             Some(&id) => id,
             None => {
+                let id = self.texts.len() as u32;
                 self.texts.push(text.to_owned());
-                self.index.insert(text.to_owned(), self.texts.len() - 1);
-                self.texts.len() - 1
+                self.index.insert(text.to_owned(), id);
+                id
             }
         };
         self.events.push((ms, id, u8::from(source == "stdout")));
     }
-    fn json(&self) -> Value {
-        json!({
-            "texts": self.texts,
-            "events": self.events.iter().map(|&(ms, id, src)| json!([ms, id, src])).collect::<Vec<_>>(),
-        })
+    /// `server-texts.json` (the distinct texts) and `server-events.tsv`
+    /// (`ms<TAB>text index<TAB>0 stderr / 1 stdout`, one line per event).
+    fn save(&self, output: &Path) -> Result<()> {
+        fs::write(output.join(TEXTS_FILE), serde_json::to_string(&self.texts)?)?;
+        let mut out = BufWriter::new(fs::File::create(output.join(EVENTS_FILE))?);
+        for &(ms, id, source) in &self.events {
+            writeln!(out, "{ms}\t{id}\t{source}")?;
+        }
+        out.flush()?;
+        Ok(())
     }
-    fn from_json(value: &Value) -> Self {
-        let texts: Vec<String> = value["texts"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|t| t.as_str().unwrap_or("").to_owned())
-            .collect();
-        let events = value["events"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|e| {
-                (
-                    e[0].as_u64().unwrap_or(0),
-                    e[1].as_u64().unwrap_or(0) as usize,
-                    e[2].as_u64().unwrap_or(0) as u8,
-                )
-            })
-            .collect();
-        Self {
+    fn load(output: &Path) -> Result<Self> {
+        let texts: Vec<String> =
+            serde_json::from_str(&fs::read_to_string(output.join(TEXTS_FILE))?)?;
+        let mut events = Vec::new();
+        for line in BufReader::new(fs::File::open(output.join(EVENTS_FILE))?).lines() {
+            let line = line?;
+            let mut parts = line.split('\t');
+            let (Some(ms), Some(id), Some(source)) = (parts.next(), parts.next(), parts.next())
+            else {
+                return Err(format!("bad {EVENTS_FILE} line: {line:?}").into());
+            };
+            let id: u32 = id.parse()?;
+            if id as usize >= texts.len() {
+                return Err(format!("{EVENTS_FILE} names text {id} of {}", texts.len()).into());
+            }
+            events.push((ms.parse()?, id, source.parse()?));
+        }
+        Ok(Self {
             texts,
             events,
             ..Self::default()
-        }
+        })
     }
 }
+
+const TEXTS_FILE: &str = "server-texts.json";
+const EVENTS_FILE: &str = "server-events.tsv";
 
 /// A not-ported line without its every-call count (` [#n]`).
 fn strip_count(line: &str) -> &str {
     match line.rfind(" [#") {
         Some(i)
             if line.ends_with(']')
+                && i + 3 < line.len() - 1
                 && line[i + 3..line.len() - 1]
                     .bytes()
                     .all(|b| b.is_ascii_digit()) =>
@@ -956,10 +970,28 @@ impl Follow {
         let now = unix_ms();
         while let Some(end) = self.partial.find('\n') {
             let line: String = self.partial.drain(..=end).collect();
-            let line = line.trim_end().to_owned();
+            let line = line.trim_end();
             if !line.is_empty() {
-                out.push(now, self.source, &line);
+                out.push(now, self.source, line);
             }
+        }
+    }
+}
+
+/// Stops the census world however the run ends (an error, a panic).
+struct WorldGuard<'a> {
+    root: &'a Path,
+}
+impl Drop for WorldGuard<'_> {
+    fn drop(&mut self) {
+        let stop = [
+            "test-world".to_owned(),
+            "stop".to_owned(),
+            "--name".to_owned(),
+            WORLD.to_owned(),
+        ];
+        if let Err(e) = crate::test_world::run(self.root, &stop) {
+            eprintln!("census: could not stop the census world: {e}");
         }
     }
 }
@@ -969,6 +1001,7 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
     let mut only: Option<Vec<String>> = None;
     let mut build = true;
     let mut output = root.join("runs/census");
+    let mut tour_limit = Duration::from_secs(1500);
     let mut options = args.iter();
     while let Some(option) = options.next() {
         let mut value = || options.next().ok_or(format!("missing value for {option}"));
@@ -977,6 +1010,7 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
             "--only" => only = Some(value()?.split(',').map(str::to_owned).collect()),
             "--no-build" => build = false,
             "--output" => output = absolute(root, value()?),
+            "--tour-timeout" => tour_limit = Duration::from_secs(value()?.parse()?),
             other => return Err(format!("unknown option {other}\n{USAGE}").into()),
         }
     }
@@ -1055,6 +1089,7 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
             "--log-every-refusal".into(),
         ],
     )?;
+    let guard = WorldGuard { root };
     let world_dir = root.join("runs/test-world").join(WORLD);
     let world: Value = serde_json::from_str(&fs::read_to_string(world_dir.join("world.json"))?)?;
     let follows = vec![
@@ -1092,7 +1127,7 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
             eprintln!("census: tour {name} ...");
             let started = unix_ms();
             let began = Instant::now();
-            let status = Command::new(&agent)
+            let mut child = Command::new(&agent)
                 .current_dir(root)
                 .arg("--world")
                 .arg(&world_dir)
@@ -1102,12 +1137,29 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(fs::File::create(&log)?)
-                .status()?;
+                .spawn()?;
+            // A wall-clock limit per tour: a stuck agent is killed.
+            let (status, timed_out) = loop {
+                if let Some(status) = child.try_wait()? {
+                    break (Some(status), false);
+                }
+                if began.elapsed() > tour_limit {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    break (None, true);
+                }
+                std::thread::sleep(Duration::from_millis(200));
+            };
             // Let the logout and the last tick's lines arrive.
             std::thread::sleep(Duration::from_secs(2));
             let ended = unix_ms();
             eprintln!(
-                "census: tour {name} finished ({status}) in {:.0} s",
+                "census: tour {name} {} in {:.0} s",
+                match (status, timed_out) {
+                    (_, true) => "killed at the tour time limit".to_owned(),
+                    (Some(s), _) => format!("finished ({s})"),
+                    (None, _) => "ended".to_owned(),
+                },
                 began.elapsed().as_secs_f64()
             );
             runs.push(json!({
@@ -1116,7 +1168,8 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
                 "script": path.strip_prefix(root).unwrap_or(path).display().to_string().replace('\\', "/"),
                 "startedMs": started,
                 "endedMs": ended,
-                "exit": status.code(),
+                "exit": status.and_then(|s| s.code()),
+                "timedOut": timed_out,
                 "report": format!("agents/{name}.json"),
                 "log": format!("agents/{name}.log"),
             }));
@@ -1125,20 +1178,9 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
     })();
     stop.store(true, Ordering::SeqCst);
     let _ = follower.join();
-    let stopped = crate::test_world::run(
-        root,
-        &[
-            "test-world".into(),
-            "stop".into(),
-            "--name".into(),
-            WORLD.into(),
-        ],
-    );
+    drop(guard);
     let lines = std::mem::take(&mut *lines.lock().unwrap());
-    fs::write(
-        output.join("server-lines.json"),
-        serde_json::to_string(&lines.json())?,
-    )?;
+    lines.save(&output)?;
     fs::write(
         output.join("census.json"),
         serde_json::to_string_pretty(&json!({
@@ -1149,7 +1191,6 @@ fn census(root: &Path, args: &[String]) -> Result<()> {
         }))?,
     )?;
     result?;
-    stopped?;
     report(&output)
 }
 
@@ -1181,22 +1222,46 @@ fn refusal_text(line: &str, at: usize) -> String {
     numbers_hidden(what[..end].trim_end())
 }
 
-/// The kind and name of a server log line the census counts, if it is one.
-fn classify(line: &str) -> Option<(&'static str, String)> {
-    let line = strip_count(line);
-    if let Some(rest) = line.strip_prefix("[live] not ported, skipped: ") {
-        return Some(("skipped", rest.to_owned()));
+/// What a counted line is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Kind {
+    /// `not_ported::Kind::Skipped`.
+    Skipped,
+    /// `not_ported::Kind::Default`.
+    EmptyAnswer,
+    /// An error naming something "not ported in the live world".
+    Refused,
+    /// A packet or service error, or a panic: listed apart.
+    Error,
+}
+impl Kind {
+    fn label(self) -> &'static str {
+        match self {
+            Kind::Skipped => "skipped",
+            Kind::EmptyAnswer => "empty answer",
+            Kind::Refused => "refused",
+            Kind::Error => "error",
+        }
     }
-    if let Some(rest) = line.strip_prefix("[live] not ported, original's empty answer: ") {
-        return Some(("empty answer", rest.to_owned()));
+}
+
+/// The kind and name of a server log line the census counts, if it is one.
+/// The not-ported prefixes are the server's own (`not_ported::line`).
+fn classify(line: &str) -> Option<(Kind, String)> {
+    use rs09_server::world::live::not_ported::{DEFAULT_PREFIX, SKIPPED_PREFIX};
+    let line = strip_count(line);
+    if let Some(rest) = line.strip_prefix(SKIPPED_PREFIX) {
+        return Some((Kind::Skipped, rest.to_owned()));
+    }
+    if let Some(rest) = line.strip_prefix(DEFAULT_PREFIX) {
+        return Some((Kind::EmptyAnswer, rest.to_owned()));
     }
     // The start-up summary ("... steps partly ported or refused") is not a hit.
     if line.starts_with("World booted") || line.contains("walk debug:") {
         return None;
     }
-    let lower = line.to_ascii_lowercase();
-    if lower.contains("panicked") {
-        return Some(("panic", numbers_hidden(line)));
+    if line.contains("panicked") {
+        return Some((Kind::Error, format!("panic: {}", numbers_hidden(line))));
     }
     // `PacketProcessor Err Error Processing IfAction: ...`: the packet class.
     let class = line.find("Error Processing ").map(|j| {
@@ -1212,41 +1277,40 @@ fn classify(line: &str) -> Option<(&'static str, String)> {
     if let Some(i) = line.find("not ported in the live world") {
         let what = refusal_text(line, i);
         return Some((
-            "refused",
+            Kind::Refused,
             match context {
                 Some(c) => format!("{c}: {what}"),
                 None => what,
             },
         ));
     }
-    if line.contains("Error Processing")
-        || lower.contains(" err ")
-        || lower.contains("error")
-        || lower.contains(" failed:")
-    {
-        let at = line.find("Error Processing").unwrap_or(0);
+    // Only the server's two error forms; other lines that merely mention
+    // an error are not counted.
+    if let Some(at) = line.find("Error Processing") {
         return Some((
-            "error",
+            Kind::Error,
             numbers_hidden(&line[at..]).chars().take(240).collect(),
         ));
     }
-    if lower.contains("not ported") {
-        return Some(("refused", numbers_hidden(line).chars().take(240).collect()));
+    if let Some(context) = context.filter(|_| line.contains(" failed:")) {
+        let at = line.find(" failed:").unwrap_or(0);
+        let rest: String = numbers_hidden(&line[at + " failed:".len()..])
+            .chars()
+            .take(200)
+            .collect();
+        return Some((Kind::Error, format!("{context} failed:{rest}")));
     }
     None
 }
 
 #[derive(Default)]
 struct Entry {
-    kind: &'static str,
     hits: u64,
-    /// Tours whose idle baseline hit it. Hit in at least half the tours'
-    /// baselines, it happens every tick whatever the player does (a single
-    /// baseline can also catch the previous character's delayed logout).
-    idle: BTreeSet<String>,
-    actions: BTreeSet<(String, String)>,
-    tours: BTreeSet<String>,
-    areas: BTreeSet<String>,
+    /// Hits per (tour, action).
+    by_action: BTreeMap<(String, String), u64>,
+    /// Hits during the idle baselines, and the tours whose baseline hit it.
+    baseline_hits: u64,
+    baseline_tours: BTreeSet<String>,
     examples: Vec<String>,
 }
 
@@ -1256,24 +1320,46 @@ struct TourRun {
     area: String,
     started: u64,
     ended: u64,
+    /// (start ms, action label), by start.
     steps: Vec<(u64, String)>,
     ok: usize,
     failed: usize,
+    exit: Option<i64>,
+    timed_out: bool,
+    has_report: bool,
+}
+impl TourRun {
+    /// Milliseconds each action ran: a step runs until the next starts.
+    fn action_ms(&self) -> BTreeMap<String, u64> {
+        let mut out = BTreeMap::new();
+        for (i, (start, label)) in self.steps.iter().enumerate() {
+            let end = self.steps.get(i + 1).map_or(self.ended, |(s, _)| *s);
+            *out.entry(label.clone()).or_insert(0) += end.saturating_sub(*start);
+        }
+        out
+    }
+}
+
+/// Whether `hits` in an action are more than the idle baseline explains:
+/// above its expectation `e` by a Poisson-like margin, or any hit when the
+/// baseline never saw it.
+fn credited(hits: u64, expected: f64) -> bool {
+    if expected <= 0.0 {
+        return hits >= 1;
+    }
+    hits as f64 > expected + 2.0 * expected.sqrt() + 1.0
 }
 
 fn report(output: &Path) -> Result<()> {
     let census: Value = serde_json::from_str(&fs::read_to_string(output.join("census.json"))?)?;
-    let lines = Lines::from_json(&serde_json::from_str(&fs::read_to_string(
-        output.join("server-lines.json"),
-    )?)?);
-    // Each text is classified once.
-    let classes: Vec<Option<(&'static str, String)>> =
-        lines.texts.iter().map(|t| classify(t)).collect();
+    let lines = Lines::load(output)?;
+    let classes: Vec<Option<(Kind, String)>> = lines.texts.iter().map(|t| classify(t)).collect();
     let mut tours = Vec::new();
     for run in census["tours"].as_array().into_iter().flatten() {
-        let report: Value = fs::read_to_string(output.join(run["report"].as_str().unwrap_or("")))
-            .ok()
-            .and_then(|t| serde_json::from_str(&t).ok())
+        let text = fs::read_to_string(output.join(run["report"].as_str().unwrap_or(""))).ok();
+        let report: Value = text
+            .as_deref()
+            .and_then(|t| serde_json::from_str(t).ok())
             .unwrap_or(Value::Null);
         let mut steps = Vec::new();
         let (mut ok, mut failed) = (0, 0);
@@ -1289,6 +1375,7 @@ fn report(output: &Path) -> Result<()> {
                 failed += 1;
             }
         }
+        steps.sort_by_key(|(start, _)| *start);
         tours.push(TourRun {
             name: run["tour"].as_str().unwrap_or("").to_owned(),
             area: run["area"].as_str().unwrap_or("").to_owned(),
@@ -1297,197 +1384,381 @@ fn report(output: &Path) -> Result<()> {
             steps,
             ok,
             failed,
+            exit: run["exit"].as_i64(),
+            timed_out: run["timedOut"] == true,
+            has_report: report.is_object(),
         });
     }
-    let mut entries: BTreeMap<(&'static str, String), Entry> = BTreeMap::new();
-    for t in &mut tours {
-        t.steps.sort_by_key(|(started, _)| *started);
-    }
+
+    // Attribute every counted line to the tour action running when it was read.
+    let mut entries: BTreeMap<(Kind, String), Entry> = BTreeMap::new();
     let mut counted = 0u64;
+    let mut not_ported_lines = 0u64;
     for &(ms, id, _) in &lines.events {
-        let Some((kind, name)) = &classes[id] else {
+        let Some((kind, name)) = &classes[id as usize] else {
             continue;
         };
         counted += 1;
-        let (tour, area, action) = match tours.iter().find(|t| t.started <= ms && ms <= t.ended) {
+        if matches!(kind, Kind::Skipped | Kind::EmptyAnswer) {
+            not_ported_lines += 1;
+        }
+        let (tour, action) = match tours.iter().find(|t| t.started <= ms && ms <= t.ended) {
             Some(t) => {
                 let after = t.steps.partition_point(|(started, _)| *started <= ms);
                 let action = match after {
-                    0 => "(login)".to_owned(),
-                    n => t.steps[n - 1].1.clone(),
+                    0 => LOGIN,
+                    n => t.steps[n - 1].1.as_str(),
                 };
-                (t.name.as_str(), t.area.as_str(), action)
+                (t.name.as_str(), action)
             }
-            None => ("(outside tours)", "", "(start-up)".to_owned()),
+            None => (OUTSIDE, "(start-up or between tours)"),
         };
-        let e = entries
-            .entry((kind, name.clone()))
-            .or_insert_with(|| Entry {
-                kind,
-                ..Entry::default()
-            });
+        let e = entries.entry((*kind, name.clone())).or_default();
         e.hits += 1;
-        if action == IDLE && !e.idle.contains(tour) {
-            e.idle.insert(tour.to_owned());
+        if action == IDLE {
+            e.baseline_hits += 1;
+            if !e.baseline_tours.contains(tour) {
+                e.baseline_tours.insert(tour.to_owned());
+            }
         }
-        if !e.tours.contains(tour) {
-            e.tours.insert(tour.to_owned());
-        }
-        if !area.is_empty() && !e.areas.contains(area) {
-            e.areas.insert(area.to_owned());
-        }
-        e.actions.insert((tour.to_owned(), action));
-        let text = &lines.texts[id];
+        *e.by_action
+            .entry((tour.to_owned(), action.to_owned()))
+            .or_insert(0) += 1;
+        let text = &lines.texts[id as usize];
         if e.examples.len() < 3 && !e.examples.iter().any(|x| x == text) {
             e.examples.push(text.chars().take(400).collect());
         }
     }
-    let mut ranked: Vec<(String, Entry)> = entries
-        .into_iter()
-        .map(|((_, name), e)| (name, e))
+
+    // The idle baseline's length over all tours, and each action's length.
+    let action_ms: BTreeMap<&str, BTreeMap<String, u64>> = tours
+        .iter()
+        .map(|t| (t.name.as_str(), t.action_ms()))
         .collect();
-    ranked.sort_by(|(an, a), (bn, b)| {
-        b.actions
-            .len()
-            .cmp(&a.actions.len())
-            .then(b.hits.cmp(&a.hits))
-            .then(an.cmp(bn))
-    });
-    let (ambient, ranked): (Vec<_>, Vec<_>) = ranked
+    let baseline_seconds: f64 = action_ms
+        .values()
+        .filter_map(|m| m.get(IDLE))
+        .map(|&ms| ms as f64 / 1000.0)
+        .sum();
+    let tour_minutes = tours
+        .iter()
+        .map(|t| t.ended.saturating_sub(t.started) as f64 / 60_000.0)
+        .sum::<f64>();
+
+    struct Row {
+        kind: Kind,
+        name: String,
+        hits: u64,
+        seen: usize,
+        credited: Vec<(String, String)>,
+        baseline_per_minute: f64,
+        baseline_tours: usize,
+        areas: BTreeSet<String>,
+        entry: Entry,
+    }
+    let area_of: BTreeMap<&str, &str> = tours
+        .iter()
+        .map(|t| (t.name.as_str(), t.area.as_str()))
+        .collect();
+    let mut rows: Vec<Row> = entries
         .into_iter()
-        .partition(|(_, e)| e.idle.len() * 2 >= tours.len().max(1));
-    let seconds = |t: &TourRun| t.ended.saturating_sub(t.started) as f64 / 1000.0;
-    let minutes = tours.iter().map(seconds).sum::<f64>().max(1.0) / 60.0;
-    let entry_json = |i: usize, name: &str, e: &Entry| {
+        .map(|((kind, name), entry)| {
+            let rate = if baseline_seconds > 0.0 {
+                entry.baseline_hits as f64 / baseline_seconds
+            } else {
+                0.0
+            };
+            let credited: Vec<(String, String)> = entry
+                .by_action
+                .iter()
+                .filter(|&((tour, action), &hits)| {
+                    let ms = action_ms
+                        .get(tour.as_str())
+                        .and_then(|m| m.get(action))
+                        .copied()
+                        .unwrap_or(0);
+                    action != IDLE && tour != OUTSIDE && credited(hits, rate * ms as f64 / 1000.0)
+                })
+                .map(|(key, _)| key.clone())
+                .collect();
+            let areas = credited
+                .iter()
+                .filter_map(|(t, _)| area_of.get(t.as_str()).map(|a| a.to_string()))
+                .collect();
+            Row {
+                kind,
+                hits: entry.hits,
+                seen: entry
+                    .by_action
+                    .keys()
+                    .filter(|(t, a)| a != IDLE && t != OUTSIDE)
+                    .count(),
+                credited,
+                baseline_per_minute: rate * 60.0,
+                baseline_tours: entry.baseline_tours.len(),
+                areas,
+                name,
+                entry,
+            }
+        })
+        .collect();
+    rows.sort_by(|a, b| {
+        b.credited
+            .len()
+            .cmp(&a.credited.len())
+            .then(b.hits.cmp(&a.hits))
+            .then(a.name.cmp(&b.name))
+    });
+    let (errors, ranked): (Vec<Row>, Vec<Row>) =
+        rows.into_iter().partition(|r| r.kind == Kind::Error);
+    let mut every_tick: Vec<&Row> = ranked
+        .iter()
+        .filter(|r| r.baseline_tours * 2 >= tours.len().max(1))
+        .collect();
+    every_tick.sort_by(|a, b| {
+        b.baseline_per_minute
+            .total_cmp(&a.baseline_per_minute)
+            .then(a.name.cmp(&b.name))
+    });
+
+    // What makes the run untrustworthy: said in the report, and an error exit.
+    let mut problems = Vec::new();
+    for t in &tours {
+        if t.timed_out {
+            problems.push(format!("tour {} was killed at the tour time limit", t.name));
+        } else if !matches!(t.exit, Some(0 | 1)) {
+            problems.push(format!(
+                "tour {}'s agent exited with {:?} (2 is an error: no server, a failed login, a bad script)",
+                t.name, t.exit
+            ));
+        }
+        if !t.has_report || t.steps.is_empty() {
+            problems.push(format!("tour {} reported no steps", t.name));
+        } else if t.failed * 2 > t.ok + t.failed {
+            problems.push(format!(
+                "tour {}: {} of {} steps failed",
+                t.name,
+                t.failed,
+                t.ok + t.failed
+            ));
+        }
+    }
+    if tours.is_empty() {
+        problems.push("no tour ran".to_owned());
+    }
+    if not_ported_lines == 0 {
+        problems.push(
+            "the server logged no not-ported line at all (was RS09_NOT_PORTED_LOG=every set?)"
+                .to_owned(),
+        );
+    }
+
+    let row_json = |i: usize, r: &Row| {
         json!({
             "rank": i + 1,
-            "kind": e.kind,
-            "name": name,
-            "hits": e.hits,
-            "hitsPerMinute": e.hits as f64 / minutes,
-            "actions": e.actions.len(),
-            "tours": e.tours,
-            "areas": e.areas,
-            "hitBy": e.actions.iter().map(|(t, a)| json!({"tour": t, "action": a})).collect::<Vec<_>>(),
-            "examples": e.examples,
+            "kind": r.kind.label(),
+            "name": r.name,
+            "hits": r.hits,
+            "creditedActions": r.credited.len(),
+            "actionsSeen": r.seen,
+            "baselinePerMinute": r.baseline_per_minute,
+            "baselineTours": r.baseline_tours,
+            "areas": r.areas,
+            "credited": r.credited.iter().map(|(t, a)| json!({"tour": t, "action": a})).collect::<Vec<_>>(),
+            "hitBy": r.entry.by_action.iter().map(|((t, a), n)| json!({"tour": t, "action": a, "hits": n})).collect::<Vec<_>>(),
+            "examples": r.entry.examples,
         })
     };
+    let seconds = |t: &TourRun| t.ended.saturating_sub(t.started) as f64 / 1000.0;
     let tour_rows: Vec<Value> = tours
         .iter()
-        .map(|t| json!({"tour": t.name, "area": t.area, "stepsOk": t.ok, "stepsFailed": t.failed, "seconds": seconds(t)}))
+        .map(|t| {
+            json!({"tour": t.name, "area": t.area, "exit": t.exit, "timedOut": t.timed_out,
+            "stepsOk": t.ok, "stepsFailed": t.failed, "seconds": seconds(t)})
+        })
         .collect();
     fs::write(
         output.join("report.json"),
         serde_json::to_string_pretty(&json!({
+            "problems": problems,
             "serverLines": lines.events.len(),
             "countedLines": counted,
-            "tourMinutes": minutes,
+            "tourMinutes": tour_minutes,
+            "baselineSeconds": baseline_seconds,
             "tours": tour_rows,
-            "entries": ranked.iter().enumerate().map(|(i, (n, e))| entry_json(i, n, e)).collect::<Vec<_>>(),
-            "everyTick": ambient.iter().enumerate().map(|(i, (n, e))| entry_json(i, n, e)).collect::<Vec<_>>(),
+            "entries": ranked.iter().enumerate().map(|(i, r)| row_json(i, r)).collect::<Vec<_>>(),
+            "everyTick": every_tick.iter().map(|r| json!({"kind": r.kind.label(), "name": r.name,
+                "baselinePerMinute": r.baseline_per_minute, "baselineTours": r.baseline_tours})).collect::<Vec<_>>(),
+            "errors": errors.iter().enumerate().map(|(i, r)| row_json(i, r)).collect::<Vec<_>>(),
         }))?,
     )?;
 
+    let cell = |s: &str| s.replace('|', "\\|").replace('\n', " ");
     let mut md = String::new();
     md.push_str("# Refusal census\n\n");
-    md.push_str("Generated by `cargo xtask census run` ([docs/refusal-census.md](../../docs/refusal-census.md)). Each refusal or error the server logged while the tours ran, ranked by the number of distinct tour actions that hit it, then by hits. *Actions* counts each (tour, action) once; *hits* counts every log line. Refusals logged during the idle baseline (the character standing still) of at least half the tours happen every tick whatever a player does; they are listed apart, by hits per minute.\n\n");
+    if !problems.is_empty() {
+        md.push_str(
+            "> **WARNING: this run is incomplete; do not read the ranking as a census.**\n>\n",
+        );
+        for p in &problems {
+            md.push_str(&format!("> - {}\n", cell(p)));
+        }
+        md.push('\n');
+    }
+    md.push_str("Generated by `cargo xtask census run` ([docs/refusal-census.md](../../docs/refusal-census.md)). Each not-ported refusal the server logged while the tours ran. **Credit is by time window, not causation:** a line counts for the tour action that was running when it was read. An action is *credited* with a refusal only when it hit it more often than the idle baseline (the character standing still, 20 s per tour) explains: any hit if the baseline never saw it, otherwise more than the baseline's expectation for that action's length plus a margin. The ranking is by credited actions, then hits. *Seen* counts every action during which it was logged; *baseline/min* is its rate while idle.\n\n");
     md.push_str(&format!(
-        "{} server log lines over {:.1} tour minutes; {} counted; {} distinct refusals and errors from actions, {} every tick.\n\n",
+        "{} server log lines over {:.1} tour minutes ({:.0} s of idle baseline); {} counted; {} refusals, {} errors.\n\n",
         lines.events.len(),
-        minutes,
+        tour_minutes,
+        baseline_seconds,
         counted,
         ranked.len(),
-        ambient.len()
+        errors.len()
     ));
-    md.push_str("## Tours\n\n| tour | area | steps ok | steps failed | seconds |\n| --- | --- | ---: | ---: | ---: |\n");
+    md.push_str("## Tours\n\n| tour | area | exit | steps ok | steps failed | seconds |\n| --- | --- | --- | ---: | ---: | ---: |\n");
     for t in &tours {
+        let exit = match (t.timed_out, t.exit) {
+            (true, _) => "killed (time limit)".to_owned(),
+            (_, Some(code)) => code.to_string(),
+            (_, None) => "none".to_owned(),
+        };
         md.push_str(&format!(
-            "| {} | {} | {} | {} | {:.0} |\n",
+            "| {} | {} | {} | {} | {} | {:.0} |\n",
             t.name,
             t.area,
+            exit,
             t.ok,
             t.failed,
             seconds(t)
         ));
     }
-    let cell = |s: &str| s.replace('|', "\\|").replace('\n', " ");
-    md.push_str("\n## Ranking (hit by actions)\n\n| # | kind | refusal or error | actions | hits | areas | e.g. hit by |\n| ---: | --- | --- | ---: | ---: | --- | --- |\n");
-    for (i, (name, e)) in ranked.iter().enumerate() {
-        let examples: Vec<String> = e
-            .actions
+    md.push_str("\nExit 1 means some steps failed (an NPC out of view, a tile not reached); the tours keep going.\n");
+    md.push_str("\n## Ranking\n\n| # | kind | refusal | credited actions | seen | hits | baseline/min | areas | e.g. credited to |\n| ---: | --- | --- | ---: | ---: | ---: | ---: | --- | --- |\n");
+    for (i, r) in ranked.iter().enumerate() {
+        let examples: Vec<String> = r
+            .credited
             .iter()
             .take(3)
             .map(|(t, a)| format!("{t}: {a}"))
             .collect();
         md.push_str(&format!(
-            "| {} | {} | `{}` | {} | {} | {} | {} |\n",
+            "| {} | {} | `{}` | {} | {} | {} | {} | {} | {} |\n",
             i + 1,
-            e.kind,
-            cell(name),
-            e.actions.len(),
-            e.hits,
-            e.areas.iter().cloned().collect::<Vec<_>>().join(", "),
+            r.kind.label(),
+            cell(&r.name),
+            r.credited.len(),
+            r.seen,
+            r.hits,
+            if r.baseline_per_minute > 0.0 {
+                format!("{:.1}", r.baseline_per_minute)
+            } else {
+                String::new()
+            },
+            r.areas.iter().cloned().collect::<Vec<_>>().join(", "),
             cell(&examples.join("; "))
         ));
     }
-    md.push_str("\n## Every tick (hit while standing still)\n\n| # | kind | refusal or error | hits | hits per minute |\n| ---: | --- | --- | ---: | ---: |\n");
-    let mut ambient = ambient;
-    ambient.sort_by(|(an, a), (bn, b)| b.hits.cmp(&a.hits).then(an.cmp(bn)));
-    for (i, (name, e)) in ambient.iter().enumerate() {
+    md.push_str("\n## Every tick (logged while standing still in at least half the tours)\n\nThese stay in the ranking above, where an action is credited only for hits beyond this rate.\n\n| kind | refusal | baseline/min |\n| --- | --- | ---: |\n");
+    for r in &every_tick {
         md.push_str(&format!(
-            "| {} | {} | `{}` | {} | {:.0} |\n",
+            "| {} | `{}` | {:.1} |\n",
+            r.kind.label(),
+            cell(&r.name),
+            r.baseline_per_minute
+        ));
+    }
+    md.push_str("\n## Errors (packet and service errors, panics)\n\n| # | error | credited actions | hits | e.g. credited to |\n| ---: | --- | ---: | ---: | --- |\n");
+    for (i, r) in errors.iter().enumerate() {
+        let examples: Vec<String> = r
+            .credited
+            .iter()
+            .take(3)
+            .map(|(t, a)| format!("{t}: {a}"))
+            .collect();
+        md.push_str(&format!(
+            "| {} | `{}` | {} | {} | {} |\n",
             i + 1,
-            e.kind,
-            cell(name),
-            e.hits,
-            e.hits as f64 / minutes
+            cell(&r.name),
+            r.credited.len(),
+            r.hits,
+            cell(&examples.join("; "))
         ));
     }
     fs::write(output.join("report.md"), md)?;
     println!(
-        "Census report: {} ({} ranked, {} every tick); JSON: {}",
+        "Census report: {} ({} refusals, {} every tick, {} errors); JSON: {}",
         output.join("report.md").display(),
         ranked.len(),
-        ambient.len(),
+        every_tick.len(),
+        errors.len(),
         output.join("report.json").display()
     );
-    Ok(())
+    if problems.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "the census run is incomplete (see the report's warning):\n- {}",
+            problems.join("\n- ")
+        )
+        .into())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rs09_server::world::live::not_ported::{self, Kind as Logged};
 
     #[test]
-    fn classifies_the_server_lines() {
+    fn classifies_what_the_server_prints() {
+        // The server's own lines, with and without the every-call count.
         assert_eq!(
-            classify("[live] not ported, skipped: Shops.openShop (content) [#3]"),
-            Some(("skipped", "Shops.openShop (content)".to_owned()))
+            classify(&not_ported::line(
+                Logged::Skipped,
+                "Shops.openShop (content)",
+                Some(3)
+            )),
+            Some((Kind::Skipped, "Shops.openShop (content)".to_owned()))
         );
         assert_eq!(
-            classify("[live] not ported, original's empty answer: quest requirements"),
-            Some(("empty answer", "quest requirements".to_owned()))
+            classify(&not_ported::line(
+                Logged::Default,
+                "quest requirements",
+                None
+            )),
+            Some((Kind::EmptyAnswer, "quest requirements".to_owned()))
         );
         assert_eq!(
             classify(
-                "PacketProcessor Err Error Processing IfAction: x 12 not ported in the live world: global handler service open_interface"
+                "[live] PacketProcessor Err Error Processing IfAction: Exception(\"Binding(\\\"not ported in the live world: global handler service open_interface\\\")\")"
             ),
             Some((
-                "refused",
+                Kind::Refused,
                 "IfAction: not ported in the live world: global handler service open_interface"
                     .to_owned()
             ))
         );
-        assert_eq!(classify("Native world listening on TCP 127.0.0.1:1"), None);
         assert_eq!(
             classify(
                 r#"[live] deferred walk service failed: Binding("Binding(\"Binding(Some(\\\"\\\\\\\"not ported in the live world: openGrandExchangeCollectionBox (the Grand Exchange is not installed)\\\\\\\"\\\"))\")")"#
             ),
             Some((
-                "refused",
+                Kind::Refused,
                 "deferred walk service: not ported in the live world: openGrandExchangeCollectionBox (the Grand Exchange is not installed)".to_owned()
             ))
         );
+        assert_eq!(
+            classify(
+                "[live] PacketProcessor Err Error Processing NpcAction: index 42 out of range"
+            ),
+            Some((
+                Kind::Error,
+                "Error Processing NpcAction: index # out of range".to_owned()
+            ))
+        );
+        // Lines that only mention an error, and the start-up summary, are not hits.
+        assert_eq!(classify("Native world listening on TCP 127.0.0.1:1"), None);
+        assert_eq!(classify("[live] loaded error_messages.json"), None);
         assert_eq!(
             classify(
                 "World booted in 12 ms: start-up complete = false, 3 steps partly ported or refused"
@@ -1496,6 +1767,41 @@ mod tests {
         );
         assert_eq!(strip_count("x [#12]"), "x");
         assert_eq!(strip_count("x [#a]"), "x [#a]");
+        assert_eq!(strip_count("x [#]"), "x [#]");
+    }
+
+    #[test]
+    fn credits_only_hits_beyond_the_baseline() {
+        assert!(credited(1, 0.0));
+        assert!(!credited(0, 0.0));
+        // A baseline expecting 0.13 hits in the action: one hit is noise.
+        assert!(!credited(1, 0.13));
+        assert!(credited(3, 0.13));
+        assert!(!credited(10, 8.0));
+        assert!(credited(20, 8.0));
+    }
+
+    #[test]
+    fn saves_and_loads_the_lines() {
+        let dir = std::env::temp_dir().join(format!("census-lines-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let mut lines = Lines::default();
+        lines.push(
+            5,
+            "stderr",
+            &not_ported::line(Logged::Skipped, "a", Some(1)),
+        );
+        lines.push(6, "stdout", "plain");
+        lines.push(
+            7,
+            "stderr",
+            &not_ported::line(Logged::Skipped, "a", Some(2)),
+        );
+        lines.save(&dir).unwrap();
+        let back = Lines::load(&dir).unwrap();
+        assert_eq!(back.texts.len(), 2);
+        assert_eq!(back.events, vec![(5, 0, 0), (6, 1, 1), (7, 0, 0)]);
+        fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

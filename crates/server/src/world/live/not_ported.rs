@@ -34,6 +34,23 @@ pub struct NotPorted {
 
 /// The environment variable that logs every call: `RS09_NOT_PORTED_LOG=every`.
 pub const LOG_EVERY_VAR: &str = "RS09_NOT_PORTED_LOG";
+/// The start of a logged [`Kind::Skipped`] call (the census parses these).
+pub const SKIPPED_PREFIX: &str = "[live] not ported, skipped: ";
+/// The start of a logged [`Kind::Default`] call.
+pub const DEFAULT_PREFIX: &str = "[live] not ported, original's empty answer: ";
+
+/// The line logged for a call: the prefix, the name and, when every call is
+/// logged, its running count (` [#n]`).
+pub fn line(kind: Kind, what: &str, count: Option<u64>) -> String {
+    let prefix = match kind {
+        Kind::Skipped => SKIPPED_PREFIX,
+        Kind::Default => DEFAULT_PREFIX,
+    };
+    match count {
+        Some(n) => format!("{prefix}{what} [#{n}]"),
+        None => format!("{prefix}{what}"),
+    }
+}
 
 impl NotPorted {
     pub fn new(verbose: bool) -> Self {
@@ -46,14 +63,10 @@ impl NotPorted {
     fn record(&mut self, kind: Kind, what: &'static str) {
         let entry = self.calls.entry(what).or_insert((kind, 0));
         entry.1 += 1;
-        let label = match kind {
-            Kind::Skipped => "not ported, skipped",
-            Kind::Default => "not ported, original's empty answer",
-        };
         if self.every {
-            eprintln!("[live] {label}: {what} [#{}]", entry.1);
+            eprintln!("{}", line(kind, what, Some(entry.1)));
         } else if entry.1 == 1 && self.verbose {
-            eprintln!("[live] {label}: {what}");
+            eprintln!("{}", line(kind, what, None));
         }
     }
     /// A call whose system or content is not ported: nothing is done.

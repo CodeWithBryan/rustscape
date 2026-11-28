@@ -12,11 +12,16 @@ cargo xtask census run
 
 The command builds the release server and the kit's `agent_run`, starts a
 disposable world, runs the tours one after another, stops the world, and
-writes `runs/census/report.md` and `runs/census/report.json`. A full run of
-the twelve tours takes about an hour and a half. `--only lumbridge_castle,draynor`
+writes `runs/census/report.md` and `runs/census/report.json`. The twelve
+tours take about 50 minutes of tour time (the 2026-11-27 run: 48 tour
+minutes), plus the builds and the world's start-up. `--only lumbridge_castle,draynor`
 runs only some tours, `--no-build` skips the builds, `--output DIR` writes
-somewhere else, and `--data DIR` picks the world folder (by default
-`runs/world-trace-oracle/template`, else `runs/play/world-data`). It needs
+somewhere else, `--tour-timeout SECS` (default 1500) kills a tour's agent
+that runs longer, and `--data DIR` picks the world folder (by default
+`runs/world-trace-oracle/template`, else `runs/play/world-data`). The server
+only reads the world folder: its configuration copy, saves and server store
+go under the test world's `saves/` folder, and its start-up refuses writes
+outside it. It needs
 `assets/cache` and a world folder, the same inputs as the test-world kit
 ([test-world.md](test-world.md)).
 
@@ -26,7 +31,14 @@ that answers with nothing and logs nothing does not appear. Neither does
 content the tours do not reach: other areas, quests, skilling loops, combat
 past the first swings, and anything behind an interface the agent cannot
 see. A refusal's rank says how often these tours hit it, not how much it
-matters to a real player.
+matters to a real player. Credit is by time window, not causation (see
+[How a line is attributed](#how-a-line-is-attributed)).
+
+**When a run does not count.** The census exits with an error, and the
+report opens with a warning, when a tour's agent exited with an error or
+was killed at the time limit, a tour reported no steps or failed more than
+half of them, or the server logged no not-ported line at all. The report
+is still written, so the cause can be read.
 
 ## What runs
 
@@ -49,7 +61,11 @@ call of each name. With the environment variable
 [live] not ported, skipped: InteractionEvent dispatch (entity event hooks not ported) [#14]
 ```
 
-That is the only server change. It changes what is logged, nothing else.
+That is the only server change. It changes what is logged, nothing else,
+except that writing every line to standard error takes time on the world
+thread, which slightly perturbs tick timing during a census. The prefixes
+are constants in `not_ported.rs` (`SKIPPED_PREFIX`, `DEFAULT_PREFIX`,
+`line`), which the census parses with, so the two cannot drift apart.
 `test-world start --log-every-refusal` sets the variable for its server.
 
 ### The tours
@@ -77,7 +93,7 @@ one of them can also be run by hand against a test world
 Each tour seeds its own character at the centre, with every skill at 60 and
 an inventory of tools, food, runes and coins. The steps are, in order:
 
-1. **Idle baseline:** 12 seconds standing still.
+1. **Idle baseline:** 20 seconds standing still.
 2. **Tab buttons** (first tour only): combat styles, music, emotes, quests,
    skill guides, prayers, settings.
 3. **NPCs:** every named NPC type spawned within the radius, every option
@@ -120,31 +136,39 @@ The census added these to the kit's runner (see [test-world.md](test-world.md)):
 
 ## Reading the report
 
-`runs/census/report.md` has three tables.
+`runs/census/report.md` opens with a warning when the run does not count
+(above), then has four tables.
 
-**Tours:** steps that passed and failed, and how long each tour took. A
+**Tours:** the agent's exit (1 only means some steps failed; the tours keep
+going), steps that passed and failed, and how long each tour took. A
 tour with many failed steps reached less, so its area is under-counted.
 The agent's own report and stderr for each tour are in `runs/census/agents/`.
 
-**Ranking (hit by actions):** every refusal or error that tour actions hit.
+**Ranking:** every not-ported refusal the tours hit.
 
 | column | meaning |
 | --- | --- |
-| kind | `skipped`: a not-ported call that did nothing; `empty answer`: a not-ported query answered with the original's no-content answer; `refused`: an error naming something "not ported in the live world" (the packet or service failed); `error`: any other error line; `panic` |
-| refusal or error | the name the server logged. Numbers in error text are replaced by `#` so hits group together |
-| actions | distinct (tour, action) pairs that hit it. This is the rank |
+| kind | `skipped`: a not-ported call that did nothing; `empty answer`: a not-ported query answered with the original's no-content answer; `refused`: an error naming something "not ported in the live world" (the packet or service failed) |
+| refusal | the name the server logged. Numbers in error text are replaced by `#` so hits group together |
+| credited actions | (tour, action) pairs credited with it (below). This is the rank |
+| seen | (tour, action) pairs during which it was logged at all |
 | hits | every log line, which favours things called many times per action |
-| e.g. hit by | up to three of the actions |
+| baseline/min | its rate while the characters stood still; empty when the baselines never saw it |
+| e.g. credited to | up to three of the credited actions |
 
-**Every tick:** refusals that appeared during the idle baseline of at least
-half the tours. (One baseline alone can catch the previous character's
-logout, which waits until its last fight is over.) They
-happen every tick (or with every update) whatever the player does, such as
-the entity tick hooks or the tick listeners, so counting actions says
-nothing about them. They are listed by hits per minute instead.
+**Every tick:** refusals logged during the idle baseline of at least half
+the tours, by their idle rate. (One baseline alone can catch the previous
+character's logout, which waits until its last fight is over.) They stay in
+the ranking, where an action is credited only for hits beyond that rate.
 
-`report.json` has the same entries with every action that hit each one
-(`hitBy`), up to three raw log lines (`examples`) and the tour summary.
+**Errors:** packet errors (`Error Processing ...`) that name no not-ported
+system, service failures (`... failed: ...`) and panics, with the same
+columns. Only those two forms and panics are counted; a line that merely
+contains the word "error" is not.
+
+`report.json` has the same entries, with the credited actions, every
+action that logged each one and how often (`hitBy`), up to three raw log
+lines (`examples`), the tour summary and the `problems` behind a warning.
 
 ### How a line is attributed
 
@@ -159,8 +183,21 @@ when it comes from something slower, such as a respawn or a pulse that runs
 for several ticks. Lines during the login, before the first step, are
 `(login)`. Tours run one at a time, so a line is never another tour's.
 
+So credit is by time window, not causation. Timer- and tick-driven
+refusals (the autosave hook, aggression tolerance) are logged during
+whatever action was running. To keep them from outranking real gaps, an
+action is credited with a refusal only when it was logged then more often
+than the idle baseline explains: with the baseline's rate *r* per second
+and the action lasting *d* seconds, the expectation is *e* = *r*·*d*, and
+the action needs more than *e* + 2√*e* + 1 hits; a refusal the baselines
+never logged needs one. A periodic refusal slower than the baseline (once
+every 30 s, say) can still be missed by every baseline and credited to
+whatever action it lands in; its *seen* and *hits* against *credited
+actions* show that pattern.
+
 `cargo xtask census report` rebuilds the report from a run's saved files
-(`census.json`, `server-lines.json` and the agents' reports) without
+(`census.json`, `server-texts.json`, `server-events.tsv` and the agents'
+reports) without
 running anything.
 
 ## Rerunning as content lands

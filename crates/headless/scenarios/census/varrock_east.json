@@ -130,7 +130,7 @@
     {
       "do": "pump",
       "label": "(idle baseline)",
-      "seconds": 12.0
+      "seconds": 20.0
     },
     {
       "do": "npcOption",
