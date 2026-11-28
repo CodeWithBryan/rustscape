@@ -573,6 +573,155 @@ fn live_world_logs_in_walks_shows_two_players_logs_out_and_saves() {
     let _ = std::fs::remove_dir_all(&saves);
 }
 
+/// A copy of `from` with every file but `worldprops/default.conf` copied
+/// as it is and that one edited by `edit`.
+fn copy_world(from: &std::path::Path, to: &std::path::Path, edit: &dyn Fn(&str) -> String) {
+    for entry in std::fs::read_dir(from).unwrap() {
+        let entry = entry.unwrap();
+        let target = to.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            std::fs::create_dir_all(&target).unwrap();
+            copy_world(&entry.path(), &target, edit);
+        } else if entry.file_name() == "default.conf" {
+            let text = std::fs::read_to_string(entry.path()).unwrap();
+            std::fs::write(&target, edit(&text)).unwrap();
+        } else {
+            std::fs::copy(entry.path(), &target).unwrap();
+        }
+    }
+}
+
+/// `Command.attemptHandling` outside dev mode: the world data with
+/// `dev = false` (GameSettings.isDevMode) and `player_commands = false`
+/// (ServerConstants.PLAYER_COMMANDS, as shipped). A regular player
+/// (account rights 0) sends `::item 995 5`: nothing is run and nothing is
+/// said (the original answers only "bank" with the silly chat when player
+/// commands are off), while an unknown name still answers "command not
+/// found" (the legacy PLAYER set is valid for everyone). An administrator's
+/// `::item 995 5` in the same world runs.
+#[test]
+fn live_world_commands_refuse_a_regular_player_outside_dev_mode() {
+    let Some((cache, data)) = inputs() else {
+        eprintln!(
+            "SKIPPED: the live world needs assets/cache and runs/startup-loaders-oracle/template (or RS09_CACHE / RS09_STARTUP_WORLD)"
+        );
+        return;
+    };
+    let root = std::env::temp_dir().join(format!("rs09-live-commands-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let world = root.join("data");
+    let saves = root.join("saves");
+    std::fs::create_dir_all(&world).unwrap();
+    copy_world(&data, &world, &|text| {
+        let text: String = text
+            .lines()
+            .map(|line| {
+                let key = line.split('=').next().unwrap_or_default().trim();
+                match key {
+                    "dev" => "dev = false".to_owned(),
+                    "player_commands" => "player_commands = false".to_owned(),
+                    _ => line.to_owned(),
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(text.contains("dev = false") && text.contains("player_commands = false"));
+        text + "\n"
+    });
+    let running = server::start(Options {
+        data: world,
+        cache: cache.clone(),
+        saves: saves.clone(),
+        verbose: std::env::var_os("RS09_LIVE_VERBOSE").is_some(),
+    })
+    .expect("the live world boots");
+    let limits = rs09_cache::Limits::default();
+    let catalog = Arc::new(
+        rs09_server::catalog::Catalog::new(
+            rs09_cache::store::Store::open(
+                &cache,
+                rs09_cache::store::StorageMode::Resident,
+                limits,
+            )
+            .unwrap(),
+            limits,
+            1024,
+            16 * 1024 * 1024,
+        )
+        .unwrap(),
+    );
+    let accounts = running.accounts.clone();
+    let tokio = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()
+        .unwrap();
+    let service = Service::new(
+        catalog,
+        Config {
+            authenticator: Some(running.authenticator.clone()),
+            world: Some(running.gate.clone()),
+            ..Config::default()
+        },
+        530,
+    )
+    .unwrap();
+    tokio.block_on(async {
+        let server = service
+            .start("127.0.0.1:0".parse().unwrap(), None)
+            .await
+            .unwrap();
+        let address = server.tcp;
+        {
+            let mut account = rs09_server::auth::account::UserAccountInfo::create_default(0);
+            account.username = "cmdregular".into();
+            account.rights = 0;
+            accounts
+                .store(account.shared())
+                .expect("cmdregular's account");
+        }
+        let mut regular = enter(address, "cmdregular").await;
+        let from = regular.messages.len();
+        regular.send(command("item 995 5")).await;
+        regular.pump(Duration::from_secs(3)).await;
+        assert!(
+            !regular
+                .containers
+                .get(&93)
+                .is_some_and(|c| c.values().any(|&(id, _)| id == 995)),
+            "a regular player's ::item is not run outside dev mode"
+        );
+        assert!(
+            regular.messages[from..].is_empty(),
+            "nothing is said: {:?}",
+            &regular.messages[from..]
+        );
+        regular.send(command("nosuchcommand")).await;
+        regular
+            .until(Duration::from_secs(5), "command not found", |c| {
+                c.messages[from..]
+                    .iter()
+                    .any(|(_, m)| m.contains("nosuchcommand: command not found"))
+            })
+            .await;
+        let mut admin = enter(address, "cmdadmin").await;
+        admin.send(command("item 995 5")).await;
+        admin
+            .until(Duration::from_secs(5), "an administrator's ::item", |c| {
+                c.containers
+                    .get(&93)
+                    .is_some_and(|c| c.values().any(|&(id, n)| id == 995 && n == 5))
+            })
+            .await;
+        regular.writer.close(1000, "logout").await.unwrap();
+        admin.writer.close(1000, "logout").await.unwrap();
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        server.shutdown().await.unwrap();
+    });
+    running.stop();
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 /// The scenario a headless client drives against a running live world at
 /// `address` whose saves directory is `saves`: a new character, its login
 /// tick against the world trace, a walk, a second character, both logouts,
@@ -941,6 +1090,7 @@ async fn drive(
                 "effects" => effects_scenario(address, saves).await,
                 "appearance" => appearance_scenario(address, saves).await,
                 "reconnect" => reconnect_scenario(address, saves).await,
+                "commands" => commands_scenario(address, saves, accounts).await,
                 other => panic!("RS09_LIVE_SCENARIOS: no scenario {other}"),
             }
         }
@@ -997,6 +1147,7 @@ async fn drive(
     effects_scenario(address, saves).await;
     appearance_scenario(address, saves).await;
     reconnect_scenario(address, saves).await;
+    commands_scenario(address, saves, accounts).await;
     healer.await.expect("the heal scenario");
 }
 
@@ -4571,6 +4722,168 @@ fn player_trade(index: i32) -> Frame {
 }
 
 /// Logs a saved character in and waits for its rebuild.
+/// COMMAND (44): the line after "::", zero-terminated.
+fn command(line: &str) -> Frame {
+    let mut payload = line.as_bytes().to_vec();
+    payload.push(0);
+    Frame {
+        opcode: 44,
+        payload,
+    }
+}
+
+/// `::` commands through the installed command system. `cmdone` is an
+/// administrator (the development configuration's `noauth_default_admin`):
+/// `::to lumbridge` sends it through its TeleportManager to the row's
+/// location, `::tele x y z` sets its teleport location, `::item 995 100`
+/// spawns coins into the inventory (SpawnCommandSet), `::setlevel attack 50`
+/// sets the attack level (DevelopmentCommandSet's body, ported in the live
+/// world), an unknown name answers "command not found" and a body without a
+/// port (`::max`) changes nothing. `cmdtwo` has the rights of a regular
+/// player: the configuration's `dev = true` (GameSettings.isDevMode) lets
+/// it run commands too, as `Command.attemptHandling` does; the refusal of a
+/// regular player outside dev mode is `live_world_commands_refuse_*`.
+/// `::getattribute` follows GameAttributes' "/save:" and default rules, and
+/// `::ban` and `::jail` (withheld in the live world) change nothing.
+async fn commands_scenario(
+    address: std::net::SocketAddr,
+    saves: &std::path::Path,
+    accounts: Option<&Arc<dyn rs09_server::auth::storage::AccountStorage>>,
+) {
+    let players = saves.join("players");
+    write_save(&players, "traceone", "cmdone", [3213, 3424, 0], &[]);
+    let mut one = enter(address, "cmdone").await;
+    assert_eq!(one.position(), [3213, 3424, 0], "cmdone's saved location");
+    one.send(command("to lumbridge")).await;
+    one.until(Duration::from_secs(10), "::to lumbridge", |c| {
+        c.position() == [3222, 3217, 0]
+    })
+    .await;
+    one.send(command("tele 3221 3219 0")).await;
+    one.until(Duration::from_secs(5), "::tele 3221 3219 0", |c| {
+        c.position() == [3221, 3219, 0]
+    })
+    .await;
+    one.send(command("item 995 100")).await;
+    one.until(Duration::from_secs(5), "::item 995 100", |c| {
+        c.containers
+            .get(&93)
+            .is_some_and(|c| c.values().any(|&(id, n)| id == 995 && n == 100))
+    })
+    .await;
+    one.send(command("setlevel attack 50")).await;
+    one.until(Duration::from_secs(5), "::setlevel attack 50", |c| {
+        c.skills.get(&0).is_some_and(|s| s.0 == 50)
+    })
+    .await;
+    let from = one.messages.len();
+    one.send(command("nosuchcommand")).await;
+    one.until(Duration::from_secs(5), "command not found", |c| {
+        c.messages[from..]
+            .iter()
+            .any(|(_, m)| m.contains("nosuchcommand: command not found"))
+    })
+    .await;
+    // A body without a port is refused: nothing changes, the world goes on
+    // (`::max` is DevelopmentCommandSet's, `::noclip` VisualCommand's).
+    one.send(command("noclip")).await;
+    one.send(command("max")).await;
+    one.pump(Duration::from_secs(2)).await;
+    assert_eq!(one.skills.get(&0).map(|s| s.0), Some(50), "::max refused");
+    one.send(command("item 1205 1")).await;
+    one.until(
+        Duration::from_secs(5),
+        "the world after a refused body",
+        |c| {
+            c.containers
+                .get(&93)
+                .is_some_and(|c| c.values().any(|&(id, _)| id == 1205))
+        },
+    )
+    .await;
+    // `::getattribute` answers with GameAttributes.getAttribute(key, fail):
+    // "/save:" is removed from the key, and an absent key prints the
+    // empty default.
+    one.send(command("setattribute /save:cmdtest 5")).await;
+    let from = one.messages.len();
+    one.send(command("getattribute /save:cmdtest")).await;
+    one.send(command("getattribute cmdtest")).await;
+    one.send(command("getattribute cmdabsent")).await;
+    one.until(Duration::from_secs(5), "three ::getattribute lines", |c| {
+        c.messages[from..]
+            .iter()
+            .filter(|(_, m)| m.contains("Attribute: "))
+            .count()
+            == 3
+    })
+    .await;
+    let lines: Vec<&str> = one.messages[from..]
+        .iter()
+        .map(|(_, m)| m.as_str())
+        .filter(|m| m.contains("Attribute: "))
+        .collect();
+    assert!(
+        lines[0].contains("Attribute: /save:cmdtest Value: 5"),
+        "{lines:?}"
+    );
+    assert!(
+        lines[1].contains("Attribute: cmdtest Value: 5"),
+        "{lines:?}"
+    );
+    assert!(
+        lines[2].contains("Attribute: cmdabsent Value: </col>"),
+        "{lines:?}"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let Some(accounts) = accounts else {
+        eprintln!("SKIPPED: the regular player's commands need its account in-process");
+        return;
+    };
+    write_save(&players, "traceone", "cmdtwo", [3222, 3218, 0], &[]);
+    {
+        let mut account = rs09_server::auth::account::UserAccountInfo::create_default(0);
+        account.username = "cmdtwo".into();
+        account.rights = 0;
+        accounts.store(account.shared()).expect("cmdtwo's account");
+    }
+    let mut two = enter(address, "cmdtwo").await;
+    // ::ban and ::jail are withheld before their bodies: no account write,
+    // no message, and the player stays online (the ::item below still runs).
+    let from = two.messages.len();
+    two.send(command("ban cmdtwo 1d")).await;
+    two.send(command("jail 10 cmdtwo")).await;
+    two.pump(Duration::from_secs(2)).await;
+    let ban_end = accounts
+        .get_account_info("cmdtwo", 0)
+        .expect("cmdtwo's account")
+        .lock()
+        .unwrap()
+        .ban_end_time;
+    assert_eq!(ban_end, 0, "::ban wrote nothing");
+    assert!(
+        !two.messages[from..]
+            .iter()
+            .any(|(_, m)| m.contains("Banned user") || m.contains("jail")),
+        "refused moderation bodies sent nothing: {:?}",
+        &two.messages[from..]
+    );
+    two.send(command("item 995 7")).await;
+    two.until(
+        Duration::from_secs(5),
+        "a regular player's ::item in dev mode",
+        |c| {
+            c.containers
+                .get(&93)
+                .is_some_and(|c| c.values().any(|&(id, n)| id == 995 && n == 7))
+        },
+    )
+    .await;
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 async fn enter(address: std::net::SocketAddr, name: &str) -> Client {
     let (code, client) = Client::login(address, name).await;
     assert_eq!(code, 2, "{name}'s login");

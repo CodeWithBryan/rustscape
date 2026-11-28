@@ -496,6 +496,11 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         npc_reset_faults: Default::default(),
         npc_timers_due: Vec::new(),
         spare_state: None,
+        commands: super::commands::LiveCommands::boot(
+            configuration.constants(),
+            values,
+            crate::runtime::wall_clock(),
+        )?,
     };
     // The start-up's NPCs in the live repository and the scene's chunks;
     // the tab content's component plugins and interface listeners.

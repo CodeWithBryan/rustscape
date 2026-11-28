@@ -129,6 +129,9 @@ pub struct Live {
     /// The stand-in the world holds while a player's tick has the canonical
     /// state ([`super::scripts`]).
     pub spare_state: Option<player_walk::State>,
+    /// The command system: the registry and the settings its rights rules
+    /// read ([`super::commands`]).
+    pub commands: super::commands::LiveCommands,
 }
 
 pub fn fail(e: impl std::fmt::Debug) -> driver::Error {

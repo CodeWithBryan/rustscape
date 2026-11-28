@@ -746,6 +746,16 @@ pub fn handle(
             | Handler::TrackFinished,
             dispatch::Packet::Action { player, action, .. },
         ) => live.item_packet(player, action).map_err(super::host::fail),
+        // The Command branch: the COMMAND decoder on the undecoded payload,
+        // PlayerMonitor.log and CommandSystem.parse (super::commands).
+        (
+            Handler::Command,
+            dispatch::Packet::Undecoded {
+                player, payload, ..
+            },
+        ) => live
+            .command_packet(player, payload)
+            .map_err(crate::world::commands::driver_error),
         (handler, packet) => {
             // A routed handler whose library is ported but not installed in
             // this world: refused, logged and recorded, never a success.

@@ -5,9 +5,11 @@ refuse: `Command` (`CommandSystem.parse`), `QuickChat` (`QCRepository.sendQC`)
 and `ReportAbuse` (`AbuseReport`). The driver now routes them to
 `Handler::Command`, `Handler::QuickChat` and `Handler::ReportAbuse`
 (world/driver/dispatch.rs); the libraries are `world::commands`,
-`world::quick_chat` and `world::abuse_report`. Nothing in this slice installs
-them in the live world: `rs09-server --world` still logs these handlers as
-not installed (world/live is another slice's).
+`world::quick_chat` and `world::abuse_report`. `rs09-server --world` installs
+the command system (world/live/commands.rs: the COMMAND packet, the registry
+and `commands::Host`/`sets::Host` over the live world; what it answers and
+refuses is in docs/live-world.md); quick chat and abuse reports are still not
+installed there.
 
 ## What is ported
 
@@ -133,8 +135,9 @@ three.
   ConfigParser, AntiMacro, HolidayRandoms, AprilFoolsEvent, Giftmas and
   EasterEvent; the legacy MapDumpCommand, SimpleDumpingCommands and
   VisualCommand `parse` bodies are `Host::legacy_parse`.
-- Not bound: the live world (world/live) does not install these handlers;
-  the content services, the zone `parseCommand` hooks, PlayerMonitor, the
+- Not bound: the live world (world/live/commands.rs) installs the command
+  handler but not quick chat or abuse reports, and refuses by name what
+  docs/live-world.md lists. There and in any other world, the content services, the zone `parseCommand` hooks, PlayerMonitor, the
   ServerStore archive, Discord, the system manager, containers and items,
   ChargedItem, the cache index 24 and data map readers and the slayer
   answers are services the world must still bind.

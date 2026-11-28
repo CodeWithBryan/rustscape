@@ -480,7 +480,13 @@ pub trait Host {
     fn clear(&mut self, player: &Self::Player) -> Result<()>;
     /// `player.getAttribute(key)` (absent or null is `None`).
     fn attribute(&mut self, player: &Self::Player, key: &str) -> Result<Option<Value>>;
-    /// `core.api.getAttribute(player, key, default)` (a stored null is `None`).
+    /// `core.api.getAttribute(player, key, default)`, which is
+    /// `GameAttributes.getAttribute(key, fail)`: "/save:" removed wherever
+    /// it occurs in the key, and `default` for an absent key or a stored
+    /// null. The commands oracle's adapter (`Support.storedAttribute`)
+    /// differs: it keeps the key as given and answers a stored null as
+    /// `None` (printed "null"); its corpus and the test stand-in follow the
+    /// adapter. A world answers with the original's rule.
     fn api_attribute(
         &mut self,
         player: &Self::Player,
