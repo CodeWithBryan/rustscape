@@ -1137,7 +1137,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (gathering/barbarian.rs, run live by world/live/items/barbarian.rs)
   are ported without a corpus, as are firemaking (world/firemaking.rs,
   run live by world/live/items/firemaking.rs for inventory logs only;
-  docs/firemaking.md) and Otto Godblessed's barbarian
+  docs/firemaking.md), bone burying (world/bone_burying.rs, run live
+  by world/live/items/bones.rs: the "bury" option only, no altar and no
+  BoneBuryEvent; docs/bone-burying.md), praying at altars
+  (world/prayer_altar.rs, run live by world/live/items/altar.rs: the
+  tribal statue never recharges because no quest is registered, and the
+  chaos altar 61's "check" is not installed; docs/prayer-altar.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the

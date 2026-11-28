@@ -3806,6 +3806,108 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     fire.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // BoneBuryListener: the bones' "Bury" option digs at once and the
+    // STRONG script a tick later empties the slot and rewards prayer
+    // experience (4.5 for bones, 15 for big bones). The SKILLING clock
+    // holds a second click for two ticks.
+    let inventory = [(0, 526, 1), (1, 526, 1), (2, 532, 1)];
+    write_save(&players, "traceone", "burybones", start, &inventory);
+    let (code, bury) = Client::login(address, "burybones").await;
+    assert_eq!(code, 2, "burybones' login");
+    let mut bury = bury.unwrap();
+    bury.until(Duration::from_secs(10), "burybones' rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = bury.messages.len();
+    let count = |c: &Client, from: usize, line: &str| {
+        c.messages[from..].iter().filter(|(_, m)| m == line).count()
+    };
+    // Two clicks in one tick: the second finds the clock set and is dropped.
+    bury.send(item_option1(526, 0)).await;
+    bury.send(item_option1(526, 1)).await;
+    bury.until_pinging(Duration::from_secs(20), "the first bones buried", |c| {
+        said(c, from, "You bury the bones.") && c.skills.get(&5).is_some_and(|s| s.1 == 4)
+    })
+    .await;
+    tokio::time::sleep(Duration::from_secs(3)).await;
+    bury.until_pinging(Duration::from_secs(5), "burybones' quiet", |_| true)
+        .await;
+    assert_eq!(
+        (held(&bury, 526), held(&bury, 532)),
+        (1, 1),
+        "one click buried one set of bones"
+    );
+    assert_eq!(
+        count(&bury, from, "You dig a hole in the ground."),
+        1,
+        "the second click waited for the skilling clock"
+    );
+    for (id, slot, experience) in [(526, 1, 9), (532, 2, 24)] {
+        let from = bury.messages.len();
+        bury.send(item_option1(id, slot)).await;
+        bury.until_pinging(Duration::from_secs(20), "more bones buried", |c| {
+            said(c, from, "You dig a hole in the ground.")
+                && said(c, from, "You bury the bones.")
+                && c.skills.get(&5).is_some_and(|s| s.1 == experience)
+        })
+        .await;
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+    assert_eq!(
+        (held(&bury, 526), held(&bury, 532)),
+        (0, 0),
+        "every set of bones was buried"
+    );
+    assert_eq!(bury.position(), start, "burying does not move the player");
+    eprintln!("burybones buried two bones and big bones at {start:?}, prayer experience 24");
+    bury.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // PrayerAltarListener: Lumbridge church's altar 36972 recharges a drained
+    // player (level 43, 3 points left), and says so when the points are full.
+    let church = [ALTAR_STAND[0], ALTAR_STAND[1], 0];
+    write_save_with(&players, "traceone", "prayaltar", church, &[], |save| {
+        save["skills"][5]["static"] = Value::String("43".into());
+        save["skills"][5]["dynamic"] = Value::String("43".into());
+        save["skills"][5]["experience"] = Value::String("51000.0".into());
+        save["skills"][5]["prayerPoints"] = Value::String("3.0".into());
+    });
+    let (code, pray) = Client::login(address, "prayaltar").await;
+    assert_eq!(code, 2, "prayaltar's login");
+    let mut pray = pray.unwrap();
+    pray.until(Duration::from_secs(10), "prayaltar's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    assert_eq!(
+        pray.skills.get(&5).map(|s| s.0),
+        Some(3),
+        "prayaltar starts with three prayer points"
+    );
+    let from = pray.messages.len();
+    pray.send(scenery_option1(36972, ALTAR[0], ALTAR[1])).await;
+    pray.until_pinging(Duration::from_secs(30), "the recharge", |c| {
+        said(c, from, "You recharge your prayer points.")
+            && c.skills.get(&5).is_some_and(|s| s.0 == 43)
+    })
+    .await;
+    // The lock of three ticks runs out, then the altar has nothing to give.
+    tokio::time::sleep(Duration::from_secs(3)).await;
+    let from = pray.messages.len();
+    pray.send(scenery_option1(36972, ALTAR[0], ALTAR[1])).await;
+    pray.until_pinging(Duration::from_secs(30), "the full points", |c| {
+        said(c, from, "You already have full prayer points.")
+    })
+    .await;
+    assert!(
+        !said(&pray, from, "You recharge your prayer points."),
+        "a full player is not recharged"
+    );
+    eprintln!("prayaltar recharged 3 to 43 prayer points at the altar 36972 at {ALTAR:?}");
+    pray.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
@@ -4407,6 +4509,9 @@ fn use_with_scenery(item: i32, slot: i32, id: i32, x: i32, y: i32) -> Frame {
         ],
     )
 }
+/// Lumbridge church's altar 36972 and a tile in front of it.
+const ALTAR: [i32; 2] = [3243, 3206];
+const ALTAR_STAND: [i32; 2] = [3243, 3208];
 /// Otto's bed (scenery 25268) in his grotto.
 const OTTO_BED: [i32; 2] = [2500, 3490];
 /// NPC_ACTION_1 (78): an NPC's first option.
