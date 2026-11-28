@@ -96,6 +96,9 @@ struct Client {
     opened: Vec<(usize, i32)>,
     /// Interface texts (171): (frame number, component pointer, text).
     texts: Vec<(usize, i32, String)>,
+    /// Scenery changes in chunk updates (179 and 195 inside 230):
+    /// (frame number, absolute tile, Some(id) added or None removed).
+    locs: Vec<(usize, [i32; 3], Option<i32>)>,
 }
 
 /// Item metadata for the ground reducer: the test reads lists, not piles.
@@ -179,6 +182,7 @@ impl Client {
                 projectiles: Vec::new(),
                 opened: Vec::new(),
                 texts: Vec::new(),
+                locs: Vec::new(),
             }),
         )
     }
@@ -263,6 +267,25 @@ impl Client {
                             let projectile = updates::Projectile::decode(child)
                                 .unwrap_or_else(|e| panic!("{}: projectile {n}: {e:?}", self.name));
                             self.projectiles.push((n, projectile));
+                        }
+                        if let (
+                            Some(base),
+                            Ok(Some(updates::ServerUpdate::ZoneEnclosed { x: zx, y: zy, .. })),
+                        ) = (self.base, updates::ServerUpdate::decode(&frame))
+                        {
+                            for child in frames.iter().filter(|f| matches!(f.opcode, 179 | 195)) {
+                                let at =
+                                    |x: i32, y: i32| [base[0] + zx + x, base[1] + zy + y, base[2]];
+                                match updates::ServerUpdate::decode(child) {
+                                    Ok(Some(updates::ServerUpdate::LocAdd {
+                                        x, y, id, ..
+                                    })) => self.locs.push((n, at(x, y), Some(id))),
+                                    Ok(Some(updates::ServerUpdate::LocDel { x, y, .. })) => {
+                                        self.locs.push((n, at(x, y), None))
+                                    }
+                                    other => panic!("{}: loc update {n}: {other:?}", self.name),
+                                }
+                            }
                         }
                     }
                     if self.base.is_some() {
@@ -921,6 +944,11 @@ async fn drive(
                 "items" => items_scenario(address, saves).await,
                 "wilderness" => wilderness_scenario(address, saves).await,
                 "scenery" => scenery_scenario(address, saves).await,
+                "doors" => {
+                    let restore = tokio::spawn(door_restore_scenario(address, saves.to_path_buf()));
+                    door_scenario(address, saves).await;
+                    restore.await.expect("the door restoration scenario");
+                }
                 "combat" => combat_scenario(address, saves).await,
                 "aggression" => aggression_scenario(address, saves).await,
                 "death" => death_scenario(address, saves).await,
@@ -974,9 +1002,12 @@ async fn drive(
     // Hitpoints restoration (SkillRestore, installed by addAutoTimers) runs
     // beside the other scenarios: it needs about a hundred ticks.
     let healer = tokio::spawn(heal_scenario(address, saves.to_path_buf()));
+    // A door's 500-tick restoration, also beside the other scenarios.
+    let restorer = tokio::spawn(door_restore_scenario(address, saves.to_path_buf()));
     items_scenario(address, saves).await;
     wilderness_scenario(address, saves).await;
     scenery_scenario(address, saves).await;
+    door_scenario(address, saves).await;
     combat_scenario(address, saves).await;
     aggression_scenario(address, saves).await;
     death_scenario(address, saves).await;
@@ -998,6 +1029,7 @@ async fn drive(
     appearance_scenario(address, saves).await;
     reconnect_scenario(address, saves).await;
     healer.await.expect("the heal scenario");
+    restorer.await.expect("the door restoration scenario");
 }
 
 /// A player's death: a saved character with one hitpoint, the tutorial
@@ -2339,6 +2371,370 @@ async fn scenery_scenario(address: std::net::SocketAddr, saves: &std::path::Path
     );
     one.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Doors (DoorManagingPlugin over the live scene, super::doors): `doorone`,
+/// saved in Lumbridge castle's kitchen south of its north door (12348 at
+/// 3207,3217, a wall on the tile's north side), uses Open (254). The walk
+/// to `DoorActionHandler.getDestination`'s tile, the delayed arrival,
+/// `DoorActionHandler.handle`: sound 62, the door replaced by its open form
+/// (10327 at 3207,3218, the 500-tick restoration submitted) and the
+/// collision changed, so `doorone` walks through to the tile north of the
+/// door. `doortwo`, standing north of the kitchen, sees the change in its
+/// chunk updates (195 then 179). `doorone` then uses Close on the open door:
+/// the constructed door's replaced original comes back (sound 60), and
+/// `doortwo` sees 12348 at 3207,3217 again.
+async fn door_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    const DOOR: i32 = 12348;
+    const OPEN: i32 = 10327;
+    let at = [3207, 3217, 0];
+    let opened_at = [3207, 3218, 0];
+    let players = saves.join("players");
+    write_save(&players, "traceone", "doorone", [3207, 3216, 0], &[]);
+    write_save(&players, "traceone", "doortwo", [3210, 3221, 0], &[]);
+    let mut one = enter(address, "doorone").await;
+    let mut two = enter(address, "doortwo").await;
+    assert_eq!(one.position(), [3207, 3216, 0], "doorone's saved location");
+    let (one_from, two_from) = (one.locs.len(), two.locs.len());
+    let frames_from = one.frames.len();
+    one.send(scenery_option1(DOOR, at[0], at[1])).await;
+    let saw_open = |c: &Client, from: usize| {
+        c.locs[from..]
+            .iter()
+            .any(|(_, tile, id)| *tile == opened_at && *id == Some(OPEN))
+    };
+    one.until(Duration::from_secs(10), "the open door", |c| {
+        saw_open(c, one_from)
+    })
+    .await;
+    two.until(Duration::from_secs(5), "doortwo sees the open door", |c| {
+        saw_open(c, two_from)
+    })
+    .await;
+    assert!(
+        two.locs[two_from..]
+            .iter()
+            .any(|(_, tile, id)| *tile == at && id.is_none()),
+        "doortwo sees the closed door removed: {:?}",
+        &two.locs[two_from..]
+    );
+    let sounds: Vec<i32> = one.frames[frames_from..]
+        .iter()
+        .filter_map(|f| match updates::ServerUpdate::decode(f) {
+            Ok(Some(updates::ServerUpdate::SynthSound { id, .. })) => Some(id),
+            _ => None,
+        })
+        .collect();
+    assert!(sounds.contains(&62), "the door's open sound 62: {sounds:?}");
+    eprintln!(
+        "doorone opened door {DOOR} at {at:?} from {:?}: {OPEN} at {opened_at:?}; doortwo saw {:?}",
+        one.position(),
+        &two.locs[two_from..]
+    );
+    // Through the doorway: north of the door, where the closed door's wall
+    // stood between the tiles.
+    let through = [3207, 3219, 0];
+    assert_eq!(one.position(), at, "doorone on the door's tile");
+    one.send(actions::worldspace_walk(through[0], through[1], false))
+        .await;
+    let steps = track_walk(&mut one, Duration::from_secs(10), through).await;
+    assert_eq!(
+        steps,
+        [at, opened_at, through],
+        "doorone's steps go straight through the doorway"
+    );
+    eprintln!("doorone walked through the doorway: {steps:?}");
+
+    // Close: the constructed open door's replaced original comes back.
+    let (one_from, two_from) = (one.locs.len(), two.locs.len());
+    let frames_from = one.frames.len();
+    one.send(scenery_option1(OPEN, opened_at[0], opened_at[1]))
+        .await;
+    let saw_closed = |c: &Client, from: usize| {
+        c.locs[from..]
+            .iter()
+            .any(|(_, tile, id)| *tile == at && *id == Some(DOOR))
+    };
+    one.until(Duration::from_secs(10), "the closed door", |c| {
+        saw_closed(c, one_from)
+    })
+    .await;
+    two.until(
+        Duration::from_secs(5),
+        "doortwo sees the door closed",
+        |c| saw_closed(c, two_from),
+    )
+    .await;
+    let sounds: Vec<i32> = one.frames[frames_from..]
+        .iter()
+        .filter_map(|f| match updates::ServerUpdate::decode(f) {
+            Ok(Some(updates::ServerUpdate::SynthSound { id, .. })) => Some(id),
+            _ => None,
+        })
+        .collect();
+    assert!(
+        sounds.contains(&60),
+        "the door's close sound 60: {sounds:?}"
+    );
+    eprintln!(
+        "doorone closed the door: doortwo saw {:?}",
+        &two.locs[two_from..]
+    );
+    // The wall is back: a walk to the kitchen tile south of the door never
+    // steps through the door's tiles (it goes round, or stops).
+    let kitchen = [3207, 3216, 0];
+    one.send(actions::worldspace_walk(kitchen[0], kitchen[1], false))
+        .await;
+    let steps = track_walk(&mut one, Duration::from_secs(8), kitchen).await;
+    assert!(
+        !steps.windows(2).any(|w| w[0] == opened_at && w[1] == at),
+        "the walk back went through the closed door: {steps:?}"
+    );
+    assert!(
+        steps.len() > 4 || steps.last() != Some(&kitchen),
+        "the walk back did not go round the closed door: {steps:?}"
+    );
+    eprintln!("doorone's walk back after the close: {steps:?}");
+    one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // The castle's entrance: the large double door (12349 at 3213,3221 and
+    // 12350 at 3213,3222, walls on the tiles' west sides). `bigone` opens it
+    // from the courtyard: both leaves are replaced by their open form 11382
+    // one tile west (`DoorActionHandler.open` with the second door), the
+    // player walks into the castle, then closes it: both leaves come back.
+    write_save(&players, "traceone", "bigone", [3215, 3221, 0], &[]);
+    write_save(&players, "traceone", "bigtwo", [3217, 3225, 0], &[]);
+    let mut one = enter(address, "bigone").await;
+    let mut two = enter(address, "bigtwo").await;
+    let leaves = [([3213, 3221, 0], 12349), ([3213, 3222, 0], 12350)];
+    let open_leaves = [[3212, 3221, 0], [3212, 3222, 0]];
+    let (one_from, two_from) = (one.locs.len(), two.locs.len());
+    one.send(scenery_option1(12349, 3213, 3221)).await;
+    let opened = |c: &Client, from: usize| {
+        open_leaves.iter().all(|tile| {
+            c.locs[from..]
+                .iter()
+                .any(|(_, t, id)| t == tile && *id == Some(11382))
+        }) && leaves.iter().all(|(tile, _)| {
+            c.locs[from..]
+                .iter()
+                .any(|(_, t, id)| t == tile && id.is_none())
+        })
+    };
+    one.until(Duration::from_secs(10), "the open double door", |c| {
+        opened(c, one_from)
+    })
+    .await;
+    two.until(
+        Duration::from_secs(5),
+        "bigtwo sees the double door open",
+        |c| opened(c, two_from),
+    )
+    .await;
+    let inside = [3211, 3221, 0];
+    one.send(actions::worldspace_walk(inside[0], inside[1], false))
+        .await;
+    one.until(Duration::from_secs(10), "bigone inside the castle", |c| {
+        c.position() == inside
+    })
+    .await;
+    eprintln!(
+        "bigone opened the castle's double door and walked in to {inside:?}; bigtwo saw {:?}",
+        &two.locs[two_from..]
+    );
+    let (one_from, two_from) = (one.locs.len(), two.locs.len());
+    one.send(scenery_option1(11382, 3212, 3221)).await;
+    let closed = |c: &Client, from: usize| {
+        leaves.iter().all(|(tile, id)| {
+            c.locs[from..]
+                .iter()
+                .any(|(_, t, i)| t == tile && *i == Some(*id))
+        })
+    };
+    one.until(Duration::from_secs(10), "the double door closed", |c| {
+        closed(c, one_from)
+    })
+    .await;
+    two.until(Duration::from_secs(5), "bigtwo sees it closed", |c| {
+        closed(c, two_from)
+    })
+    .await;
+    eprintln!(
+        "bigone closed the double door: bigtwo saw {:?}",
+        &two.locs[two_from..]
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // A door the map holds open (36848 at 3233,3203, whose option is
+    // Close): DoorActionHandler.handle's close branch with the door
+    // configuration's row for 36848 (DoorConfigLoader's reverse entry): the
+    // open sound, then the closed form 36847 one tile east, permanently.
+    write_save(&players, "traceone", "shutone", [3233, 3203, 0], &[]);
+    let mut one = enter(address, "shutone").await;
+    let (from, frames_from) = (one.locs.len(), one.frames.len());
+    one.send(scenery_option1(36848, 3233, 3203)).await;
+    one.until(Duration::from_secs(10), "the map's open door closed", |c| {
+        c.locs[from..]
+            .iter()
+            .any(|(_, t, id)| *t == [3234, 3203, 0] && *id == Some(36847))
+            && c.locs[from..]
+                .iter()
+                .any(|(_, t, id)| *t == [3233, 3203, 0] && id.is_none())
+    })
+    .await;
+    let sounds: Vec<i32> = one.frames[frames_from..]
+        .iter()
+        .filter_map(|f| match updates::ServerUpdate::decode(f) {
+            Ok(Some(updates::ServerUpdate::SynthSound { id, .. })) => Some(id),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(sounds, [62], "the close branch's sound");
+    eprintln!(
+        "shutone closed the map's open door 36848: {:?}",
+        &one.locs[from..]
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Content that claims a door before DoorManagingPlugin is not ported:
+    // the Al Kharid toll gate's Open (TollGateOptionPlugin's per-definition
+    // handler) is refused by name before any walk: `tollone`, three tiles
+    // west, does not move (the door handler would walk it to the gate and
+    // open it; a handler answering false would walk it there and say
+    // "Nothing interesting happens.").
+    let start = [3265, 3227, 0];
+    write_save(&players, "traceone", "tollone", start, &[]);
+    let mut one = enter(address, "tollone").await;
+    let (from, messages_from) = (one.locs.len(), one.messages.len());
+    one.send(scenery_option1(35549, 3268, 3227)).await;
+    one.pump(Duration::from_secs(5)).await;
+    assert!(
+        one.locs[from..].is_empty(),
+        "the toll gate did not open: {:?}",
+        &one.locs[from..]
+    );
+    assert_eq!(one.position(), start, "tollone did not walk to the gate");
+    assert!(
+        one.messages[messages_from..].is_empty(),
+        "no message for a refused click: {:?}",
+        &one.messages[messages_from..]
+    );
+    eprintln!("tollone: the toll gate's Open is refused (TollGateOptionPlugin not ported)");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A door's restoration: `restoreone` opens the castle's north-east door
+/// (36846 at 3230,3235, a wall on the tile's north side; away from the
+/// other scenarios' players, whom it would otherwise stand beside for five
+/// minutes) and waits: the open form is a temporary replacement whose restoration pulse
+/// (`SceneryBuilder.replace(..., 500)`) runs on GameWorld.Pulser (the
+/// driver's runner). About 500 ticks later the
+/// closed door is back in the client's chunk updates. It runs beside the
+/// other scenarios and sends PING (93) while it waits.
+async fn door_restore_scenario(address: std::net::SocketAddr, saves: PathBuf) {
+    let players = saves.join("players");
+    write_save(&players, "traceone", "restoreone", [3230, 3234, 0], &[]);
+    let mut one = enter(address, "restoreone").await;
+    let from = one.locs.len();
+    one.send(scenery_option1(36846, 3230, 3235)).await;
+    one.until(Duration::from_secs(10), "the north-east door opened", |c| {
+        c.locs[from..]
+            .iter()
+            .any(|(_, t, id)| *t == [3230, 3235, 0] && id.is_none())
+    })
+    .await;
+    let opened = Instant::now();
+    // The open form one tile north (rotation 1's point), as 36848.
+    let open_at = [3230, 3236, 0];
+    assert!(
+        one.locs
+            .iter()
+            .any(|(_, t, id)| *t == open_at && *id == Some(36848)),
+        "the open form at {open_at:?}: {:?}",
+        &one.locs[from..]
+    );
+    let from = one.locs.len();
+    let restored = |c: &Client, from: usize| {
+        c.locs[from..]
+            .iter()
+            .any(|(_, t, id)| *t == [3230, 3235, 0] && *id == Some(36846))
+            && c.locs[from..]
+                .iter()
+                .any(|(_, t, id)| *t == open_at && id.is_none())
+    };
+    // A second viewer arrives while the door is open: the chunk's
+    // synchronisation shows it the open door, then the restoration.
+    one.until_pinging(Duration::from_secs(270), "the door still open", |_| {
+        opened.elapsed() >= Duration::from_secs(260)
+    })
+    .await;
+    assert!(!restored(&one, from), "restored before 260 s");
+    write_save(&players, "traceone", "restoretwo", [3231, 3236, 0], &[]);
+    let mut two = enter(address, "restoretwo").await;
+    assert!(
+        two.locs
+            .iter()
+            .any(|(_, t, id)| *t == open_at && *id == Some(36848)),
+        "restoretwo sees the open door on arrival: {:?}",
+        two.locs
+    );
+    let two_from = two.locs.len();
+    // Both clients read and PING (93) while they wait.
+    let end = Instant::now() + Duration::from_secs(80);
+    let mut ping = Instant::now();
+    while !restored(&one, from) {
+        assert!(
+            Instant::now() < end && !one.closed && !two.closed,
+            "restoreone: timed out waiting for the north-east door restored"
+        );
+        if ping.elapsed() > Duration::from_secs(5) {
+            one.send(frame(93, &[])).await;
+            two.send(frame(93, &[])).await;
+            ping = Instant::now();
+        }
+        one.pump(Duration::from_millis(100)).await;
+        two.pump(Duration::from_millis(100)).await;
+    }
+    let after = opened.elapsed().as_secs_f64();
+    // 500 ticks of 600 ms, from the tick the door opened.
+    assert!(
+        (285.0..=330.0).contains(&after),
+        "the restoration after {after:.1} s, not about 500 ticks"
+    );
+    two.until(
+        Duration::from_secs(5),
+        "restoretwo sees the restoration",
+        |c| restored(c, two_from),
+    )
+    .await;
+    eprintln!(
+        "restoreone: the door 36846 came back after {after:.1} s, seen by both: {:?}",
+        &one.locs[from..]
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+    two.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Reads until the client stands on `target` (or `limit` passes) and
+/// returns each distinct tile it stood on, starting with the current one.
+async fn track_walk(c: &mut Client, limit: Duration, target: [i32; 3]) -> Vec<[i32; 3]> {
+    let end = Instant::now() + limit;
+    let mut steps = vec![c.position()];
+    while Instant::now() < end && c.position() != target {
+        c.pump(Duration::from_millis(100)).await;
+        let here = c.position();
+        if steps.last() != Some(&here) {
+            steps.push(here);
+        }
+    }
+    steps
 }
 
 /// Item on an NPC and on scenery (`processUseWith`): no listener, plugin or

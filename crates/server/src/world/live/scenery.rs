@@ -129,7 +129,7 @@ impl WalkHost<'_> {
             return Ok(SceneryPlugin::Anvil);
         }
         Err(legacy::Error::Binding(Some(
-            "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),
+            "not ported in the live world: a scenery option handler that is neither a global handler, DoorManagingPlugin nor a ported content plugin (content)".into(),
         )))
     }
 }
@@ -248,14 +248,53 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
             });
             return Ok(!locked);
         }
+        // A door option the pinned content claims for this object (its own
+        // InteractionListeners `on` or per-definition `option:` handler,
+        // super::door_claims): not ported, so DoorManagingPlugin must not
+        // answer in its place.
+        let lower = lowercase_root(option.as_deref().unwrap_or("null"));
+        let at = object.read().location.coordinates();
+        if let Some(class) = super::door_claims::claim(id, &lower)
+            .or_else(|| super::door_claims::claim_at(at, &lower))
+        {
+            return Err(Error::Binding(format!(
+                "not ported in the live world: {class}'s \"{lower}\" on scenery {id} (content that claims the object before DoorManagingPlugin)"
+            )));
+        }
+        // ZoneMonitor.interact: a content map zone whose interact is not
+        // ported (super::door_claims::ZONE_BORDERS) is asked before the
+        // option handler; for a door option the door handler must not answer
+        // in its place, so the click is refused inside such a zone.
+        if ["open", "close", "shut", "go-through"].contains(&lower.as_str()) {
+            let here = state
+                .node_location(player)
+                .map_err(binding)?
+                .map(|l| l.coordinates());
+            if let Some(class) = here
+                .and_then(super::door_claims::zone_at)
+                .or_else(|| super::door_claims::zone_at(at))
+            {
+                return Err(Error::Binding(format!(
+                    "not ported in the live world: {class}'s interact (ZoneMonitor.interact) for \"{lower}\" on scenery {id}"
+                )));
+            }
+        }
         self.not_ported.default_answer(
             "InteractionListeners for scenery (none registered for the option: false)",
         );
         Ok(false)
     }
-    fn scenery_plugin(&mut self, _: &mut State, _: Node, _: &Handle) -> Result<bool> {
+    fn scenery_plugin(&mut self, _: &mut State, _: Node, object: &Handle) -> Result<bool> {
+        // PluginInteractionManager.handle: a content plugin registered for
+        // this object (super::door_claims::PLUGINS) is not ported.
+        let id = object.read().id;
+        if let Some(class) = super::door_claims::plugin(id) {
+            return Err(Error::Binding(format!(
+                "not ported in the live world: {class} (PluginInteractionManager, OBJECT) on scenery {id}"
+            )));
+        }
         self.not_ported.default_answer(
-            "PluginInteractionManager for scenery (content plugins not ported: false)",
+            "PluginInteractionManager for scenery (no plugin registered for the object: false)",
         );
         Ok(false)
     }

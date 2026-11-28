@@ -37,6 +37,8 @@ pub mod buttons;
 pub mod combat;
 pub mod content;
 pub mod destination;
+pub mod door_claims;
+pub mod doors;
 pub mod dragons;
 pub mod eating;
 pub mod equipment;

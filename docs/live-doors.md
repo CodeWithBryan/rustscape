@@ -1,5 +1,9 @@
 # Native scenery interactions and live door probe
 
+The production live world (`rs09-server --world`) now installs the same
+libraries: see docs/live-world.md (doors and gates, `world/live/doors.rs`).
+What follows describes the earlier controlled probe of the examples.
+
 The controlled movement/NPC endpoint can now bind scenery clicks to the native
 original option table, InteractPlugin scheduling/arrival, DoorManagingPlugin and
 Scene replacement/collision implementations. The complete game and production

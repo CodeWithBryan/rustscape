@@ -1909,6 +1909,13 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   consumables_timers, legacy_interaction and movement. Bank booths
   (defineInteraction scripts), chests, deposit boxes, the bank PIN,
   AssistSession and the global handlers' dialogue senders remain refused.
+  Doors (world/live/doors.rs): DoorManagingPlugin's handler in the scenery
+  defaults, dispatched by identity, door_runtime over the live scene, the
+  scene's pulses on the driver's runner; for it also run doors, scenery,
+  scenery_action, scenery_options and chunk_sync and the live_world doors
+  scenarios. The door options content claims are door_claims.rs, generated
+  by `python tools/port_door_claims.py` (run `--check`; never edit it by
+  hand): refuse those, never let the door handler answer for content.
   See docs/live-world.md.
 - For NPC factory/init/configuration application, run npc_init and player_walk
   tests, both movement_session/npc_session example tests, and fresh

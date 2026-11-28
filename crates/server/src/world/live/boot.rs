@@ -467,6 +467,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
             follows: Vec::new(),
             content_pulses: Vec::new(),
             stopping_pulses: Vec::new(),
+            door_logouts: BTreeMap::new(),
         },
         login_listeners: names("listeners.login"),
         logout_listeners: names("listeners.logout"),
@@ -511,6 +512,10 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
         constant_bool(&configuration, "BANK_BOOTH_NOTE_UIM")?,
     ];
     live.install_global_handlers(booth)?;
+    // DoorManagingPlugin (super::doors). Its options ("open", "close",
+    // "shut", "go-through") are none of the global handlers', so its place
+    // beside them in the scan does not change the table.
+    live.install_doors()?;
     // ZoneBuilder.startup: the region zones.
     live.zone_startup()
         .map_err(|e| format!("ZoneBuilder.startup: {e:?}"))?;

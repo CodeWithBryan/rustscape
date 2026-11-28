@@ -70,11 +70,14 @@ pub struct Walk {
     /// The content pulses whose class overrides `stop()` (the milking
     /// pulse, super::items::milking).
     pub stopping_pulses: Vec<crate::pulses::Handle>,
+    /// The doors' "autowalk" logout listeners: the location each restores
+    /// at logout (super::doors).
+    pub door_logouts: BTreeMap<Node, Location>,
 }
 
-/// `scene::Services` for collision queries. The scenery services (doors,
-/// audio, scripts of scenery pulses) are not bound in the live world: they
-/// fail by name if reached.
+/// `scene::Services` for collision queries. The services a door or a scene
+/// pulse reaches are answered by [`super::doors::DoorWorld`]; reached through
+/// this one they fail by name.
 #[derive(Default)]
 pub struct Maps {
     pub players: BTreeSet<Node>,
@@ -193,6 +196,9 @@ pub enum Deferred {
         option: Vec<u16>,
         object: crate::world::doors::Handle,
     },
+    /// `AchievementDiaryManager.finishTask` from a door's autowalk pulse
+    /// (super::doors), with the whole world.
+    DoorDiary(NodeHandle, doors::Diary, i32, i32),
 }
 
 /// `player_walk::Services` and `script_runtime::Bindings` over disjoint parts
@@ -629,10 +635,26 @@ impl player_walk::Services for WalkHost<'_> {
         }
         result
     }
+    fn door_destination(
+        &mut self,
+        state: &mut State,
+        mover: Option<Node>,
+        target: Option<Node>,
+    ) -> player_walk::Result<Option<Location>> {
+        // DestinationFlag.OBJECT of a wall or diagonal: DoorActionHandler.
+        // getDestination over the live scene (super::doors).
+        let object = state.scenery(target.ok_or(player_walk::Error::Null)?)?;
+        let mover = mover.ok_or(player_walk::Error::Null)?;
+        self.with_doors(state, |ctx| {
+            crate::world::door_option::Context::door_destination(ctx, Some(mover), &object)
+                .map(Some)
+        })
+        .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))
+    }
     fn destination(
         &mut self,
         state: &mut State,
-        _: Option<Node>,
+        mover: Option<Node>,
         target: Option<Node>,
         service: crate::world::movement::DestinationService,
     ) -> player_walk::Result<Option<Location>> {
@@ -643,6 +665,12 @@ impl player_walk::Services for WalkHost<'_> {
             (&service, target)
             && let Ok(object) = state.scenery(target)
         {
+            // DoorManagingPlugin.getDestination (super::doors).
+            if let Some(door) = self.door_program(*id) {
+                return self
+                    .with_doors(state, |ctx| door.destination(ctx, mover, Some(&object)))
+                    .map_err(|e| player_walk::Error::Binding(format!("{e:?}")));
+            }
             let plugin = match self
                 .scenery_handler(*id)
                 .map_err(|e| player_walk::Error::Binding(format!("{e:?}")))?
