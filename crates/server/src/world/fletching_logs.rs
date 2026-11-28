@@ -10,8 +10,9 @@
 //! Covered: the craft table, the listener's choice of items for a log, the
 //! handler's `create` checks ([`create`]), its `getAll` and the queued
 //! script's body ([`script`]). The SkillDialogueHandler itself is
-//! `dialogue_dsl::skill`'s. Not covered: the rest of fletching (stringing,
-//! arrows, bolts, darts, crossbows, gems, grapples).
+//! `dialogue_dsl::skill`'s. Stringing and arrows are
+//! `fletching_assembly`; bolts, darts, crossbow limbs, gems and grapples
+//! are not ported.
 
 /// `Skills.FLETCHING`.
 pub const FLETCHING: i32 = 9;

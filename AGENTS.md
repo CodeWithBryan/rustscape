@@ -1144,8 +1144,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   tribal statue never recharges because no quest is registered, and the
   chaos altar 61's "check" is not installed; docs/prayer-altar.md),
   fletching logs with a knife (world/fletching_logs.rs, run live by
-  world/live/items/fletching.rs with the make-X skill dialogue; the rest
-  of fletching is not ported; docs/fletching-logs.md) and Otto Godblessed's barbarian
+  world/live/items/fletching.rs with the make-X skill dialogue;
+  docs/fletching-logs.md), stringing bows and assembling arrows
+  (world/fletching_assembly.rs, run live by
+  world/live/items/fletching_assembly.rs; broad arrows are always refused
+  because SlayerFlags is not ported, and bolts, darts, crossbow limbs,
+  gems and grapples are not ported; docs/fletching-assembly.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the

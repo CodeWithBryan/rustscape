@@ -1059,8 +1059,13 @@ stand-ins); this test checks the production binding end to end.
   (`dialogue_dsl/skill.rs`; SkillDialoguePlugin is registered in the
   dialogue registry at boot, the first plugin there) and
   CraftItemWithLogScript cuts a log every three ticks; the ogre crafts
-  read quest stages nothing here advances, and the rest of fletching
-  (stringing, arrows, bolts, darts, crossbows, gems, grapples) is not
+  read quest stages nothing here advances. Stringing and the three arrow
+  assemblies are installed (`items/fletching_assembly.rs` over
+  `world/fletching_assembly.rs`, no JVM corpus,
+  docs/fletching-assembly.md): StringingListeners and ArrowListeners open
+  their one-option and make-sets dialogues and their four scripts run;
+  SlayerFlags is not ported, so broad arrows are always refused, and the
+  rest of fletching (bolts, darts, crossbow limbs, gems, grapples) is not
   ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

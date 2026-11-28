@@ -3979,6 +3979,124 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     eprintln!("fletchlog cut three logs into 45 arrow shafts, fletching experience 15");
     fletch.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // StringingListeners and ArrowListeners: the wrong string is refused
+    // with a message; a bow string on a shortbow (u) opens the one-option
+    // dialogue (309) and "Make 1" strings it; a shaft on feathers opens the
+    // make-sets dialogue (582) and one set is 15 headless arrows; five sets
+    // of bronze arrows stop after the first when the headless arrows run
+    // out.
+    let inventory = [
+        (0, 50, 1),
+        (1, 1777, 1),
+        (2, 9438, 1),
+        (3, 52, 20),
+        (4, 314, 20),
+        (5, 39, 20),
+    ];
+    write_save_with(
+        &players,
+        "traceone",
+        "fletcharrow",
+        start,
+        &inventory,
+        |save| {
+            save["skills"][9]["static"] = Value::String("5".into());
+            save["skills"][9]["dynamic"] = Value::String("5".into());
+        },
+    );
+    let (code, arrow) = Client::login(address, "fletcharrow").await;
+    assert_eq!(code, 2, "fletcharrow's login");
+    let mut arrow = arrow.unwrap();
+    arrow
+        .until(Duration::from_secs(10), "fletcharrow's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let amount = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .and_then(|slots| slots.values().find(|(item, _)| *item == id))
+            .map(|(_, amount)| *amount)
+            .unwrap_or(0)
+    };
+    let from = arrow.messages.len();
+    arrow.send(use_item_on_item(9438, 2, 50, 0)).await;
+    arrow
+        .until_pinging(Duration::from_secs(20), "the wrong string", |c| {
+            said(c, from, "That's not the right kind of string for this.")
+        })
+        .await;
+    let texts = arrow.texts.len();
+    arrow.send(use_item_on_item(1777, 1, 50, 0)).await;
+    arrow
+        .until_pinging(Duration::from_secs(20), "the stringing dialogue", |c| {
+            shown(c, texts, (309 << 16) | 6, "Shortbow")
+        })
+        .await;
+    arrow.send(continue_option(309, 6)).await;
+    arrow
+        .until_pinging(Duration::from_secs(20), "the strung shortbow", |c| {
+            amount(c, 841) == 1 && said(c, from, "You add a string to the bow.")
+        })
+        .await;
+    assert_eq!(
+        (amount(&arrow, 50), amount(&arrow, 1777)),
+        (0, 0),
+        "the bow and the string are used"
+    );
+    let texts = arrow.texts.len();
+    arrow.send(use_item_on_item(52, 3, 314, 4)).await;
+    arrow
+        .until_pinging(Duration::from_secs(20), "the headless dialogue", |c| {
+            shown(c, texts, (582 << 16) | 5, "Headless arrow")
+        })
+        .await;
+    arrow.send(continue_option(582, 6)).await;
+    arrow
+        .until_pinging(Duration::from_secs(20), "one set of headless arrows", |c| {
+            amount(c, 53) == 15 && said(c, from, "You attach feathers to 15 arrow shafts.")
+        })
+        .await;
+    assert_eq!(
+        (amount(&arrow, 52), amount(&arrow, 314)),
+        (5, 5),
+        "one set takes 15 shafts and 15 feathers"
+    );
+    let texts = arrow.texts.len();
+    let slot = arrow.containers[&93]
+        .iter()
+        .find(|(_, (item, _))| *item == 53)
+        .map(|(slot, _)| *slot)
+        .expect("the headless arrows' slot");
+    arrow.send(use_item_on_item(53, slot, 39, 5)).await;
+    arrow
+        .until_pinging(Duration::from_secs(20), "the arrow dialogue", |c| {
+            shown(c, texts, (582 << 16) | 5, "Bronze arrow")
+        })
+        .await;
+    // Five sets: the second finds no headless arrow and stops.
+    arrow.send(continue_option(582, 4)).await;
+    arrow
+        .until_pinging(Duration::from_secs(30), "the bronze arrows", |c| {
+            amount(c, 882) == 15 && said(c, from, "You attach arrow heads to 15 arrow shafts.")
+        })
+        .await;
+    arrow.pump(Duration::from_secs(4)).await;
+    assert_eq!(
+        (amount(&arrow, 882), amount(&arrow, 53), amount(&arrow, 39)),
+        (15, 0, 5),
+        "one set of bronze arrows"
+    );
+    // 5 for the bow, 15 for the headless arrows, 19.5 for the tips.
+    let experience = arrow.skills.get(&9).map(|s| s.1);
+    assert!(
+        matches!(experience, Some(39 | 40)),
+        "fletcharrow's experience: {experience:?}"
+    );
+    eprintln!("fletcharrow strung a shortbow and made 15 headless then 15 bronze arrows");
+    arrow.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

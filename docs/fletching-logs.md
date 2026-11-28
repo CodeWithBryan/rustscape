@@ -16,8 +16,9 @@ The bodies are functions over `fletching_logs::Host`; every call the original
 makes outside these classes is a required method with no default. The
 `SkillDialogueHandler` the listener opens is `dialogue_dsl::skill`'s.
 
-Not ported: every other fletching package (stringing, arrows, bolts, darts,
-crossbows, gem tips, grapples) and `Feathers`.
+Stringing and arrows are `world::fletching_assembly`
+(docs/fletching-assembly.md). Not ported: bolts, darts, crossbow limbs, gem
+tips and grapples.
 
 ## Evidence, and what it does not show
 
@@ -52,7 +53,7 @@ reading the pinned sources.
 `world/live/items/fletching.rs` registers the listener at boot when
 `LogCraftableListeners` is in the scan, and `SkillDialoguePlugin` under
 `SKILL_DIALOGUE` when it is in `scan.initializable`. It is the first plugin
-in the live dialogue registry; no other content opens a skill dialogue yet.
+in the live dialogue registry; stringing and arrows open it too.
 The quest stages are the ones the save holds for the quests' repository
 indexes (Big Chompy Bird Hunting 35, Zogre Flesh Eaters 40); no quest is
 registered in this world, so nothing advances them.

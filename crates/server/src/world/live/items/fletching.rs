@@ -36,23 +36,23 @@ use crate::{
 /// The plugin's class (`scan.initializable`).
 pub const SKILL_DIALOGUE_PLUGIN: &str = "core.game.dialogue.SkillDialoguePlugin";
 /// `DiaryType.SEERS_VILLAGE`'s ordinal.
-const SEERS_VILLAGE: usize = 5;
+pub(super) const SEERS_VILLAGE: usize = 5;
 
 /// The knife's `onUseWith(IntType.ITEM, ...)` lambda.
 pub struct KnifeOnLogs;
 impl crate::world::component_objects::NativeObject for KnifeOnLogs {}
 
-fn fail(e: impl std::fmt::Debug) -> Error {
+pub(super) fn fail(e: impl std::fmt::Debug) -> Error {
     Error::Binding(format!("{e:?}"))
 }
 
 /// `fletching_logs::Host` over the live world, for one player.
-struct Fletch<'a> {
-    live: &'a mut Live,
-    p: P,
+pub(super) struct Fletch<'a> {
+    pub(super) live: &'a mut Live,
+    pub(super) p: P,
 }
 impl Fletch<'_> {
-    fn node(&self) -> Node {
+    pub(super) fn node(&self) -> Node {
         Node::Player(self.p.0.clone())
     }
     fn script(&mut self, call: ScriptCall) -> Result<bool> {
@@ -189,7 +189,7 @@ struct LogHandler {
     log: i32,
     crafts: Vec<usize>,
 }
-fn dialogue_error(e: Error) -> d::Error {
+pub(super) fn dialogue_error(e: Error) -> d::Error {
     match e {
         Error::Null => d::Error::Null,
         Error::Index => d::Error::Index,
