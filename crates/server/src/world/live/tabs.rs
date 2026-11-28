@@ -753,7 +753,7 @@ impl tab_emotes::Host for Tabs<'_> {
         self.clear_pulses()
     }
     fn dialogue(&mut self, _: &[&str]) -> player_tabs::Result<()> {
-        refused("DialogueInterpreter.sendDialogue (the dialogue interpreter is not installed)")
+        refused("DialogueInterpreter.sendDialogue (not bound to the interpreter)")
     }
     fn varrock_diary_complete(&mut self, level: i32, index: i32) -> player_tabs::Result<bool> {
         // AchievementDiary.isComplete(level, index) on the persisted

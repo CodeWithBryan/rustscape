@@ -101,12 +101,6 @@ fn refuse<T>(what: &str) -> Result<T> {
 fn bind(e: impl std::fmt::Debug) -> Error {
     Error::Binding(Some(format!("{e:?}")))
 }
-/// `DialUtils.splitLines(message, 54)` as the dialogue's lines.
-fn split_lines(message: &str) -> Result<Lines> {
-    let utf16: Vec<u16> = message.encode_utf16().collect();
-    let lines = crate::world::plain_dialogue::split_lines(&utf16, 54).map_err(bind)?;
-    Ok(Lines::new(lines.into_iter().map(Some).collect()))
-}
 
 /// `Host` over the live world.
 pub struct GHost<'a> {
@@ -401,11 +395,7 @@ impl gh::Host for GHost<'_> {
         // ContentAPI.sendDialogue: interpreter.sendDialogue(*splitLines(msg))
         // (super::global_ui).
         let p = self.player(player)?;
-        let lines = split_lines(text)?;
-        let interpreter = self.live.interpreter_of(&p);
-        let result = interpreter.send_dialogue(self.live, Some(&lines));
-        self.live.drain_all();
-        result.map(|_| ()).map_err(bind)
+        self.live.content_send_dialogue(&p, text).map_err(bind)
     }
     fn npc_dialogue(
         &mut self,
@@ -418,28 +408,20 @@ impl gh::Host for GHost<'_> {
         // ContentAPI.sendNPCDialogue: interpreter.sendDialogues(npc, expr,
         // hideContinue, *splitLines(msg)).
         let p = self.player(player)?;
-        let lines = split_lines(text)?;
         let expression = match expression {
             Expression::Neutral => FacialExpression::Neutral,
             Expression::Annoyed => FacialExpression::Annoyed,
         };
-        let interpreter = self.live.interpreter_of(&p);
-        let result = interpreter.send_dialogues(
-            self.live,
-            npc,
-            FacialExpression::or_unset(Some(expression)),
-            hide,
-            &lines,
-        );
-        self.live.drain_all();
-        result.map(|_| ()).map_err(bind)
+        self.live
+            .content_send_npc_dialogue(&p, npc, expression, hide, text)
+            .map_err(bind)
     }
     fn item_dialogue(&mut self, player: &Self::Node, item: i32, text: &str) -> Result<()> {
         // ContentAPI.sendItemDialogue with an Int: Item(item), then
         // interpreter.sendItemMessage(item, *splitLines(message)).
         let p = self.player(player)?;
         let item = crate::world::dialogue::Host::new_item(self.live, item).map_err(bind)?;
-        let lines = split_lines(text)?;
+        let lines = super::talk::content_split_lines(text).map_err(bind)?;
         let interpreter = self.live.interpreter_of(&p);
         let result = interpreter.send_item_message(self.live, &item, &lines);
         self.live.drain_all();
@@ -458,7 +440,7 @@ impl gh::Host for GHost<'_> {
         let p = self.player(player)?;
         let first = crate::world::dialogue::Host::new_item(self.live, first).map_err(bind)?;
         let second = crate::world::dialogue::Host::new_item(self.live, second).map_err(bind)?;
-        let lines = split_lines(text)?;
+        let lines = super::talk::content_split_lines(text).map_err(bind)?;
         let interpreter = self.live.interpreter_of(&p);
         let result = interpreter.send_double_item_message(self.live, &first, &second, &lines);
         self.live.drain_all();

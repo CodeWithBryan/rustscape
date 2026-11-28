@@ -1045,10 +1045,10 @@ impl drop::Context for Ctx<'_> {
         crate::world::repository::Host::save_immediately(self.0, &p).map_err(err)
     }
     fn send_destroy_item(&mut self, _: &Node, _: i32, _: Option<&str>) -> Result<()> {
-        refused("DialogueInterpreter.sendDestroyItem (the dialogue interpreter is not installed)")
+        refused("DialogueInterpreter.sendDestroyItem (not bound to the interpreter)")
     }
     fn add_dialogue_action(&mut self, _: &Node, _: drop::DestroyAction<Node>) -> Result<()> {
-        refused("addDialogueAction (the dialogue interpreter is not installed)")
+        refused("addDialogueAction (not bound to the interpreter)")
     }
     fn remove_item(&mut self, player: &Node, item: &Node) -> Result<bool> {
         let item = Self::item(item)?;
