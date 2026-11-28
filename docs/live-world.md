@@ -1084,7 +1084,13 @@ stand-ins); this test checks the production binding end to end.
   corpus `fixtures/thieving-stalls`, the live binding is not):
   ThievingOptionPlugin's three option names run StallThiefPulse, which
   empties the stall through the cache scene; no quest is ported, so the
-  Rellekka fur and fish stalls always refuse there; chests and doors
+  Rellekka fur and fish stalls always refuse there. Thieving chests are
+  installed (`items/chests.rs` over `world/thieving_chest.rs`,
+  docs/thieving-chests.md; the library is replayed against the JVM
+  corpus `fixtures/thieving-chests`, the live binding is not):
+  ThievableChestPlugin's "open" and "search for traps" on the six chest
+  definitions, the trap pulse as a world pulse, and one respawn tick per
+  constant for the whole world; lock-picked doors (PickableDoorHandler)
   are not ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

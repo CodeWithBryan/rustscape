@@ -44,6 +44,7 @@ use std::collections::HashMap;
 pub mod altar;
 pub mod barbarian;
 pub mod bones;
+pub mod chests;
 mod component_use;
 pub mod cooking;
 pub mod everyday;

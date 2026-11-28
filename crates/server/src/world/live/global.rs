@@ -1748,6 +1748,13 @@ impl Live {
                     }
                     None => Err(Error::Null),
                 },
+                // ThievableChestPlugin.handle(player, node, option).
+                super::scenery::SceneryPlugin::Chest => match call.target.as_ref() {
+                    Some(chest) => self
+                        .chest_handle(&p, chest, &call.option)
+                        .map_err(|e| Error::Binding(Some(format!("{e:?}")))),
+                    None => Err(Error::Null),
+                },
                 // ThievingOptionPlugin.handle(player, node, option).
                 super::scenery::SceneryPlugin::Stall => match call.target.as_ref() {
                     Some(stall) => self

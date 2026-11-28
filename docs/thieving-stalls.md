@@ -15,8 +15,8 @@ Scope: the pinned `content/global/skill/thieving/Stall.java`,
 The bodies are functions over `thieving_stall::Host`; every call the
 original makes outside these classes is a required method with no default.
 
-Not ported: chests (`ThievableChestPlugin`) and doors
-(`PickableDoorHandler`). Pickpocketing is docs/thieving-pickpocket.md.
+Not ported: doors (`PickableDoorHandler`). Pickpocketing is
+docs/thieving-pickpocket.md and chests are docs/thieving-chests.md.
 
 ## Evidence, and what it does not show
 

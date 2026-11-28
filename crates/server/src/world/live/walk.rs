@@ -668,6 +668,7 @@ impl player_walk::Services for WalkHost<'_> {
                 super::scenery::SceneryPlugin::Furnace => return Ok(None),
                 super::scenery::SceneryPlugin::Anvil => return Ok(None),
                 super::scenery::SceneryPlugin::Stall => return Ok(None),
+                super::scenery::SceneryPlugin::Chest => return Ok(None),
             };
             let mut geometry = super::destination::Geometry {
                 walk: &mut *self.walk,

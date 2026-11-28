@@ -67,6 +67,8 @@ pub enum SceneryPlugin {
     Anvil,
     /// ThievingOptionPlugin (super::items::stalls).
     Stall,
+    /// ThievableChestPlugin (super::items::chests).
+    Chest,
 }
 impl SceneryPlugin {
     pub fn class(self) -> &'static str {
@@ -76,27 +78,28 @@ impl SceneryPlugin {
             Self::Furnace => crate::world::smelting::PLUGIN_CLASS,
             Self::Anvil => crate::world::smithing::OPTION_CLASS,
             Self::Stall => crate::world::thieving_stall::PLUGIN_CLASS,
+            Self::Chest => crate::world::thieving_chest::CLASS,
         }
     }
     /// `isWalk()`: OptionHandler's true for a content plugin.
     pub fn is_walk(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk(),
-            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall => true,
+            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall | Self::Chest => true,
         }
     }
     /// `isWalk(player, node)`: OptionHandler's false.
     pub fn is_walk_for(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk_for(),
-            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall => false,
+            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall | Self::Chest => false,
         }
     }
     /// `isDelayed(player)`: OptionHandler's true.
     pub fn is_delayed(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_delayed(),
-            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall => true,
+            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall | Self::Chest => true,
         }
     }
 }
@@ -136,6 +139,12 @@ impl WalkHost<'_> {
             .is_some()
         {
             return Ok(SceneryPlugin::Stall);
+        }
+        if handler
+            .value::<super::items::chests::ChestPlugin>()
+            .is_some()
+        {
+            return Ok(SceneryPlugin::Chest);
         }
         Err(legacy::Error::Binding(Some(
             "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),
