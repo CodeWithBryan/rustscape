@@ -1008,10 +1008,12 @@ stand-ins); this test checks the production binding end to end.
   Not installed:
   the `UseWithHandler` classes
   other than CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's
-  SmeltUseWithHandler, SmithingPlugin, GrindItemPlugin and HerbTarPlugin
-  (the five handlers in `UseWithHandler.HANDLERS` here; smelting and
+  SmeltUseWithHandler, SmithingPlugin, GrindItemPlugin, HerbTarPlugin,
+  AmuletStringingPlugin, ChiselLimestonePlugin and GemCutPlugin
+  (the eight handlers in `UseWithHandler.HANDLERS` here; smelting and
   smithing are ported without a JVM corpus, docs/smelting.md and
-  docs/smithing.md; the two herblore plugins are docs/herblore-tools.md),
+  docs/smithing.md; the two herblore plugins are docs/herblore-tools.md
+  and the three crafting plugins docs/crafting-tools.md),
   the
   enchanted-tablet and ectophial use-withs of `world::global_items`, and
   everything not ported at all: the rest of the cooking package (recipes,
@@ -1121,6 +1123,14 @@ stand-ins); this test checks the production binding end to end.
   item-on-item pulse `UseWithHandler$2`, with their skill dialogues and
   pulses, and BarbarianMixListener's use-with registrations. SwampToadPlugin
   is not ported.
+  Gem cutting, limestone bricks, amulet stringing and silver stringing
+  are installed (`items/crafting_tools.rs` over `world/crafting_tools.rs`,
+  docs/crafting-tools.md; the library is replayed against the JVM corpus
+  `fixtures/crafting-tools`, the live binding is not): GemCutPlugin,
+  ChiselLimestonePlugin and AmuletStringingPlugin in
+  `UseWithHandler.HANDLERS`, reached through the item-on-item pulse, with
+  the gem dialogue and the two pulses, and SilverStringingListener's
+  use-with registration. The rest of the crafting package is not ported.
   Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

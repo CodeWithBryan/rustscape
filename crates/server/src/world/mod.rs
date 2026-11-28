@@ -21,6 +21,7 @@ pub mod component_objects;
 pub mod consumables;
 pub mod content_api;
 pub mod cooking;
+pub mod crafting_tools;
 pub mod creatures;
 pub mod dark_zone;
 pub mod dialogue;

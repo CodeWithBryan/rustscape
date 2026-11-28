@@ -905,6 +905,7 @@ impl super::super::host::Live {
         let mut herb_clean = false;
         let mut potion_mixing = false;
         let mut barbarian_mix = false;
+        let mut silver_stringing = false;
         let mut log_fletching = false;
         let (mut stringing, mut arrows) = (false, false);
         let mut ammo = Vec::new();
@@ -951,6 +952,9 @@ impl super::super::host::Live {
                 if let Some(class) = classes.into_iter().find(|class| *class == name) {
                     ammo.push(class);
                 }
+            }
+            if name == crate::world::crafting_tools::SILVER_CLASS {
+                silver_stringing = true;
             }
             if name == crate::world::herblore_tools::MIX_CLASS {
                 barbarian_mix = true;
@@ -1061,6 +1065,12 @@ impl super::super::host::Live {
             // Bolt, Dart, Limbing, GemBolt and Grapple listeners
             // (super::fletching_ammo).
             self.define_fletching_ammo_listeners(class)?;
+        }
+        if silver_stringing {
+            // SilverStringingListener.defineListeners
+            // (super::crafting_tools): scanned before the herblore
+            // listeners.
+            self.define_silver_stringing_listener()?;
         }
         if barbarian_mix {
             // BarbarianMixListener.defineListeners (super::herblore_tools):
@@ -1191,6 +1201,11 @@ impl super::super::host::Live {
                 self.potion_mixing_use(*mixing, player, used, with)
                     .map_err(bind),
             );
+        }
+        if f.value::<super::crafting_tools::SilverStringing>()
+            .is_some()
+        {
+            return Some(self.silver_stringing_use(player, used, with).map_err(bind));
         }
         if f.value::<super::herblore_tools::Mix>().is_some() {
             return Some(self.barbarian_mix_use(player, used, with).map_err(bind));
