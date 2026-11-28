@@ -1167,8 +1167,14 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   no quest is ported; docs/thieving-stalls.md), thieving chests
   (world/thieving_chest.rs, run live by world/live/items/chests.rs;
   replayed against the JVM corpus fixtures/thieving-chests from
-  oracle/thieving-chests, the live binding is not; lock-picked doors are
-  not ported; docs/thieving-chests.md) and Otto Godblessed's barbarian
+  oracle/thieving-chests, the live binding is not;
+  docs/thieving-chests.md), doors
+  (world/door_option.rs and world/doors.rs, run live by
+  world/live/items/doors.rs with no JVM corpus of the binding; a door
+  option the booted original gives to other content, fixtures/door-claims
+  from oracle/door-claims embedded as world/door_claims.txt, is refused
+  by name; lock-picked doors are not ported;
+  docs/live-world-doors.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the

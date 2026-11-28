@@ -531,6 +531,7 @@ pub fn boot(options: &Options, saves: std::sync::mpsc::Sender<SaveJob>) -> Resul
     live.install_round()?;
     // The content use-with listeners (super::items::everyday).
     live.install_content_use()?;
+    live.install_doors()?;
     live.install_cow_milking()?;
     live.install_smelting()?;
     live.install_smithing()?;

@@ -78,6 +78,9 @@ pub struct Round {
     pub milking: super::items::milking::MilkingWorld,
     /// ThievableChestPlugin and its trap pulse (super::items::chests).
     pub chests: super::items::chests::ChestWorld,
+    /// DoorManagingPlugin, the door pulses and the "autowalk" logout
+    /// listeners (super::items::doors).
+    pub doors: super::items::doors::DoorWorld,
     /// ThievingOptionPlugin and StallThiefPulse (super::items::stalls).
     pub stalls: super::items::stalls::StallWorld,
     /// FurnaceOptionPlugin and SmeltingInterface (super::items::smelting).

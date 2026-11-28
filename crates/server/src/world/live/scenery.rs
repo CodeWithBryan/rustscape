@@ -69,6 +69,8 @@ pub enum SceneryPlugin {
     Stall,
     /// ThievableChestPlugin (super::items::chests).
     Chest,
+    /// DoorManagingPlugin (super::items::doors).
+    Door,
 }
 impl SceneryPlugin {
     pub fn class(self) -> &'static str {
@@ -79,27 +81,43 @@ impl SceneryPlugin {
             Self::Anvil => crate::world::smithing::OPTION_CLASS,
             Self::Stall => crate::world::thieving_stall::PLUGIN_CLASS,
             Self::Chest => crate::world::thieving_chest::CLASS,
+            Self::Door => crate::world::door_option::CLASS,
         }
     }
     /// `isWalk()`: OptionHandler's true for a content plugin.
     pub fn is_walk(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk(),
-            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall | Self::Chest => true,
+            Self::CowMilking
+            | Self::Furnace
+            | Self::Anvil
+            | Self::Stall
+            | Self::Chest
+            | Self::Door => true,
         }
     }
     /// `isWalk(player, node)`: OptionHandler's false.
     pub fn is_walk_for(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_walk_for(),
-            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall | Self::Chest => false,
+            Self::CowMilking
+            | Self::Furnace
+            | Self::Anvil
+            | Self::Stall
+            | Self::Chest
+            | Self::Door => false,
         }
     }
     /// `isDelayed(player)`: OptionHandler's true.
     pub fn is_delayed(self) -> bool {
         match self {
             Self::Global(plugin) => plugin.is_delayed(),
-            Self::CowMilking | Self::Furnace | Self::Anvil | Self::Stall | Self::Chest => true,
+            Self::CowMilking
+            | Self::Furnace
+            | Self::Anvil
+            | Self::Stall
+            | Self::Chest
+            | Self::Door => true,
         }
     }
 }
@@ -146,8 +164,14 @@ impl WalkHost<'_> {
         {
             return Ok(SceneryPlugin::Chest);
         }
+        if handler
+            .value::<crate::world::door_option::Program>()
+            .is_some()
+        {
+            return Ok(SceneryPlugin::Door);
+        }
         Err(legacy::Error::Binding(Some(
-            "not ported in the live world: a scenery option handler that is not a global handler (doors and other content)".into(),
+            "not ported in the live world: a scenery option handler that is not a global handler (other content)".into(),
         )))
     }
 }

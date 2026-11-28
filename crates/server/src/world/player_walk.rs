@@ -1099,6 +1099,12 @@ impl<S: Services> World<'_, S> {
         }
         Ok(())
     }
+    /// `entity.getWalkingQueue().addPath(x, y)` on its own: no lock check
+    /// and no reset (DoorActionHandler's autowalk pulse).
+    pub fn queue_add(&mut self, node: Node, x: i32, y: i32) -> Result<()> {
+        let q = self.queue(node)?;
+        navigation::add(&mut Walking { world: self, node }, &q, x, y).map_err(Error::Movement)
+    }
     pub fn find_path(
         &mut self,
         node: Node,

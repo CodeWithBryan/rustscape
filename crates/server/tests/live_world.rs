@@ -4312,6 +4312,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     tokio::time::sleep(Duration::from_secs(2)).await;
     stall_part(address, &players).await;
     chest_part(address, &players).await;
+    door_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -4395,6 +4396,83 @@ async fn chest_part(address: std::net::SocketAddr, players: &std::path::Path) {
         "chestman searched the ten-coin chest for traps, found it looted, then sprang its trap"
     );
     thief.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The door part of the gather scenario.
+async fn door_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    // DoorManagingPlugin and DoorActionHandler: a closed door of a
+    // Lumbridge house (36846, on the west edge of its tile) is opened,
+    // walked through, closed from inside and opened again.
+    let door = [3234, 3207];
+    let open = [door[0] - 1, door[1]];
+    let start = [door[0] - 2, door[1], 0];
+    write_save(players, "traceone", "doorman", start, &[]);
+    let (code, walker) = Client::login(address, "doorman").await;
+    assert_eq!(code, 2, "doorman's login");
+    let mut walker = walker.unwrap();
+    walker
+        .until(Duration::from_secs(10), "doorman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    // The closed door is a wall: a walk to the tile behind it ends outside.
+    walker
+        .send(actions::worldspace_walk(door[0] + 1, door[1], false))
+        .await;
+    walker.pump(Duration::from_secs(5)).await;
+    let outside = walker.position();
+    eprintln!("doorman stands at {outside:?} with the door closed");
+    assert!(outside[0] < door[0], "doorman walked through a closed door");
+    walker.send(scenery_option1(36846, door[0], door[1])).await;
+    walker.pump(Duration::from_secs(4)).await;
+    walker
+        .send(actions::worldspace_walk(door[0] + 1, door[1], false))
+        .await;
+    walker
+        .until_pinging(
+            Duration::from_secs(10),
+            "the walk through the open door",
+            |c| c.position() == [door[0] + 1, door[1], 0],
+        )
+        .await;
+    // "Close" on the open door (36848, swung onto the tile outside).
+    walker.send(scenery_option1(36848, open[0], open[1])).await;
+    walker.pump(Duration::from_secs(4)).await;
+    // The house has a second, open door on its south side: with this one
+    // closed the two tiles to the tile outside are a walk around the
+    // house, which four ticks do not finish.
+    walker
+        .send(actions::worldspace_walk(open[0], open[1], false))
+        .await;
+    walker.pump(Duration::from_millis(2400)).await;
+    let detour = walker.position();
+    eprintln!("doorman is at {detour:?} four ticks after the door closed again");
+    assert_ne!(
+        detour,
+        [open[0], open[1], 0],
+        "the closed door did not block"
+    );
+    walker
+        .send(actions::worldspace_walk(door[0] + 1, door[1], false))
+        .await;
+    walker
+        .until_pinging(Duration::from_secs(15), "the walk back inside", |c| {
+            c.position() == [door[0] + 1, door[1], 0]
+        })
+        .await;
+    walker.send(scenery_option1(36846, door[0], door[1])).await;
+    walker.pump(Duration::from_secs(4)).await;
+    walker
+        .send(actions::worldspace_walk(start[0], start[1], false))
+        .await;
+    walker
+        .until_pinging(Duration::from_millis(2500), "the walk back out", |c| {
+            c.position() == start
+        })
+        .await;
+    eprintln!("doorman opened a Lumbridge door, walked in, closed it, opened it and walked out");
+    walker.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

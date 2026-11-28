@@ -539,7 +539,7 @@ the hardcoded constructed scenery of `processSceneryAction`, varbit- and
 varp-configured scenery (morphs) and their debug lookup, the bank booths'
 `defineInteraction` scripts (interaction scripts in the player's script
 queue) and the bank chest and deposit box listeners (the global handlers'
-scenery lambdas are refused by name where they are invoked), scenery option handlers that are not global handlers (doors and other
+scenery lambdas are refused by name where they are invoked), scenery option handlers that are not global handlers or DoorManagingPlugin (other
 content, CowMilkingPlugin, FurnaceOptionPlugin and SmithingPlugin's aside); the use-with MovementPulse to a ground item, a UseWithHandler's
 MovementPulse with a `getDestination` override and item-on-item Pulse (no such handler class is installed),
 the dialogue plugins CowMilkingPlugin opens (3807 without a bucket or a pail, 70099 for "steal-cowbell"),
@@ -1090,7 +1090,16 @@ stand-ins); this test checks the production binding end to end.
   corpus `fixtures/thieving-chests`, the live binding is not):
   ThievableChestPlugin's "open" and "search for traps" on the six chest
   definitions, the trap pulse as a world pulse, and one respawn tick per
-  constant for the whole world; lock-picked doors (PickableDoorHandler)
+  constant for the whole world. Doors are installed (`items/doors.rs`
+  over `world/door_option.rs` and `world/doors.rs`,
+  docs/live-world-doors.md; the libraries are replayed against the JVM
+  corpus `fixtures/doors`, the live binding is not): DoorManagingPlugin is
+  the default of "open", "close", "shut" and "go-through", its
+  destination and DoorActionHandler's pulses run over the cache scene,
+  and a pair the booted original gives to other content
+  (`fixtures/door-claims`, embedded as `world/door_claims.txt`) is
+  refused by name instead of opened; the three doors' diary tasks are a
+  named skip; lock-picked doors (PickableDoorHandler)
   are not ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
@@ -1174,8 +1183,7 @@ stand-ins); this test checks the production binding end to end.
   ContentAPI `sendMessage`'s 86-unit split as used by shops, trade and
   consumables, and `Entity.setDirection` for an NPC.
 - The per-player or per-world libraries behind other buttons and options:
-  gathering listeners, quests and diaries, clans; content listeners and
-  doors.
+  gathering listeners, quests and diaries, clans; content listeners.
 - A transformed player's appearance (`transformNPC`), familiars behind the
   appearance flag's summoning fields; region unloading; the climb animation (828) was not seen in the player
   update by the test (the climb itself is).
