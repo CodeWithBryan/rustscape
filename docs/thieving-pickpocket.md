@@ -17,8 +17,8 @@ default. The loot tables are `drop_tables::WeightBasedTable`'s, reached
 through `Host::can_roll`, `Host::exclude_clues` and `Host::roll`.
 
 Stalls (`ThievingOptionPlugin`, `Stall`, `StallThiefPulse`) are
-docs/thieving-stalls.md. Not ported: chests (`ThievableChestPlugin`),
-doors (`PickableDoorHandler`),
+docs/thieving-stalls.md and chests (`ThievableChestPlugin`) are
+docs/thieving-chests.md. Not ported: doors (`PickableDoorHandler`),
 `Pickpockets.getSuccessChance` (nothing calls it) and the Dig Site's two
 calls of `pickpocketRoll`.
 

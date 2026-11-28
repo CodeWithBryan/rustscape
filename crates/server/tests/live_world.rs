@@ -4311,6 +4311,91 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     thief.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
     stall_part(address, &players).await;
+    chest_part(address, &players).await;
+}
+
+/// The chest part of the gather scenario: ThievableChestPlugin on the
+/// ten-coin chest 2566 in East Ardougne. "Search for traps" at Thieving 40
+/// disarms and opens it over six ticks for 10 coins and 7.8 experience;
+/// the constant then respawns for eleven ticks, during which "Open" says
+/// it has been looted, and after which "Open" springs the trap.
+async fn chest_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, n)| *n)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    let chest = [2676, 3310];
+    let start = [chest[0] - 1, chest[1], 0];
+    write_save_with(players, "traceone", "chestman", start, &[], |save| {
+        // The experience stays 0: this character has not finished the
+        // tutorial, which caps a skill's experience at 175.
+        save["skills"][17]["static"] = Value::String("40".into());
+        save["skills"][17]["dynamic"] = Value::String("40".into());
+    });
+    let (code, thief) = Client::login(address, "chestman").await;
+    assert_eq!(code, 2, "chestman's login");
+    let mut thief = thief.unwrap();
+    thief
+        .until(Duration::from_secs(10), "chestman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = thief.messages.len();
+    thief.send(scenery_option2(2566, chest[0], chest[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(15), "the trap found", |c| {
+            said(c, from, "You find a trap on the chest...")
+        })
+        .await;
+    thief
+        .until_pinging(Duration::from_secs(10), "the treasure", |c| {
+            said(c, from, "You find treasure inside!") && amount(c, 995) == 10
+        })
+        .await;
+    assert!(said(&thief, from, "You disable the trap."));
+    assert!(said(&thief, from, "You open the chest."));
+    thief.pump(Duration::from_secs(1)).await;
+    let experience = thief.skills.get(&17).map(|s| s.1);
+    assert_eq!(experience, Some(7), "chestman's thieving experience");
+    // The chest is the looted id for three ticks, then itself again while
+    // the constant still respawns.
+    thief.pump(Duration::from_secs(2)).await;
+    let from = thief.messages.len();
+    thief.send(scenery_option1(2566, chest[0], chest[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(5), "the looted chest", |c| {
+            said(c, from, "It looks like this chest has already been looted.")
+        })
+        .await;
+    // Eleven ticks after the treasure the trap is set again.
+    thief.pump(Duration::from_secs(5)).await;
+    let from = thief.messages.len();
+    thief.send(scenery_option1(2566, chest[0], chest[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(5), "the sprung trap", |c| {
+            said(c, from, "You have activated a trap on the chest.")
+        })
+        .await;
+    assert_eq!(
+        amount(&thief, 995),
+        10,
+        "an opened chest hands over nothing"
+    );
+    eprintln!(
+        "chestman searched the ten-coin chest for traps, found it looted, then sprang its trap"
+    );
+    thief.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// The stall part of the gather scenario.

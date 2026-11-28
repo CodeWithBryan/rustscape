@@ -1164,8 +1164,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   run live by world/live/items/stalls.rs; replayed against the JVM
   corpus fixtures/thieving-stalls from oracle/thieving-stalls, the live
   binding is not; the Rellekka fur and fish stalls always refuse because
-  no quest is ported, and chests and doors are not ported;
-  docs/thieving-stalls.md) and Otto Godblessed's barbarian
+  no quest is ported; docs/thieving-stalls.md), thieving chests
+  (world/thieving_chest.rs, run live by world/live/items/chests.rs;
+  replayed against the JVM corpus fixtures/thieving-chests from
+  oracle/thieving-chests, the live binding is not; lock-picked doors are
+  not ported; docs/thieving-chests.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the
