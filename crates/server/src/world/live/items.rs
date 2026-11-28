@@ -1259,21 +1259,20 @@ impl listeners::Casing for Ctx<'_> {
 impl listeners::Context for Ctx<'_> {
     type Player = Node;
     type Node = Node;
-    type Scripts = ();
+    type Scripts = crate::scripts::Runtime;
     type Locks = Node;
-    type Script = ();
+    type Script = crate::scripts::RuntimeScript;
     type Manager = ();
     type Pulse = crate::world::movement::Movement;
     type Zone = Node;
     type Location = Option<crate::world::doors::Location>;
-    fn scripts(&mut self, _: &Node) -> listeners::Result<()> {
-        Ok(())
+    fn scripts(&mut self, p: &Node) -> listeners::Result<crate::scripts::Runtime> {
+        // player.scripts: the canonical actor's processor.
+        let p = self.player_of(p).map_err(lerr)?;
+        self.0.inner.state.scripts(&p.0).map_err(lerr)
     }
-    fn remove_weak(&mut self, _: ()) -> listeners::Result<()> {
-        // scripts.removeWeakScripts(): only content queues weak scripts.
-        self.0.inner.not_ported.skip(
-            "Entity.scripts.removeWeakScripts in InteractionListeners.run (only content queues weak scripts)",
-        );
+    fn remove_weak(&mut self, scripts: crate::scripts::Runtime) -> listeners::Result<()> {
+        scripts.remove_weak();
         Ok(())
     }
     fn locks(&mut self, p: &Node) -> listeners::Result<Node> {
@@ -1310,11 +1309,51 @@ impl listeners::Context for Ctx<'_> {
             .skip("UseWithEvent dispatch (entity event hooks not ported)");
         Ok(())
     }
-    fn interaction(&mut self, _: Function, _: i32, _: bool) -> listeners::Result<()> {
-        lrefused("content interaction scripts (InteractionListener metadata)")
+    fn interaction(
+        &mut self,
+        f: Function,
+        distance: i32,
+        persist: bool,
+    ) -> listeners::Result<crate::scripts::RuntimeScript> {
+        // Interaction(handler, distance, persist): only a handler this
+        // world runs (super::scripts); the bank booths' and every other
+        // content class's stay refused.
+        if !super::host::Live::script_installed(&f) {
+            return lrefused(
+                "a defineInteraction script this world did not install (InteractionListener metadata other than the gathering listeners')",
+            );
+        }
+        Ok(Shared::new(crate::scripts::Script::new_in(
+            self.0.inner.state.identity(),
+            crate::scripts::Form::Interaction { distance },
+            Some(f),
+            persist,
+        )))
     }
-    fn install(&mut self, _: (), _: &Node, _: ()) -> listeners::Result<()> {
-        lrefused("content interaction scripts")
+    fn install(
+        &mut self,
+        scripts: crate::scripts::Runtime,
+        n: &Node,
+        script: crate::scripts::RuntimeScript,
+    ) -> listeners::Result<()> {
+        // scripts.setInteractionScript(node, script): the node in the
+        // canonical state (a scene object's is the one its walk goes to).
+        let target = match n {
+            Node::Npc(h) | Node::Player(h) => h.clone(),
+            Node::Scenery(object) => self
+                .0
+                .inner
+                .state
+                .scenery_target(object.clone())
+                .map_err(lerr)?,
+            _ => return lrefused("an interaction script whose target is an item"),
+        };
+        self.0
+            .with_walk_host(|state, host| {
+                let mut ctx = crate::world::script_runtime::Context::new(state, host, &scripts)?;
+                scripts.interact_in(state, &mut ctx, Some(target), Some(&script))
+            })
+            .map_err(lerr)
     }
     fn manager(&mut self, p: &Node) -> listeners::Result<()> {
         // player.pulseManager: the canonical actor's (super::talk).

@@ -17,8 +17,11 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   ownership/native objects and a real actor-clock/tick phase bridge exist;
   `rs09-server --world` runs `run` with the listener movement and arrival
   for NPC, player and scenery targets (world/live/talk.rs,
-  world/live/scenery.rs); defineInteraction
-  scripts, content use-with listener bodies, events
+  world/live/scenery.rs) and installs a defineInteraction script in the
+  player's ScriptProcessor, whose body runs with the whole world
+  (world/live/scripts.rs: only WoodcuttingListener's handler is installed;
+  after touching it run the live_world `gather` scenario); other
+  defineInteraction scripts, content use-with listener bodies, events
   and booth content are still required runtime joins (only the unhandled
   use-with MovementPulse to NPCs, players and scenery is joined:
   world/live/items/use_with.rs). See docs/interaction-listeners.md.
@@ -1127,8 +1130,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   bank/beast-of-burden containers and EquipmentContainer's own overrides
   remain required services, and removeItem removes one default-charge unit
   because the service carries only the id. Barbarian fishing, pickaxe repair,
-  spot movement and the FishingPulse option handlers are not ported; nothing is
-  installed in a live world and the examples' bronze-axe stand-in is
+  spot movement and the FishingPulse option handlers are not ported; of the
+  library only woodcutting is installed in a live world (the pulse and
+  WoodcuttingListener's script, world/live/items/woodcutting.rs, a binding
+  without a corpus) and the examples' bronze-axe stand-in is
   unrelated. See docs/gathering.md.
 - For item-definition changes, run `cargo test -p rs09-server --test item_definitions`
   and `cargo xtask item-oracle --check` with Python/JDK 11. Preserve decoder stop

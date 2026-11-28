@@ -1,7 +1,10 @@
-//! `WoodcuttingSkillPulse` in the live world, started by AxeOnTree (an axe
-//! used on a tree; super::withobject). The pulse is
-//! `world::gathering::woodcutting::Pulse`, verified by the gathering corpus
-//! (docs/gathering.md); this file is its `service::Context` over the live
+//! Woodcutting in the live world: `WoodcuttingSkillPulse`, started by
+//! AxeOnTree (an axe used on a tree; super::withobject), and
+//! `WoodcuttingListener`, the trees' own options ("Chop down" and its
+//! four spellings) as an interaction script of the player's
+//! ScriptProcessor (super::super::scripts). Both bodies are
+//! `world::gathering::woodcutting`'s, verified by the gathering corpus
+//! (docs/gathering.md); this file is their `service::Context` over the live
 //! world, written without a corpus of its own.
 //!
 //! Answered through the native systems: the tree's id and active flag,
@@ -11,20 +14,34 @@
 //! the canonical inventory and equipment, the persisted Seers' Village
 //! diary, the interpreter's plain dialogue, item names, the local players
 //! and the repository's player count, the synth sound, and
-//! `RandomFunction.RANDOM` and `ThreadLocalRandom`.
+//! `RandomFunction.RANDOM` and `ThreadLocalRandom`. For the listener also
+//! the player's clocks (`finishedMoving`, `clockReady`, `delayClock`), the
+//! ScriptProcessor (`restartScript`, `clearScripts`, `keepRunning`,
+//! `stopExecuting`, `queueScript` with the queued lambda's captures),
+//! ContentAPI `sendMessage` and `addItem`, the `instachop` attribute, the
+//! persisted Lost City stage and the Firemaking experience of a log the
+//! inferno adze burns (`Log.forId`).
 //!
 //! Not ported, and answered by name (docs/live-world.md): the familiar's
 //! boost (0: no familiar), SkillcapePerks (inactive), the bird nest drop,
 //! the ResourceProducedEvent and the inferno adze's projectile (skipped),
 //! and the farming patch of a farmed tree (none found, so such a tree's
-//! depletion ends the pulse without a stump, as the original's does for an
-//! object that is not a patch). The undercover tree 10041's NPC dialogue is
-//! a refusal. The trees' own "Chop down" option is WoodcuttingListener's
-//! script, which is not installed.
-use super::{super::host::Live, Ctx, Node, P, everyday::Everyday};
+//! depletion ends without a stump, as the original's does for an object
+//! that is not a patch). The undercover tree 10041's NPC dialogue (the
+//! pulse) and Kjallak's dialogue on Miscellania and Etceteria (the
+//! listener) are refusals.
+use super::{
+    super::{
+        host::Live,
+        scripts::{Interaction, Queued, ScriptCall},
+    },
+    Ctx, Node, P,
+    everyday::Everyday,
+};
 use crate::{
     definitions::item::Shared,
     pulses,
+    scripts::{self, Strength},
     world::{
         animation::{Animation, Priority},
         combat_pulse, combat_swing, doors,
@@ -33,9 +50,11 @@ use crate::{
             service::{Arg, Context, Error, Handle, Result, Service, Task},
             woodcutting,
         },
+        interaction_listeners::{self as listeners, Function, FunctionKind},
         item_on_object as io,
         packet_handlers::Container as Held,
         player_managers::diary,
+        player_walk::NodeHandle,
         scenery::{self as builder, ReplaceMode},
     },
 };
@@ -45,11 +64,46 @@ use rs09_protocol::game::updates;
 /// The pulse's class.
 pub const PULSE_CLASS: &str = "content.global.skill.gather.woodcutting.WoodcuttingSkillPulse";
 
+/// The listener's class (`scan.contentInterfaces`).
+pub const LISTENER_CLASS: &str = "content.global.skill.gather.woodcutting.WoodcuttingListener";
+/// The class of the lambdas the listener queues.
+const QUEUED_CLASS: &str =
+    "content.global.skill.gather.woodcutting.WoodcuttingListener$handleWoodcutting$1";
+/// `Clocks.MOVEMENT`.
+const MOVEMENT: i32 = 0;
+/// The `Quest` index of Lost City (`LostCity`'s constructor).
+const LOST_CITY: i32 = 83;
+
+/// `content.global.skill.firemaking.Log`: each log's id and experience (the
+/// rest of the enum belongs to firemaking, which is not ported).
+const FIREMAKING_LOGS: [(i32, f64); 18] = [
+    (1511, 40.0),
+    (2862, 40.0),
+    (1521, 60.0),
+    (1519, 90.0),
+    (6333, 105.0),
+    (10810, 125.0),
+    (1517, 135.0),
+    (6332, 157.5),
+    (12581, 193.5),
+    (1515, 202.5),
+    (1513, 303.8),
+    (13567, 303.8),
+    (10329, 50.0),
+    (10328, 50.0),
+    (7406, 50.0),
+    (7405, 50.0),
+    (7404, 50.0),
+    (3125, 50.0),
+];
+
 /// The running woodcutting pulses.
 #[derive(Default)]
 pub struct WoodcuttingWorld {
     /// By pulse object: the player's node, the tree and the pulse's state.
     pub pulses: Vec<(pulses::Handle, usize, doors::Handle, woodcutting::Pulse)>,
+    /// WoodcuttingListener is registered (the trees' own options).
+    pub listener: bool,
 }
 
 /// The player's token.
@@ -113,6 +167,24 @@ impl Chop<'_> {
             _ => Err(Error::Reply),
         }
     }
+    /// A clock of the player (`Clocks`' slot).
+    fn clock(&mut self, clock: i32) -> Result<i32> {
+        let index = usize::try_from(clock).or(Err(Error::IndexOutOfBounds))?;
+        let p = self.p.clone();
+        match self.live.script_clock(&p, index) {
+            Ok(v) => Ok(v),
+            Err(crate::scripts::Error::Index) => Err(Error::IndexOutOfBounds),
+            Err(e) => self.fail(e),
+        }
+    }
+    /// A ContentAPI call into the player's ScriptProcessor.
+    fn script(&mut self, call: ScriptCall) -> Result<Arg> {
+        let p = self.p.clone();
+        match self.live.script_call(&p, call) {
+            Ok(v) => Ok(v.into()),
+            Err(e) => self.fail(e),
+        }
+    }
     fn seers_level_complete(&mut self, level: i32) -> Result<bool> {
         let p = self.p.clone();
         let answer = super::super::subclasses::with_diaries(self.live, &p, |h, owner| {
@@ -155,6 +227,11 @@ impl Context for Chop<'_> {
                 let object = self.scenery(args.first().ok_or(Error::Reply)?)?;
                 let id = object.read().id;
                 Ok(id.into())
+            }
+            S::NodeIsActive => {
+                let object = self.scenery(args.first().ok_or(Error::Reply)?)?;
+                let active = object.read().active;
+                Ok(active.into())
             }
             S::NodeSetActive => {
                 let object = self.scenery(args.first().ok_or(Error::Reply)?)?;
@@ -351,6 +428,14 @@ impl Context for Chop<'_> {
                     .skip("the inferno adze's projectile (content projectiles not joined)");
                 Ok(Arg::Null)
             }
+            S::FiremakingLogForId => {
+                // `Log.forId(reward)?.xp`.
+                let id = int(args.first())?;
+                Ok(FIREMAKING_LOGS
+                    .iter()
+                    .find(|(log, _)| *log == id)
+                    .map_or(Arg::Null, |(_, xp)| (*xp).into()))
+            }
             S::FarmingPatchForObject => {
                 self.live
                     .inner
@@ -431,6 +516,86 @@ impl Context for Chop<'_> {
                     .queue_native(&to, updates::synth_sound(id, 1, 0));
                 Ok(Arg::Null)
             }
+            // ---- WoodcuttingListener's ContentAPI calls: the player's
+            // clocks and ScriptProcessor (super::super::scripts).
+            S::ApiFinishedMoving => {
+                // clocks[MOVEMENT] < GameWorld.ticks.
+                let clock = self.clock(MOVEMENT)?;
+                Ok((clock < self.live.inner.ticks).into())
+            }
+            S::ApiClockReady => {
+                let clock = self.clock(int(args.first())?)?;
+                Ok((clock <= self.live.inner.ticks).into())
+            }
+            S::ApiDelayClock => {
+                // delayClock(player, clock, ticks, delayScript).
+                let (clock, ticks) = (int(args.first())?, int(args.get(1))?);
+                let Some(Arg::Bool(delay)) = args.get(2) else {
+                    return Err(Error::Reply);
+                };
+                let value = self.live.inner.ticks.wrapping_add(ticks);
+                let index = usize::try_from(clock).or(Err(Error::IndexOutOfBounds))?;
+                self.live
+                    .set_script_clock(&p, index, value)
+                    .or_else(|e| self.fail(e))?;
+                if *delay {
+                    return self.script(ScriptCall::Delay(ticks));
+                }
+                Ok(false.into())
+            }
+            S::ApiRestartScript => self.script(ScriptCall::Restart),
+            S::ApiClearScripts => self.script(ScriptCall::Clear),
+            S::ApiKeepRunning => self.script(ScriptCall::KeepRunning),
+            S::ApiStopExecuting => self.script(ScriptCall::Stop),
+            S::ApiSendMessage => {
+                // sendMessage(player, message).
+                let to = self.player(args.first().ok_or(Error::Reply)?)?;
+                let line = text(args.get(1))?;
+                // `player.sendMessages(*splitLines(message, 86))`.
+                Everyday(Ctx(self.live))
+                    .message(&Node::Player(to.0), line)
+                    .or_else(|e| self.fail(e))?;
+                Ok(Arg::Null)
+            }
+            S::ApiGetAttribute => {
+                // getAttribute(player, key, default) of a Boolean.
+                let Some(Arg::Bool(default)) = args.get(1) else {
+                    return Err(Error::Reply);
+                };
+                let attributes = self.live.inner.canonical(&p).player.attributes();
+                match attributes.boolean(text(args.first())?, *default) {
+                    Ok(v) => Ok(v.into()),
+                    Err(_) => Err(Error::ClassCast),
+                }
+            }
+            S::ApiAddItem => {
+                // addItem(player, id, amount, Container.INVENTORY).
+                if text(args.get(2))? != "INVENTORY" {
+                    return self.refuse(service);
+                }
+                let node = self.node();
+                let (id, amount) = (int(args.first())?, int(args.get(1))?);
+                match Everyday(Ctx(self.live)).add_to_inventory(&node, id, amount) {
+                    Ok(v) => Ok(v.into()),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::ApiGetQuestStage => {
+                // getQuestStage(player, quest): the stage the player's
+                // QuestRepository holds for the quest's index (0 for a
+                // quest its save lacks).
+                let index = match text(args.first())? {
+                    "LOST_CITY" => LOST_CITY,
+                    _ => return self.refuse(service),
+                };
+                let stage = self.live.inner.with_profile(&p, |profile| {
+                    profile.persisted.quests.stages.get(index).copied()
+                });
+                match stage {
+                    Ok(stage) => Ok(stage.unwrap_or(0).into()),
+                    Err(e) => self.fail(e),
+                }
+            }
             S::RngSharedNextInt => {
                 match self
                     .live
@@ -457,9 +622,30 @@ impl Context for Chop<'_> {
             _ => self.refuse(service),
         }
     }
-    fn defer(&mut self, service: Service, _: &[Arg], _: Task) -> Result<()> {
-        // The pulse defers nothing; the listener's scripts are not installed.
-        self.refuse(service)
+    fn defer(&mut self, service: Service, args: &[Arg], task: Task) -> Result<()> {
+        // queueScript(player, delay, strength) { ... }: the lambda with
+        // the tree it captured, in the player's script queue.
+        if service != Service::ApiQueueScript {
+            return self.refuse(service);
+        }
+        let delay = int(args.first())?;
+        let strength = match text(args.get(1))? {
+            "WEAK" => Strength::Weak,
+            "NORMAL" => Strength::Normal,
+            "STRONG" => Strength::Strong,
+            "SOFT" => Strength::Soft,
+            _ => return Err(Error::Reply),
+        };
+        let Some(Arg::Bool(persist)) = args.get(2) else {
+            return Err(Error::Reply);
+        };
+        let function = Function::new(
+            FunctionKind::Void,
+            QUEUED_CLASS,
+            Queued::Woodcutting(task, self.tree.clone()),
+        );
+        self.script(ScriptCall::Queue(function, delay, strength, *persist))
+            .map(|_| ())
     }
 }
 
@@ -580,5 +766,63 @@ impl Live {
             Err(e) => return Some(Err(bind(e))),
         };
         Some(self.chop(&p, &tree, |host| task.stop(host)))
+    }
+
+    /// `WoodcuttingListener.defineListeners`: the trees' five options as
+    /// one SCENERY interaction (persistent, distance 1) whose handler is
+    /// [`Interaction::Woodcutting`].
+    pub fn define_woodcutting_listener(&mut self) {
+        let registration = woodcutting::registration();
+        let options: Vec<Vec<u16>> = registration
+            .options
+            .iter()
+            .map(|o| o.encode_utf16().collect())
+            .collect();
+        self.item_actions.listeners.add_metadata(
+            &super::super::global::RootCasing,
+            &registration.ids,
+            listeners::Kind::Scenery,
+            &options,
+            Shared::new(listeners::Metadata {
+                function: Interaction::Woodcutting.function(),
+                distance: registration.allowed_distance,
+                persist: registration.persistent,
+            }),
+        );
+        self.round.woodcutting.listener = true;
+    }
+
+    /// `handleWoodcutting(player, node, state)`: one execution of the
+    /// interaction script, with the processor's target as the tree.
+    pub fn woodcutting_script(
+        &mut self,
+        p: &P,
+        target: &NodeHandle,
+        stage: i32,
+    ) -> scripts::Result<bool> {
+        let tree = self
+            .inner
+            .state
+            .scenery(target.node)
+            .map_err(crate::world::script_runtime::error)?;
+        let settings = Settings {
+            max_players: crate::world::repository::MAX_PLAYERS,
+        };
+        self.chop(p, &tree, |host| {
+            woodcutting::handle_woodcutting(host, &settings, PLAYER, TREE, stage)
+        })
+        .map_err(crate::world::script_runtime::error)
+    }
+
+    /// A lambda the listener queued (`queueScript`), with its tree.
+    pub fn woodcutting_queued(
+        &mut self,
+        p: &P,
+        task: &Task,
+        tree: &doors::Handle,
+        stage: i32,
+    ) -> scripts::Result<bool> {
+        self.chop(p, tree, |host| woodcutting::run_task(host, task, stage))
+            .map_err(crate::world::script_runtime::error)
     }
 }

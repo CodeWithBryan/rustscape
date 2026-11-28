@@ -58,6 +58,7 @@ pub mod regions;
 pub mod round;
 pub mod runtime_npcs;
 pub mod scenery;
+pub mod scripts;
 pub mod server;
 pub mod shopping;
 pub mod subclasses;

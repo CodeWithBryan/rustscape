@@ -109,7 +109,7 @@ modes of `rs09-server` are unchanged.
 | read event | `IoReadEvent`/`GameReadEvent.read` | `Driver::read` on the bytes of the frames the transport framed (re-encoded with the same size table); end of stream is `Driver::close` |
 | packet routes | `PacketProcessor.process` | the driver's table; `Walk` (`player_walk::World::process`, i.e. `world::walk_request`), `Social` (`Social::process`), `DisplayUpdate` (client info and `interfaces::switch_window_mode`), `IfAction` and `CloseIface` (`interface_packets::if_action`/`close_iface`, `buttons.rs`), `GroundItemAction` (`ground_items.rs`), `SceneryAction` (`scenery.rs`), `ItemAction`, `NpcAction`, `PlayerAction`, `UseWith`, `SlotSwitch`, `Examine` and `TrackFinished` (`items.rs`) bound; the rest below |
 | pulses | `GameWorld.Pulser.updateAll` | the driver's runner (login pulses, the combat tab's one-tick pulses), then the canonical state's runner (movement pulses) at the start of the tick-listener phase |
-| `Player.tick` | `Entity.tick`, music, prayer â€¦ | `player_walk::World::entity_before_masks` (script phases through `script_runtime::phase`, the walking queue) and `prepare_masks`, then `MusicPlayer.tick`; the queue's entity is projected into the render view and the slot |
+| `Player.tick` | `Entity.tick`, music, prayer â€¦ | `player_walk::World::entity_before_masks` (script phases through `script_runtime::phase` with `scripts.rs`'s `ScriptHost`, which runs a script's body with the whole world; the walking queue) and `prepare_masks`, then `MusicPlayer.tick`; the queue's entity is projected into the render view and the slot |
 | player tabs | `WeaponInterface`, `LevelUp`, `EmoteManager`/`Emotes`, `MusicPlayer`, `QuestRepository.syncronizeTab` | `world::player_tabs` with `tabs::Tabs` as their host (the world-login test's binding): the weapon tab is created with the tab array (`create_weapon`), opened by `WeaponInterface.open` and refreshed by `updateInterface` from the equipment listener; `LevelUp.sendFlashingIcons` from `Skills.refresh`; the emote, music and quest tabs at login; the persisted emotes, songs and quest stages joined, not copied |
 | tab buttons | `CombatTabInterface`, `EmoteTabInterface`, `MusicTabInterface` | the component plugin of interface 92 and every weapon interface (attack styles through `WeaponInterface.setAttackStyle`, `openAutocastSelect`, `selectAutoSpell`; retaliate and special bar in `Pulse(1, p)`), listeners of 464 (`Emotes.handle`) and 187 (play, loop, the admin unlock); their few content lines are written over the libraries (not differentially tested themselves) |
 | NPCs | `NPC.init`, `NPC.tick`, `NPC.reset` | the start-up's NPCs in the live repository (same slots and indices) and in the scene's chunks; `npc_walk::tick` (the `world::npc` kernel on the canonical actor's queue, navigation with the behaviour's pathfinder and clipping supplier, water NPCs' `Pathfinder.findWater` over the scene's water clipping, the shared runner, `RandomFunction.RANDOM` of the start-up's generators); behaviour hooks through `npc_behaviour` with the start-up's NPC store; `NPC.onRegionInactivity` through `npc_behaviour::lifecycle` (`npc_life.rs`) |
@@ -205,6 +205,15 @@ modes of `rs09-server` are unchanged.
 - `DropListener`'s soft queued script is kept by the live world, not in the
   player's canonical script queue: it runs at the start of the player's
   `Player.tick` once its tick (the next one) is due.
+- A player's `Entity.tick` takes the canonical state out of the world for
+  the walking call and puts it back around each script body
+  (`scripts.rs`): the body runs inside its `preMovement`/`postMovement`
+  phase, where the original invokes the lambda, and its answer decides
+  what the processor does next. What the walk services deferred earlier in
+  the same tick (a region move, a closed interface) runs when a script
+  body first calls into the walk again, not at the end of the tick. An
+  NPC's tick still runs on the walk host alone, where a script execution
+  is refused (nothing queues a script for an NPC).
 - An item's `InteractPlugin` table uses the item handle's identity as its
   node id (no canonical node is made for an inventory item).
 - `ZoneMonitor.interact` for an item option is answered false only when the
@@ -409,9 +418,8 @@ BankerNPC's prototype construction, `DialogueOpenEvent` and
 are dropped without being offered),
 `CombatPulse.stop` before an interaction, `Commands.define`,
 `ComponentPlugin.open`, `Discord.postPlayerAlert`, entity tick event hooks,
-`Entity.hook(UsedWith)`/`unhook` of DarkZone, `Entity.scripts.removeWeakScripts`
-in `InteractionListeners.run`, the equip listeners' `removeWeakScripts` and
-event, `InteractionEvent`, `PickUpEvent`, `UseWithEvent`, `ItemEquipEvent` and
+`Entity.hook(UsedWith)`/`unhook` of DarkZone, the equip listeners' `removeWeakScripts` and
+event with no content listener, `InteractionEvent`, `PickUpEvent`, `UseWithEvent`, `ItemEquipEvent` and
 `ItemUnequipEvent` dispatch, `FamiliarManager.login`, `FriendsListInterface.open`,
 `GameWorld.loginListeners`, `GameWorld.logoutListeners`, `GameWorld.tickListeners` other
 than GraveController and Shops,
@@ -486,7 +494,7 @@ scenery replacement, `playAudio` at a location, `removeItem`/`addItem`
 outside the inventory, an animation with a delay or a priority other than
 MID, force chat on a player); cooking before the tutorial is complete
 (CookingRewrite's tutorial island branch); a listener's walk
-to an item; `defineInteraction` scripts; a destination override this
+to an item; `defineInteraction` scripts other than WoodcuttingListener's; a destination override this
 world did not register), item plugins (`ItemPlugin.remove`, `canPickUp`), the guild items'
 dialogue, `EquipHandler.unequip`'s caller other than the global equipment
 tab, equipment plugins' `fireEvent`, brawling gloves, autocast clearing on a
@@ -546,8 +554,9 @@ saved spawn location or `login_type` attribute, the loot-share pulse, the
 management-server session, account creation from social, familiars, region
 NPC queries (`Repository.findNPC(location)`), the deferred login world
 configuration of CloseIface, the zone services of
-teleports, the scene's scenery services (doors, audio), content script
-invocation; graves' services without a port: the server store's grave
+teleports, the scene's scenery services (doors, audio), a content script
+this world did not install or queue, use-with interaction scripts and a
+script execution in an NPC's tick; graves' services without a port: the server store's grave
 archive (`ServerStore.getArchive`: graves are neither saved nor read back;
 `serializeToServerStore`/`deserializeFromServerStore` are not called),
 `GravePurchaseInterface`, `updateGraveType` and the `forcegravedeath`
@@ -784,6 +793,17 @@ the client-side player and NPC update decoders):
   comes in the next eight seconds. The stump's object update and its
   respawn, the level and full-inventory refusals, the other trees and axes
   and a second player's sound are not asserted through a socket.
+- `chopdown` (the `gather` scenario: a save by the tree 1278 at 3225,3232
+  with a bronze axe) takes the tree's "Chop down" option (opcode 254):
+  WoodcuttingListener's interaction script says "You swing your axe at
+  the tree..." (twice when the script first runs within its distance of
+  the walk's end and restarts after the step, as the processor's rules
+  have it), rolls every three ticks, gives one log and 25 Woodcutting
+  experience, and clears itself when the tree falls: nothing more is said
+  or given in the next eight seconds. The branch trees' queued script, a
+  walk away during the script, the level, axe and full-inventory refusals,
+  a second player and the stump's update are not asserted through a
+  socket.
 - `usemilk` (a save beside the dairy cow 8689 at 3252,3275 with two
   buckets) uses the cow's first option (opcode 254): eight ticks later
   "You milk the cow." and a bucket of milk (1927). It then uses the other
@@ -960,14 +980,18 @@ stand-ins); this test checks the production binding end to end.
   `withnpc`
   (docs/item-on-npc.md) and all of `withitem`. The two dog listeners and CiderOnForester have
   no JVM corpus (docs/item-on-npc.md). Of `world::gathering` (verified
-  by its corpus) only `WoodcuttingSkillPulse` is installed, started by an
-  axe used on a tree: WoodcuttingListener (the trees' own "Chop down"
-  option, a content script: the script runtime's content invocation is not
-  joined), mining and fishing are not, so raw fish only come from saves and
-  shops here. In the woodcutting pulse the familiar boost is 0, skillcape
+  by its corpus) woodcutting is installed: `WoodcuttingSkillPulse`, started
+  by an axe used on a tree, and WoodcuttingListener, the trees' own options
+  as an interaction script of the player's ScriptProcessor (`scripts.rs`).
+  Mining and fishing are not, so ore and raw fish only come from saves and
+  shops here. In both woodcutting bodies the familiar boost is 0, skillcape
   perks are inactive, bird nests and the inferno adze's projectile are
-  skipped, a farmed tree finds no patch, and the undercover tree 10041's
-  dialogue is a refusal.
+  skipped and a farmed tree finds no patch; the undercover tree 10041's
+  dialogue (the pulse) and Kjallak's dialogue on Miscellania and Etceteria
+  (the listener) are refusals, which end the listener's script with the
+  processor's error line. The live binding of the listener has no corpus
+  of its own, and its Lost City stage is read from the save (no quest
+  content sets it).
 
 - The remaining routed handlers: the driver's refused packets (commands, quick chat, abuse reports, the GE packet);
   the global handlers' dialogue services (ClimbDialogue, `send_options`,

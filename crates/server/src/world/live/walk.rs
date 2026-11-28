@@ -4,7 +4,8 @@
 //! [`player_walk::World::process`]; the movement pulse it starts runs in the
 //! canonical state's runner; `Entity.tick` is
 //! [`player_walk::World::entity_before_masks`] (scripts, the walking queue,
-//! timers) and the masks are the canonical player's
+//! timers; a player's runs with [`super::scripts::ScriptHost`], which puts
+//! the whole world behind its script bodies) and the masks are the canonical player's
 //! [`crate::world::prepared_masks::PreparedMasks`]. Collision is the cache
 //! scene ([`crate::world::scene`]), loaded region by region as players
 //! reach them.
@@ -230,6 +231,41 @@ impl WalkHost<'_> {
             .get(&n)
             .map(|s| s.canonical.player.manager())
             .ok_or(player_walk::Error::Null)
+    }
+}
+
+/// `Services::metrics_enabled` of the live world.
+pub const METRICS_ENABLED: bool = false;
+
+/// `Services::interfaces` over the live players.
+pub fn interfaces_of(players: &BTreeMap<Node, Slot>, n: Node) -> player_walk::Result<Interfaces> {
+    let m = players
+        .get(&n)
+        .map(|s| s.canonical.player.manager())
+        .ok_or(player_walk::Error::Null)?;
+    let chatbox = interfaces::has_chatbox(&m);
+    Ok(Interfaces {
+        opened: interfaces::is_opened(&m),
+        opened_walkable: Some(interfaces::is_walkable(&m).map_err(binding)?),
+        chatbox,
+        // A chatbox other than 137 is opened only by dialogue content,
+        // which is not ported.
+        chatbox_walkable: None,
+    })
+}
+
+/// An actor of the canonical state as a projectile path's source.
+struct ActorFootprint<'a>(&'a State, Node);
+impl crate::world::pathfinding::projectile::Footprint for ActorFootprint<'_> {
+    fn size(&self) -> crate::world::pathfinding::Result<i32> {
+        self.0
+            .node_size(self.1)
+            .map_err(|e| crate::world::pathfinding::Error::Binding(e.to_string()))
+    }
+    fn location(&self) -> crate::world::pathfinding::Result<Option<Location>> {
+        self.0
+            .node_location(self.1)
+            .map_err(|e| crate::world::pathfinding::Error::Binding(e.to_string()))
     }
 }
 
@@ -469,16 +505,7 @@ impl player_walk::Services for WalkHost<'_> {
         Ok(())
     }
     fn interfaces(&self, _: &State, n: Node) -> player_walk::Result<Interfaces> {
-        let m = self.manager(n)?;
-        let chatbox = interfaces::has_chatbox(&m);
-        Ok(Interfaces {
-            opened: interfaces::is_opened(&m),
-            opened_walkable: Some(interfaces::is_walkable(&m).map_err(binding)?),
-            chatbox,
-            // A chatbox other than 137 is opened only by dialogue content,
-            // which is not ported.
-            chatbox_walkable: None,
-        })
+        interfaces_of(self.players, n)
     }
     fn region(&mut self, _: &mut State, l: &Location) -> player_walk::Result<Option<bool>> {
         let id = region_id(l);
@@ -546,7 +573,7 @@ impl player_walk::Services for WalkHost<'_> {
         super::now_millis()
     }
     fn metrics_enabled(&self) -> bool {
-        false
+        METRICS_ENABLED
     }
     fn interaction_arrival(
         &mut self,
@@ -735,44 +762,115 @@ impl script_runtime::Bindings for WalkHost<'_> {
     }
     fn node_description(
         &mut self,
-        _: &mut State,
-        _: Option<NodeHandle>,
+        state: &mut State,
+        node: Option<NodeHandle>,
     ) -> crate::scripts::Result<String> {
-        Err(script_error("node descriptions"))
+        // The target's toString() in the processor's cancel line.
+        let Some(node) = node else {
+            return Ok("null".into());
+        };
+        let location = |l: Option<Location>| match l {
+            Some(l) => {
+                let [x, y, z] = l.coordinates();
+                format!("[{x}, {y}, {z}]")
+            }
+            None => "null".into(),
+        };
+        if let Ok(object) = state.scenery(node.node) {
+            // Scenery.toString().
+            let object = object.read();
+            return Ok(format!(
+                "[Scenery {}, {}, type={}, rot={}]",
+                object.id,
+                location(Some(object.location.clone())),
+                object.shape,
+                object.rotation
+            ));
+        }
+        if let Some(row) = self.npcs.rows.get(&node.node) {
+            // NPC.toString().
+            let at = state
+                .node_location(node.node)
+                .map_err(script_runtime::error)?;
+            let index = state
+                .actor(node.node)
+                .map_err(script_runtime::error)?
+                .wire_index;
+            return Ok(format!("NPC {}, {}, {index}", row.id, location(at)));
+        }
+        Err(script_error(
+            "the description of a script target that is neither scenery nor an NPC",
+        ))
     }
     fn face_location(
         &mut self,
-        _: &mut State,
-        _: NodeHandle,
-        _: Option<Location>,
+        state: &mut State,
+        target: NodeHandle,
+        from: Option<Location>,
     ) -> crate::scripts::Result<Option<Location>> {
-        Err(script_error("face locations"))
+        // Node.getFaceLocation(entity.location).
+        let location = state
+            .node_location(target.node)
+            .map_err(script_runtime::error)?
+            .ok_or(crate::scripts::Error::Null)?;
+        let size = state
+            .node_size(target.node)
+            .map_err(script_runtime::error)?;
+        Ok(Some(crate::world::legacy_interaction::node_face_location(
+            &location,
+            size,
+            &from.ok_or(crate::scripts::Error::Null)?,
+        )))
     }
     fn center_location(
         &mut self,
-        _: &mut State,
-        _: NodeHandle,
+        state: &mut State,
+        target: NodeHandle,
     ) -> crate::scripts::Result<Option<Location>> {
-        Err(script_error("center locations"))
+        Ok(Some(script_runtime::center_location(state, &target)?))
     }
     fn line_of_sight(
         &mut self,
-        _: &mut State,
-        _: &NodeHandle,
-        _: &Location,
+        state: &mut State,
+        owner: &NodeHandle,
+        destination: &Location,
     ) -> crate::scripts::Result<bool> {
-        Err(script_error("line of sight"))
+        // hasLineOfSight(entity, destination): the projectile path over
+        // the cache scene.
+        crate::world::pathfinding::projectile::can_reach(
+            &mut self.walk.scene.context(&mut self.walk.maps),
+            &ActorFootprint(state, owner.node),
+            Some(destination),
+            false,
+        )
+        .map_err(script_runtime::error)
     }
-    fn face(&mut self, _: &mut State, _: &NodeHandle, _: Location) -> crate::scripts::Result<()> {
-        Err(script_error("facing"))
+    fn face(
+        &mut self,
+        _: &mut State,
+        owner: &NodeHandle,
+        location: Location,
+    ) -> crate::scripts::Result<()> {
+        // entity.faceLocation(location): a player's mask (an NPC's script
+        // interaction is refused where it would execute).
+        self.masks(owner.node)
+            .map_err(script_runtime::error)?
+            .face_location(Some(location))
+            .map_err(script_runtime::error)?;
+        Ok(())
     }
     fn execution_equals(
         &mut self,
         _: &mut State,
-        _: Option<crate::world::interaction_listeners::Function>,
-        _: Option<crate::world::interaction_listeners::Function>,
+        left: Option<crate::world::interaction_listeners::Function>,
+        right: Option<crate::world::interaction_listeners::Function>,
     ) -> crate::scripts::Result<bool> {
-        Err(script_error("content scripts"))
+        // `==` of the two lambdas: identity.
+        Ok(match (left, right) {
+            (Some(a), Some(b)) => a.same(&b),
+            (None, None) => true,
+            _ => false,
+        })
     }
     fn invoke(
         &mut self,
@@ -781,7 +879,11 @@ impl script_runtime::Bindings for WalkHost<'_> {
         _: Option<crate::world::interaction_listeners::Function>,
         _: crate::scripts::Arguments<NodeHandle>,
     ) -> crate::scripts::Result<bool> {
-        Err(script_error("content scripts"))
+        // A player's tick runs its scripts with the whole world
+        // (super::scripts); nothing queues a script anywhere else.
+        Err(script_error(
+            "content scripts outside a player's tick (an NPC's script queue)",
+        ))
     }
     fn exception_text(
         &mut self,
@@ -800,8 +902,18 @@ impl script_runtime::Bindings for WalkHost<'_> {
         self.log.push(format!("scripts {owner} {level:?} {text}"));
         Ok(())
     }
-    fn lock_entity(&mut self, _: &mut State, _: &NodeHandle, _: i32) -> crate::scripts::Result<()> {
-        Err(script_error("entity locks from scripts"))
+    fn lock_entity(
+        &mut self,
+        state: &mut State,
+        owner: &NodeHandle,
+        ticks: i32,
+    ) -> crate::scripts::Result<()> {
+        // delayEntity's entity.lock(ticks).
+        state
+            .locks(owner)
+            .map_err(script_runtime::error)?
+            .lock(ticks, state, &mut action_locks::Clock)
+            .map_err(script_runtime::error)
     }
 }
 
