@@ -13,8 +13,8 @@ cargo xtask census run
 The command builds the release server and the kit's `agent_run`, starts a
 disposable world, runs the tours one after another, stops the world, and
 writes `runs/census/report.md` and `runs/census/report.json`. The twelve
-tours take about 50 minutes of tour time (the 2026-11-27 run: 48 tour
-minutes), plus the builds and the world's start-up. `--only lumbridge_castle,draynor`
+tours take about 50 minutes of tour time (the 2026-11-27 runs: 48 and 50
+tour minutes), plus the builds and the world's start-up. `--only lumbridge_castle,draynor`
 runs only some tours, `--no-build` skips the builds, `--output DIR` writes
 somewhere else, `--tour-timeout SECS` (default 1500) kills a tour's agent
 that runs longer, and `--data DIR` picks the world folder (by default
@@ -187,10 +187,15 @@ So credit is by time window, not causation. Timer- and tick-driven
 refusals (the autosave hook, aggression tolerance) are logged during
 whatever action was running. To keep them from outranking real gaps, an
 action is credited with a refusal only when it was logged then more often
-than the idle baseline explains: with the baseline's rate *r* per second
-and the action lasting *d* seconds, the expectation is *e* = *r*·*d*, and
-the action needs more than *e* + 2√*e* + 1 hits; a refusal the baselines
-never logged needs one. A periodic refusal slower than the baseline (once
+than the idle baseline explains. With the baseline's rate *r* per second
+(the higher of that tour's own baseline and all baselines together) and
+the action lasting *d* seconds, the expectation is *e* = *r*·*d*, and the
+action needs more than 1.5·*e* + 2√*e* + 1 hits; a refusal the baselines
+never logged needs one. The factor 1.5 is there because some rates follow
+how many NPCs are near (the entity tick hooks, `ZoneMonitor.move`), which
+changes as the character walks. Such refusals can still be credited to
+each tour's `(login)`, when the previous tour's character is often still
+online (its logout waits for its last fight to end). A periodic refusal slower than the baseline (once
 every 30 s, say) can still be missed by every baseline and credited to
 whatever action it lands in; its *seen* and *hits* against *credited
 actions* show that pattern.
