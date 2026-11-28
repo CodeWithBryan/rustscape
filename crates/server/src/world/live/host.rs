@@ -1644,6 +1644,10 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.firemaking_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // HerblorePulse (super::items::herblore).
+        if let Some(result) = self.herblore_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // ProspectListener's message pulse (super::items::mining).
         if let Some(result) = self.prospect_pulse_body(pulse) {
             return result.map_err(fail);

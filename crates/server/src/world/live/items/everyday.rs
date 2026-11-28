@@ -902,6 +902,8 @@ impl super::super::host::Live {
         let mut firemaking = false;
         let mut bones = false;
         let mut altar = false;
+        let mut herb_clean = false;
+        let mut potion_mixing = false;
         let mut log_fletching = false;
         let (mut stringing, mut arrows) = (false, false);
         let mut ammo = Vec::new();
@@ -948,6 +950,12 @@ impl super::super::host::Live {
                 if let Some(class) = classes.into_iter().find(|class| *class == name) {
                     ammo.push(class);
                 }
+            }
+            if name == crate::world::herblore::CLEAN_CLASS {
+                herb_clean = true;
+            }
+            if name == crate::world::herblore::MIXING_CLASS {
+                potion_mixing = true;
             }
             if name == crate::world::prayer_altar::LISTENER_CLASS {
                 altar = true;
@@ -1049,6 +1057,15 @@ impl super::super::host::Live {
             // Bolt, Dart, Limbing, GemBolt and Grapple listeners
             // (super::fletching_ammo).
             self.define_fletching_ammo_listeners(class)?;
+        }
+        if herb_clean {
+            // HerbCleanListener.defineListeners (super::herblore): the only
+            // generic "clean" listener, so its place is not observable.
+            self.define_herb_clean_listener()?;
+        }
+        if potion_mixing {
+            // PotionMixingListener.defineListeners (super::herblore).
+            self.define_potion_mixing_listener()?;
         }
         if altar {
             // PrayerAltarListener.defineListeners (super::altar).
@@ -1157,6 +1174,12 @@ impl super::super::host::Live {
         if let Some(assembly) = f.value::<super::fletching_assembly::Assembly>() {
             return Some(
                 self.fletching_assembly_use(*assembly, player, used, with)
+                    .map_err(bind),
+            );
+        }
+        if let Some(mixing) = f.value::<super::herblore::Mixing>() {
+            return Some(
+                self.potion_mixing_use(*mixing, player, used, with)
                     .map_err(bind),
             );
         }

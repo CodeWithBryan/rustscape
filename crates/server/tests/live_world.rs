@@ -4314,6 +4314,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     chest_part(address, &players).await;
     door_part(address, &players).await;
     pick_part(address, &players).await;
+    herb_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -4549,6 +4550,189 @@ async fn pick_part(address: std::net::SocketAddr, players: &std::path::Path) {
         "lockman found the door locked, picked it in {attempts} attempts, and opened it from the other side"
     );
     thief.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The herblore part of the gather scenario: HerbCleanListener's "Clean"
+/// option and PotionMixingListener with HerblorePulse. Without the Druidic
+/// Ritual nothing is cleaned. With it, at Herblore 3: a grimy ranarr is
+/// refused by its level, two grimy guams are cleaned, "All" in the skill
+/// dialogue (309) makes two guam potions (unf) from three vials, "Make 1"
+/// mixes one attack potion and, with one of each left, a second use mixes
+/// the other without a dialogue.
+async fn herb_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let count = |c: &Client, from: usize, line: &str| {
+        c.messages[from..].iter().filter(|(_, m)| m == line).count()
+    };
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, amount)| *amount)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    let slot_of = |c: &Client, id: i32| -> i32 {
+        c.containers[&93]
+            .iter()
+            .filter(|(_, (item, _))| *item == id)
+            .map(|(slot, _)| *slot)
+            .min()
+            .expect("the item's slot")
+    };
+    let shown = |c: &Client, from: usize, pointer: i32, what: &str| {
+        c.texts[from..]
+            .iter()
+            .any(|(_, at, t)| *at == pointer && t.contains(what))
+    };
+    let start = [3222, 3218, 0];
+    write_save(players, "traceone", "herbnovice", start, &[(0, 199, 1)]);
+    let (code, novice) = Client::login(address, "herbnovice").await;
+    assert_eq!(code, 2, "herbnovice's login");
+    let mut novice = novice.unwrap();
+    novice
+        .until(Duration::from_secs(10), "herbnovice's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = novice.messages.len();
+    novice.send(item_option1(199, 0)).await;
+    novice
+        .until_pinging(Duration::from_secs(20), "the quest's refusal", |c| {
+            said(
+                c,
+                from,
+                "You must have completed the Druidic Ritual quest before you can use Herblore.",
+            )
+        })
+        .await;
+    assert_eq!(amount(&novice, 199), 1, "the herb stays grimy");
+    novice.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let inventory = [
+        (0, 199, 1),
+        (1, 199, 1),
+        (2, 227, 1),
+        (3, 227, 1),
+        (4, 227, 1),
+        (5, 221, 1),
+        (6, 221, 1),
+        (7, 207, 1),
+    ];
+    write_save_with(players, "traceone", "herbman", start, &inventory, |save| {
+        save["skills"][15]["static"] = Value::String("3".into());
+        save["skills"][15]["dynamic"] = Value::String("3".into());
+        // The experience stays under the 175 an unfinished tutorial caps it at.
+        save["skills"][15]["experience"] = Value::String("0.0".into());
+        // Druidic Ritual (quest index 48) complete.
+        save["quests"]["questStages"] = serde_json::json!([{"questId": "48", "questStage": "100"}]);
+    });
+    let (code, herb) = Client::login(address, "herbman").await;
+    assert_eq!(code, 2, "herbman's login");
+    let mut herb = herb.unwrap();
+    herb.until(Duration::from_secs(10), "herbman's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = herb.messages.len();
+    herb.send(item_option1(207, 7)).await;
+    herb.until_pinging(Duration::from_secs(20), "the ranarr's level", |c| {
+        said(
+            c,
+            from,
+            "You cannot clean this herb. You need a Herblore level of 25 to attempt this.",
+        )
+    })
+    .await;
+    for (slot, cleaned) in [(0, 1), (1, 2)] {
+        herb.send(item_option1(199, slot)).await;
+        herb.until_pinging(Duration::from_secs(20), "a cleaned guam", |c| {
+            amount(c, 249) == cleaned
+                && count(c, from, "You clean the dirt from the guam leaf.") == cleaned as usize
+        })
+        .await;
+    }
+    assert_eq!(
+        (amount(&herb, 199), amount(&herb, 207)),
+        (0, 1),
+        "both guams are clean and the ranarr is not"
+    );
+    let experience = herb.skills.get(&15).map(|s| s.1);
+    assert_eq!(experience, Some(5), "two guams are 5 experience");
+
+    // Two herbs and three vials: the dialogue, and "All" asks for three.
+    let texts = herb.texts.len();
+    herb.send(use_item_on_item(249, 0, 227, 2)).await;
+    herb.until_pinging(Duration::from_secs(20), "the unfinished dialogue", |c| {
+        shown(c, texts, (309 << 16) | 6, "Guam")
+    })
+    .await;
+    herb.send(continue_option(309, 3)).await;
+    herb.until_pinging(Duration::from_secs(30), "two guam potions", |c| {
+        amount(c, 91) == 2 && count(c, from, "You put the Guam leaf into the vial of water.") == 2
+    })
+    .await;
+    herb.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&herb, 249), amount(&herb, 227), amount(&herb, 91)),
+        (0, 1, 2),
+        "the third vial has no herb"
+    );
+    assert_eq!(
+        herb.skills.get(&15).map(|s| s.1),
+        Some(5),
+        "an unfinished potion is no experience"
+    );
+
+    // Two of each: the dialogue and "Make 1". Then one of each: at once.
+    let texts = herb.texts.len();
+    let (unfinished, eye) = (slot_of(&herb, 91), slot_of(&herb, 221));
+    herb.send(use_item_on_item(221, eye, 91, unfinished)).await;
+    herb.until_pinging(Duration::from_secs(20), "the potion dialogue", |c| {
+        shown(c, texts, (309 << 16) | 6, "Attack")
+    })
+    .await;
+    herb.send(continue_option(309, 6)).await;
+    herb.until_pinging(Duration::from_secs(30), "the first attack potion", |c| {
+        amount(c, 121) == 1 && count(c, from, "You mix the eye of newt into your potion.") == 1
+    })
+    .await;
+    herb.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&herb, 91), amount(&herb, 221), amount(&herb, 121)),
+        (1, 1, 1),
+        "Make 1 mixes one potion"
+    );
+    let texts = herb.texts.len();
+    let (unfinished, eye) = (slot_of(&herb, 91), slot_of(&herb, 221));
+    herb.send(use_item_on_item(91, unfinished, 221, eye)).await;
+    herb.until_pinging(Duration::from_secs(30), "the second attack potion", |c| {
+        amount(c, 121) == 2 && count(c, from, "You mix the eye of newt into your potion.") == 2
+    })
+    .await;
+    assert!(
+        !shown(&herb, texts, (309 << 16) | 6, "Attack"),
+        "one of each mixes without a dialogue"
+    );
+    herb.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&herb, 91), amount(&herb, 221)),
+        (0, 0),
+        "both potions are mixed"
+    );
+    let experience = herb.skills.get(&15).map(|s| s.1);
+    assert_eq!(experience, Some(55), "two attack potions are 50 experience");
+    eprintln!(
+        "herbman cleaned two guams, made two guam potions (unf) and mixed two attack potions"
+    );
+    herb.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

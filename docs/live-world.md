@@ -1104,6 +1104,13 @@ stand-ins); this test checks the production binding end to end.
   replayed against the JVM corpus `fixtures/thieving-doors`, the live
   binding is not): PickableDoorHandler's "pick-lock" and "open" on its
   28 door definitions, with `handleAutowalkDoor` over the door binding.
+  Herblore's herb cleaning and potion mixing are installed
+  (`items/herblore.rs` over `world/herblore.rs`, docs/herblore.md; the
+  library is replayed against the JVM corpus `fixtures/herblore`, the
+  live binding is not): HerbCleanListener's "clean", PotionMixingListener's
+  two use-with registrations with the skill dialogue, and HerblorePulse on
+  the player's pulse manager. Quest stages are the save's, and the
+  potions that ask `hasRequirement` are refused by a named default.
   Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

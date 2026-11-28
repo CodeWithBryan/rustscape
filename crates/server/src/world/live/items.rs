@@ -54,6 +54,7 @@ pub mod fishing;
 pub mod fletching;
 pub mod fletching_ammo;
 pub mod fletching_assembly;
+pub mod herblore;
 pub mod milking;
 pub mod mining;
 pub mod otto;
@@ -1458,6 +1459,10 @@ impl listeners::Context for Ctx<'_> {
         // BoneBuryListener's "bury" (super::bones).
         if f.value::<bones::Bury>().is_some() {
             return self.0.bone_bury(p, n).map_err(lerr);
+        }
+        // HerbCleanListener's "clean" (super::herblore).
+        if f.value::<herblore::Clean>().is_some() {
+            return self.0.herb_clean(p, n).map_err(lerr);
         }
         // OttoGodblessedDialogue's "talk-to" (super::otto).
         if f.value::<otto::OttoTalk>().is_some() {
