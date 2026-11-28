@@ -302,7 +302,9 @@ modes of `rs09-server` are unchanged.
   (`Walk.door_logouts`) and is the only `Player.logoutListeners` entry
   this world runs. A door option content claims (`door_claims.rs`) and a
   door option inside an unported content zone are refused at the
-  InteractionListeners step, before the plugin and option handler steps
+  InteractionListeners step, after the installed `on` listeners and
+  interaction scripts (which keep their own route: a claim is only
+  consulted when nothing this world installed answers the option) and before the plugin and option handler steps
   (and ZoneMonitor.interact at arrival) the original would reach; the click
   is refused either way. A content PluginInteraction for the object is
   refused at the PluginInteractionManager step, for any option.
