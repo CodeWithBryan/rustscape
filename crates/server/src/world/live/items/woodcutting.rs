@@ -18,8 +18,9 @@
 //! the player's clocks (`finishedMoving`, `clockReady`, `delayClock`), the
 //! ScriptProcessor (`restartScript`, `clearScripts`, `keepRunning`,
 //! `stopExecuting`, `queueScript` with the queued lambda's captures),
-//! ContentAPI `sendMessage` and `addItem`, the `instachop` attribute and
-//! the persisted Lost City stage.
+//! ContentAPI `sendMessage` and `addItem`, the `instachop` attribute, the
+//! persisted Lost City stage and the Firemaking experience of a log the
+//! inferno adze burns (`Log.forId`).
 //!
 //! Not ported, and answered by name (docs/live-world.md): the familiar's
 //! boost (0: no familiar), SkillcapePerks (inactive), the bird nest drop,
@@ -72,6 +73,29 @@ const QUEUED_CLASS: &str =
 const MOVEMENT: i32 = 0;
 /// The `Quest` index of Lost City (`LostCity`'s constructor).
 const LOST_CITY: i32 = 83;
+
+/// `content.global.skill.firemaking.Log`: each log's id and experience (the
+/// rest of the enum belongs to firemaking, which is not ported).
+const FIREMAKING_LOGS: [(i32, f64); 18] = [
+    (1511, 40.0),
+    (2862, 40.0),
+    (1521, 60.0),
+    (1519, 90.0),
+    (6333, 105.0),
+    (10810, 125.0),
+    (1517, 135.0),
+    (6332, 157.5),
+    (12581, 193.5),
+    (1515, 202.5),
+    (1513, 303.8),
+    (13567, 303.8),
+    (10329, 50.0),
+    (10328, 50.0),
+    (7406, 50.0),
+    (7405, 50.0),
+    (7404, 50.0),
+    (3125, 50.0),
+];
 
 /// The running woodcutting pulses.
 #[derive(Default)]
@@ -403,6 +427,14 @@ impl Context for Chop<'_> {
                     .not_ported
                     .skip("the inferno adze's projectile (content projectiles not joined)");
                 Ok(Arg::Null)
+            }
+            S::FiremakingLogForId => {
+                // `Log.forId(reward)?.xp`.
+                let id = int(args.first())?;
+                Ok(FIREMAKING_LOGS
+                    .iter()
+                    .find(|(log, _)| *log == id)
+                    .map_or(Arg::Null, |(_, xp)| (*xp).into()))
             }
             S::FarmingPatchForObject => {
                 self.live
