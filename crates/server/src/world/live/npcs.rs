@@ -76,10 +76,17 @@ impl npc_walk::Services for WalkHost<'_> {
     fn npc_query(&mut self, state: &mut State, node: Node, query: npc::Query) -> npc::Result<bool> {
         Ok(match query {
             npc::Query::Behavior => {
-                // behavior.tick(this) through the start-up's registry.
-                npc_behaviour::tick::query(&mut *self.npcs, &node, query)
-                    .map_err(npc_behaviour::tick::npc_error)?
-                    .ok_or(npc::Error::Null)?
+                let id = self.npcs.rows.get(&node).map(|row| row.id);
+                if id.is_some_and(crate::world::gathering::fishing_npc::is_spot) {
+                    // FishingNPC.tick, which Live::npc_tick_of ran with the
+                    // whole world right before this kernel, answers false.
+                    false
+                } else {
+                    // behavior.tick(this) through the start-up's registry.
+                    npc_behaviour::tick::query(&mut *self.npcs, &node, query)
+                        .map_err(npc_behaviour::tick::npc_error)?
+                        .ok_or(npc::Error::Null)?
+                }
             }
             npc::Query::InteractionLocked => locked(state, node, action_locks::Kind::Interaction)?,
             npc::Query::MovementLocked => locked(state, node, action_locks::Kind::Movement)?,
@@ -301,6 +308,11 @@ impl Live {
             active && !waiting
         };
         self.npc_timers_due.retain(|n| *n != node);
+        // behavior.tick of a fishing spot (FishingNPC) needs the whole
+        // world: it runs here, where the kernel reaches handleTickActions.
+        if reaches_entity_tick && self.is_fishing_spot(node) {
+            self.fishing_spot_tick(p)?;
+        }
         let result = self.with_walk_host(|state, host| npc_walk::tick(state, host, node));
         // timers.processTimers(), the last step of Entity.tick before
         // updateMasks.prepare, when the walking call reached it.

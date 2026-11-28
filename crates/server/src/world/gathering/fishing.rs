@@ -4,8 +4,9 @@
 //! and space checks, the perk roll, the counter attribute, experience hand-off,
 //! barehand fishing) and each keeps its own source's behaviour.
 //!
-//! Spot movement (`FishingNPC`, `FishSpots`), barbarian fishing and the option
-//! handlers that start the pulse are not ported.
+//! Spot movement (`FishingNPC`, `FishSpots`) is `super::fishing_npc`.
+//! Barbarian fishing and the option handlers that start the pulse are not
+//! ported.
 use super::{
     random,
     service::{Arg, Calls, Context, Error, Handle, Result, Service, Task},

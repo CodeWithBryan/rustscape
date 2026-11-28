@@ -3420,6 +3420,56 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     fish.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // FishingNPC: a fishing spot moves to a random tile of its area on the
+    // first tick its region is active (its switch delay starts at 0) unless
+    // an NPC stands there. The Fishing Guild lists 36 tiles for the nine
+    // spots it owns, so some spot stands off every spawn tile right away.
+    let spawns = [
+        [2607, 3416],
+        [2604, 3417],
+        [2602, 3419],
+        [2602, 3411],
+        [2605, 3413],
+        [2609, 3416],
+        [2610, 3413],
+        [2605, 3421],
+        [2602, 3423],
+        [2603, 3426],
+        [2612, 3411],
+    ];
+    let start = [2598, 3418, 0];
+    write_save(&players, "traceone", "movespot", start, &[]);
+    let (code, guild) = Client::login(address, "movespot").await;
+    assert_eq!(code, 2, "movespot's login");
+    let mut guild = guild.unwrap();
+    guild
+        .until(Duration::from_secs(10), "movespot's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let moved = |c: &Client| {
+        let base = c.base?;
+        c.npcs
+            .actors
+            .values()
+            .filter(|n| [326, 333, 334].contains(&n.type_id))
+            .map(|n| [base[0] + n.tile[0], base[1] + n.tile[1]])
+            .find(|tile| !spawns.contains(tile))
+    };
+    guild
+        .until_pinging(Duration::from_secs(30), "a moved fishing spot", |c| {
+            moved(c).is_some()
+        })
+        .await;
+    let tile = moved(&guild).unwrap();
+    assert!(
+        (2599..=2612).contains(&tile[0]) && (3410..=3426).contains(&tile[1]),
+        "the moved spot stands on a Fishing Guild tile: {tile:?}"
+    );
+    eprintln!("movespot saw a Fishing Guild fishing spot off its spawn tile, at {tile:?}");
+    guild.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

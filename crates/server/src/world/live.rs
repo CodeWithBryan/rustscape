@@ -41,6 +41,7 @@ pub mod dragons;
 pub mod eating;
 pub mod equipment;
 pub mod faults;
+pub mod fishing_spots;
 pub mod follow;
 pub mod global;
 pub mod graves;

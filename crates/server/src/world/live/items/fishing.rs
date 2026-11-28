@@ -17,8 +17,8 @@
 //! (inactive), the ResourceProducedEvent and the Fist of Guthix gloves'
 //! charges (skipped). Barehand fishing's Fremennik diary task is a
 //! refusal; nothing here sets the barbarian training attribute it needs.
-//! The spots do not move (`FishingNPC` and `FishSpots` are not ported), and
-//! the legacy FishingPulse and its option handlers are not installed.
+//! The spots move (`FishingNPC`: `super::super::fishing_spots`); the legacy
+//! FishingPulse and its option handlers are not installed.
 use super::{
     super::{host::Live, scripts::Interaction},
     P,
