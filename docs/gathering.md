@@ -8,15 +8,17 @@
 `FishingSpot` tables, `FishingListener` and the legacy `FishingPulse` with the
 `SkillPulse` members it inherits (`fishing.rs`). `binding.rs` joins the
 library to the native skills and item containers (see "Binding"). Of all
-this woodcutting runs in the live world: `WoodcuttingSkillPulse`, started by
-an axe used on a tree, and `WoodcuttingListener`, whose `defineInteraction`
-metadata is in the native listener registry and whose handler runs as an
-interaction script of the player's ScriptProcessor
+this the listeners run in the live world: `WoodcuttingSkillPulse`, started
+by an axe used on a tree; `WoodcuttingListener`, `MiningListener` and
+`FishingListener`, whose `defineInteraction` metadata is in the native
+listener registry and whose handlers run as interaction scripts of the
+player's ScriptProcessor; and `ProspectListener` with its message pulse
 (`world/live/items/woodcutting.rs`, a `service::Context` written without a
-corpus of its own, and `world/live/scripts.rs`: docs/live-world.md). The
-mining and fishing listeners are not registered there, and the controlled
-examples do not use
-the library: the bronze-axe stand-in under
+corpus of its own, `world/live/items/mining.rs`,
+`world/live/items/fishing.rs` and `world/live/scripts.rs`:
+docs/live-world.md). `MiningSkillPulse` and `FishingPulse` are not
+installed (no option of the pinned source's listeners starts them). The
+controlled examples do not use the library: the bronze-axe stand-in under
 `crates/server/examples/common/skilling.rs` is unchanged and is still not a
 port. **Not ported:** barbarian fishing (`fishing/barbfishing/`),
 `PickaxeRepairPlugin`, fishing-spot movement (`FishingNPC`, `FishSpots`) and

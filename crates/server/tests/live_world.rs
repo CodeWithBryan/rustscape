@@ -3299,6 +3299,127 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     chop.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // ProspectListener and MiningListener: the tin rock 11933 in the
+    // Lumbridge swamp mine, prospected and then mined with a bronze pickaxe.
+    let start = [3226, 3146, 0];
+    write_save(&players, "traceone", "minerock", start, &[(0, 1265, 1)]);
+    let (code, mine) = Client::login(address, "minerock").await;
+    assert_eq!(code, 2, "minerock's login");
+    let mut mine = mine.unwrap();
+    mine.until(Duration::from_secs(10), "minerock's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = mine.messages.len();
+    mine.send(scenery_option2(11933, 3224, 3146)).await;
+    mine.until_pinging(Duration::from_secs(20), "the prospect's answer", |c| {
+        said(c, from, "This rock contains tin ore.")
+    })
+    .await;
+    assert!(
+        said(&mine, from, "You examine the rock for ores..."),
+        "minerock's messages: {:?}",
+        &mine.messages[from..]
+    );
+    assert_ne!(mine.position(), start, "minerock walked to the rock");
+    let before = mine.skills.get(&14).map_or(0, |s| s.1);
+    mine.send(scenery_option1(11933, 3224, 3146)).await;
+    mine.until_pinging(Duration::from_secs(20), "the first swing", |c| {
+        said(c, from, "You swing your pickaxe at the rock.")
+    })
+    .await;
+    // Level 1 with a bronze pickaxe: a roll every four ticks.
+    mine.until_pinging(Duration::from_secs(300), "the tin ore", |c| {
+        held(c, 438) == 1
+    })
+    .await;
+    assert!(
+        said(&mine, from, "You manage to mine some tin."),
+        "minerock's messages: {:?}",
+        &mine.messages[from..]
+    );
+    let after = mine.skills.get(&14).map_or(0, |s| s.1);
+    assert!(
+        after > before,
+        "mining experience rose ({before} -> {after})"
+    );
+    // The rock is depleted: the script ended, so no second ore comes and
+    // nothing more is said.
+    let lines = mine.messages.len();
+    for _ in 0..40 {
+        mine.pump(Duration::from_millis(200)).await;
+    }
+    assert_eq!(held(&mine, 438), 1, "one ore from one rock");
+    assert_eq!(
+        mine.messages.len(),
+        lines,
+        "minerock's messages after the rock was mined: {:?}",
+        &mine.messages[from..]
+    );
+    eprintln!(
+        "minerock prospected and mined the tin rock 11933 at [3224, 3146, 0] with a bronze pickaxe: walked {start:?} -> {:?}, mining experience {before} -> {after}",
+        mine.position()
+    );
+    mine.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // FishingListener: a net fishing spot (316) at Draynor, with a small
+    // fishing net.
+    let start = [3088, 3228, 0];
+    write_save(&players, "traceone", "netfish", start, &[(0, 303, 1)]);
+    let (code, fish) = Client::login(address, "netfish").await;
+    assert_eq!(code, 2, "netfish's login");
+    let mut fish = fish.unwrap();
+    fish.until(Duration::from_secs(10), "netfish's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let spot = |c: &Client| {
+        c.npcs
+            .actors
+            .iter()
+            .find(|(_, n)| n.type_id == 316)
+            .map(|(i, _)| *i as i32)
+    };
+    fish.until(Duration::from_secs(15), "a net fishing spot", |c| {
+        spot(c).is_some()
+    })
+    .await;
+    let index = spot(&fish).unwrap();
+    let from = fish.messages.len();
+    let before = fish.skills.get(&10).map_or(0, |s| s.1);
+    fish.send(npc_option1(index)).await;
+    fish.until_pinging(Duration::from_secs(20), "the cast", |c| {
+        said(c, from, "You cast out your net...")
+    })
+    .await;
+    // Level 1: a roll every five ticks.
+    fish.until_pinging(Duration::from_secs(300), "the shrimps", |c| {
+        held(c, 317) >= 1
+    })
+    .await;
+    assert!(
+        said(&fish, from, "You catch some shrimps."),
+        "netfish's messages: {:?}",
+        &fish.messages[from..]
+    );
+    let after = fish.skills.get(&10).map_or(0, |s| s.1);
+    assert!(
+        after > before,
+        "fishing experience rose ({before} -> {after})"
+    );
+    // The script keeps running: a second catch comes without another click.
+    fish.until_pinging(Duration::from_secs(300), "a second catch", |c| {
+        held(c, 317) >= 2
+    })
+    .await;
+    eprintln!(
+        "netfish netted shrimps at the fishing spot 316 with a small fishing net: walked {start:?} -> {:?}, fishing experience {before} -> {after}",
+        fish.position()
+    );
+    fish.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

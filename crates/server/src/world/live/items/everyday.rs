@@ -894,6 +894,7 @@ impl super::super::host::Live {
         let mut object_registered = Vec::new();
         let mut cooking = false;
         let mut woodcutting = false;
+        let (mut mining, mut prospect, mut fishing) = (false, false, false);
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
                 // CookingRewrite.defineListeners (super::cooking).
@@ -903,6 +904,18 @@ impl super::super::host::Live {
             if name == super::woodcutting::LISTENER_CLASS {
                 // WoodcuttingListener.defineListeners (super::woodcutting).
                 woodcutting = true;
+            }
+            if name == super::mining::LISTENER_CLASS {
+                // MiningListener.defineListeners (super::mining).
+                mining = true;
+            }
+            if name == super::fishing::LISTENER_CLASS {
+                // FishingListener.defineListeners (super::fishing).
+                fishing = true;
+            }
+            if name == super::mining::PROSPECT_CLASS {
+                // ProspectListener.defineListeners (super::mining).
+                prospect = true;
             }
             if let Some(class) = item_on_npc::Class::named(name) {
                 item_on_npc::define(&registry, class).map_err(|e| format!("{name}: {e:?}"))?;
@@ -929,6 +942,17 @@ impl super::super::host::Live {
             // Metadata lives in its own map, so its place among the other
             // classes' registrations is not observable.
             self.define_woodcutting_listener();
+        }
+        if mining {
+            self.define_mining_listener();
+        }
+        if fishing {
+            self.define_fishing_listener();
+        }
+        if prospect {
+            // The only generic "prospect" listener, so its place among
+            // the other registrations is not observable either.
+            self.define_prospect_listener()?;
         }
         Ok(())
     }

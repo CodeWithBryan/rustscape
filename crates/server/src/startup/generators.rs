@@ -165,6 +165,11 @@ impl WorldGenerators {
     pub fn thread_local_next_double(&mut self, origin: f64, bound: f64) -> Result<f64, BadRange> {
         self.thread_local.next_double(origin, bound)
     }
+    /// `ThreadLocalRandom.current().nextInt(bound)` on the world thread;
+    /// `None` for a nonpositive bound (Java throws).
+    pub fn thread_local_next_int(&mut self, bound: i32) -> Option<i32> {
+        self.thread_local.next_int(bound)
+    }
 }
 
 /// The drop-table, clue-reward and shared-table loaders and rolls draw
