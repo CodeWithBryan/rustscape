@@ -74,6 +74,9 @@ pub struct Round {
     pub firemaking: super::items::firemaking::FiremakingWorld,
     /// HerblorePulse (super::items::herblore).
     pub herblore: super::items::herblore::HerbloreWorld,
+    /// GrindItemPlugin and HerbTarPlugin with their pulses
+    /// (super::items::herblore_tools).
+    pub herblore_tools: super::items::herblore_tools::ToolsWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).

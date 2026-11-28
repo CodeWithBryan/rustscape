@@ -58,6 +58,7 @@ pub mod ground_spawn_loader;
 pub mod ground_world;
 pub mod helpers;
 pub mod herblore;
+pub mod herblore_tools;
 pub mod input_prompt;
 pub mod interaction;
 pub mod interaction_listeners;

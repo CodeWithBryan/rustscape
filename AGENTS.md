@@ -1180,9 +1180,14 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   docs/thieving-doors.md), herblore's herb cleaning and potion mixing
   (world/herblore.rs, run live by world/live/items/herblore.rs; replayed
   against the JVM corpus fixtures/herblore from oracle/herblore, the live
-  binding is not; grinding, herb tar, barbarian mixes and swamp toads are
-  not ported and the potions that ask hasRequirement always refuse;
-  docs/herblore.md) and Otto Godblessed's barbarian
+  binding is not; the potions that ask hasRequirement always refuse;
+  docs/herblore.md), herblore's grinding, herb tar and barbarian mixes
+  (world/herblore_tools.rs, run live by
+  world/live/items/herblore_tools.rs through UseWithHandler's
+  item-on-item pulse; replayed against the JVM corpus
+  fixtures/herblore-tools from oracle/herblore-tools, the live binding is
+  not; swamp toads are not ported; docs/herblore-tools.md) and Otto
+  Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the
