@@ -4318,6 +4318,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     grind_part(address, &players).await;
     gem_part(address, &players).await;
     wares_part(address, &players).await;
+    stations_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -5132,6 +5133,174 @@ async fn gem_part(address: std::net::SocketAddr, players: &std::path::Path) {
         "gemman cut two sapphires and an opal, was refused a diamond, made a limestone brick and strung an amulet and a symbol"
     );
     gem.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The crafting stations part of the gather scenario: SpinSpinningWheelPlugin
+/// and SpinningInterface at the Lumbridge Castle wheel 36970, then
+/// SilverCraftingListener at the Al Kharid furnace 11666.
+async fn stations_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, amount)| *amount)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    // Four wool and a flax beside the wheel on the castle's first floor, at
+    // Crafting 1.
+    let start = [3210, 3214, 1];
+    let inventory = [
+        (0, 1737, 1),
+        (1, 1737, 1),
+        (2, 1737, 1),
+        (3, 1737, 1),
+        (4, 1779, 1),
+    ];
+    write_save_with(players, "traceone", "spinman", start, &inventory, |save| {
+        save["skills"][12]["static"] = Value::String("1".into());
+        save["skills"][12]["dynamic"] = Value::String("1".into());
+        save["skills"][12]["experience"] = Value::String("0.0".into());
+    });
+    let (code, spin) = Client::login(address, "spinman").await;
+    assert_eq!(code, 2, "spinman's login");
+    let mut spin = spin.unwrap();
+    spin.until(Duration::from_secs(10), "spinman's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = spin.messages.len();
+
+    // "Spin": the interface. Yak hair is not held and flax needs Crafting 10.
+    let opened = spin.opened.len();
+    spin.send(scenery_option1(36970, 3209, 3212)).await;
+    spin.until_pinging(Duration::from_secs(20), "the spinning interface", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 459)
+    })
+    .await;
+    spin.send(button(459, 35)).await;
+    spin.until_pinging(Duration::from_secs(20), "the yak hair's refusal", |c| {
+        said(c, from, "You need hair to make this.")
+    })
+    .await;
+    spin.send(button(459, 17)).await;
+    spin.until_pinging(Duration::from_secs(20), "the flax's refusal", |c| {
+        said(c, from, "You need a crafting level of 10 to make this.")
+    })
+    .await;
+    // The refused pulse closed the interface. "Make All" (opcode 124) of
+    // the ball of wool (button 19): one every four ticks.
+    let opened = spin.opened.len();
+    spin.send(scenery_option1(36970, 3209, 3212)).await;
+    spin.until_pinging(
+        Duration::from_secs(20),
+        "the spinning interface again",
+        |c| c.opened[opened..].iter().any(|(_, id)| *id == 459),
+    )
+    .await;
+    spin.send(if_button(124, 459, 19, -1)).await;
+    spin.until_pinging(Duration::from_secs(40), "four balls of wool", |c| {
+        amount(c, 1759) == 4
+    })
+    .await;
+    spin.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&spin, 1737), amount(&spin, 1779)),
+        (0, 1),
+        "the wool is spun and the flax stays"
+    );
+    assert_eq!(
+        spin.skills.get(&12).map(|s| s.1),
+        Some(10),
+        "four balls of wool are 10 experience"
+    );
+    eprintln!("spinman was refused yak hair and flax and spun four balls of wool");
+    spin.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Two silver bars and a holy mould at the Al Kharid furnace, at
+    // Crafting 20.
+    let start = [3274, 3187, 0];
+    let inventory = [(0, 2355, 1), (1, 2355, 1), (2, 1599, 1)];
+    write_save_with(
+        players,
+        "traceone",
+        "silverman",
+        start,
+        &inventory,
+        |save| {
+            save["skills"][12]["static"] = Value::String("20".into());
+            save["skills"][12]["dynamic"] = Value::String("20".into());
+            // The experience stays under the 175 an unfinished tutorial caps it at.
+            save["skills"][12]["experience"] = Value::String("0.0".into());
+        },
+    );
+    let (code, silver) = Client::login(address, "silverman").await;
+    assert_eq!(code, 2, "silverman's login");
+    let mut silver = silver.unwrap();
+    silver
+        .until(Duration::from_secs(10), "silverman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = silver.messages.len();
+    let frames = silver.frames.len();
+    let opened = silver.opened.len();
+    silver
+        .send(use_with_scenery(2355, 0, 11666, 3272, 3185))
+        .await;
+    silver
+        .until_pinging(
+            Duration::from_secs(20),
+            "the silver casting interface",
+            |c| c.opened[opened..].iter().any(|(_, id)| *id == 438),
+        )
+        .await;
+    // onOpen(438): the nine item models (server opcode 50).
+    silver.pump(Duration::from_secs(1)).await;
+    assert_eq!(
+        silver.frames[frames..]
+            .iter()
+            .filter(|f| f.opcode == 50)
+            .count(),
+        9,
+        "the nine item models of the silver casting interface"
+    );
+    // The tiara's mould is not held.
+    silver.send(button(438, 44)).await;
+    silver
+        .until_pinging(Duration::from_secs(20), "the tiara's refusal", |c| {
+            said(c, from, "You need a tiara mould to make this item.")
+        })
+        .await;
+    // "Make All" (opcode 124) of the unstrung symbol (button 16): the
+    // second one five ticks after the first.
+    silver.send(if_button(124, 438, 16, -1)).await;
+    silver
+        .until_pinging(Duration::from_secs(40), "two unstrung symbols", |c| {
+            amount(c, 1714) == 2
+        })
+        .await;
+    silver.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&silver, 2355), amount(&silver, 1599)),
+        (0, 1),
+        "both bars are cast and the mould stays"
+    );
+    assert_eq!(
+        silver.skills.get(&12).map(|s| s.1),
+        Some(100),
+        "two unstrung symbols are 100 experience"
+    );
+    eprintln!("silverman was refused a tiara and cast two unstrung symbols at the furnace");
+    silver.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

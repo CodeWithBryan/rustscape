@@ -1731,6 +1731,10 @@ impl Live {
                     )
                     .map_err(|e| Error::Binding(Some(format!("{e:?}"))))
                 }
+                // SpinSpinningWheelPlugin.handle(player, node, option).
+                super::scenery::SceneryPlugin::Wheel => self
+                    .wheel_handle(&p)
+                    .map_err(|e| Error::Binding(Some(format!("{e:?}")))),
                 // FurnaceOptionPlugin.handle(player, node, option).
                 super::scenery::SceneryPlugin::Furnace => match call.target.clone() {
                     Some(furnace) => self

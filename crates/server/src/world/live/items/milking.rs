@@ -173,6 +173,11 @@ impl Live {
             if let Some(result) = self.crafting_tool_pulse_stopped(pulse) {
                 return result.map_err(bind);
             }
+            // SpinningPulse: SkillPulse.stop(); SilverCraftingPulse: no
+            // stop() override.
+            if let Some(result) = self.crafting_station_pulse_stopped(pulse) {
+                return result.map_err(bind);
+            }
             // BattlestaffListener's task and the two glass pulses: no
             // stop() override.
             if let Some(result) = self.crafting_ware_pulse_stopped(pulse) {

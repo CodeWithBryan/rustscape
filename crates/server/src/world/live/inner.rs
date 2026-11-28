@@ -470,6 +470,11 @@ impl interfaces::Context for Inner {
             if let Some(result) = self.shop_open_listener(&callback) {
                 return result.map(|_| ());
             }
+            // SilverCraftingListener's onOpen(438)
+            // (super::items::crafting_stations).
+            if let Some(result) = self.silver_open_listener(&callback) {
+                return result.map(|_| ());
+            }
         }
         self.not_ported
             .skip("InterfaceListeners.runOpen (content interface listeners)");

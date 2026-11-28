@@ -82,6 +82,9 @@ pub struct Round {
     /// The battlestaff task and the two glass pulses
     /// (super::items::crafting_wares).
     pub crafting_wares: super::items::crafting_wares::CraftingWaresWorld,
+    /// The wheel plugin, SpinningPulse, SilverCraftingPulse and the
+    /// furnaces (super::items::crafting_stations).
+    pub crafting_stations: super::items::crafting_stations::CraftingStationsWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).

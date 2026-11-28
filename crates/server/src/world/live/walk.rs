@@ -667,6 +667,8 @@ impl player_walk::Services for WalkHost<'_> {
                 // source registers: null (docs/smelting.md).
                 super::scenery::SceneryPlugin::Furnace => return Ok(None),
                 super::scenery::SceneryPlugin::Anvil => return Ok(None),
+                // SpinSpinningWheelPlugin.getDestination: null.
+                super::scenery::SceneryPlugin::Wheel => return Ok(None),
                 super::scenery::SceneryPlugin::Stall => return Ok(None),
                 super::scenery::SceneryPlugin::Chest => return Ok(None),
                 // PickableDoorHandler.getDestination: DoorActionHandler's

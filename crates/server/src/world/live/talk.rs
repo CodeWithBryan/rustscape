@@ -752,6 +752,11 @@ pub enum Script {
     Smith(super::items::smithing::SmithScript),
     /// GlassCraftingListener's amount handler (`crafting_wares::glass_input`).
     Glass(super::items::crafting_wares::GlassScript),
+    /// SpinningInterface's amount handler (`crafting_stations::spin_input`).
+    Spin(super::items::crafting_stations::SpinScript),
+    /// SilverCraftingListener's amount handler
+    /// (`crafting_stations::silver_input`).
+    Silver(super::items::crafting_stations::SilverScript),
 }
 
 struct Prompt<'a> {
@@ -760,6 +765,21 @@ struct Prompt<'a> {
 
 fn ierror(e: impl std::fmt::Debug) -> input::Error {
     input::Error::Binding(format!("{e:?}"))
+}
+/// A prompt's answer as the crafting stations' handlers take it.
+fn station_input(value: &Response) -> crate::world::crafting_stations::Input {
+    use crate::world::crafting_stations::Input;
+    match value {
+        Response::Int(n) => Input::Int(*n),
+        Response::Text(text) => Input::Text(String::from_utf16_lossy(text)),
+    }
+}
+/// `Integer.parseInt`'s NumberFormatException keeps its kind.
+fn station_error(e: crate::world::crafting_stations::Error) -> input::Error {
+    match e {
+        crate::world::crafting_stations::Error::Number => input::Error::Number,
+        other => ierror(other),
+    }
 }
 
 impl Prompt<'_> {
@@ -904,6 +924,18 @@ impl input::Context for Prompt<'_> {
                         .map_err(|_| input::Error::Number)?,
                 };
                 self.live.glass_amount(&script, amount).map_err(ierror)
+            }
+            Script::Spin(script) => {
+                let value = station_input(&value);
+                self.live
+                    .spin_amount(&script, &value)
+                    .map_err(station_error)
+            }
+            Script::Silver(script) => {
+                let value = station_input(&value);
+                self.live
+                    .silver_amount(&script, &value)
+                    .map_err(station_error)
             }
             Script::Shop(script) => self
                 .live
@@ -1149,6 +1181,44 @@ impl Live {
             InputType::Amount,
             utf16(prompt),
             Script::Glass(script),
+        );
+        self.inner.drain(p);
+        result
+    }
+    /// `sendInputDialogue(p, true, prompt, handler)` of SpinningInterface's
+    /// Make-X.
+    pub fn spin_prompt(
+        &mut self,
+        p: &P,
+        prompt: &str,
+        script: super::items::crafting_stations::SpinScript,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::send(
+            &mut Prompt { live: self },
+            &owner,
+            InputType::Numeric,
+            utf16(prompt),
+            Script::Spin(script),
+        );
+        self.inner.drain(p);
+        result
+    }
+    /// `sendInputDialogue(player, InputType.AMOUNT, prompt, handler)` of
+    /// SilverCraftingListener's Make-X.
+    pub fn silver_prompt(
+        &mut self,
+        p: &P,
+        prompt: &str,
+        script: super::items::crafting_stations::SilverScript,
+    ) -> input::Result<()> {
+        let owner = p.0.clone();
+        let result = input::send(
+            &mut Prompt { live: self },
+            &owner,
+            InputType::Amount,
+            utf16(prompt),
+            Script::Silver(script),
         );
         self.inner.drain(p);
         result

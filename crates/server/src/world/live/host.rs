@@ -1653,6 +1653,11 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.crafting_tool_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // SpinningPulse and SilverCraftingPulse
+        // (super::items::crafting_stations).
+        if let Some(result) = self.crafting_station_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // BattlestaffListener's task, GlassCraftingPulse and GlassMakePulse
         // (super::items::crafting_wares).
         if let Some(result) = self.crafting_ware_pulse_body(pulse) {
