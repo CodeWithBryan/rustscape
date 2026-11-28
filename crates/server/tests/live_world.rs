@@ -930,6 +930,10 @@ async fn drive(
                 "ranged" => ranged_scenario(address, saves).await,
                 "special" => special_scenario(address, saves).await,
                 "bank" => bank_scenario(address, saves).await,
+                "booth" => booth_scenario(address, saves).await,
+                "chest" => chest_scenario(address, saves).await,
+                "depositbox" => deposit_box_scenario(address, saves).await,
+                "bankrefusals" => bank_refusals_scenario(address, saves).await,
                 "shop" => shop_scenario(address, saves).await,
                 "trade" => trade_scenario(address, saves).await,
                 "follow" => follow_scenario(address, saves).await,
@@ -986,6 +990,10 @@ async fn drive(
     ranged_scenario(address, saves).await;
     special_scenario(address, saves).await;
     bank_scenario(address, saves).await;
+    booth_scenario(address, saves).await;
+    chest_scenario(address, saves).await;
+    deposit_box_scenario(address, saves).await;
+    bank_refusals_scenario(address, saves).await;
     shop_scenario(address, saves).await;
     trade_scenario(address, saves).await;
     follow_scenario(address, saves).await;
@@ -4184,6 +4192,382 @@ async fn bank_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
+/// A bank booth (`BankBoothListener`'s `defineInteraction` metadata):
+/// `boothone` stands two tiles east of Draynor bank's booth 2213 at
+/// (3091,3243) with a bronze dagger. Use-quickly (the booth's second
+/// option) answers true in processSceneryAction; InteractionListeners.run
+/// installs the interaction script on the player's script processor and
+/// runs the empty movement pulse; the processor walks the player in reach
+/// (distance 1, line of sight), faces the booth and executes the handler
+/// (`quickBankBoothUse`): the bank (762) opens. A deposit and a withdraw
+/// go through the bank as for the banker.
+async fn booth_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(
+        &players,
+        "traceone",
+        "boothone",
+        [3093, 3243, 0],
+        &[(0, 1205, 1)],
+    );
+    let (code, one) = Client::login(address, "boothone").await;
+    assert_eq!(code, 2, "boothone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "boothone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let opened = one.opened.len();
+    one.send(scenery_option2(2213, 3091, 3243)).await;
+    one.until(Duration::from_secs(15), "the bank from the booth", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 762)
+    })
+    .await;
+    let at = one.position();
+    assert_eq!(
+        (at[0] - 3091).abs() + (at[1] - 3243).abs(),
+        1,
+        "boothone used the booth from a cardinal neighbour, at {at:?}"
+    );
+    eprintln!("boothone: Use-quickly on the booth opened the bank from {at:?}");
+    // Deposit the dagger (763:0 slot 0), withdraw it (762:73).
+    one.send(if_button(155, 763, 0, 0)).await;
+    one.until(Duration::from_secs(10), "the dagger in the bank", |c| {
+        c.slot_of(95, 1205).is_some() && c.slot_of(93, 1205).is_none()
+    })
+    .await;
+    let slot = one.slot_of(95, 1205).unwrap();
+    one.send(if_button(155, 762, 73, slot)).await;
+    one.until(
+        Duration::from_secs(10),
+        "the dagger back in the inventory",
+        |c| c.slot_of(93, 1205).is_some() && c.slot_of(95, 1205).is_none(),
+    )
+    .await;
+    one.send(close_interface()).await;
+    one.pump(Duration::from_secs(1)).await;
+    eprintln!("boothone: deposited and withdrew at the booth");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A bank chest (`BankChestListener`): `chestone` stands two tiles west of
+/// Castle Wars' chest 4483 at (2445,3083); its first option ("Use") runs
+/// the chest's interaction script, which opens the bank.
+async fn chest_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(
+        &players,
+        "traceone",
+        "chestone",
+        [2443, 3083, 0],
+        &[(0, 1205, 1)],
+    );
+    let (code, one) = Client::login(address, "chestone").await;
+    assert_eq!(code, 2, "chestone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "chestone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let opened = one.opened.len();
+    one.send(scenery_option1(4483, 2445, 3083)).await;
+    one.until(Duration::from_secs(15), "the bank from the chest", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 762)
+    })
+    .await;
+    eprintln!(
+        "chestone: the bank chest opened the bank from {:?}",
+        one.position()
+    );
+    one.send(if_button(155, 763, 0, 0)).await;
+    one.until(Duration::from_secs(10), "the dagger in the bank", |c| {
+        c.slot_of(95, 1205).is_some() && c.slot_of(93, 1205).is_none()
+    })
+    .await;
+    one.send(close_interface()).await;
+    one.pump(Duration::from_secs(1)).await;
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// A deposit box (`BankDepositBoxListener`, `BankDepositBoxInterface`):
+/// `depositone` stands near Draynor's deposit box 9398 at (3094,3240) with
+/// a bronze dagger and 50 coins. "Deposit" runs the interaction script:
+/// interface 11 opens with its title (onOpen), the tabs are removed and the
+/// inventory is rendered by `InterfaceContainer.generateItems` (client
+/// script 150, the settings and the container -1/-2 under a key from 600).
+/// Deposit-1 (155) moves the dagger to the bank and redraws the box under a
+/// new key without it; Deposit-X (234) asks for an amount, deposits 20
+/// coins and its after body redraws the box with 30; Deposit-All (199)
+/// takes the rest. Close runs the box's close event (the default tabs
+/// again). The booth then shows the dagger and all 50 coins in the bank.
+async fn deposit_box_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    write_save(
+        &players,
+        "traceone",
+        "depositone",
+        [3092, 3241, 0],
+        &[(0, 1205, 1), (1, 995, 50)],
+    );
+    let (code, one) = Client::login(address, "depositone").await;
+    assert_eq!(code, 2, "depositone's login");
+    let mut one = one.unwrap();
+    one.until(Duration::from_secs(10), "depositone's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    // The box's rendered containers (keys from 600): the newest key's items.
+    let newest = |c: &Client| {
+        c.containers
+            .iter()
+            .filter(|(k, _)| **k >= 600)
+            .max_by_key(|(k, _)| **k)
+            .map(|(k, slots)| (*k, slots.values().copied().collect::<Vec<_>>()))
+    };
+    let opened = one.opened.len();
+    let texts = one.texts.len();
+    one.send(scenery_option1(9398, 3094, 3240)).await;
+    one.until(Duration::from_secs(15), "the deposit box", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 11)
+            && newest(c).is_some_and(|(_, items)| items.contains(&(1205, 1)))
+    })
+    .await;
+    let title = one.texts[texts..]
+        .iter()
+        .find(|(_, pointer, _)| *pointer == (11 << 16) | 12)
+        .map(|(_, _, t)| t.clone())
+        .expect("BankDepositBoxInterface's onOpen title (11:12)");
+    assert!(
+        title.starts_with("The Bank of ") && title.ends_with(" - Deposit Box"),
+        "the deposit box title: {title:?}"
+    );
+    let (first, _) = newest(&one).unwrap();
+    eprintln!(
+        "depositone: the deposit box opened ({title:?}), the inventory rendered under key {first}"
+    );
+    // Deposit-1 of the dagger (slot 0): the world task, then the redraw.
+    one.send(if_button(155, 11, 15, 0)).await;
+    one.until(
+        Duration::from_secs(10),
+        "the box redrawn without the dagger",
+        |c| {
+            c.slot_of(93, 1205).is_none()
+                && newest(c).is_some_and(|(k, items)| {
+                    k > first
+                        && !items.iter().any(|(id, _)| *id == 1205)
+                        && items.contains(&(995, 50))
+                })
+        },
+    )
+    .await;
+    let (second, _) = newest(&one).unwrap();
+    // Deposit-X of the coins (slot 1): the amount prompt, 20, the after body.
+    let from = one.frames.len();
+    one.send(if_button(234, 11, 15, 1)).await;
+    one.until(Duration::from_secs(10), "the amount prompt", |c| {
+        c.frames[from..].iter().any(|f| {
+            matches!(
+                updates::ServerUpdate::decode(f),
+                Ok(Some(updates::ServerUpdate::RunClientScript {
+                    id: 108 | 109,
+                    ..
+                }))
+            )
+        })
+    })
+    .await;
+    one.send(frame(23, &[&20i32.to_be_bytes()])).await;
+    one.until(
+        Duration::from_secs(10),
+        "20 coins deposited, the box redrawn",
+        |c| {
+            c.slot_of(93, 995)
+                .is_some_and(|s| c.containers[&93][&s].1 == 30)
+                && newest(c).is_some_and(|(k, items)| k > second && items.contains(&(995, 30)))
+        },
+    )
+    .await;
+    // Deposit-All of the rest (slot 1).
+    one.send(if_button(199, 11, 15, 1)).await;
+    one.until(Duration::from_secs(10), "the coins deposited", |c| {
+        c.slot_of(93, 995).is_none()
+    })
+    .await;
+    // Close: the close event opens the default tabs (the inventory tab 149).
+    let opened = one.opened.len();
+    one.send(close_interface()).await;
+    one.until(Duration::from_secs(10), "the default tabs again", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 149)
+    })
+    .await;
+    eprintln!(
+        "depositone: Deposit-1, Deposit-X (20) and Deposit-All, each redrawn; closed the box"
+    );
+    // The booth (3091,3243): both are in the bank.
+    let opened = one.opened.len();
+    one.send(scenery_option2(2213, 3091, 3243)).await;
+    one.until(Duration::from_secs(15), "the bank with the deposits", |c| {
+        c.opened[opened..].iter().any(|(_, id)| *id == 762)
+            && c.slot_of(95, 1205).is_some()
+            && c.slot_of(95, 995).is_some()
+    })
+    .await;
+    assert_eq!(
+        one.containers[&95][&one.slot_of(95, 995).unwrap()].1,
+        50,
+        "all 50 coins in the bank"
+    );
+    one.send(close_interface()).await;
+    one.pump(Duration::from_secs(1)).await;
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// What the bank booths, chests and deposit boxes refuse, as the original:
+/// an ultimate ironman (`ironManMode` 3) gets "You can't do that as an
+/// Ironman." from the booth's Use-quickly, the deposit box and the chest,
+/// and none opens; a character with an active bank PIN reaches the booth
+/// and its bank opens, as `BankContainer.open` does in a development world
+/// (`!isUnlocked() && !isDevMode()`; the test world's configuration has
+/// `dev = true`, so the PIN entry interface, a named refusal, is not
+/// reached here);
+/// a player who walks away before reaching the booth gets no bank; and the
+/// chat bar's Report Abuse (751:27, `MainGameInterface.openReport`) stays a
+/// refusal: interface 553 does not open.
+async fn bank_refusals_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let login = |name: &'static str| async move {
+        let (code, client) = Client::login(address, name).await;
+        assert_eq!(code, 2, "{name}'s login");
+        let mut client = client.unwrap();
+        client
+            .until(Duration::from_secs(10), "the rebuild", |c| {
+                c.base.is_some() && !c.updates.is_empty()
+            })
+            .await;
+        client
+    };
+    let ironman = |save: &mut Value| {
+        save["ironManMode"] = Value::String("3".into());
+    };
+    let refused = "You can't do that as an Ironman.";
+    let told = |c: &Client, from: usize| c.messages[from..].iter().any(|(_, m)| m == refused);
+
+    // The ultimate ironman at the booth and the deposit box.
+    write_save_with(
+        &players,
+        "traceone",
+        "ironone",
+        [3093, 3243, 0],
+        &[(0, 1205, 1)],
+        ironman,
+    );
+    let mut one = login("ironone").await;
+    for (option, what, interface) in [
+        (scenery_option2(2213, 3091, 3243), "the booth", 762),
+        (scenery_option1(9398, 3094, 3240), "the deposit box", 11),
+    ] {
+        let (opened, from) = (one.opened.len(), one.messages.len());
+        one.send(option).await;
+        one.until(Duration::from_secs(15), "the ironman message", |c| {
+            told(c, from)
+        })
+        .await;
+        one.pump(Duration::from_secs(1)).await;
+        assert!(
+            !one.opened[opened..].iter().any(|(_, id)| *id == interface),
+            "{what} opened {interface} for an ultimate ironman"
+        );
+        eprintln!("ironone: {what} refused the ultimate ironman");
+    }
+    one.writer.close(1000, "logout").await.unwrap();
+    // The ultimate ironman at the chest.
+    write_save_with(
+        &players,
+        "traceone",
+        "ironchest",
+        [2443, 3083, 0],
+        &[],
+        ironman,
+    );
+    let mut one = login("ironchest").await;
+    let (opened, from) = (one.opened.len(), one.messages.len());
+    one.send(scenery_option1(4483, 2445, 3083)).await;
+    one.until(Duration::from_secs(15), "the ironman message", |c| {
+        told(c, from)
+    })
+    .await;
+    one.pump(Duration::from_secs(1)).await;
+    assert!(
+        !one.opened[opened..].iter().any(|(_, id)| *id == 762),
+        "the chest opened the bank for an ultimate ironman"
+    );
+    eprintln!("ironchest: the chest refused the ultimate ironman");
+    one.writer.close(1000, "logout").await.unwrap();
+
+    // An active bank PIN at the booth in a development world: the bank opens.
+    write_save_with(
+        &players,
+        "traceone",
+        "pinone",
+        [3093, 3243, 0],
+        &[],
+        |save| {
+            save["bankPinManager"] =
+                serde_json::json!({"pin": "1234", "longRecovery": false, "status": "2"});
+        },
+    );
+    let mut one = login("pinone").await;
+    let opened = one.opened.len();
+    one.send(scenery_option2(2213, 3091, 3243)).await;
+    one.until(
+        Duration::from_secs(15),
+        "the bank in a development world",
+        |c| c.opened[opened..].iter().any(|(_, id)| *id == 762),
+    )
+    .await;
+    one.send(close_interface()).await;
+    one.pump(Duration::from_secs(1)).await;
+    eprintln!(
+        "pinone: an active PIN, dev = true: the bank opened as the original's isDevMode skip"
+    );
+    one.writer.close(1000, "logout").await.unwrap();
+
+    // Walking away before arrival, then Report Abuse.
+    write_save(&players, "traceone", "walkone", [3093, 3243, 0], &[]);
+    let mut one = login("walkone").await;
+    let opened = one.opened.len();
+    one.send(scenery_option2(2213, 3091, 3243)).await;
+    one.send(actions::worldspace_walk(3094, 3245, false)).await;
+    one.until(Duration::from_secs(10), "walkone walked away", |c| {
+        c.position() == [3094, 3245, 0]
+    })
+    .await;
+    one.pump(Duration::from_secs(4)).await;
+    assert!(
+        !one.opened[opened..].iter().any(|(_, id)| *id == 762),
+        "the booth opened the bank after the player walked away"
+    );
+    assert_eq!(
+        one.position(),
+        [3094, 3245, 0],
+        "walkone stayed where it walked"
+    );
+    eprintln!("walkone: walked away from the booth before arriving; no bank");
+    let opened = one.opened.len();
+    one.send(if_button(155, 751, 27, -1)).await;
+    one.pump(Duration::from_secs(3)).await;
+    assert!(
+        !one.opened[opened..].iter().any(|(_, id)| *id == 553),
+        "Report Abuse opened 553 (its close event is not bound)"
+    );
+    eprintln!("walkone: Report Abuse stayed refused (no 553)");
+    one.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
 /// A saved character made from another's save: its location and inventory
 /// replaced (the native parser loads it at login like any returning one).
 fn write_save(
@@ -5032,4 +5416,170 @@ async fn reconnect_scenario(address: std::net::SocketAddr, saves: &std::path::Pa
     one.writer.close(1000, "logout").await.unwrap();
     two.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// Copies a directory tree (the world template's data for a world with a
+/// changed configuration).
+fn copy_tree(from: &std::path::Path, to: &std::path::Path) {
+    std::fs::create_dir_all(to).unwrap();
+    for entry in std::fs::read_dir(from).unwrap() {
+        let entry = entry.unwrap();
+        let target = to.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_tree(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), &target).unwrap();
+        }
+    }
+}
+
+/// The bank PIN outside development mode: `BankContainer.open` skips the PIN
+/// only when `isDevMode()`, and the shared test world has `dev = true`, so
+/// this test boots its own world from a copy of the template with
+/// `dev = false`. A new character (`pinbase`) logs in and out for a save; a
+/// copy of it with an active PIN (`pinlock`) uses Draynor's booth: the
+/// interaction script reaches the booth and `openBankAccount` asks for the
+/// PIN entry interface (`BankPinManager.openType(1)`), a named refusal in
+/// the live world, so the bank (762) does not open. A copy without a PIN
+/// (`pinfree`) then gets the bank at the same booth.
+#[test]
+fn live_world_bank_booth_refuses_a_pin_holder_outside_development_mode() {
+    let Some((cache, template)) = inputs() else {
+        eprintln!(
+            "SKIPPED: the live world needs assets/cache and runs/startup-loaders-oracle/template (or RS09_CACHE / RS09_STARTUP_WORLD)"
+        );
+        return;
+    };
+    let root = std::env::temp_dir().join(format!("rs09-live-pin-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let data = root.join("template");
+    copy_tree(&template.join("data"), &data.join("data"));
+    let conf = std::fs::read_to_string(template.join("worldprops/default.conf")).unwrap();
+    assert!(
+        conf.lines().any(|l| l.trim() == "dev = true"),
+        "the template's configuration has dev = true"
+    );
+    let conf: String = conf
+        .lines()
+        .map(|l| {
+            if l.trim() == "dev = true" {
+                "dev = false"
+            } else {
+                l
+            }
+        })
+        .map(|l| format!("{l}\n"))
+        .collect();
+    std::fs::create_dir_all(data.join("worldprops")).unwrap();
+    std::fs::write(data.join("worldprops/default.conf"), conf).unwrap();
+    let saves = root.join("saves");
+    let running = server::start(Options {
+        data,
+        cache: cache.clone(),
+        saves: saves.clone(),
+        verbose: std::env::var_os("RS09_LIVE_VERBOSE").is_some(),
+    })
+    .expect("the live world boots with dev = false");
+    let limits = rs09_cache::Limits::default();
+    let catalog = Arc::new(
+        rs09_server::catalog::Catalog::new(
+            rs09_cache::store::Store::open(
+                &cache,
+                rs09_cache::store::StorageMode::Resident,
+                limits,
+            )
+            .unwrap(),
+            limits,
+            1024,
+            16 * 1024 * 1024,
+        )
+        .unwrap(),
+    );
+    let tokio = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()
+        .unwrap();
+    let service = Service::new(
+        catalog,
+        Config {
+            authenticator: Some(running.authenticator.clone()),
+            world: Some(running.gate.clone()),
+            ..Config::default()
+        },
+        530,
+    )
+    .unwrap();
+    tokio.block_on(async {
+        let server = service
+            .start("127.0.0.1:0".parse().unwrap(), None)
+            .await
+            .unwrap();
+        let address = server.tcp;
+        let players = saves.join("players");
+        // A new character for a save to copy.
+        let (code, base) = Client::login(address, "pinbase").await;
+        assert_eq!(code, 2, "pinbase's login");
+        let mut base = base.unwrap();
+        base.until(Duration::from_secs(10), "pinbase's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+        base.writer.close(1000, "logout").await.unwrap();
+        let end = Instant::now() + Duration::from_secs(15);
+        while !players.join("pinbase.json").exists() {
+            assert!(Instant::now() < end, "pinbase's save was not written");
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        write_save_with(&players, "pinbase", "pinlock", [3093, 3243, 0], &[], |save| {
+            save["bankPinManager"] =
+                serde_json::json!({"pin": "1234", "longRecovery": false, "status": "2"});
+        });
+        let (code, one) = Client::login(address, "pinlock").await;
+        assert_eq!(code, 2, "pinlock's login");
+        let mut one = one.unwrap();
+        one.until(Duration::from_secs(10), "pinlock's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+        let opened = one.opened.len();
+        one.send(scenery_option2(2213, 3091, 3243)).await;
+        one.until(Duration::from_secs(15), "pinlock at the booth", |c| {
+            let at = c.position();
+            (at[0] - 3091).abs() + (at[1] - 3243).abs() == 1
+        })
+        .await;
+        one.pump(Duration::from_secs(3)).await;
+        assert!(
+            !one.opened[opened..].iter().any(|(_, id)| *id == 762),
+            "the bank opened for a PIN holder with dev = false"
+        );
+        eprintln!(
+            "pinlock: reached the booth with an active PIN and dev = false; the bank stayed shut (the PIN entry interface is refused)"
+        );
+        one.writer.close(1000, "logout").await.unwrap();
+        // The control: without a PIN, the same booth in the same world opens
+        // the bank, so the refusal above is the PIN's.
+        write_save(&players, "pinbase", "pinfree", [3093, 3243, 0], &[]);
+        let (code, two) = Client::login(address, "pinfree").await;
+        assert_eq!(code, 2, "pinfree's login");
+        let mut two = two.unwrap();
+        two.until(Duration::from_secs(10), "pinfree's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+        let opened = two.opened.len();
+        two.send(scenery_option2(2213, 3091, 3243)).await;
+        two.until(Duration::from_secs(15), "the bank without a PIN", |c| {
+            c.opened[opened..].iter().any(|(_, id)| *id == 762)
+        })
+        .await;
+        eprintln!("pinfree: no PIN, dev = false: the booth opened the bank");
+        two.writer.close(1000, "logout").await.unwrap();
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        server.shutdown().await.unwrap();
+    });
+    running.stop();
+    let _ = std::fs::remove_dir_all(&root);
 }

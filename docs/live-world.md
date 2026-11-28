@@ -79,7 +79,7 @@ logs out, and its character is saved and loaded again.
 This is a playable engine slice, **not a complete server**: content (login
 listeners, quests, tutorial, content item, NPC and scenery handlers other
 than the global handlers, content dialogues other than the banker's, the
-bank booths, chests and deposit boxes, the bank PIN, assist sessions), NPC
+bank PIN, assist sessions), NPC
 timers, the spells and teleports listed below as refused, ForceMovement,
 commands, quick chat, abuse reports, the Grand Exchange and every handler
 listed below as refused are not installed, and every such call is answered
@@ -156,6 +156,7 @@ modes of `rs09-server` are unchanged.
 | the walk to an NPC or player for a listener | `InteractionListeners.run`'s `MovementPulse(player, node, flag, destOverride)` and its arrival | `talk.rs`, `round.rs`: `player_walk::World::listener_motion` (the `Destination` constructor of `world::movement`) with an approach whose option handle identifies the arrival; the arrival (`interaction_listeners::arrival`: zone, face, the handler) runs with the whole world right after the walking call; a destination override is evaluated when the pulse is made |
 | input prompts | `RunScript.processInput`, the InputPromptResponse branch, `sendInputDialogue`, `BankUtils.transferX` | `talk.rs`: `world::input_prompt` with `Prompt` as its context; the `runscript` attribute holds the transfer object or a mark for a callback the world keeps (a DSL's, a shop's or a trade's amount script) |
 | bank | `BankContainer` (open, close, add, take, tabs, note/insert), the private BankListener, `BankInterface` (762/763/767), `BankCloseEvent` | `bank.rs`: `inventory::bank` on the canonical player's bank with `BankUi` (a `bank::Context` over the interface manager, variables, packets and the canonical inventory binding); `bank_interface::Program` registered in the live InterfaceListeners; its open listener from `InterfaceListeners.runOpen`, its buttons from IfAction, the captured `BankClose` from `InterfaceManager.close`; `openBankAccount` with `restrictForIronman` |
+| bank booths, chests, deposit boxes | `BankBoothListener` (Use-quickly, Use, Collect), `BankChestListener`, `BankDepositBoxListener` (their `defineInteraction` metadata), `InteractionListeners.run`'s metadata branch, `ScriptProcessor.setInteractionScript` and the interaction phases, `BankDepositBoxInterface` (11), `InterfaceContainer.generateItems`, `BankContainer.refreshDepositBoxInterface`, `Repository.findNPC(location)` | `banks.rs`, `scripts.rs`, `interface_container.rs`: a scenery option reaches `InteractionListeners.run` through the scenery listener run (`scenery.rs`, `Live::scenery_listener_run`); for metadata the script is made in this world's domain and installed with `interact_in` on the canonical processor and the empty movement pulse runs; the script phases run with `scripts.rs`'s `ScriptHost`, whose execution of a booth, chest or deposit box handler runs the global handler's body inside the phase (`Live::bank_script`), its answer the executor's and its failure logged and reset by `executeScript`; the deposit box opens 11 (only 11: `GHost.open` of any other interface, such as Report Abuse's 553, is refused) with its onOpen title (run right after `interfaceManager.open` returns) and its close event, removes the tabs, renders the inventory through `world::grand_exchange::sets_interface::generate_items` (its Host over the live frames, every other GE service refused; `InterfaceContainer.index` is the `container_index` of one `Exchange` per world) and deposits through `BankContainer.addItem` and `BankUtils.transferX` with its refresh |
 | shops | `Shops` (start-up, `tick`, the NPC listeners, the destination override, the 620/621 listeners), `Shop`, `ShopListener` | `shopping.rs`: `shops::World` built by `controller::startup` at boot from `shops.json`; `ShopHost` (`shops::Host` over the interface context's state, so the shop's open and close listeners run wherever the interface manager is used); `Shops.tick` after `GraveController.tick` in the tick listeners; Buy-X/Sell-X through the input prompts |
 | requests, trade | `RequestManager`, `RequestType`, `TradeModule`, `TradeContainer`, `TradeCloseEvent`, `TradeInterfacePlugin` | `trading.rs`: `world::trade` with `TradeHost` over the whole world; the global handlers' RequestOption listeners ("trade with", "req assist") through the native InteractionListeners; TradeInterfacePlugin on 334/335/336 from IfAction; `trade::ui::Ui<TradeHost>` is the interface context of the Close packet and of a walk's interface close; the alert pulse on `GameWorld.Pulser`, dispatched by identity |
 | player options | `Option._P_ATTACK`/`_P_FOLLOW.setHandler`, `AttackOptionPlugin`, `FollowOptionPlugin` | `follow.rs`: the handlers bound into the option constants (ids of a player handler arena the legacy runtime resolves for a player target); the legacy walk and arrival, the handler run with the whole world right after; FollowOptionPlugin's `MovementPulse(player, target, FOLLOW_ENTITY)` is a movement of the canonical state whose body (`follow_pulse`: face the target, never finish) runs right after the walking call that reached it |
@@ -418,8 +419,9 @@ BankerNPC's prototype construction, `DialogueOpenEvent` and
 are dropped without being offered),
 `CombatPulse.stop` before an interaction, `Commands.define`,
 `ComponentPlugin.open`, `Discord.postPlayerAlert`, entity tick event hooks,
-`Entity.hook(UsedWith)`/`unhook` of DarkZone, the equip listeners' `removeWeakScripts` and
-event with no content listener, `InteractionEvent`, `PickUpEvent`, `UseWithEvent`, `ItemEquipEvent` and
+`Entity.hook(UsedWith)`/`unhook` of DarkZone, the equip InteractionEvent,
+`removeWeakScripts` and the event on EquipmentContainer's own equip
+listener path (`inner.rs`), `InteractionEvent`, `PickUpEvent`, `UseWithEvent`, `ItemEquipEvent` and
 `ItemUnequipEvent` dispatch, `FamiliarManager.login`, `FriendsListInterface.open`,
 `GameWorld.loginListeners`, `GameWorld.logoutListeners`, `GameWorld.tickListeners` other
 than GraveController and Shops,
@@ -494,7 +496,8 @@ scenery replacement, `playAudio` at a location, `removeItem`/`addItem`
 outside the inventory, an animation with a delay or a priority other than
 MID, force chat on a player); cooking before the tutorial is complete
 (CookingRewrite's tutorial island branch); a listener's walk
-to an item; `defineInteraction` scripts other than the gathering listeners' (woodcutting, mining, fishing); a destination override this
+to an item; `defineInteraction` scripts other than the gathering listeners'
+(woodcutting, mining, fishing) and the bank booth's, chest's and deposit box's; a destination override this
 world did not register), item plugins (`ItemPlugin.remove`, `canPickUp`), the guild items'
 dialogue, `EquipHandler.unequip`'s caller other than the global equipment
 tab, equipment plugins' `fireEvent`, brawling gloves, autocast clearing on a
@@ -516,14 +519,18 @@ spell book tab and varbit (Lunar spells are not ported), the random event
 content of AntiMacro's run (`RandomEvents`), and while a save is written or
 parsed every service but uids, ticks, the generator and the log; the global
 handlers' services without a binding (each `GHost` method named "global
-handler service NAME": the dialogue senders, deposit boxes and the
-collection box, quests and diaries, clans, assist sessions, bot info,
+handler service NAME": the dialogue senders (the booth's Use with
+`BANK_BOOTH_QUICK_OPEN` off reaches `DialogueInterpreter.contains` and
+`openDialogue` and stops there), the item-on-booth noting
+(`hasOption`, the note lookups, `free_slots`), the deposit box's beast of
+burden button (familiars), the collection box, quests and diaries, clans, assist sessions, bot info,
 familiars, activities, spells and special attacks, interfaces the tabs
 open other than through the tab libraries, pulse bodies other than
 FollowOptionPlugin's, the settings toggles other than retaliate and the
 special bar, item containers' other calls); talking and banking: the bank
-PIN entry interface and PIN settings, the deposit box's item rendering,
-BankInterface's help and deposit dialogues, a transfer's after callback,
+PIN entry interface and PIN settings, BankInterface's help and deposit
+dialogues, a transfer's after callback other than the deposit box's
+refresh,
 buying the secondary bank account, the Grand Exchange collection box,
 `new NPC(id)`, quest stages and the slayer gem in a dialogue DSL, the
 Lunar Isle seal, a morphing NPC's shown NPC, random event and holiday NPC
@@ -536,10 +543,9 @@ listeners; trade: `AssistSession.open`, the money-doubling bots;
 consumables: `Player.sendChat`, the Trouble Brewing rum's pulses and
 teleport, diary tasks, queued scripts other than the dose message; scenery:
 the hardcoded constructed scenery of `processSceneryAction`, varbit- and
-varp-configured scenery (morphs) and their debug lookup, the bank booths'
-`defineInteraction` scripts (interaction scripts in the player's script
-queue) and the bank chest and deposit box listeners (the global handlers'
-scenery lambdas are refused by name where they are invoked), scenery option handlers that are not global handlers (doors and other
+varp-configured scenery (morphs) and their debug lookup, the
+InteractionEvent of a scenery option, `ZoneMonitor.interact` with scenery
+inside a region zone, scenery option handlers that are not global handlers (doors and other
 content, CowMilkingPlugin, FurnaceOptionPlugin and SmithingPlugin's aside); the use-with MovementPulse to a ground item, a UseWithHandler's
 MovementPulse with a `getDestination` override and item-on-item Pulse (no such handler class is installed),
 the dialogue plugins CowMilkingPlugin opens (3807 without a bucket or a pail, 70099 for "steal-cowbell"),
@@ -904,6 +910,25 @@ the client-side player and NPC update decoders):
   (95), a withdraw (155 on 762:73) brings it back, Close (184) runs the
   captured BankClose (script 571). The banker's Bank option (3) then opens
   the bank directly (`BankerNPC.attemptBank`).
+- `boothone` (two tiles east of Draynor's booth 2213 at 3091,3243, a bronze
+  dagger) uses Use-quickly (194): the interaction script walks it to a
+  cardinal neighbour and opens the bank (762); it deposits and withdraws
+  the dagger. `chestone` (two tiles west of Castle Wars' chest 4483) uses
+  the chest's Use (254): the bank opens and it deposits the dagger.
+  `depositone` (Draynor bank, a dagger and 50 coins) uses the deposit box
+  9398 (254): interface 11 with the inventory rendered under a
+  generateItems key; Deposit-1 (155 on 11:15) and Deposit-All (199) move
+  both to the bank; Close (184) runs the box's close event (the default
+  tabs, 149, again); the booth then shows both in the bank. The box's
+  title (11:12) is asserted, each deposit's redraw is a new generateItems
+  key without the deposited item, and Deposit-X (234, 20 coins) redraws
+  through its after body. `bankrefusals`: an ultimate ironman gets "You
+  can't do that as an Ironman." at the booth, the box and the chest and
+  none opens; a character with an active bank PIN gets its bank, as
+  `BankContainer.open` skips the PIN in a development world and the test
+  world has `dev = true` (the PIN entry refusal is not reached by the
+  test); a player who walks away before reaching the booth
+  gets no bank; Report Abuse (751:27) does not open 553.
 - `shopone` (Lumbridge's general store, 100 coins, a bronze dagger) uses
   Trade on the shop keeper (520): Shops' NPC listener and destination
   override, `Shop.openFor` (620 with the side tab 621, the title text).
@@ -1050,12 +1075,7 @@ stand-ins); this test checks the production binding end to end.
   `GraveController.hasGraveAt`, ContentAPI `registerHintIcon`/
   `clearHintIcon`, `Player.toggleDebug`, `SystemConfig.validLogin` and
   `Projectile.copy` for the metal dragons' breath.
-- Left of the install round's first two items: the bank booths
-  (`defineInteraction` scripts: the interaction script of the player's
-  script queue with its distance, line-of-sight and face services), bank
-  chests and deposit boxes (their scenery listener lambdas; the walk to
-  scenery for a content listener is joined; the deposit box's item
-  rendering), the bank PIN (the entry interface and the
+- Left of the install round's first two items: the bank PIN (the entry interface and the
   PIN settings; a character with a PIN cannot open its bank here), the
   secondary bank purchase, assist sessions (`world::player_managers`'
   AssistSession), the global handlers' dialogue services, and ForceMovement
@@ -1080,6 +1100,28 @@ stand-ins); this test checks the production binding end to end.
   classes), `player_walk::World::listener_motion` (a constructor wrapper),
   ContentAPI `sendMessage`'s 86-unit split as used by shops, trade and
   consumables, and `Entity.setDirection` for an NPC.
+- The bank booths, chests and deposit boxes (banks.rs) have no corpus of
+  the live binding: the libraries are interaction-listeners-oracle,
+  scripts-oracle/script-runtime-oracle, global-handlers-oracle,
+  bank-oracle, input-prompt-oracle and grand-exchange-oracle (whose
+  `generateItems` answers through its Host over the live frames). Written here from
+  the pinned sources without a differential corpus: `Repository.findNPC
+  (location)` (through the live `RegionManager.getRegionChunk`), `checkLunarIsleRestriction` for a scenery node (the region
+  test; the seal of passage is refused), `IronmanManager.checkRestriction`
+  through the canonical manager, ContentAPI `runWorldTask`, the deposit
+  box's stateless close event and BankUtils' refresh lambda. One known
+  difference: the deposit box's
+  onOpen title runs after `interfaceManager.open` has sent its frames
+  rather than at `runOpen` inside it (nothing runs in between).
+- `Repository.findNPC(location)` fails on a null entry in the region
+  chunk's NPC list, as Kotlin's `n.location` does.
+- The bank PIN refusal is exercised by its own test world: the shared
+  live_world world has `dev = true` (`BankContainer.open` skips the PIN in
+  development mode, so a PIN holder gets the bank there), and
+  `live_world_bank_booth_refuses_a_pin_holder_outside_development_mode`
+  boots a copy of the template with `dev = false`, where a PIN holder at the
+  booth gets no bank (the PIN entry interface is refused) and a character
+  without a PIN does.
 - The per-player or per-world libraries behind other buttons and options:
   gathering listeners, quests and diaries, clans; content listeners and
   doors.

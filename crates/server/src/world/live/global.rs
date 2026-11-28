@@ -435,7 +435,15 @@ impl gh::Host for GHost<'_> {
         refuse("close_tab_interface")
     }
     fn open(&mut self, player: &Self::Node, id: i32) -> Result<bool> {
-        refuse("open")
+        // interfaceManager.open(Component(id)) (super::banks): only the
+        // deposit box (11), whose close event is bound; the report screen
+        // (553, MainGameInterface.openReport) and its ReportClose event are
+        // not.
+        if id != 11 {
+            return refuse("open");
+        }
+        let p = self.player(player)?;
+        self.live.deposit_open(&p, id).map_err(bind)
     }
     fn set_close_event(
         &mut self,
@@ -443,7 +451,13 @@ impl gh::Host for GHost<'_> {
         id: i32,
         event: Task<Self::Node, Self::Clan>,
     ) -> Result<()> {
-        refuse("set_close_event")
+        // BankDepositBoxListener's close event (super::banks); no other
+        // installed body sets one.
+        let p = self.player(player)?;
+        match event {
+            Task::DepositBoxClose => self.live.deposit_close_event(&p, id).map_err(bind),
+            _ => refuse("set_close_event"),
+        }
     }
     fn opened(&mut self, player: &Self::Node) -> Result<bool> {
         refuse("opened")
@@ -455,10 +469,12 @@ impl gh::Host for GHost<'_> {
         refuse("close_single_tab")
     }
     fn remove_tabs(&mut self, player: &Self::Node, tabs: &[i32]) -> Result<()> {
-        refuse("remove_tabs")
+        let p = self.player(player)?;
+        self.live.deposit_remove_tabs(&p, tabs).map_err(bind)
     }
     fn open_default_tabs(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("open_default_tabs")
+        let p = self.player(player)?;
+        self.live.deposit_default_tabs(&p).map_err(bind)
     }
     fn open_tab(&mut self, player: &Self::Node, slot: i32, id: i32) -> Result<()> {
         refuse("open_tab")
@@ -525,7 +541,32 @@ impl gh::Host for GHost<'_> {
         y: i32,
         key: Option<i32>,
     ) -> Result<()> {
-        refuse("generate_items")
+        // InterfaceContainer.generateItems (super::banks); the overloads
+        // with a key are not reached by an installed body.
+        if key.is_some() {
+            return refuse("generate_items with a key");
+        }
+        let p = self.player(player)?;
+        let items = items
+            .into_iter()
+            .map(|item| match item {
+                None => Ok(None),
+                Some(GNode::Item(item)) => Ok(Some(item)),
+                Some(_) => Err(Error::Null),
+            })
+            .collect::<Result<Vec<_>>>()?;
+        super::banks::generate_items(
+            &mut self.live.inner,
+            &p,
+            &items,
+            options,
+            iface,
+            child,
+            x,
+            y,
+        )
+        .map(|_| ())
+        .map_err(bind)
     }
     fn update_scene_graph(&mut self, player: &Self::Node, login: bool) -> Result<()> {
         refuse("update_scene_graph")
@@ -604,6 +645,8 @@ impl gh::Host for GHost<'_> {
                 "content.global.handlers.iface.tabs.CombatTabInterface$handle$2"
             }
             Task::Climb { .. } => "core.game.global.action.ClimbActionHandler$climb$1",
+            // BankDepositBoxInterface's deposit, submitted by runWorldTask.
+            Task::Deposit { .. } => "core.api.ContentAPIKt$runWorldTask$pulse$1",
             _ => "content.global.handlers (a deferred body)",
         };
         let handle = Shared::new(pulses::Pulse::new(
@@ -638,7 +681,9 @@ impl gh::Host for GHost<'_> {
         self.submit(delay, &[entity], body)
     }
     fn run_world_task(&mut self, body: Task<Self::Node, Self::Clan>) -> Result<()> {
-        refuse("run_world_task")
+        // ContentAPI.runWorldTask: a world pulse of delay 1 whose body runs
+        // the task and ends.
+        self.submit(1, &[], body)
     }
     fn input_dialogue(
         &mut self,
@@ -870,7 +915,9 @@ impl gh::Host for GHost<'_> {
             .special_toggled)
     }
     fn check_restriction(&mut self, player: &Self::Node, mode: IronmanMode) -> Result<bool> {
-        refuse("check_restriction")
+        // player.ironmanManager.checkRestriction(mode) (super::banks).
+        let p = self.player(player)?;
+        self.live.ironman_check(&p, mode).map_err(bind)
     }
     fn is_skulled(&mut self, player: &Self::Node) -> Result<bool> {
         refuse("is_skulled")
@@ -1025,7 +1072,7 @@ impl gh::Host for GHost<'_> {
         refuse("death_containers")
     }
     fn get(&mut self, container: &Self::Container, slot: i32) -> Result<Option<Self::Node>> {
-        refuse("get")
+        Ok(container.get(slot).map(GNode::Item))
     }
     fn get_new_id(&mut self, container: &Self::Container, slot: i32) -> Result<i32> {
         // container.getNew(slot).getId().
@@ -1045,10 +1092,18 @@ impl gh::Host for GHost<'_> {
         refuse("is_empty")
     }
     fn to_array(&mut self, container: &Self::Container) -> Result<Vec<Option<Self::Node>>> {
-        refuse("to_array")
+        Ok(container
+            .items()
+            .read()
+            .iter()
+            .map(|item| item.clone().map(GNode::Item))
+            .collect())
     }
     fn get_amount(&mut self, container: &Self::Container, item: &Self::Node) -> Result<i32> {
-        refuse("get_amount")
+        let GNode::Item(item) = item else {
+            return Err(Error::Null);
+        };
+        Ok(container.amount(Some(item)))
     }
     fn refresh(&mut self, container: &Self::Container) -> Result<()> {
         refuse("refresh")
@@ -1089,7 +1144,10 @@ impl gh::Host for GHost<'_> {
         refuse("operate_handle")
     }
     fn examine(&mut self, item: &Self::Node) -> Result<Option<String>> {
-        refuse("examine")
+        let GNode::Item(item) = item else {
+            return refuse("examine of a node that is not an item");
+        };
+        self.live.item_examine_of(item).map_err(bind)
     }
     fn inventory_options(&mut self, item: &Self::Node) -> Result<Option<Vec<Option<String>>>> {
         refuse("inventory_options")
@@ -1145,10 +1203,12 @@ impl gh::Host for GHost<'_> {
         refuse("open_deposit_box")
     }
     fn bank_add_item(&mut self, player: &Self::Node, slot: i32, amount: i32) -> Result<()> {
-        refuse("bank_add_item")
+        let p = self.player(player)?;
+        self.live.deposit_add(&p, slot, amount).map_err(bind)
     }
     fn refresh_deposit_box(&mut self, player: &Self::Node) -> Result<()> {
-        refuse("refresh_deposit_box")
+        let p = self.player(player)?;
+        self.live.deposit_refresh(&p).map_err(bind)
     }
     fn transfer_x(
         &mut self,
@@ -1157,16 +1217,43 @@ impl gh::Host for GHost<'_> {
         withdraw: bool,
         after: Option<Task<Self::Node, Self::Clan>>,
     ) -> Result<()> {
-        refuse("transfer_x")
+        // BankUtils.transferX (world::input_prompt); the deposit box's
+        // after body refreshes it (super::banks::DepositRefresh).
+        let p = self.player(player)?;
+        let after = match after {
+            None => None,
+            Some(Task::RefreshDepositBox { player: target }) => {
+                let target = self.player(&target)?;
+                Some(crate::world::component_objects::Plugin::new(
+                    super::banks::DepositRefresh(target.0),
+                ))
+            }
+            Some(_) => return refuse("transfer_x with an after body other than the deposit box's"),
+        };
+        self.live
+            .transfer_x_after(&p, slot, withdraw, after)
+            .map_err(bind)
     }
     fn dump_beast_of_burden(&mut self, player: &Self::Node) -> Result<()> {
         refuse("dump_beast_of_burden")
     }
     fn lunar_restriction(&mut self, player: &Self::Node, node: &Self::Node) -> Result<bool> {
-        refuse("lunar_restriction")
+        // BankerNPC.checkLunarIsleRestriction(player, node): the node's
+        // region first; inside the Lunar Isle bank's region the seal of
+        // passage is Lunar Isle content (refused).
+        let _ = player;
+        let location = self.location(node)?.ok_or(Error::Null)?;
+        if crate::world::npc_classes::region_id(location)
+            != crate::world::npc_classes::banker::LUNAR_ISLE_BANK_REGION
+        {
+            return Ok(false);
+        }
+        refuse("hasSealOfPassage (Lunar Isle content)")
     }
     fn find_npc(&mut self, location: [i32; 3]) -> Result<Option<Self::Node>> {
-        refuse("find_npc")
+        // Repository.findNPC(l) (super::banks).
+        let found = self.live.find_npc_at(location).map_err(bind)?;
+        Ok(found.map(|n| GNode::Entity(P(n))))
     }
     fn weapon_interface(&mut self, player: &Self::Node) -> Result<Option<Extension<Self::Weapon>>> {
         let p = self.player(player)?;

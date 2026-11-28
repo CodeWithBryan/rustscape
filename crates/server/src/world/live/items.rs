@@ -1318,11 +1318,12 @@ impl listeners::Context for Ctx<'_> {
         persist: bool,
     ) -> listeners::Result<crate::scripts::RuntimeScript> {
         // Interaction(handler, distance, persist): only a handler this
-        // world runs (super::scripts); the bank booths' and every other
-        // content class's stay refused.
+        // world runs (super::scripts: the gathering listeners' and the bank
+        // booths', chests' and deposit boxes'); every other content class's
+        // stays refused.
         if !super::host::Live::script_installed(&f) {
             return lrefused(
-                "a defineInteraction script this world did not install (InteractionListener metadata other than the gathering listeners')",
+                "a defineInteraction script this world did not install (InteractionListener metadata other than the gathering listeners' and the bank scenery's)",
             );
         }
         Ok(Shared::new(crate::scripts::Script::new_in(
@@ -1382,9 +1383,10 @@ impl listeners::Context for Ctx<'_> {
         if let Some(interaction) = f.value::<crate::world::global_handlers::registry::Interaction>()
         {
             if matches!(n, Node::Scenery(_)) {
-                return lrefused(
-                    "the global handlers' scenery listeners (the bank chest and deposit box)",
-                );
+                // The global handlers' scenery functions are all
+                // defineInteraction scripts (super::banks), never `on`
+                // listeners invoked here.
+                return lrefused("a global handler scenery function invoked as an `on` listener");
             }
             let entity = |n: &Node| match n {
                 Node::Player(h) | Node::Npc(h) => Ok(super::global::GNode::Entity(P(h.clone()))),

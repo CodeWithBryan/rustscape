@@ -183,6 +183,9 @@ pub struct Inner {
     /// The shops' tables, configuration and open-shop attributes
     /// (super::shopping).
     pub shops: super::shopping::ShopState,
+    /// `InterfaceContainer.index` (one Exchange's counter per world) and the
+    /// deposit box's waiting onOpen (super::interface_container).
+    pub interface_container: super::interface_container::InterfaceContainer,
 }
 
 pub fn native<E: std::fmt::Debug>(e: E) -> crate::world::login::Error {
@@ -470,6 +473,19 @@ impl interfaces::Context for Inner {
             if let Some(result) = self.shop_open_listener(&callback) {
                 return result.map(|_| ());
             }
+            // BankDepositBoxInterface's onOpen(11) needs the global
+            // handlers' host: it runs right after interfaceManager.open
+            // returns (super::banks).
+            if callback
+                .value::<crate::world::global_handlers::registry::Listener>()
+                .is_some_and(|l| {
+                    *l == crate::world::global_handlers::registry::Listener::DepositBoxOpen
+                })
+            {
+                let p = self.current()?;
+                self.interface_container.pending_open = Some((p, id));
+                return Ok(());
+            }
         }
         self.not_ported
             .skip("InterfaceListeners.runOpen (content interface listeners)");
@@ -513,6 +529,10 @@ impl interfaces::Context for Inner {
         // The bank's captured BankClose (super::bank) and
         // Component.setUnclosable's event (!close_c_).
         if let Some(result) = self.bank_close_event(&event) {
+            return result;
+        }
+        // BankDepositBoxListener's close event (super::banks).
+        if let Some(result) = self.deposit_box_close_event(&event) {
             return result;
         }
         if event

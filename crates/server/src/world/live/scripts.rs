@@ -15,7 +15,9 @@
 //! world as every other content body does.
 //!
 //! Installed bodies: the gathering listeners' interaction scripts and the
-//! scripts they queue ([`super::items::woodcutting`], [`super::items::mining`]). Anything else is
+//! scripts they queue ([`super::items::woodcutting`], [`super::items::mining`]),
+//! and the global handlers' bank booth, chest and deposit box scripts
+//! ([`super::banks`]). Anything else is
 //! refused by name: where `InteractionListeners.run` would make its script
 //! (`Live::script_installed`), and here.
 use super::{
@@ -380,7 +382,7 @@ impl Live {
 
     /// Whether a `defineInteraction` handler is one this world runs.
     pub fn script_installed(function: &Function) -> bool {
-        function.value::<Interaction>().is_some()
+        function.value::<Interaction>().is_some() || Self::bank_interaction(function).is_some()
     }
 
     /// A script's execution: the handler or queued lambda by identity.
@@ -402,7 +404,12 @@ impl Live {
                     Some(Interaction::Woodcutting) => self.woodcutting_script(&p, &target, stage),
                     Some(Interaction::Mining) => self.mining_script(&p, &target, stage),
                     Some(Interaction::Fishing) => self.fishing_script(&p, &target, stage),
-                    None => Err(refused("an interaction script this world did not install")),
+                    // The global handlers' bank booth, chest and deposit
+                    // box bodies (super::banks).
+                    None => match Self::bank_interaction(function) {
+                        Some(bank) => self.bank_script(&p, bank, &target, stage),
+                        None => Err(refused("an interaction script this world did not install")),
+                    },
                 }
             }
             Arguments::Void { stage } => match function.value::<Queued>().as_deref() {
