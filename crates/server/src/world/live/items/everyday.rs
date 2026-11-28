@@ -898,6 +898,7 @@ impl super::super::host::Live {
         let (mut barbarian_listeners, mut barbarian_knife, mut barbarian_manager) =
             (false, false, false);
         let mut otto = false;
+        let mut firemaking = false;
         use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -916,6 +917,9 @@ impl super::super::host::Live {
             if name == super::fishing::LISTENER_CLASS {
                 // FishingListener.defineListeners (super::fishing).
                 fishing = true;
+            }
+            if name == crate::world::firemaking::LISTENER_CLASS {
+                firemaking = true;
             }
             if name == crate::world::dialogue_dsl::otto::CLASS {
                 otto = true;
@@ -981,6 +985,10 @@ impl super::super::host::Live {
         if barbarian_manager {
             // SpotManager.startup().
             self.barbarian_startup()?;
+        }
+        if firemaking {
+            // FiremakingListener.defineListeners (super::firemaking).
+            self.define_firemaking_listener()?;
         }
         if otto {
             // OttoGodblessedDialogue.defineListeners (super::otto).
@@ -1067,6 +1075,12 @@ impl super::super::host::Live {
         }
         if f.value::<crate::world::cooking::Interaction>().is_some() {
             return Some(self.cooking_use(player, used, with));
+        }
+        if f.value::<super::firemaking::TinderboxOnLogs>().is_some() {
+            return Some(self.firemaking_use(player, None, with).map_err(bind));
+        }
+        if f.value::<super::firemaking::BowOnLogs>().is_some() {
+            return Some(self.firemaking_use(player, Some(used), with).map_err(bind));
         }
         if f.value::<super::barbarian::KnifeWithFish>().is_some() {
             // KnifeWithFish: `fish.id` of the node the knife was used with.

@@ -1135,7 +1135,9 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   (FishingNPC and FishSpots: gathering/fishing_npc.rs, run live by
   world/live/fishing_spots.rs) and barbarian fishing
   (gathering/barbarian.rs, run live by world/live/items/barbarian.rs)
-  are ported without a corpus, as is Otto Godblessed's barbarian
+  are ported without a corpus, as are firemaking (world/firemaking.rs,
+  run live by world/live/items/firemaking.rs for inventory logs only;
+  docs/firemaking.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the

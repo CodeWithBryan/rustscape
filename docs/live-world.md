@@ -1013,8 +1013,7 @@ stand-ins); this test checks the production binding end to end.
   a JVM corpus, docs/smelting.md and docs/smithing.md), the
   enchanted-tablet and ectophial use-withs of `world::global_items`, and
   everything not ported at all: the rest of the cooking package (recipes,
-  dough, dairy, fermenting, the tutorial branch; docs/cooking.md), fires lit
-  by firemaking,
+  dough, dairy, fermenting, the tutorial branch; docs/cooking.md),
   the other furnace uses (AmmoMouldOnFurnace, jewellery and silver
   crafting), the shield and godsword dialogues of the anvils, the rest of `withobject`
   (CauldronOfThunder, DragonPlatebody,
@@ -1036,7 +1035,11 @@ stand-ins); this test checks the production binding end to end.
   Guthix gloves' charges are skipped, barehand fishing's Fremennik diary
   task is joined (Otto's conversation sets the training attribute
   barehand fishing needs; no live check catches a fish barehanded), and
-  the legacy `FishingPulse` is not installed. Barbarian fishing is installed (`items/barbarian.rs`, no
+  the legacy `FishingPulse` is not installed. Firemaking is installed
+  for logs in the inventory (`items/firemaking.rs`, no JVM corpus,
+  docs/firemaking.md): a tinderbox or a bow used with logs lights a fire
+  that burns out into ashes; the ground item registrations are not
+  installed and `LitFireEvent` is skipped. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
   content tick listener, and "use-rod", the bed's "search" and the knife

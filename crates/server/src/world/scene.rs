@@ -343,6 +343,13 @@ impl<A: Assets> Scene<A> {
     pub fn retained_task_count(&self) -> usize {
         self.tasks.len()
     }
+    /// `Node.isActive()` of a scenery node one of this scene's pulses
+    /// checks, for a runner that is not the scene's own.
+    pub fn checked_active(&self, n: usize) -> Option<bool> {
+        self.checks
+            .get(&n)
+            .map(|h| h.upgrade().is_some_and(|h| h.read().active))
+    }
     pub fn owns_pulse(&self, p: &pulses::Handle) -> bool {
         self.tasks
             .get(&p.identity())

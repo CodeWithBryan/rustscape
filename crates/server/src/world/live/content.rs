@@ -80,6 +80,8 @@ impl Live {
     pub fn content_tick_listeners(&mut self) -> Result<(), String> {
         // SpotManager (super::items::barbarian).
         self.barbarian_tick();
+        // The ashes of the fires that went out (super::items::firemaking).
+        self.firemaking_tick()?;
         self.graves_tick()
             .map_err(|e| format!("GraveController.tick: {e:?}"))?;
         Ok(())

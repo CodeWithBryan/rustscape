@@ -81,6 +81,9 @@ pub struct Walk {
 #[derive(Default)]
 pub struct Maps {
     pub players: BTreeSet<Node>,
+    /// The ground item tokens the scenery pulses handed back (a fire's
+    /// ashes, super::items::firemaking).
+    pub ash_due: Vec<usize>,
 }
 macro_rules! unbound {
     ($name:ident($($arg:ident:$ty:ty),* $(,)?) -> $ret:ty) => {
@@ -110,7 +113,12 @@ impl scene::Services<CacheAssets> for Maps {
             _task: i32,
         ) -> ()
     );
-    unbound!(ground_create(_scene: &mut Map, _item: Option<usize>) -> ());
+    fn ground_create(&mut self, _scene: &mut Map, item: Option<usize>) -> scene::Result<()> {
+        // The expiring scenery's ground items are tokens of the binding
+        // that added it (super::items::firemaking creates them).
+        self.ash_due.extend(item);
+        Ok(())
+    }
     unbound!(pulse(_scene: &mut Map, _pulse: &pulses::Handle) -> bool);
     unbound!(stop(_scene: &mut Map, _pulse: &pulses::Handle) -> ());
     fn now_millis(&mut self) -> i64 {
