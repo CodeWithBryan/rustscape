@@ -18,7 +18,7 @@
 //! Roof removal: a tile is walked only when `roof_render` draws it this frame
 //! (`ScriptRunner.roofVisibility` through `SceneGraph.setShapedTile`), so
 //! nothing on a removed roof is offered and every level left standing is.
-use crate::{PlayerPick, Workbench, scene_camera::SceneCamera};
+use crate::{NpcActor, PlayerPick, Workbench, scene_camera::SceneCamera};
 use macroquad::prelude::*;
 use rs09_client::{
     entity_menu,
@@ -129,6 +129,40 @@ pub(crate) struct Picker {
     /// What the last replay for drawing was made for, and its result.
     verdict_key: Option<[u64; 2]>,
     verdict: crate::scene_cull::Verdict,
+}
+
+/// Whether an NPC of the frame's list goes into the pick scene: it needs a
+/// model and the triangles of a drawn pose.
+fn npc_enters_pick(npc: &NpcActor) -> bool {
+    !npc.pick_triangles.is_empty() && npc.render_id.is_some()
+}
+
+/// `--pick-probe`'s row for each NPC of the frame's list, as the pick sees it.
+#[cfg(not(target_arch = "wasm32"))]
+fn npc_rows(world: &Workbench) -> Vec<serde_json::Value> {
+    npc_rows_named(&world.npcs, |id| {
+        world.npc_definitions.get(&id).map(|d| d.name.as_str())
+    })
+}
+
+/// [`npc_rows`] with each NPC's name from `name`.
+#[cfg(not(target_arch = "wasm32"))]
+fn npc_rows_named<'a>(
+    npcs: &[NpcActor],
+    name: impl Fn(u32) -> Option<&'a str>,
+) -> Vec<serde_json::Value> {
+    npcs.iter()
+        .map(|npc| {
+            serde_json::json!({
+                "index": npc.index,
+                "id": npc.id,
+                "name": name(npc.id),
+                "render_id": npc.render_id,
+                "pick_triangles": npc.pick_triangles.len(),
+                "enters_pick": npc_enters_pick(npc),
+            })
+        })
+        .collect()
 }
 
 fn fine(world: f32, origin: i32) -> i32 {
@@ -788,7 +822,7 @@ impl Picker {
                 else {
                     continue;
                 };
-                if npc.pick_triangles.is_empty() || npc.render_id.is_none() {
+                if !npc_enters_pick(npc) {
                     continue;
                 }
                 let size = world.npc_definitions.get(&npc.id).map_or(1, |d| d.size);
@@ -947,9 +981,29 @@ impl Picker {
     }
 }
 
+/// Of the points that hit an actor, the one nearest their mean: well inside
+/// its picked shape, where a moving actor is still found a moment later.
+#[cfg(not(target_arch = "wasm32"))]
+fn middle(points: &[[i32; 2]]) -> Option<[i32; 2]> {
+    let n = points.len() as i64;
+    let sum = points.iter().fold([0i64; 2], |s, p| {
+        [s[0] + i64::from(p[0]), s[1] + i64::from(p[1])]
+    });
+    let mean = [sum[0] / n.max(1), sum[1] / n.max(1)];
+    points.iter().copied().min_by_key(|p| {
+        let d = [i64::from(p[0]) - mean[0], i64::from(p[1]) - mean[1]];
+        d[0] * d[0] + d[1] * d[1]
+    })
+}
+
 /// `--pick-probe`: what a mouse at each point of a grid over the view would
 /// pick, as if the local player stood on each level in turn. Written with a
 /// capture so a run can show which locations are offered where.
+///
+/// `build_menu` calls it right after the frame's mouse pick with that pick's
+/// sources, camera and rectangle, so it answers what a click would get. The
+/// redraw that follows replaces the actors' pick meshes; a probe taken there
+/// once offered live NPCs that no click could reach.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn probe(
     picker: &mut Picker,
@@ -967,6 +1021,9 @@ pub(crate) fn probe(
         let (mut points, mut walkable, mut deepest) = (0, 0, 0);
         let mut found = std::collections::BTreeMap::new();
         let mut actors = std::collections::BTreeMap::<u64, [i32; 4]>::new();
+        // The grid points that hit each actor: points a mouse can be put
+        // on to point at it (the area's corners may miss it).
+        let mut hits = std::collections::BTreeMap::<u64, Vec<[i32; 2]>>::new();
         let mut samples = Vec::new();
         let mut y = rect[1] + 4.0;
         while y < rect[1] + rect[3] {
@@ -980,6 +1037,7 @@ pub(crate) fn probe(
                 points += 1;
                 walkable += usize::from(steps.iter().any(|s| s.walk().flatten().is_some()));
                 for key in steps.iter().flat_map(Step::actor_keys) {
+                    hits.entry(key).or_default().push([x as i32, y as i32]);
                     let area = actors.entry(key).or_insert([i32::MAX, i32::MAX, 0, 0]);
                     *area = [
                         area[0].min(x as i32),
@@ -1026,6 +1084,8 @@ pub(crate) fn probe(
             })).collect::<Vec<_>>(),
             "actors": actors.iter().map(|(key, area)| serde_json::json!({
                 "npc": key >> 29 & 3 == 1, "index": key >> 32, "pixels": area,
+                "first_pixel": hits.get(key).and_then(|h| h.first()),
+                "middle_pixel": hits.get(key).and_then(|h| middle(h)),
             })).collect::<Vec<_>>(),
             "samples": samples,
         }));
@@ -1040,7 +1100,66 @@ pub(crate) fn probe(
             "replay_for_drawing_microseconds": replay,
         },
         "drawing": world.roofs.summary(world),
-        "scope": "World picks only: the menu lists are the location entries MiniMenu.addEntries would add for the picked keys, top entry first, without walk, actor or interface entries. Roof removal is the frame's own (the real player level's), whatever level is probed.",
+        "npcs": npc_rows(world),
+        "scope": "Taken in the frame's menu build right after its mouse pick, from the same inputs. World picks only; npcs is the frame's NPC list as that pick sees it. The menu lists are the location entries MiniMenu.addEntries would add for the picked keys, top entry first, without walk, actor or interface entries. Roof removal is the frame's own (the real player level's), whatever level is probed.",
         "levels": levels,
     })
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests {
+    use super::*;
+
+    /// An NPC at the frame's mouse pick as the live rebuild before
+    /// CodeWithBryan/rustscape#11 left it: `update_npc_views` has given it a
+    /// model, but its pick triangles are empty until the draw.
+    fn rebuilt(index: usize) -> NpcActor {
+        NpcActor {
+            index,
+            id: 3,
+            render_id: Some(3),
+            motion: rs09_client::walking::Movement::new([3222, 3218]),
+            animation: None,
+            home: [3222, 3218],
+            walks: false,
+            phase: 0,
+            pick_triangles: Vec::new(),
+            model_height: 200,
+            terrain: Default::default(),
+        }
+    }
+
+    /// What `npc_meshes` does for that NPC later in the frame.
+    fn drawn(npc: &mut NpcActor) {
+        npc.pick_triangles.push([Vec3::ZERO, Vec3::X, Vec3::Z]);
+    }
+
+    /// What the probe's NPC rows must say at the pick. This does not catch
+    /// the probe moving back after the draw: when in the frame it runs rests
+    /// on the call in `build_menu`, which needs a loaded `Workbench` to test.
+    #[test]
+    fn npc_rows_at_pick_time_leave_an_undrawn_npc_out() {
+        let mut npcs = vec![rebuilt(7)];
+        // `build_menu`: the frame's mouse pick, then the probe from its inputs.
+        let at_pick = npc_rows_named(&npcs, |_| None);
+        // The redraw refills the pick mesh before the capture is written.
+        drawn(&mut npcs[0]);
+        let at_redraw = npc_rows_named(&npcs, |_| None);
+        assert_eq!(at_pick[0]["index"], 7);
+        assert_eq!(at_pick[0]["enters_pick"], false);
+        assert_eq!(at_pick[0]["pick_triangles"], 0);
+        // A probe taken at the redraw (where it used to be) would have
+        // called the NPC pickable although no click in that frame could be.
+        assert_eq!(at_redraw[0]["enters_pick"], true);
+    }
+
+    #[test]
+    fn a_drawn_npc_enters_the_pick() {
+        let mut npc = rebuilt(1);
+        assert!(!npc_enters_pick(&npc), "a model without triangles");
+        drawn(&mut npc);
+        assert!(npc_enters_pick(&npc));
+        npc.render_id = None;
+        assert!(!npc_enters_pick(&npc), "triangles without a model");
+    }
 }

@@ -93,6 +93,12 @@ or `RS09_STARTUP_WORLD`, e.g. `runs/world-trace-oracle/template`); without them
 it prints SKIPPED. On Linux the live world now writes world-relative paths
 into its configuration, because `parsePath` drops a leading `/`.
 
+## Scripted runs
+
+[test-world.md](test-world.md) runs these actions from a JSON script against
+a disposable `rs09-server --world` (the `agent_run` example), with characters
+seeded before login and waits on the view.
+
 ## Not covered
 
 - Use on an NPC, scenery or player sends the right bytes (unit tests). The

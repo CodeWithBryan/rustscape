@@ -3539,6 +3539,22 @@ fn saved_samples() -> i32 {
 fn saved_samples() -> i32 {
     4
 }
+/// The region key file: `--world-keys FILE`, else the first that exists of
+/// `runs/player-session/xteas.json` and the local-play world folder's
+/// `runs/play/world-data/data/configs/xteas.json` (docs/play-locally.md).
+#[cfg(not(target_arch = "wasm32"))]
+fn world_keys() -> String {
+    option("--world-keys").unwrap_or_else(|| {
+        let defaults = [
+            "runs/player-session/xteas.json",
+            "runs/play/world-data/data/configs/xteas.json",
+        ];
+        let found = defaults
+            .iter()
+            .find(|path| std::path::Path::new(path).is_file());
+        found.unwrap_or(&defaults[0]).to_string()
+    })
+}
 /// The starting scene from the cache alone (`--cache DIR`, else
 /// `assets/cache`), for when no prepared pack exists. Region keys come from
 /// `--world-keys`; a region whose key is not there keeps its terrain and loses
@@ -3554,7 +3570,7 @@ fn native_world_pack() -> Result<Pack, String> {
         .and_then(|lock| lock["server"]["commit"].as_str().map(str::to_owned))
         .unwrap_or_else(|| "unrecorded".into());
     let mut inputs = Inputs::default();
-    let keys = option("--world-keys").unwrap_or_else(|| "runs/player-session/xteas.json".into());
+    let keys = world_keys();
     if let Ok(bytes) = std::fs::read(&keys) {
         inputs.keys = Inputs::parse_keys(&bytes).map_err(|e| format!("{keys}: {e}"))?;
     }
@@ -3693,6 +3709,9 @@ fn click_cross_uses_four_frames_for_each_action_and_expires() {
 
 #[macroquad::main(configuration)]
 async fn main() {
+    // `--capture-npc-menu`: the window and its context exist.
+    #[cfg(not(target_arch = "wasm32"))]
+    game::npc_menu_started();
     let launch = rs09_client::launch::read().expect("live launch configuration");
     let live_mode = launch.is_some();
     let capture_realtime = std::env::args().any(|arg| arg == "--capture-realtime");
@@ -4233,7 +4252,9 @@ async fn main() {
     }
     println!("Loaded {} synthesized sound effects", sounds.len());
     let sound_index = 0;
-    let muted = false;
+    // --mute: start with music, effects and ambient sound off, as the M key
+    // does in the workbench view. A development switch: no preference changes.
+    let muted = std::env::args().any(|arg| arg == "--mute");
     let audio_played = false;
     let material = render::material(&workbench.textures, true).expect("world shader");
     let static_renderer = if std::env::args().any(|arg| arg == "--cpu-static-mesh") {
@@ -4281,8 +4302,7 @@ async fn main() {
         // no prepared pack holds: a cache named for it is streamed from.
         .or_else(|| option("--cache").filter(|_| live_mode))
         .map(|path| {
-            let keys =
-                option("--world-keys").unwrap_or_else(|| "runs/player-session/xteas.json".into());
+            let keys = world_keys();
             world_cache::WorldMap::open(path.as_ref(), keys.as_ref(), &mut workbench)
                 .unwrap_or_else(|error| panic!("Open world map: {error}"))
         });
@@ -4661,6 +4681,10 @@ async fn main() {
         at_title: false,
         viewport: None,
         captured_journey_finished: false,
+        #[cfg(not(target_arch = "wasm32"))]
+        pick_probe: None,
+        #[cfg(not(target_arch = "wasm32"))]
+        npc_menu: game::NpcMenuDriver::from_arguments(capture, live_mode),
         menu_click: Default::default(),
         walk: Default::default(),
         walk_spell: None,

@@ -21,6 +21,10 @@ mod cycle;
 mod frame;
 #[cfg(not(target_arch = "wasm32"))]
 mod inject;
+#[cfg(not(target_arch = "wasm32"))]
+mod npc_menu_capture;
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) use npc_menu_capture::{Driver as NpcMenuDriver, mark_started as npc_menu_started};
 mod packets;
 #[cfg(not(target_arch = "wasm32"))]
 mod pose_dump;
@@ -180,6 +184,13 @@ pub(super) struct Game {
     pub(super) at_title: bool,
     pub(super) viewport: Option<(Rect, Rect)>,
     pub(super) captured_journey_finished: bool,
+    /// `--pick-probe`'s result, taken by `build_menu` right after the
+    /// frame's mouse pick and written with the redraw's capture.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(super) pick_probe: Option<serde_json::Value>,
+    /// `--capture-npc-menu`'s scripted pointer (game/npc_menu_capture.rs).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(super) npc_menu: Option<npc_menu_capture::Driver>,
 
     // What ties a click to the menu a redraw built.
     /// `MiniMenu.clickProcessingState` and where the menu was built.
@@ -298,6 +309,8 @@ impl Game {
         self.world_upkeep();
         self.after_interfaces();
         self.build_menu();
+        #[cfg(not(target_arch = "wasm32"))]
+        self.npc_menu_step();
         self.end_frame();
         if !self.redraw().await {
             return false;

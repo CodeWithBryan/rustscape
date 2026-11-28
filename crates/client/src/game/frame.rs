@@ -529,7 +529,16 @@ impl Game {
         }
         // This frame's key, mouse and focus events, for the `Keyboard` and
         // `Mouse` state the logic cycles below read.
-        input_events.pump(&mut input, (miniquad::date::now() * 1000.0) as i64);
+        let now = (miniquad::date::now() * 1000.0) as i64;
+        input_events.pump(&mut input, now);
+        // `--capture-npc-menu`: its pointer, after the window's events.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(driver) = &mut self.npc_menu {
+            input_events.hold_pointer();
+            for event in driver.events() {
+                input_events.synthetic(&mut input, event, now);
+            }
+        }
         if workbench_keys && is_key_pressed(KeyCode::Escape) && !show_ui {
             return false;
         }
@@ -1280,6 +1289,16 @@ impl Game {
     }
 
     pub(super) fn build_menu(&mut self) {
+        // `--pick-probe` is taken here, from the inputs of the mouse pick
+        // below: the redraw that writes it refills the actors' pick meshes
+        // first, which the pick never sees.
+        #[cfg(not(target_arch = "wasm32"))]
+        let probe_due = (self.capture_due() && std::env::args().any(|arg| arg == "--pick-probe"))
+            || self.npc_menu.as_ref().is_some_and(|d| d.want_probe);
+        #[cfg(not(target_arch = "wasm32"))]
+        let roofs = self.roofs_frame;
+        #[cfg(not(target_arch = "wasm32"))]
+        let mut pick_probe = None;
         let workbench = &mut self.workbench;
         let mut ui = &mut self.ui;
         let ui_models = &mut self.ui_models;
@@ -1364,19 +1383,31 @@ impl Game {
                 && mouse.1 >= rect[1]
                 && mouse.0 < rect[0] + rect[2]
                 && mouse.1 < rect[1] + rect[3];
-            world_picker.pick(
-                &world_pick::Sources {
-                    world: &workbench,
-                    players: &player_picks,
-                    piles: &ground_renderer,
-                },
+            let sources = world_pick::Sources {
+                world: &workbench,
+                players: &player_picks,
+                piles: &ground_renderer,
+            };
+            let steps = world_picker.pick(
+                &sources,
                 &input_camera,
                 &world_pick::Pointer {
                     rect,
                     mouse: inside.then(|| input_camera.ray(vec2(mouse.0, mouse.1))),
                 },
                 plane,
-            )
+            );
+            #[cfg(not(target_arch = "wasm32"))]
+            if probe_due {
+                pick_probe = Some(world_pick::probe(
+                    world_picker,
+                    &sources,
+                    &input_camera,
+                    rect,
+                    roofs,
+                ));
+            }
+            steps
         };
         let spell_on_tile = ui.as_ref().is_some_and(|u| {
             u.selected_item.is_none() && u.targeting.active && u.targeting.mask & 64 != 0
@@ -1787,6 +1818,10 @@ impl Game {
         self.hover_menu = hover_menu;
         self.ui_nodes = ui_nodes;
         self.input_camera = Some(input_camera);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.pick_probe = pick_probe;
+        }
     }
 
     pub(super) fn end_frame(&mut self) {

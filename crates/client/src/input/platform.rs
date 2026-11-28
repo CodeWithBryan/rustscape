@@ -417,6 +417,25 @@ impl Events {
     /// once per rendered frame, before the frame's logic cycles. `now` is the
     /// clock clicks are stamped with, in milliseconds; all of a frame's
     /// clicks get the same value.
+    /// A capture's synthetic pointer (`--capture-npc-menu`): from now on the
+    /// system cursor is not consulted, as with `RS09_POSTED_INPUT`, so the
+    /// pointer stays where [`Events::synthetic`] put it.
+    pub fn hold_pointer(&mut self) {
+        self.posted = true;
+    }
+
+    /// A synthetic pointer event at a canvas point, handed to the same
+    /// translator a window event reaches once it is on the canvas. Call
+    /// after [`Events::pump`], with the frame's `now`.
+    pub fn synthetic(&mut self, input: &mut Input, event: Synthetic, now: i64) {
+        self.inside = Some(true);
+        match event {
+            Synthetic::Move([x, y]) => self.translator.mouse_motion(input, x, y),
+            Synthetic::Down(button, [x, y]) => self.translator.mouse_down(input, button, x, y, now),
+            Synthetic::Up(button) => self.translator.mouse_up(input, button),
+        }
+    }
+
     pub fn pump(&mut self, input: &mut Input, now: i64) {
         let scale = macroquad::miniquad::window::dpi_scale();
         let scale = if scale > 0.0 { scale } else { 1.0 };
@@ -454,6 +473,15 @@ impl Events {
             Pointer::Unknown => {}
         }
     }
+}
+
+/// A pointer event a capture makes up, at a canvas point (see
+/// [`Events::synthetic`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Synthetic {
+    Move([i32; 2]),
+    Down(MouseButton, [i32; 2]),
+    Up(MouseButton),
 }
 
 /// What the window system says about the pointer, apart from its events.

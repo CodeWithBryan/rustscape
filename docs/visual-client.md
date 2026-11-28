@@ -140,7 +140,7 @@ Connection and data:
 | `--username NAME` | With `--connect`: log in as NAME once the title is up. The password is read from the environment variable `RS09_CLIENT_PASSWORD`, which must then be set. |
 | `--world N` | The world id the client reports (default 1). |
 | `--cache DIR` | Read interfaces, definitions, models, animations, sounds, music and the world map from this JS5 cache. Where a cache is needed and none is named, `assets/cache`. |
-| `--world-keys FILE` | Region keys (JSON). Default `runs/player-session/xteas.json`. |
+| `--world-keys FILE` | Region keys (JSON). Default `runs/player-session/xteas.json`, else `runs/play/world-data/data/configs/xteas.json` (docs/play-locally.md). |
 | `--world-cache DIR` | Stream map files from this cache. On by itself when the starting scene was built from the cache. |
 | `--pack FILE` | Prepared starting-scene pack. Default `assets/visual/demo.pack`; if the file is missing the scene is built from the cache. |
 | `--ui-pack FILE` | Prepared interface pack. Default `assets/visual/ui-players.pack`. |
@@ -150,6 +150,7 @@ Connection and data:
 | `--update-original-archives` | Download only what the original prefetches; songs and Vorbis samples (archives 6 and 14) are then only verified. |
 | `--preferences PATH` | The preference file (the original's binary format). Default `%APPDATA%\rs09-client\jagex_runescape_preferences.dat`. A `.json` path names the earlier JSON file; the binary file is then its neighbour. |
 | `--no-music` | No music. |
+| `--mute` | Start with music, sound effects and ambient sound at volume 0 (the workbench view's M key toggles it). A development switch, not a preference: the saved volumes are left as they are (the file is still written at start-up, as without it). `tools/play.ps1` passes it unless `-Sound`. |
 | `--world-map-font PATH.ttf` | The typeface for world-map labels (default: bold Arial from the Windows fonts folder, then common faces elsewhere). |
 
 Window and view:
@@ -203,7 +204,8 @@ writes its files and exits; it reads no preferences and plays no music):
 | `--portrait` | A close view of the player playing the wave. |
 | `--capture-route`, `--capture-route-run`, `--capture-route-target X,Y` | Walk (or run) to a tile during the capture. |
 | `--capture-travel FILE` | Live capture: follow a recorded route. |
-| `--pick-probe` | Also write `pick-state.json`: what the picking offers across the view. |
+| `--pick-probe` | Also write `pick-state.json`: what the picking offers across the view, taken right after the frame's mouse pick from its inputs (before the draw refills the actors' pick meshes), with each NPC's entry as that pick sees it. |
+| `--capture-npc-menu NAME` | Live capture only: a scripted pointer for `cargo xtask client-smoke` ([client-smoke.md](client-smoke.md)). It clicks the welcome screen's Play, takes the pick probe when an NPC named NAME is in the frame's NPC list, moves the mouse onto it, right-clicks, chooses Attack, waits for combat experience and ends the capture. Its events enter the input translator as window events on the canvas would; it writes `npc-menu-capture.json` (each stage as it ends) and `pick-state.json`. |
 
 Environment variables: `RS09_CLIENT_PASSWORD` (above). With
 `RS09_FRAME_DUMP=DIR` set, creating a file named `take` in that folder makes

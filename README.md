@@ -8,6 +8,9 @@ full gameplay/content parity remain in progress.
 
 The existing project in the parent folder is independent.
 
+To play the native live world locally with the visual client in one command
+(`pwsh tools/play.ps1`), see [docs/play-locally.md](docs/play-locally.md).
+
 ## Behavioral reference
 
 [upstream.lock.json](upstream.lock.json) pins both repositories:

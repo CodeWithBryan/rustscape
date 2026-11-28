@@ -19,6 +19,18 @@ pub struct SceneryAction {
     pub id: i32,
     pub tile: [i32; 2],
 }
+/// The world refused the login with this reply code (the error inside the
+/// `io::Error` of [`Session::connect`]; 5 is "already logged in").
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LoginRejected {
+    pub code: u8,
+}
+impl std::fmt::Display for LoginRejected {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "world login rejected: code {}", self.code)
+    }
+}
+impl std::error::Error for LoginRejected {}
 pub struct Session {
     metadata: WorldLogin,
     reader: Reader,
@@ -53,10 +65,7 @@ impl Session {
             )
             .await?;
         if reply.code != 2 {
-            return Err(io::Error::other(format!(
-                "world login rejected: code {}",
-                reply.code
-            )));
+            return Err(io::Error::other(LoginRejected { code: reply.code }));
         }
         let metadata = reply
             .world
