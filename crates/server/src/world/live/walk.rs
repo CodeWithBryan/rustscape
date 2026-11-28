@@ -667,6 +667,7 @@ impl player_walk::Services for WalkHost<'_> {
                 // source registers: null (docs/smelting.md).
                 super::scenery::SceneryPlugin::Furnace => return Ok(None),
                 super::scenery::SceneryPlugin::Anvil => return Ok(None),
+                super::scenery::SceneryPlugin::Stall => return Ok(None),
             };
             let mut geometry = super::destination::Geometry {
                 walk: &mut *self.walk,

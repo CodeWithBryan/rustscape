@@ -4310,6 +4310,88 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     thief.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+    stall_part(address, &players).await;
+}
+
+/// The stall part of the gather scenario.
+async fn stall_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, n)| *n)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    // ThievingOptionPlugin and StallThiefPulse: the Varrock tea stall's
+    // "Steal-from" option. The third tick of the pulse hands over a cup of
+    // tea and 16 experience and replaces the stall with its empty id for
+    // twelve ticks; no guard 32 or 2236 stands within eight tiles.
+    let stall = [3269, 3410];
+    let start = [stall[0] - 1, stall[1] - 1, 0];
+    write_save_with(players, "traceone", "stallman", start, &[], |save| {
+        save["skills"][17]["static"] = Value::String("40".into());
+        save["skills"][17]["dynamic"] = Value::String("40".into());
+        // The experience stays 0: this character has not finished the
+        // tutorial, which caps a skill's experience at 175.
+    });
+    let (code, thief) = Client::login(address, "stallman").await;
+    assert_eq!(code, 2, "stallman's login");
+    let mut thief = thief.unwrap();
+    thief
+        .until(Duration::from_secs(10), "stallman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let before = thief.skills.get(&17).map(|s| s.1);
+    let from = thief.messages.len();
+    thief.send(scenery_option2(635, stall[0], stall[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(15), "the attempt's message", |c| {
+            said(c, from, "You attempt to steal some tea from the tea stall")
+        })
+        .await;
+    thief
+        .until_pinging(Duration::from_secs(10), "a cup of tea", |c| {
+            amount(c, 712) == 1 && said(c, from, "You steal a cup of tea from the tea stall.")
+        })
+        .await;
+    thief.pump(Duration::from_secs(1)).await;
+    let after = thief.skills.get(&17).map(|s| s.1);
+    assert_eq!(
+        after.zip(before).map(|(a, b)| a - b),
+        Some(16),
+        "stallman's thieving experience"
+    );
+    // The stall is its empty id now: the full id is no longer on the tile,
+    // so a second click finds nothing until it is restored.
+    let from = thief.messages.len();
+    thief.send(scenery_option2(635, stall[0], stall[1])).await;
+    thief.pump(Duration::from_secs(3)).await;
+    assert!(
+        !said(&thief, from, "You attempt to steal"),
+        "the emptied stall was stolen from"
+    );
+    // Twelve ticks after the theft the stall is back.
+    thief.pump(Duration::from_secs(6)).await;
+    let from = thief.messages.len();
+    thief.send(scenery_option2(635, stall[0], stall[1])).await;
+    thief
+        .until_pinging(Duration::from_secs(10), "a second cup of tea", |c| {
+            amount(c, 712) == 2 && said(c, from, "You steal a cup of tea from the tea stall.")
+        })
+        .await;
+    eprintln!(
+        "stallman stole two cups of tea from the Varrock tea stall, with the stall empty in between"
+    );
+    thief.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

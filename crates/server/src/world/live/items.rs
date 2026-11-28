@@ -59,6 +59,7 @@ pub mod pickpocket;
 mod slots;
 pub mod smelting;
 pub mod smithing;
+pub mod stalls;
 pub mod use_with;
 pub mod withnpc;
 pub mod withobject;

@@ -1159,8 +1159,13 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   pickpocketing (world/thieving_pickpocket.rs, run live by
   world/live/items/pickpocket.rs; replayed against the JVM corpus
   fixtures/thieving from oracle/thieving, the live binding is not; the
-  treasure trail manager and SkillcapePerks are not ported, and stalls,
-  chests and doors are not ported; docs/thieving-pickpocket.md) and Otto Godblessed's barbarian
+  treasure trail manager and SkillcapePerks are not ported;
+  docs/thieving-pickpocket.md), market stalls (world/thieving_stall.rs,
+  run live by world/live/items/stalls.rs; replayed against the JVM
+  corpus fixtures/thieving-stalls from oracle/thieving-stalls, the live
+  binding is not; the Rellekka fur and fish stalls always refuse because
+  no quest is ported, and chests and doors are not ported;
+  docs/thieving-stalls.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the

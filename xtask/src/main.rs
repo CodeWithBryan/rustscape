@@ -212,6 +212,7 @@ fn main() -> Result<()> {
         Some("gathering-oracle") => profile_oracle::generate(root, &args, "gathering")?,
         Some("fletching-oracle") => profile_oracle::generate(root, &args, "fletching")?,
         Some("thieving-oracle") => profile_oracle::generate(root, &args, "thieving")?,
+        Some("thieving-stalls-oracle") => profile_oracle::generate(root, &args, "thieving-stalls")?,
         Some("scenery-oracle") => profile_oracle::generate(root, &args, "scenery")?,
         Some("clipping-oracle") => profile_oracle::generate(root, &args, "clipping")?,
         Some("chunk-oracle") => profile_oracle::generate(root, &args, "chunk")?,
