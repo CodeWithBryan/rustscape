@@ -79,6 +79,9 @@ pub struct Round {
     pub herblore_tools: super::items::herblore_tools::ToolsWorld,
     /// GemCutPulse and ChiselLimestonePulse (super::items::crafting_tools).
     pub crafting_tools: super::items::crafting_tools::CraftingToolsWorld,
+    /// The battlestaff task and the two glass pulses
+    /// (super::items::crafting_wares).
+    pub crafting_wares: super::items::crafting_wares::CraftingWaresWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).

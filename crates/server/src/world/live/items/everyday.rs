@@ -906,6 +906,7 @@ impl super::super::host::Live {
         let mut potion_mixing = false;
         let mut barbarian_mix = false;
         let mut silver_stringing = false;
+        let (mut battlestaff, mut glass, mut glass_make) = (false, false, false);
         let mut log_fletching = false;
         let (mut stringing, mut arrows) = (false, false);
         let mut ammo = Vec::new();
@@ -955,6 +956,15 @@ impl super::super::host::Live {
             }
             if name == crate::world::crafting_tools::SILVER_CLASS {
                 silver_stringing = true;
+            }
+            if name == crate::world::crafting_wares::BATTLESTAFF_CLASS {
+                battlestaff = true;
+            }
+            if name == crate::world::crafting_wares::GLASS_CLASS {
+                glass = true;
+            }
+            if name == crate::world::crafting_wares::GLASS_MAKE_CLASS {
+                glass_make = true;
             }
             if name == crate::world::herblore_tools::MIX_CLASS {
                 barbarian_mix = true;
@@ -1065,6 +1075,18 @@ impl super::super::host::Live {
             // Bolt, Dart, Limbing, GemBolt and Grapple listeners
             // (super::fletching_ammo).
             self.define_fletching_ammo_listeners(class)?;
+        }
+        // BattlestaffListener, GlassCraftingListener and GlassMakeListener
+        // (super::crafting_wares): scanned in this order, before
+        // SilverStringingListener.
+        if battlestaff {
+            self.define_battlestaff_listener()?;
+        }
+        if glass {
+            self.define_glass_listener()?;
+        }
+        if glass_make {
+            self.define_glass_make_listener()?;
         }
         if silver_stringing {
             // SilverStringingListener.defineListeners
@@ -1206,6 +1228,9 @@ impl super::super::host::Live {
             .is_some()
         {
             return Some(self.silver_stringing_use(player, used, with).map_err(bind));
+        }
+        if let Some(result) = self.crafting_ware_use(f, player, used, with) {
+            return Some(result.map_err(bind));
         }
         if f.value::<super::herblore_tools::Mix>().is_some() {
             return Some(self.barbarian_mix_use(player, used, with).map_err(bind));

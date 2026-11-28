@@ -112,6 +112,10 @@ impl Live {
                 self.crafting_tool_handle(handler, player, event)
                     .map_err(bind),
             ),
+            // SpikyVambraces.handle.
+            super::crafting_wares::VAMBRACES_HANDLER => {
+                Some(self.crafting_ware_handle(player, event).map_err(bind))
+            }
             // GrindItemPlugin.handle and HerbTarPlugin.handle.
             super::herblore_tools::GRIND_HANDLER | super::herblore_tools::TAR_HANDLER => Some(
                 self.herblore_tool_handle(handler, player, event)
@@ -167,6 +171,11 @@ impl Live {
             }
             // GemCutPulse and ChiselLimestonePulse: SkillPulse.stop().
             if let Some(result) = self.crafting_tool_pulse_stopped(pulse) {
+                return result.map_err(bind);
+            }
+            // BattlestaffListener's task and the two glass pulses: no
+            // stop() override.
+            if let Some(result) = self.crafting_ware_pulse_stopped(pulse) {
                 return result.map_err(bind);
             }
             // GrindItemPlugin's pulse and HerbTarPulse: SkillPulse.stop().

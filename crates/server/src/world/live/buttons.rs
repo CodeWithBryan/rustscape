@@ -79,6 +79,10 @@ impl interface_listeners::Context for Buttons<'_> {
         if let Some(result) = self.live.shop_button(&callback, player, button) {
             return result;
         }
+        // GlassCraftingListener's on(542) (super::items::crafting_wares).
+        if let Some(result) = self.live.glass_button(&callback, player, button) {
+            return result.map_err(ui);
+        }
         let Some(listener) = callback.value::<registry::Listener>().map(|l| *l) else {
             return Err(interfaces::Error::Binding(
                 "a button listener this world did not register".into(),
