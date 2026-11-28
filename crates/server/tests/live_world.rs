@@ -2602,12 +2602,14 @@ async fn interfaces_combat_scenario(address: std::net::SocketAddr, saves: &std::
         );
         let rat = attack_nearest(&mut one, &GIANT_RATS, "giant rat").await;
         let opened = one.opened.len();
+        // From before the button: a swing in the tick that opens 667 can
+        // close it in the same batch of frames.
+        let frames = one.frames.len();
         one.send(button(387, 55)).await;
         one.until(Duration::from_secs(10), "the equipment stats screen", |c| {
             c.opened[opened..].iter().any(|(_, id)| *id == 667)
         })
         .await;
-        let frames = one.frames.len();
         let end = Instant::now() + Duration::from_secs(20);
         while Instant::now() < end {
             one.pump(Duration::from_secs(1)).await;
@@ -4275,11 +4277,21 @@ async fn use_content_scenario(address: std::net::SocketAddr, saves: &std::path::
             c.base.is_some() && !c.updates.is_empty()
         })
         .await;
+    // A patron at least two tiles inside the pub (CIDER_PUB, 2689,3488 to
+    // 2700,3498): the patrons wander, and the borders are tested on the
+    // player after the walk, so one at the edge can lead the player out of
+    // the pub and no dialogue opens.
     let patron = |c: &Client| {
+        let base = c.base?;
         c.npcs
             .actors
             .iter()
-            .find(|(_, n)| (1..=5).contains(&n.type_id))
+            .find(|(_, n)| {
+                let (x, y) = (base[0] + n.tile[0], base[1] + n.tile[1]);
+                (1..=5).contains(&n.type_id)
+                    && (2691..=2698).contains(&x)
+                    && (3490..=3496).contains(&y)
+            })
             .map(|(i, _)| *i as i32)
     };
     cider
@@ -4292,6 +4304,11 @@ async fn use_content_scenario(address: std::net::SocketAddr, saves: &std::path::
     };
     let messages = cider.messages.len();
     for slot in 0..5 {
+        cider
+            .until_pinging(Duration::from_secs(30), "a patron inside the pub", |c| {
+                patron(c).is_some()
+            })
+            .await;
         let index = patron(&cider).unwrap();
         let from = cider.texts.len();
         cider.send(use_with_npc(5763, slot, index)).await;

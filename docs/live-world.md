@@ -765,7 +765,9 @@ the client-side player and NPC update decoders):
   stays. `usedog` uses bones on a stray dog (5917) in Varrock (opcode 115):
   "You feed the stray dog your bones." and the bones leave the inventory.
   `usecider` (a save in the Seers' Village pub with five ciders) uses each
-  on a patron (NPC ids 1 to 5): "Ah, a glass of cider, Don't mind if I
+  on a patron (NPC ids 1 to 5, one at least two tiles inside the pub: the
+  patrons wander, and a walk to one at the edge can leave the pub's
+  borders): "Ah, a glass of cider, Don't mind if I
   do!", Continue, "Thanks!" with the cider gone, Continue; after the fifth
   "Achievement Diary has been updated.". Cider outside the pub is not
   exercised through a socket.
@@ -909,7 +911,9 @@ the client-side player and NPC update decoders):
   fight's next swing (`CombatPulse.setCombatFlags` closes the attacking
   player's interfaces, and a victim player's) closes them through the
   world's context and runs 667's onClose (670 closed, then 667). It used to
-  wait for an aggressive rat, which made it depend on the aggression roll.
+  wait for an aggressive rat, which made it depend on the aggression roll,
+  and looked for the close only in frames after the open's batch, so a
+  swing in the tick that opened 667 went unseen.
 - `stairup`, `stairdown`, `stairleave` and `stairwalk` (saves on Lumbridge castle's
   middle floor at 3206,3229,1) use the north staircase 36777's first
   option, Climb (opcode 254 at 3204,3229): ClimbActionHandler finds a
