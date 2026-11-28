@@ -72,6 +72,8 @@ pub struct Round {
     pub pickpocket: super::items::pickpocket::PickpocketWorld,
     /// Firemaking (super::items::firemaking).
     pub firemaking: super::items::firemaking::FiremakingWorld,
+    /// HerblorePulse (super::items::herblore).
+    pub herblore: super::items::herblore::HerbloreWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).
