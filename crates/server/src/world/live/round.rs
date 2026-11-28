@@ -64,6 +64,8 @@ pub struct Round {
     pub woodcutting: super::items::woodcutting::WoodcuttingWorld,
     /// MiningListener and ProspectListener (super::items::mining).
     pub mining: super::items::mining::MiningWorld,
+    /// FishingNPC's attributes (super::fishing_spots).
+    pub fishing_spots: super::fishing_spots::FishingSpotWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).

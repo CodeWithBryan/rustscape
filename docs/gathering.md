@@ -20,9 +20,12 @@ docs/live-world.md). `MiningSkillPulse` and `FishingPulse` are not
 installed (no option of the pinned source's listeners starts them). The
 controlled examples do not use the library: the bronze-axe stand-in under
 `crates/server/examples/common/skilling.rs` is unchanged and is still not a
-port. **Not ported:** barbarian fishing (`fishing/barbfishing/`),
-`PickaxeRepairPlugin`, fishing-spot movement (`FishingNPC`, `FishSpots`) and
-the option handlers that start `FishingPulse`.
+port. Fishing-spot movement (`FishingNPC` and the `FishSpots` table,
+`gathering/fishing_npc.rs`) is ported without a JVM corpus (unit tests against
+the source's control flow only) and runs in the live world
+(`world/live/fishing_spots.rs`). **Not ported:** barbarian fishing
+(`fishing/barbfishing/`), `PickaxeRepairPlugin` and the option handlers that
+start `FishingPulse`.
 
 ## Shape
 
@@ -281,7 +284,7 @@ python tools/port_gathering.py --check
 Remaining work: bind the script, clock, pulse, listener-registry, attribute,
 scenery and `EquipmentContainer` services to their native modules and verify
 that composition against the original processors; `api.inEquipment` over the
-item configuration; barbarian fishing; pickaxe repair; fishing-spot movement
-and the pulse's option handlers; `FruitTreeChopper` and other consumers of
+item configuration; barbarian fishing; pickaxe repair; a JVM corpus for
+fishing-spot movement; the pulse's option handlers; `FruitTreeChopper` and other consumers of
 `SkillingResource`; random events, diaries and familiars behind the services;
 a live session. Nothing here marks a source file as replaced.

@@ -827,6 +827,12 @@ the client-side player and NPC update decoders):
   fishing, the level, tool, bait and full-inventory refusals and the
   script's end when the player walks away are not asserted through a
   socket.
+- `movespot` (the same scenario: a save in the Fishing Guild, 2598,3418)
+  sees a fishing spot (326, 333 or 334) standing off every spawn tile of
+  the guild, inside the guild's spot tiles: FishingNPC moved it on the
+  first tick its region was active. The later moves (every 200 to 389
+  ticks), the occupied-tile case, a script's end when its spot moves away
+  and the other areas are not asserted through a socket.
 - `usemilk` (a save beside the dairy cow 8689 at 3252,3275 with two
   buckets) uses the cow's first option (opcode 254): eight ticks later
   "You milk the cow." and a bucket of milk (1927). It then uses the other
@@ -1008,8 +1014,11 @@ stand-ins); this test checks the production binding end to end.
   WoodcuttingListener, MiningListener and FishingListener, the trees',
   rocks' and fishing spots' own options as interaction scripts of the
   player's ScriptProcessor (`scripts.rs`); and ProspectListener
-  (`items/mining.rs`). The fishing spots do not move (`FishingNPC` and
-  `FishSpots` are not ported), no forager familiar acts, the Fist of
+  (`items/mining.rs`). The fishing spots move between their area's tiles
+  (`FishingNPC` and `FishSpots`, `fishing_spots.rs`: the behaviour runs
+  with the whole world right before the NPC's tick kernel instead of
+  through the start-up's behaviour registry, and there is no JVM corpus
+  for it). No forager familiar acts, the Fist of
   Guthix gloves' charges are skipped, barehand fishing's Fremennik diary
   task is a refusal (nothing here sets the barbarian training attribute
   barehand fishing needs), and barbarian fishing and the legacy

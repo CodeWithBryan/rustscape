@@ -6,10 +6,12 @@
 //! ([`service::Context`]); woodcutting (the pulse and the listener's
 //! script), mining (the listener's script and the prospect option) and
 //! fishing (the listener's script) run in the live world
-//! (`world::live::items::{woodcutting, mining, fishing}`). See
+//! (`world::live::items::{woodcutting, mining, fishing}`), as does the
+//! fishing spots' movement (`fishing_npc`, `world::live::fishing_spots`). See
 //! docs/gathering.md for what the JVM corpus does and does not establish.
 pub mod binding;
 pub mod fishing;
+pub mod fishing_npc;
 pub mod mining;
 pub mod nodes;
 pub mod random;
