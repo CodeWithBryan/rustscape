@@ -899,6 +899,7 @@ impl super::super::host::Live {
             (false, false, false);
         let mut otto = false;
         let mut firemaking = false;
+        let mut bones = false;
         use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -920,6 +921,9 @@ impl super::super::host::Live {
             }
             if name == crate::world::firemaking::LISTENER_CLASS {
                 firemaking = true;
+            }
+            if name == crate::world::bone_burying::LISTENER_CLASS {
+                bones = true;
             }
             if name == crate::world::dialogue_dsl::otto::CLASS {
                 otto = true;
@@ -989,6 +993,10 @@ impl super::super::host::Live {
         if firemaking {
             // FiremakingListener.defineListeners (super::firemaking).
             self.define_firemaking_listener()?;
+        }
+        if bones {
+            // BoneBuryListener.defineListeners (super::bones).
+            self.define_bone_bury_listener()?;
         }
         if otto {
             // OttoGodblessedDialogue.defineListeners (super::otto).

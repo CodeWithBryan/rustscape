@@ -3806,6 +3806,64 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     fire.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // BoneBuryListener: the bones' "Bury" option digs at once and the
+    // STRONG script a tick later empties the slot and rewards prayer
+    // experience (4.5 for bones, 15 for big bones). The SKILLING clock
+    // holds a second click for two ticks.
+    let inventory = [(0, 526, 1), (1, 526, 1), (2, 532, 1)];
+    write_save(&players, "traceone", "burybones", start, &inventory);
+    let (code, bury) = Client::login(address, "burybones").await;
+    assert_eq!(code, 2, "burybones' login");
+    let mut bury = bury.unwrap();
+    bury.until(Duration::from_secs(10), "burybones' rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = bury.messages.len();
+    let count = |c: &Client, from: usize, line: &str| {
+        c.messages[from..].iter().filter(|(_, m)| m == line).count()
+    };
+    // Two clicks in one tick: the second finds the clock set and is dropped.
+    bury.send(item_option1(526, 0)).await;
+    bury.send(item_option1(526, 1)).await;
+    bury.until_pinging(Duration::from_secs(20), "the first bones buried", |c| {
+        said(c, from, "You bury the bones.") && c.skills.get(&5).is_some_and(|s| s.1 == 4)
+    })
+    .await;
+    tokio::time::sleep(Duration::from_secs(3)).await;
+    bury.until_pinging(Duration::from_secs(5), "burybones' quiet", |_| true)
+        .await;
+    assert_eq!(
+        (held(&bury, 526), held(&bury, 532)),
+        (1, 1),
+        "one click buried one set of bones"
+    );
+    assert_eq!(
+        count(&bury, from, "You dig a hole in the ground."),
+        1,
+        "the second click waited for the skilling clock"
+    );
+    for (id, slot, experience) in [(526, 1, 9), (532, 2, 24)] {
+        let from = bury.messages.len();
+        bury.send(item_option1(id, slot)).await;
+        bury.until_pinging(Duration::from_secs(20), "more bones buried", |c| {
+            said(c, from, "You dig a hole in the ground.")
+                && said(c, from, "You bury the bones.")
+                && c.skills.get(&5).is_some_and(|s| s.1 == experience)
+        })
+        .await;
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+    assert_eq!(
+        (held(&bury, 526), held(&bury, 532)),
+        (0, 0),
+        "every set of bones was buried"
+    );
+    assert_eq!(bury.position(), start, "burying does not move the player");
+    eprintln!("burybones buried two bones and big bones at {start:?}, prayer experience 24");
+    bury.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

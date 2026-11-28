@@ -6,6 +6,7 @@ pub mod animation;
 pub mod api_utils;
 pub mod appearance;
 pub mod bank_interface;
+pub mod bone_burying;
 pub mod books;
 pub mod bots;
 pub mod chunk;

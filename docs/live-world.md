@@ -1039,7 +1039,14 @@ stand-ins); this test checks the production binding end to end.
   for logs in the inventory (`items/firemaking.rs`, no JVM corpus,
   docs/firemaking.md): a tinderbox or a bow used with logs lights a fire
   that burns out into ashes; the ground item registrations are not
-  installed and `LitFireEvent` is skipped. Barbarian fishing is installed (`items/barbarian.rs`, no
+  installed and `LitFireEvent` is skipped. Bone burying is installed
+  (`items/bones.rs` over `world/bone_burying.rs`, no JVM corpus,
+  docs/bone-burying.md): the "bury" option of the 31 `Bones` items digs,
+  and a STRONG queued script a tick later empties the slot and rewards
+  the prayer experience; `BoneBuryEvent` is skipped (the jobs' counter
+  never moves), nothing here grants the pyre ship bonus the script
+  reads, and PrayerAltarListener (bones on an altar) and the Ectofuntus
+  are not ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
   content tick listener, and "use-rod", the bed's "search" and the knife
