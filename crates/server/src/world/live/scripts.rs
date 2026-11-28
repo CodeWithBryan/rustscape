@@ -84,6 +84,8 @@ pub enum Queued {
     AltarTrap,
     /// CraftItemWithLogScript's script: the craft's index and the amount.
     LogCraft(usize, i32),
+    /// A stringing or arrow script of `fletching_assembly` with its amount.
+    Assembly(crate::world::fletching_assembly::Job, i32),
 }
 impl NativeObject for Queued {}
 
@@ -419,6 +421,9 @@ impl Live {
                 Some(Queued::AltarTrap) => self.altar_trap_queued(&p),
                 Some(Queued::LogCraft(craft, amount)) => {
                     self.log_fletching_queued(&p, *craft, *amount, stage)
+                }
+                Some(Queued::Assembly(job, amount)) => {
+                    self.fletching_assembly_queued(&p, *job, *amount, stage)
                 }
                 None => Err(refused("a queued script this world did not queue")),
             },

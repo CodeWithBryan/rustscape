@@ -902,6 +902,7 @@ impl super::super::host::Live {
         let mut bones = false;
         let mut altar = false;
         let mut log_fletching = false;
+        let (mut stringing, mut arrows) = (false, false);
         use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -926,6 +927,12 @@ impl super::super::host::Live {
             }
             if name == crate::world::fletching_logs::LISTENER_CLASS {
                 log_fletching = true;
+            }
+            if name == crate::world::fletching_assembly::STRINGING_CLASS {
+                stringing = true;
+            }
+            if name == crate::world::fletching_assembly::ARROW_CLASS {
+                arrows = true;
             }
             if name == crate::world::prayer_altar::LISTENER_CLASS {
                 altar = true;
@@ -1011,6 +1018,14 @@ impl super::super::host::Live {
         if log_fletching {
             // LogCraftableListeners.defineListeners (super::fletching).
             self.define_log_fletching_listener()?;
+        }
+        if stringing {
+            // StringingListeners.defineListeners (super::fletching_assembly).
+            self.define_stringing_listener()?;
+        }
+        if arrows {
+            // ArrowListeners.defineListeners (super::fletching_assembly).
+            self.define_arrow_listeners()?;
         }
         if altar {
             // PrayerAltarListener.defineListeners (super::altar).
@@ -1105,6 +1120,12 @@ impl super::super::host::Live {
         }
         if f.value::<crate::world::cooking::Interaction>().is_some() {
             return Some(self.cooking_use(player, used, with));
+        }
+        if let Some(assembly) = f.value::<super::fletching_assembly::Assembly>() {
+            return Some(
+                self.fletching_assembly_use(*assembly, player, used, with)
+                    .map_err(bind),
+            );
         }
         if f.value::<super::fletching::KnifeOnLogs>().is_some() {
             return Some(self.log_fletching_use(player, with).map_err(bind));
