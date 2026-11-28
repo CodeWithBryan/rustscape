@@ -1,0 +1,55 @@
+package core.game.node.entity.player;
+import core.game.node.entity.Entity;
+import core.game.node.entity.skill.Skills;
+import core.game.node.item.Item;
+import core.game.system.task.Pulse;
+import core.game.world.update.flag.context.Animation;
+import oracle.W;
+/** Adapter: the one player of a case. */
+public final class Player extends Entity {
+    private final Skills skills = new Skills();
+    private final Inventory inventory = new Inventory();
+    private final PacketDispatch packets = new PacketDispatch();
+    private final PulseManager pulses = new PulseManager();
+    @Override public int getId() { return 0; }
+    public boolean animate(Animation animation) {
+        W.emit("animate", animation.getId(), animation.getDelay(), animation.getPriority() == null ? null : animation.getPriority().name());
+        return true;
+    }
+    public Skills getSkills() { return skills; }
+    public Inventory getInventory() { return inventory; }
+    public PacketDispatch getPacketDispatch() { return packets; }
+    public PulseManager getPulseManager() { return pulses; }
+    /** Adapter: the declared inventory, a map of amounts. */
+    public static final class Inventory {
+        public boolean containsItem(Item item) {
+            W.emit("contains", item.getId(), item.getAmount());
+            return W.amount(item.getId()) >= item.getAmount();
+        }
+        /** Each removal succeeds when at least the amount is held. */
+        @SuppressWarnings("unchecked")
+        public boolean remove(Item... items) {
+            boolean all = true;
+            org.json.simple.JSONArray ids = new org.json.simple.JSONArray();
+            for (Item item : items) {
+                ids.add(item.getId());
+                if (!W.take(item.getId(), item.getAmount())) all = false;
+            }
+            W.emit("remove", ids, all);
+            return all;
+        }
+        /** An addition always succeeds. */
+        public boolean add(Item... items) {
+            for (Item item : items) { W.give(item.getId(), item.getAmount()); W.emit("add", item.getId(), item.getAmount()); }
+            return true;
+        }
+        public int getAmount(Item item) { W.emit("getAmount", item.getId()); return W.amount(item.getId()); }
+    }
+    public static final class PacketDispatch {
+        public void sendMessage(String message) { W.emit("message", message); }
+    }
+    /** Adapter: run records the pulse, starts it and keeps it for the driver. */
+    public static final class PulseManager {
+        public void run(Pulse pulse) { W.run(pulse); }
+    }
+}

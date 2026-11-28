@@ -4316,6 +4316,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     pick_part(address, &players).await;
     herb_part(address, &players).await;
     grind_part(address, &players).await;
+    gem_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -4960,6 +4961,176 @@ async fn grind_part(address: std::net::SocketAddr, players: &std::path::Path) {
         "grindman ground two unicorn horns and ten fishing bait, made two guam tars and an attack mix"
     );
     grind.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The crafting tools part of the gather scenario.
+async fn gem_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, amount)| *amount)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    let slot_of = |c: &Client, id: i32| -> i32 {
+        c.containers[&93]
+            .iter()
+            .filter(|(_, (item, _))| *item == id)
+            .map(|(slot, _)| *slot)
+            .min()
+            .expect("the item's slot")
+    };
+    let shown = |c: &Client, from: usize, pointer: i32, what: &str| {
+        c.texts[from..]
+            .iter()
+            .any(|(_, at, t)| *at == pointer && t.contains(what))
+    };
+    // GemCutPlugin, ChiselLimestonePlugin, AmuletStringingPlugin and
+    // SilverStringingListener: a chisel, two uncut sapphires, an uncut opal,
+    // an uncut diamond, a limestone, two balls of wool, a gold amulet and
+    // an unstrung symbol, at Crafting 20.
+    let start = [3222, 3218, 0];
+    let inventory = [
+        (0, 1755, 1),
+        (1, 1623, 1),
+        (2, 1623, 1),
+        (3, 1625, 1),
+        (4, 1617, 1),
+        (5, 3211, 1),
+        (6, 1759, 1),
+        (7, 1759, 1),
+        (8, 1673, 1),
+        (9, 1714, 1),
+    ];
+    write_save_with(players, "traceone", "gemman", start, &inventory, |save| {
+        save["skills"][12]["static"] = Value::String("20".into());
+        save["skills"][12]["dynamic"] = Value::String("20".into());
+        // The experience stays under the 175 an unfinished tutorial caps it at.
+        save["skills"][12]["experience"] = Value::String("0.0".into());
+    });
+    let (code, gem) = Client::login(address, "gemman").await;
+    assert_eq!(code, 2, "gemman's login");
+    let mut gem = gem.unwrap();
+    gem.until(Duration::from_secs(10), "gemman's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = gem.messages.len();
+
+    // The chisel on one of two uncut sapphires: the dialogue, and "All"
+    // cuts both.
+    let texts = gem.texts.len();
+    gem.send(use_item_on_item(1755, 0, 1623, 1)).await;
+    gem.until_pinging(Duration::from_secs(20), "the gem dialogue", |c| {
+        shown(c, texts, (309 << 16) | 6, "apphire")
+    })
+    .await;
+    gem.send(continue_option(309, 3)).await;
+    gem.until_pinging(Duration::from_secs(30), "two sapphires cut", |c| {
+        amount(c, 1607) == 2
+    })
+    .await;
+    gem.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&gem, 1623), amount(&gem, 1607), amount(&gem, 1755)),
+        (0, 2, 1),
+        "both sapphires are cut and the chisel stays"
+    );
+    assert_eq!(
+        gem.skills.get(&12).map(|s| s.1),
+        Some(100),
+        "two sapphires are 100 experience"
+    );
+
+    // The one uncut opal on the chisel: no dialogue, one cut.
+    let (opal, chisel) = (slot_of(&gem, 1625), slot_of(&gem, 1755));
+    gem.send(use_item_on_item(1625, opal, 1755, chisel)).await;
+    gem.until_pinging(Duration::from_secs(30), "the opal cut", |c| {
+        amount(c, 1609) == 1
+    })
+    .await;
+    gem.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&gem, 1625), gem.skills.get(&12).map(|s| s.1)),
+        (0, Some(110)),
+        "an opal is 10 experience"
+    );
+
+    // The uncut diamond needs Crafting 43.
+    let diamond = slot_of(&gem, 1617);
+    gem.send(use_item_on_item(1755, chisel, 1617, diamond))
+        .await;
+    gem.until_pinging(Duration::from_secs(20), "the diamond's refusal", |c| {
+        said(
+            c,
+            from,
+            "You need a crafting level of 43 to craft this gem.",
+        )
+    })
+    .await;
+    gem.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&gem, 1617), amount(&gem, 1601)),
+        (1, 0),
+        "the diamond stays uncut"
+    );
+
+    // The chisel on the limestone: a brick on the pulse's second tick.
+    let limestone = slot_of(&gem, 3211);
+    gem.send(use_item_on_item(1755, chisel, 3211, limestone))
+        .await;
+    gem.until_pinging(Duration::from_secs(30), "the limestone brick", |c| {
+        amount(c, 3420) == 1
+    })
+    .await;
+    gem.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&gem, 3211), gem.skills.get(&12).map(|s| s.1)),
+        (0, Some(116)),
+        "a limestone brick is 6 experience"
+    );
+
+    // A ball of wool on the gold amulet: the strung amulet, no experience.
+    let (wool, amulet) = (slot_of(&gem, 1759), slot_of(&gem, 1673));
+    gem.send(use_item_on_item(1759, wool, 1673, amulet)).await;
+    gem.until_pinging(Duration::from_secs(20), "the strung amulet", |c| {
+        amount(c, 1692) == 1
+    })
+    .await;
+    assert_eq!(
+        (amount(&gem, 1673), amount(&gem, 1759)),
+        (0, 1),
+        "the amulet and one ball of wool are used"
+    );
+
+    // The other ball of wool on the unstrung symbol: SilverStringingListener.
+    let (wool, symbol) = (slot_of(&gem, 1759), slot_of(&gem, 1714));
+    gem.send(use_item_on_item(1759, wool, 1714, symbol)).await;
+    gem.until_pinging(Duration::from_secs(20), "the strung symbol", |c| {
+        amount(c, 1716) == 1
+    })
+    .await;
+    assert_eq!(
+        (
+            amount(&gem, 1714),
+            amount(&gem, 1759),
+            gem.skills.get(&12).map(|s| s.1)
+        ),
+        (0, 0, Some(116)),
+        "the symbol and the wool are used and stringing is no experience"
+    );
+    eprintln!(
+        "gemman cut two sapphires and an opal, was refused a diamond, made a limestone brick and strung an amulet and a symbol"
+    );
+    gem.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

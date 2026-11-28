@@ -1186,7 +1186,13 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   world/live/items/herblore_tools.rs through UseWithHandler's
   item-on-item pulse; replayed against the JVM corpus
   fixtures/herblore-tools from oracle/herblore-tools, the live binding is
-  not; swamp toads are not ported; docs/herblore-tools.md) and Otto
+  not; swamp toads are not ported; docs/herblore-tools.md), crafting's
+  gem cutting, limestone bricks, amulet stringing and silver stringing
+  (world/crafting_tools.rs, run live by
+  world/live/items/crafting_tools.rs; replayed against the JVM corpus
+  fixtures/crafting-tools from oracle/crafting-tools, the live binding is
+  not; the rest of the crafting package is not ported;
+  docs/crafting-tools.md) and Otto
   Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no

@@ -77,6 +77,8 @@ pub struct Round {
     /// GrindItemPlugin and HerbTarPlugin with their pulses
     /// (super::items::herblore_tools).
     pub herblore_tools: super::items::herblore_tools::ToolsWorld,
+    /// GemCutPulse and ChiselLimestonePulse (super::items::crafting_tools).
+    pub crafting_tools: super::items::crafting_tools::CraftingToolsWorld,
     /// Cooking (super::items::cooking).
     pub cooking: super::items::cooking::CookingWorld,
     /// CowMilkingPlugin (super::items::milking).
