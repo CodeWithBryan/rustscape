@@ -1155,7 +1155,12 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   darts need a save that already holds Tourist Trap complete;
   ZogreFletchingListeners is not ported; docs/fletching-ammo.md; the three
   fletching libraries are replayed against the JVM corpus
-  fixtures/fletching from oracle/fletching, their live bindings are not) and Otto Godblessed's barbarian
+  fixtures/fletching from oracle/fletching, their live bindings are not),
+  pickpocketing (world/thieving_pickpocket.rs, run live by
+  world/live/items/pickpocket.rs; replayed against the JVM corpus
+  fixtures/thieving from oracle/thieving, the live binding is not; the
+  treasure trail manager and SkillcapePerks are not ported, and stalls,
+  chests and doors are not ported; docs/thieving-pickpocket.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the

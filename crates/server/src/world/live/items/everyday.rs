@@ -898,6 +898,7 @@ impl super::super::host::Live {
         let (mut barbarian_listeners, mut barbarian_knife, mut barbarian_manager) =
             (false, false, false);
         let mut otto = false;
+        let mut pickpocket = false;
         let mut firemaking = false;
         let mut bones = false;
         let mut altar = false;
@@ -956,6 +957,9 @@ impl super::super::host::Live {
             }
             if name == crate::world::dialogue_dsl::otto::CLASS {
                 otto = true;
+            }
+            if name == crate::world::thieving_pickpocket::CLASS {
+                pickpocket = true;
             }
             if name == barbarian::LISTENERS_CLASS {
                 barbarian_listeners = true;
@@ -1053,6 +1057,10 @@ impl super::super::host::Live {
         if bones {
             // BoneBuryListener.defineListeners (super::bones).
             self.define_bone_bury_listener()?;
+        }
+        if pickpocket {
+            // ThievingListeners.defineListeners (super::pickpocket).
+            self.define_pickpocket_listener()?;
         }
         if otto {
             // OttoGodblessedDialogue.defineListeners (super::otto).

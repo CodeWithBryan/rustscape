@@ -124,6 +124,7 @@ pub mod special_attacks;
 pub mod spells;
 pub mod system_manager;
 pub mod teleport;
+pub mod thieving_pickpocket;
 pub mod tick;
 pub mod trade;
 pub mod update;

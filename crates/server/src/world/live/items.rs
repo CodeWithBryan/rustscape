@@ -55,6 +55,7 @@ pub mod fletching_assembly;
 pub mod milking;
 pub mod mining;
 pub mod otto;
+pub mod pickpocket;
 mod slots;
 pub mod smelting;
 pub mod smithing;
@@ -1457,6 +1458,10 @@ impl listeners::Context for Ctx<'_> {
         // OttoGodblessedDialogue's "talk-to" (super::otto).
         if f.value::<otto::OttoTalk>().is_some() {
             return self.0.otto_talk(p, n).map_err(lerr);
+        }
+        // ThievingListeners' "pickpocket" (super::pickpocket).
+        if f.value::<pickpocket::Pickpocket>().is_some() {
+            return self.0.pickpocket_option(p, n).map_err(lerr);
         }
         // ProspectListener's "prospect" (super::mining).
         if f.value::<mining::Prospect>().is_some() {
