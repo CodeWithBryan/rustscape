@@ -60,6 +60,33 @@ impl ThreadLocalRandom {
         let r = ((self.next_long() as u64) >> 11) as f64 * Self::DOUBLE_UNIT;
         Ok(r * (bound - origin) + origin)
     }
+    /// JDK 11 `mix32` of the next seed.
+    fn next_mix32(&mut self) -> i32 {
+        self.seed = self.seed.wrapping_add(Self::GAMMA);
+        let z = (self.seed ^ (self.seed >> 33)).wrapping_mul(0xff51_afd7_ed55_8ccd);
+        ((z ^ (z >> 33)).wrapping_mul(0xc4ce_b9fe_1a85_ec53) >> 32) as i32
+    }
+    /// `nextInt(bound)`; `None` for a nonpositive bound (Java throws).
+    pub fn next_int(&mut self, bound: i32) -> Option<i32> {
+        if bound <= 0 {
+            return None;
+        }
+        let mut r = self.next_mix32();
+        let m = bound - 1;
+        if bound & m == 0 {
+            r &= m;
+        } else {
+            let mut u = ((r as u32) >> 1) as i32;
+            loop {
+                r = u % bound;
+                if u.wrapping_add(m).wrapping_sub(r) >= 0 {
+                    break;
+                }
+                u = ((self.next_mix32() as u32) >> 1) as i32;
+            }
+        }
+        Some(r)
+    }
 }
 
 /// The draws the drop path makes, by generator.

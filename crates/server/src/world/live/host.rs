@@ -1621,6 +1621,10 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.woodcutting_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // ProspectListener's message pulse (super::items::mining).
+        if let Some(result) = self.prospect_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // PulseManager.runUnhandledAction's pulse of a use-with.
         if let Some(result) = self.use_pulse(pulse) {
             return result.map_err(fail);

@@ -15,7 +15,7 @@
 //! world as every other content body does.
 //!
 //! Installed bodies: the gathering listeners' interaction scripts and the
-//! scripts they queue ([`super::items::woodcutting`]). Anything else is
+//! scripts they queue ([`super::items::woodcutting`], [`super::items::mining`]). Anything else is
 //! refused by name: where `InteractionListeners.run` would make its script
 //! (`Live::script_installed`), and here.
 use super::{
@@ -46,6 +46,8 @@ use crate::{
 pub enum Interaction {
     /// `WoodcuttingListener::handleWoodcutting`.
     Woodcutting,
+    /// `MiningListener::handleMining`.
+    Mining,
 }
 impl Interaction {
     pub fn class(self) -> &'static str {
@@ -53,6 +55,7 @@ impl Interaction {
             Self::Woodcutting => {
                 "content.global.skill.gather.woodcutting.WoodcuttingListener$defineListeners$1"
             }
+            Self::Mining => "content.global.skill.gather.mining.MiningListener$defineListeners$1",
         }
     }
     /// The handler as the registry's function object.
@@ -392,6 +395,7 @@ impl Live {
             Arguments::Interaction { target, stage } => {
                 match function.value::<Interaction>().as_deref() {
                     Some(Interaction::Woodcutting) => self.woodcutting_script(&p, &target, stage),
+                    Some(Interaction::Mining) => self.mining_script(&p, &target, stage),
                     None => Err(refused("an interaction script this world did not install")),
                 }
             }

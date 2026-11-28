@@ -494,7 +494,7 @@ scenery replacement, `playAudio` at a location, `removeItem`/`addItem`
 outside the inventory, an animation with a delay or a priority other than
 MID, force chat on a player); cooking before the tutorial is complete
 (CookingRewrite's tutorial island branch); a listener's walk
-to an item; `defineInteraction` scripts other than WoodcuttingListener's; a destination override this
+to an item; `defineInteraction` scripts other than WoodcuttingListener's and MiningListener's; a destination override this
 world did not register), item plugins (`ItemPlugin.remove`, `canPickUp`), the guild items'
 dialogue, `EquipHandler.unequip`'s caller other than the global equipment
 tab, equipment plugins' `fireEvent`, brawling gloves, autocast clearing on a
@@ -804,6 +804,19 @@ the client-side player and NPC update decoders):
   walk away during the script, the level, axe and full-inventory refusals,
   a second player and the stump's update are not asserted through a
   socket.
+- `minerock` (the same scenario: a save in the Lumbridge swamp mine at
+  3226,3146 with a bronze pickaxe) takes the tin rock 11933's "Prospect"
+  option (opcode 194): ProspectListener says "You examine the rock for
+  ores..." and, three ticks later, "This rock contains tin ore.". Then
+  "Mine" (opcode 254): MiningListener's interaction script says "You swing
+  your pickaxe at the rock.", rolls every four ticks, gives one tin ore
+  (438) and 17.5 Mining experience with "You manage to mine some tin.",
+  and ends when the rock is replaced by its empty object: nothing more is
+  said or given in the next eight seconds. The gem rocks' table, essence,
+  granite and sandstone, the bracelet of clay, the Varrock armour, the
+  star bonus, the bonus gem, perfect gold, the level, pickaxe and
+  full-inventory refusals and the empty rock's update and respawn are not
+  asserted through a socket.
 - `usemilk` (a save beside the dairy cow 8689 at 3252,3275 with two
   buckets) uses the cow's first option (opcode 254): eight ticks later
   "You milk the cow." and a bucket of milk (1927). It then uses the other
@@ -980,17 +993,23 @@ stand-ins); this test checks the production binding end to end.
   `withnpc`
   (docs/item-on-npc.md) and all of `withitem`. The two dog listeners and CiderOnForester have
   no JVM corpus (docs/item-on-npc.md). Of `world::gathering` (verified
-  by its corpus) woodcutting is installed: `WoodcuttingSkillPulse`, started
-  by an axe used on a tree, and WoodcuttingListener, the trees' own options
-  as an interaction script of the player's ScriptProcessor (`scripts.rs`).
-  Mining and fishing are not, so ore and raw fish only come from saves and
-  shops here. In both woodcutting bodies the familiar boost is 0, skillcape
-  perks are inactive, bird nests and the inferno adze's projectile are
+  by its corpus) woodcutting and mining are installed:
+  `WoodcuttingSkillPulse`, started by an axe used on a tree;
+  WoodcuttingListener and MiningListener, the trees' and rocks' own options
+  as interaction scripts of the player's ScriptProcessor (`scripts.rs`);
+  and ProspectListener (`items/mining.rs`). Fishing is not, so raw fish
+  only come from saves and shops here. In these bodies the familiar boost
+  is 0, skillcape perks are inactive and the ResourceProducedEvent is
+  skipped; the shooting star's bonus timer is read from the player's
+  timers, which nothing here starts (shooting stars are not ported), and
+  the Varrock armour's extra ore needs a diary no content here completes.
+  `MiningSkillPulse` and `PickaxeRepairPlugin` are not installed. In both
+  woodcutting bodies bird nests and the inferno adze's projectile are
   skipped and a farmed tree finds no patch; the undercover tree 10041's
   dialogue (the pulse) and Kjallak's dialogue on Miscellania and Etceteria
   (the listener) are refusals, which end the listener's script with the
-  processor's error line. The live binding of the listener has no corpus
-  of its own, and its Lost City stage is read from the save (no quest
+  processor's error line. The live bindings of the listeners have no
+  corpus of their own, and its Lost City stage is read from the save (no quest
   content sets it).
 
 - The remaining routed handlers: the driver's refused packets (commands, quick chat, abuse reports, the GE packet);

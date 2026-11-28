@@ -45,6 +45,7 @@ mod component_use;
 pub mod cooking;
 pub mod everyday;
 pub mod milking;
+pub mod mining;
 mod slots;
 pub mod smelting;
 pub mod smithing;
@@ -1428,6 +1429,10 @@ impl listeners::Context for Ctx<'_> {
                 n,
             )
             .map_err(lerr);
+        }
+        // ProspectListener's "prospect" (super::mining).
+        if f.value::<mining::Prospect>().is_some() {
+            return self.0.prospect_option(p, n).map_err(lerr);
         }
         if let Some(option) = f.value::<GraveListener>().map(|g| g.0) {
             let (Node::Player(player), Node::Npc(npc)) = (p, n) else {

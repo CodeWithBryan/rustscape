@@ -3,8 +3,9 @@
 //! `content.global.skill.fishing` and `SkillingTool`.
 //!
 //! This is a library of original bodies over explicit required services
-//! ([`service::Context`]); only woodcutting (the pulse and the listener's
-//! script) runs in the live world (`world::live::items::woodcutting`). See
+//! ([`service::Context`]); woodcutting (the pulse and the listener's
+//! script) and mining (the listener's script and the prospect option) run
+//! in the live world (`world::live::items::{woodcutting, mining}`). See
 //! docs/gathering.md for what the JVM corpus does and does not establish.
 pub mod binding;
 pub mod fishing;

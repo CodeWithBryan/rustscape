@@ -47,6 +47,7 @@ use crate::{
         combat_pulse, combat_swing, doors,
         gathering::{
             Settings,
+            binding::EQUIPMENT_SLOTS,
             service::{Arg, Context, Error, Handle, Result, Service, Task},
             woodcutting,
         },
@@ -71,6 +72,10 @@ const QUEUED_CLASS: &str =
     "content.global.skill.gather.woodcutting.WoodcuttingListener$handleWoodcutting$1";
 /// `Clocks.MOVEMENT`.
 const MOVEMENT: i32 = 0;
+/// `Clocks.ANIMATION_END`.
+const ANIMATION_END: i32 = 1;
+/// StarBonus's timer identifier.
+const STAR_BONUS: &str = "shootingstar:bonus";
 /// The `Quest` index of Lost City (`LostCity`'s constructor).
 const LOST_CITY: i32 = 83;
 
@@ -107,45 +112,51 @@ pub struct WoodcuttingWorld {
 }
 
 /// The player's token.
-const PLAYER: Handle = 1;
-/// The tree's token.
-const TREE: Handle = 2;
-/// The token of the last `Scenery.transform` result.
-const STUMP: Handle = 3;
+pub(super) const PLAYER: Handle = 1;
+/// The token of the tree or rock.
+pub(super) const NODE: Handle = 2;
+/// The token of the last scenery the body made.
+const MADE: Handle = 3;
 /// Another player's token is this plus its node.
 const OTHERS: Handle = 1 << 32;
 /// `DiaryType.SEERS_VILLAGE`'s ordinal.
 const SEERS_VILLAGE: usize = 5;
 
-/// The pulse's services over the live world, for one player and tree.
-struct Chop<'a> {
-    live: &'a mut Live,
-    p: P,
-    tree: doors::Handle,
-    stump: Option<doors::Handle>,
+/// The gathering bodies' services over the live world, for one player and
+/// one tree or rock (super::mining answers the mining bodies with it).
+pub(super) struct Gather<'a> {
+    pub(super) live: &'a mut Live,
+    pub(super) p: P,
+    /// The tree or rock.
+    node: doors::Handle,
+    /// The last scenery the body made (`Scenery.transform`, `Scenery(...)`).
+    made: Option<doors::Handle>,
+    /// The skill, for a refusal's name.
+    skill: &'static str,
     /// What the last failing service said.
     error: Option<String>,
 }
 
-impl Chop<'_> {
+impl Gather<'_> {
     fn fail<T>(&mut self, what: impl std::fmt::Debug) -> Result<T> {
         self.error = Some(format!("{what:?}"));
         Err(Error::Service)
     }
     fn refuse<T>(&mut self, service: Service) -> Result<T> {
         self.error = Some(format!(
-            "not ported in the live world: woodcutting service {}",
+            "not ported in the live world: {} service {}",
+            self.skill,
             service.name()
         ));
         Err(Error::Service)
     }
-    fn node(&self) -> Node {
+    fn player_node(&self) -> Node {
         Node::Player(self.p.0.clone())
     }
     fn scenery(&mut self, token: &Arg) -> Result<doors::Handle> {
         match token {
-            Arg::Int(TREE) => Ok(self.tree.clone()),
-            Arg::Int(STUMP) => self.stump.clone().ok_or(Error::Reply),
+            Arg::Int(NODE) => Ok(self.node.clone()),
+            Arg::Int(MADE) => self.made.clone().ok_or(Error::Reply),
             _ => Err(Error::Reply),
         }
     }
@@ -218,7 +229,7 @@ fn double(arg: Option<&Arg>) -> Result<f64> {
     }
 }
 
-impl Context for Chop<'_> {
+impl Context for Gather<'_> {
     fn call(&mut self, service: Service, args: &[Arg]) -> Result<Arg> {
         use Service as S;
         let p = self.p.clone();
@@ -287,7 +298,7 @@ impl Context for Chop<'_> {
                     Err(_) => Err(Error::ClassCast),
                 }
             }
-            S::PlayerSetAttribute => {
+            S::PlayerSetAttribute | S::ApiSetAttribute => {
                 let attributes = self.live.inner.canonical(&p).player.attributes();
                 attributes.set_integer(text(args.first())?, int(args.get(1))?);
                 Ok(Arg::Null)
@@ -299,7 +310,7 @@ impl Context for Chop<'_> {
                     Err(e) => self.fail(e),
                 }
             }
-            S::SkillsGetLevel => {
+            S::SkillsGetLevel | S::ApiGetDynLevel => {
                 match combat_swing::Host::level(self.live, &p, int(args.first())?) {
                     Ok(v) => Ok(v.into()),
                     Err(e) => self.fail(e),
@@ -311,7 +322,7 @@ impl Context for Chop<'_> {
                     Err(e) => self.fail(e),
                 }
             }
-            S::SkillsAddExperience2 | S::SkillsAddExperience3 => {
+            S::SkillsAddExperience2 | S::SkillsAddExperience3 | S::ApiRewardXp => {
                 // `addExperience(slot, experience)` is the three-argument
                 // one with `playerMod` false.
                 let player_mod = match args.get(2) {
@@ -330,15 +341,15 @@ impl Context for Chop<'_> {
                 added.or_else(|e| self.fail(e))?;
                 Ok(Arg::Null)
             }
-            S::InventoryFreeSlots => {
-                let node = self.node();
+            S::InventoryFreeSlots | S::ApiFreeSlots => {
+                let node = self.player_node();
                 match Ctx(self.live).container(&node, Held::Inventory) {
                     Ok(inventory) => Ok(inventory.free_slots().into()),
                     Err(e) => self.fail(e),
                 }
             }
             S::InventoryContains => {
-                let node = self.node();
+                let node = self.player_node();
                 match Ctx(self.live).container(&node, Held::Inventory) {
                     Ok(inventory) => Ok(inventory
                         .contains(int(args.first())?, int(args.get(1))?)
@@ -347,7 +358,7 @@ impl Context for Chop<'_> {
                 }
             }
             S::InventoryAdd => {
-                let node = self.node();
+                let node = self.player_node();
                 let (id, amount) = (int(args.first())?, int(args.get(1))?);
                 match Everyday(Ctx(self.live)).add_to_inventory(&node, id, amount) {
                     Ok(v) => Ok(v.into()),
@@ -367,7 +378,7 @@ impl Context for Chop<'_> {
                     Err(e) => self.fail(e),
                 }
             }
-            S::FamiliarGetBoost => {
+            S::FamiliarGetBoost | S::ApiGetFamiliarBoost => {
                 self.live
                     .inner
                     .not_ported
@@ -395,7 +406,7 @@ impl Context for Chop<'_> {
                 sent.or_else(|e| self.fail(e))?;
                 Ok(Arg::Null)
             }
-            S::ItemDefinitionName => {
+            S::ItemDefinitionName | S::ApiGetItemName | S::ItemName => {
                 let name = self
                     .live
                     .inner
@@ -461,8 +472,8 @@ impl Context for Chop<'_> {
                 );
                 match constructed {
                     Ok(stump) => {
-                        self.stump = Some(stump);
-                        Ok(STUMP.into())
+                        self.made = Some(stump);
+                        Ok(MADE.into())
                     }
                     Err(e) => self.fail(e),
                 }
@@ -558,22 +569,23 @@ impl Context for Chop<'_> {
                 Ok(Arg::Null)
             }
             S::ApiGetAttribute => {
-                // getAttribute(player, key, default) of a Boolean.
-                let Some(Arg::Bool(default)) = args.get(1) else {
-                    return Err(Error::Reply);
-                };
+                // getAttribute(player, key, default) of a Boolean or an Int.
                 let attributes = self.live.inner.canonical(&p).player.attributes();
-                match attributes.boolean(text(args.first())?, *default) {
-                    Ok(v) => Ok(v.into()),
-                    Err(_) => Err(Error::ClassCast),
-                }
+                let key = text(args.first())?;
+                let read = match args.get(1) {
+                    Some(Arg::Bool(default)) => attributes.boolean(key, *default).map(Arg::from),
+                    Some(Arg::Int(_)) => attributes.integer(key, int(args.get(1))?).map(Arg::from),
+                    _ => return Err(Error::Reply),
+                };
+                // A value of another type is the read's ClassCastException.
+                read.or(Err(Error::ClassCast))
             }
             S::ApiAddItem => {
                 // addItem(player, id, amount, Container.INVENTORY).
                 if text(args.get(2))? != "INVENTORY" {
                     return self.refuse(service);
                 }
-                let node = self.node();
+                let node = self.player_node();
                 let (id, amount) = (int(args.first())?, int(args.get(1))?);
                 match Everyday(Ctx(self.live)).add_to_inventory(&node, id, amount) {
                     Ok(v) => Ok(v.into()),
@@ -594,6 +606,221 @@ impl Context for Chop<'_> {
                 match stage {
                     Ok(stage) => Ok(stage.unwrap_or(0).into()),
                     Err(e) => self.fail(e),
+                }
+            }
+            // ---- MiningListener's and ProspectListener's calls
+            // (super::mining).
+            S::NodeLocation => {
+                let object = self.scenery(args.first().ok_or(Error::Reply)?)?;
+                let at = object.read().location.coordinates();
+                Ok(at.into())
+            }
+            S::SceneryType => {
+                let object = self.scenery(args.first().ok_or(Error::Reply)?)?;
+                let shape = object.read().shape;
+                Ok(shape.into())
+            }
+            S::SceneryRotation => {
+                let object = self.scenery(args.first().ok_or(Error::Reply)?)?;
+                let rotation = object.read().rotation;
+                Ok(rotation.into())
+            }
+            S::SceneryNew => {
+                // Scenery(id, location, type, rotation).
+                let Some(Arg::List(at)) = args.get(1) else {
+                    return Err(Error::Reply);
+                };
+                let at = doors::Location::new(int(at.first())?, int(at.get(1))?, int(at.get(2))?);
+                let constructed = crate::world::scenery_node::construct(
+                    &mut self.live.walk.scene.definitions,
+                    int(args.first())?,
+                    at,
+                    int(args.get(2))?,
+                    int(args.get(3))?,
+                    false,
+                );
+                match constructed {
+                    Ok(made) => {
+                        self.made = Some(made);
+                        Ok(MADE.into())
+                    }
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::ApiAnimationFinished => {
+                // clocks[ANIMATION_END] < GameWorld.ticks.
+                let clock = self.clock(ANIMATION_END)?;
+                Ok((clock < self.live.inner.ticks).into())
+            }
+            S::ApiAnimate => {
+                // animate(entity, anim, forced): `animator.animate`.
+                let id = int(args.first())?;
+                let animation = match args.get(1) {
+                    Some(Arg::Null) => Animation::new(id),
+                    Some(Arg::Text(priority)) if priority == "HIGH" => {
+                        Animation::with(id, 0, Some(Priority::High))
+                    }
+                    _ => return Err(Error::Reply),
+                };
+                if args.get(2) != Some(&Arg::Bool(false)) {
+                    // `animator.forceAnimation`: no gathering body asks.
+                    return self.refuse(service);
+                }
+                self.live
+                    .entity_visualize(&p, Some(animation), None)
+                    .or_else(|e| self.fail(e))?;
+                Ok(Arg::Null)
+            }
+            S::ApiDelayScript => self.script(ScriptCall::Delay(int(args.first())?)),
+            S::ScriptsReset => self.script(ScriptCall::Clear).map(|_| Arg::Null),
+            S::ApiGetItemFromEquipment => {
+                // `player.equipment.get(slot.ordinal)`.
+                let name = text(args.first())?;
+                let slot = EQUIPMENT_SLOTS
+                    .iter()
+                    .position(|slot| *slot == name)
+                    .ok_or(Error::Reply)?;
+                match combat_swing::Host::equipment(self.live, &p, slot as i32) {
+                    Ok(Some(item)) => Ok(item.read().id().into()),
+                    Ok(None) => Ok(Arg::Null),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::ApiInEquipment => {
+                // inEquipment(player, id, amount): the item in the slot the
+                // definition's `equipment_slot` names, if it is this id.
+                let (id, amount) = (int(args.first())?, int(args.get(1))?);
+                let slot = {
+                    let definition = self.live.inner.items.for_id(id);
+                    let definition = definition.read();
+                    match definition.handlers.get("equipment_slot") {
+                        Some(crate::definitions::property::Property::Int(slot)) => *slot,
+                        None => -1,
+                        Some(_) => return Err(Error::ClassCast),
+                    }
+                };
+                let worn = if slot < 0 {
+                    None
+                } else {
+                    match combat_swing::Host::equipment(self.live, &p, slot) {
+                        Ok(item) => item,
+                        Err(e) => return self.fail(e),
+                    }
+                };
+                let held = worn.map_or(0, |item| {
+                    let item = item.read();
+                    if item.id() == id { item.amount() } else { 0 }
+                });
+                Ok((held >= amount).into())
+            }
+            S::ApiRemoveItem => {
+                // removeItem(player, id, container): `remove(Item(id))`.
+                let node = self.player_node();
+                let item = Everyday(Ctx(self.live)).native(int(args.first())?, 1);
+                let held = match text(args.get(1))? {
+                    "INVENTORY" => Held::Inventory,
+                    "EQUIPMENT" => Held::Equipment,
+                    _ => return self.refuse(service),
+                };
+                let removed = Ctx(self.live).with_container(&node, held, |c, defs, ctx| {
+                    c.remove(Some(&item), None, true, defs, ctx)
+                });
+                self.live.inner.drain(&p);
+                match removed {
+                    Ok(v) => Ok(v.into()),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::ApiAddItemOrDrop => {
+                let node = self.player_node();
+                let (id, amount) = (int(args.first())?, int(args.get(1))?);
+                let added = crate::world::global_items2::Host::add_item_or_drop(
+                    &mut Everyday(Ctx(self.live)),
+                    &node,
+                    id,
+                    amount,
+                );
+                self.live.inner.drain(&p);
+                added.or_else(|e| self.fail(e))?;
+                Ok(Arg::Null)
+            }
+            S::ApiSendDialogue => {
+                // sendDialogue(player, message): splitLines, then the
+                // interpreter's plain dialogue.
+                let node = self.player_node();
+                Everyday(Ctx(self.live))
+                    .dialogue(&node, text(args.first())?)
+                    .or_else(|e| self.fail(e))?;
+                Ok(Arg::Null)
+            }
+            S::ApiInBorders => {
+                let borders = [
+                    int(args.first())?,
+                    int(args.get(1))?,
+                    int(args.get(2))?,
+                    int(args.get(3))?,
+                ];
+                match self.live.in_borders(&p, borders) {
+                    Ok(v) => Ok(v.into()),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::ApiHasTimerActive => match text(args.first())? {
+                // hasTimerActive<StarBonus>(player): the player's timer
+                // of that class (its identifier is unique to it).
+                "StarBonus" => match self.live.has_timer_of(p.node(), STAR_BONUS) {
+                    Ok(v) => Ok(v.into()),
+                    Err(e) => self.fail(e),
+                },
+                _ => self.refuse(service),
+            },
+            S::DiaryGetArmour => {
+                // achievementDiaryManager.armour.
+                let answer = super::super::subclasses::with_diaries(self.live, &p, |h, owner| {
+                    diary::armour(h, owner)
+                });
+                match answer {
+                    Ok(v) => Ok(v.into()),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::DiaryGetLevel => {
+                // achievementDiaryManager.getDiary(type).level.
+                let kind = match text(args.first())? {
+                    "VARROCK" => diary::VARROCK,
+                    _ => return self.refuse(service),
+                };
+                let answer = super::super::subclasses::with_diaries(self.live, &p, |h, owner| {
+                    let manager = diary::Host::diaries(h, owner)?;
+                    let found = manager.diaries.iter().find(|d| d.kind == kind);
+                    diary::completed_level(found.ok_or(crate::world::player_managers::Error::Null)?)
+                });
+                match answer {
+                    Ok(v) => Ok(v.into()),
+                    Err(e) => self.fail(e),
+                }
+            }
+            S::RngMathNextDouble => Ok(self.live.inner.generators.math_random().into()),
+            S::RngShuffleNextInt => {
+                match self
+                    .live
+                    .inner
+                    .generators
+                    .shuffle_next_int(int(args.first())?)
+                {
+                    Some(v) => Ok(v.into()),
+                    None => self.fail("Random.nextInt of a bound below 1"),
+                }
+            }
+            S::RngThreadLocalNextInt => {
+                match self
+                    .live
+                    .inner
+                    .generators
+                    .thread_local_next_int(int(args.first())?)
+                {
+                    Some(v) => Ok(v.into()),
+                    None => self.fail("ThreadLocalRandom.nextInt of a bound below 1"),
                 }
             }
             S::RngSharedNextInt => {
@@ -625,7 +852,17 @@ impl Context for Chop<'_> {
     fn defer(&mut self, service: Service, args: &[Arg], task: Task) -> Result<()> {
         // queueScript(player, delay, strength) { ... }: the lambda with
         // the tree it captured, in the player's script queue.
-        if service != Service::ApiQueueScript {
+        if service == Service::PulseManagerRun {
+            // player.pulseManager.run(object : Pulse(delay) { ... }):
+            // ProspectListener's message (super::mining).
+            let (p, rock) = (self.p.clone(), self.node.clone());
+            let delay = int(args.first())?;
+            return self
+                .live
+                .run_prospect_pulse(&p, &rock, delay, task)
+                .or_else(|e| self.fail(e));
+        }
+        if service != Service::ApiQueueScript || self.skill != "woodcutting" {
             return self.refuse(service);
         }
         let delay = int(args.first())?;
@@ -642,16 +879,16 @@ impl Context for Chop<'_> {
         let function = Function::new(
             FunctionKind::Void,
             QUEUED_CLASS,
-            Queued::Woodcutting(task, self.tree.clone()),
+            Queued::Woodcutting(task, self.node.clone()),
         );
         self.script(ScriptCall::Queue(function, delay, strength, *persist))
             .map(|_| ())
     }
 }
 
-type Bound<T> = std::result::Result<T, io::Error>;
+pub(super) type Bound<T> = std::result::Result<T, io::Error>;
 
-fn bind(e: impl std::fmt::Debug) -> io::Error {
+pub(super) fn bind(e: impl std::fmt::Debug) -> io::Error {
     io::Error::Binding(Some(format!("{e:?}")))
 }
 
@@ -660,13 +897,26 @@ impl Live {
         &mut self,
         p: &P,
         tree: &doors::Handle,
-        f: impl FnOnce(&mut Chop<'_>) -> Result<T>,
+        f: impl FnOnce(&mut Gather<'_>) -> Result<T>,
     ) -> Bound<T> {
-        let mut host = Chop {
+        self.gather(p, tree, "woodcutting", f)
+    }
+
+    /// A gathering body over the live world, for one player and one tree
+    /// or rock.
+    pub(super) fn gather<T>(
+        &mut self,
+        p: &P,
+        node: &doors::Handle,
+        skill: &'static str,
+        f: impl FnOnce(&mut Gather<'_>) -> Result<T>,
+    ) -> Bound<T> {
+        let mut host = Gather {
             live: self,
             p: p.clone(),
-            tree: tree.clone(),
-            stump: None,
+            node: node.clone(),
+            made: None,
+            skill,
             error: None,
         };
         f(&mut host).map_err(|e| match host.error.take() {
@@ -680,7 +930,7 @@ impl Live {
     /// and, when the requirements hold, runs it with "You swing your axe at
     /// the tree...".
     pub fn run_woodcutting_pulse(&mut self, p: &P, tree: &doors::Handle) -> Bound<()> {
-        let mut pulse = woodcutting::Pulse::new(PLAYER, TREE);
+        let mut pulse = woodcutting::Pulse::new(PLAYER, NODE);
         // `Pulse(1, player, node)`; the tree's active flag is read by the
         // body below, the player leaving stops the pulse
         // (super::super::round).
@@ -809,7 +1059,7 @@ impl Live {
             max_players: crate::world::repository::MAX_PLAYERS,
         };
         self.chop(p, &tree, |host| {
-            woodcutting::handle_woodcutting(host, &settings, PLAYER, TREE, stage)
+            woodcutting::handle_woodcutting(host, &settings, PLAYER, NODE, stage)
         })
         .map_err(crate::world::script_runtime::error)
     }
