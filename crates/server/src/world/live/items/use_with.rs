@@ -10,8 +10,11 @@
 //! `MovementPulse` of the canonical movement toward the node (the scene
 //! object's canonical node for scenery) whose arrival sends "Nothing
 //! interesting happens." (super::super::talk's approaches). The movement to
-//! a ground item, a UseWithHandler's item-on-item pulse and morphing scenery
-//! (`getChild` through varbits/varps) are refused by name. The debug lines
+//! a ground item and morphing scenery (`getChild` through varbits/varps) are
+//! refused by name. An item-on-item use with a `HANDLERS` list runs
+//! `UseWithHandler$2` as the player's STANDARD pulse a tick later
+//! (super::herblore_tools' GrindItemPlugin and HerbTarPlugin are the two
+//! handlers keyed by an item). The debug lines
 //! use the ported `NPC`, `Player` and `Scenery` `toString`.
 use super::{Ctx, Node, err, refused};
 use crate::{
@@ -26,10 +29,15 @@ use crate::{
     },
 };
 
-/// A use-with pulse the player's pulse manager runs: a `MovementPulse`
-/// toward the target whose arrival runs the body
-/// ([`super::super::round::Pending`]).
-pub type UsePulse = crate::world::movement::Movement;
+/// A use-with pulse the player's pulse manager runs.
+pub enum UsePulse {
+    /// A `MovementPulse` toward the target whose arrival runs the body
+    /// ([`super::super::round::Pending`]).
+    Movement(crate::world::movement::Movement),
+    /// `UseWithHandler$2`: the item-on-item `Pulse(1, player, used, with)`
+    /// with its body.
+    Items(Body<Node>),
+}
 
 impl use_with::Context for Ctx<'_> {
     type Pulse = UsePulse;
@@ -178,14 +186,34 @@ impl use_with::Context for Ctx<'_> {
                 None,
                 super::super::round::Pending::UseWith(body),
             )
+            .map(UsePulse::Movement)
             .map_err(err)
     }
-    fn delayed(&mut self, _: &Event<Node>, _: Body<Node>) -> Result<UsePulse> {
-        refused("UseWithHandler's item-on-item Pulse (no content use-with handler is ported)")
+    fn delayed(&mut self, _: &Event<Node>, body: Body<Node>) -> Result<UsePulse> {
+        Ok(UsePulse::Items(body))
     }
-    fn run_pulse(&mut self, _: &Node, pulse: UsePulse) -> Result<()> {
+    fn run_pulse(&mut self, player: &Node, pulse: UsePulse) -> Result<()> {
         // player.getPulseManager().run(pulse, STANDARD).
-        self.0.run_listener_movement(pulse).map_err(err)
+        match pulse {
+            UsePulse::Movement(pulse) => self.0.run_listener_movement(pulse).map_err(err),
+            UsePulse::Items(body) => {
+                // `new Pulse(1, player, used, with)`: the two items are
+                // never inactive, the player leaving stops the pulse.
+                let p = self.player_of(player)?;
+                let handle = Shared::new(pulses::Pulse::new(
+                    1,
+                    Some(Shared::new(vec![Some(p.node())])),
+                    pulses::Class::Other,
+                    body.class_name().into(),
+                ));
+                if self.0.run_standard_pulse(&p, handle.clone()).map_err(err)? {
+                    let pulses = &mut self.0.item_actions.use_item_pulses;
+                    pulses.retain(|(h, _)| h.read().running);
+                    pulses.push((handle, body));
+                }
+                Ok(())
+            }
+        }
     }
     fn dispatch_use(&mut self, _: &Node, _: i32, _: i32) -> Result<()> {
         self.0
@@ -252,6 +280,12 @@ impl super::super::host::Live {
     }
     /// A use-with pulse's body, if this world submitted it.
     pub fn use_pulse(&mut self, pulse: &pulses::Handle) -> Option<Result<bool>> {
+        let items = &mut self.item_actions.use_item_pulses;
+        if let Some(at) = items.iter().position(|(h, _)| h.same(pulse)) {
+            // UseWithHandler$2's body.
+            let (_, body) = items.remove(at);
+            return Some(use_with::pulse(&mut Ctx(self), &body));
+        }
         let at = self
             .item_actions
             .use_pulses

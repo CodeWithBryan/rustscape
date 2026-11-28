@@ -904,6 +904,7 @@ impl super::super::host::Live {
         let mut altar = false;
         let mut herb_clean = false;
         let mut potion_mixing = false;
+        let mut barbarian_mix = false;
         let mut log_fletching = false;
         let (mut stringing, mut arrows) = (false, false);
         let mut ammo = Vec::new();
@@ -950,6 +951,9 @@ impl super::super::host::Live {
                 if let Some(class) = classes.into_iter().find(|class| *class == name) {
                     ammo.push(class);
                 }
+            }
+            if name == crate::world::herblore_tools::MIX_CLASS {
+                barbarian_mix = true;
             }
             if name == crate::world::herblore::CLEAN_CLASS {
                 herb_clean = true;
@@ -1057,6 +1061,11 @@ impl super::super::host::Live {
             // Bolt, Dart, Limbing, GemBolt and Grapple listeners
             // (super::fletching_ammo).
             self.define_fletching_ammo_listeners(class)?;
+        }
+        if barbarian_mix {
+            // BarbarianMixListener.defineListeners (super::herblore_tools):
+            // scanned before the two other herblore listeners.
+            self.define_barbarian_mix_listener()?;
         }
         if herb_clean {
             // HerbCleanListener.defineListeners (super::herblore): the only
@@ -1182,6 +1191,9 @@ impl super::super::host::Live {
                 self.potion_mixing_use(*mixing, player, used, with)
                     .map_err(bind),
             );
+        }
+        if f.value::<super::herblore_tools::Mix>().is_some() {
+            return Some(self.barbarian_mix_use(player, used, with).map_err(bind));
         }
         if f.value::<super::fletching::KnifeOnLogs>().is_some() {
             return Some(self.log_fletching_use(player, with).map_err(bind));

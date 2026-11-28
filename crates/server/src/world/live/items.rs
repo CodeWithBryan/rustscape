@@ -55,6 +55,7 @@ pub mod fletching;
 pub mod fletching_ammo;
 pub mod fletching_assembly;
 pub mod herblore;
+pub mod herblore_tools;
 pub mod milking;
 pub mod mining;
 pub mod otto;
@@ -174,6 +175,11 @@ pub struct ItemActions {
     pub drops: Vec<(i32, drop::DropScript<Node>)>,
     /// `runUnhandledAction` pulses of use-with ([`use_with`]).
     pub use_pulses: Vec<(pulses::Handle, Node)>,
+    /// `UseWithHandler$2` pulses of item-on-item uses ([`use_with`]).
+    pub use_item_pulses: Vec<(
+        pulses::Handle,
+        crate::world::packet_handlers::use_with::Body<Node>,
+    )>,
     /// `UseWithHandler.HANDLERS`.
     pub use_handlers: crate::world::packet_handlers::use_with::Registry,
 }

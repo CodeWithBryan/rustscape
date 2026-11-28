@@ -466,8 +466,8 @@ items, NPCs, scenery and use-with (false), `InteractionListeners` for ground
 items (false) and for a scenery option nothing registers (false; a
 registered scenery `on` listener runs, see the coal truck),
 `UseWithHandler.HANDLERS` for a key no installed handler registered (null: only
-CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's SmeltUseWithHandler
-and SmithingPlugin are installed),
+CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's SmeltUseWithHandler,
+SmithingPlugin, GrindItemPlugin and HerbTarPlugin are installed),
 `QuestRepository.isComplete` for smelting (false: no blurite) and for
 smithing with `hasRequirement` (false: Doric's anvil 2782 refuses, no dart
 tips or claws), `SkillcapePerks.isActive(BAREFISTED_SMITHING)` (false),
@@ -541,7 +541,7 @@ varp-configured scenery (morphs) and their debug lookup, the bank booths'
 queue) and the bank chest and deposit box listeners (the global handlers'
 scenery lambdas are refused by name where they are invoked), scenery option handlers that are not global handlers or DoorManagingPlugin (other
 content, CowMilkingPlugin, FurnaceOptionPlugin and SmithingPlugin's aside); the use-with MovementPulse to a ground item, a UseWithHandler's
-MovementPulse with a `getDestination` override and item-on-item Pulse (no such handler class is installed),
+MovementPulse with a `getDestination` override (no such handler class is installed),
 the dialogue plugins CowMilkingPlugin opens (3807 without a bucket or a pail, 70099 for "steal-cowbell"),
 the dialogue plugins SmithingPlugin opens (82127843 for the dragon square and dragonfire shields, 62362 for the godsword),
 every `creatures::Host` and `equipment_registers::Host` service outside cow milking (sheep, the stray dog's behaviour, decanting, chinchompas, salamanders, the hasta listener),
@@ -1008,9 +1008,11 @@ stand-ins); this test checks the production binding end to end.
   Not installed:
   the `UseWithHandler` classes
   other than CowMilkingPlugin's BucketHandler, FurnaceOptionPlugin's
-  SmeltUseWithHandler and SmithingPlugin (the three handlers in
-  `UseWithHandler.HANDLERS` here; smelting and smithing are ported without
-  a JVM corpus, docs/smelting.md and docs/smithing.md), the
+  SmeltUseWithHandler, SmithingPlugin, GrindItemPlugin and HerbTarPlugin
+  (the five handlers in `UseWithHandler.HANDLERS` here; smelting and
+  smithing are ported without a JVM corpus, docs/smelting.md and
+  docs/smithing.md; the two herblore plugins are docs/herblore-tools.md),
+  the
   enchanted-tablet and ectophial use-withs of `world::global_items`, and
   everything not ported at all: the rest of the cooking package (recipes,
   dough, dairy, fermenting, the tutorial branch; docs/cooking.md),
@@ -1111,6 +1113,14 @@ stand-ins); this test checks the production binding end to end.
   two use-with registrations with the skill dialogue, and HerblorePulse on
   the player's pulse manager. Quest stages are the save's, and the
   potions that ask `hasRequirement` are refused by a named default.
+  Grinding, herb tar and barbarian mixes are installed
+  (`items/herblore_tools.rs` over `world/herblore_tools.rs`,
+  docs/herblore-tools.md; the library is replayed against the JVM corpus
+  `fixtures/herblore-tools`, the live binding is not): GrindItemPlugin and
+  HerbTarPlugin in `UseWithHandler.HANDLERS`, reached through the
+  item-on-item pulse `UseWithHandler$2`, with their skill dialogues and
+  pulses, and BarbarianMixListener's use-with registrations. SwampToadPlugin
+  is not ported.
   Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a

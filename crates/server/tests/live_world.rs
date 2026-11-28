@@ -4315,6 +4315,7 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     door_part(address, &players).await;
     pick_part(address, &players).await;
     herb_part(address, &players).await;
+    grind_part(address, &players).await;
 }
 
 /// The chest part of the gather scenario: ThievableChestPlugin on the
@@ -4733,6 +4734,232 @@ async fn herb_part(address: std::net::SocketAddr, players: &std::path::Path) {
         "herbman cleaned two guams, made two guam potions (unf) and mixed two attack potions"
     );
     herb.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The grinding, herb tar and barbarian mix part of the gather scenario:
+/// GrindItemPlugin and HerbTarPlugin through `UseWithHandler.run`'s
+/// item-on-item pulse, and BarbarianMixListener. Without the barbarian
+/// training attribute roe on an attack potion is nothing interesting. With
+/// it at 1, at Herblore 19 with the Druidic Ritual: "All" grinds two
+/// unicorn horns, "Make 1" grinds ten of 25 fishing bait, "All" makes two
+/// guam tars from 30 swamp tar and the roe makes an attack mix with Otto's
+/// hint.
+async fn grind_part(address: std::net::SocketAddr, players: &std::path::Path) {
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let count = |c: &Client, from: usize, line: &str| {
+        c.messages[from..].iter().filter(|(_, m)| m == line).count()
+    };
+    let amount = |c: &Client, id: i32| -> i32 {
+        c.containers
+            .get(&93)
+            .map(|slots| {
+                slots
+                    .values()
+                    .filter(|(item, _)| *item == id)
+                    .map(|(_, amount)| *amount)
+                    .sum()
+            })
+            .unwrap_or(0)
+    };
+    let slot_of = |c: &Client, id: i32| -> i32 {
+        c.containers[&93]
+            .iter()
+            .filter(|(_, (item, _))| *item == id)
+            .map(|(slot, _)| *slot)
+            .min()
+            .expect("the item's slot")
+    };
+    let shown = |c: &Client, from: usize, pointer: i32, what: &str| {
+        c.texts[from..]
+            .iter()
+            .any(|(_, at, t)| *at == pointer && t.contains(what))
+    };
+    let start = [3222, 3218, 0];
+    write_save(
+        players,
+        "traceone",
+        "mixnovice",
+        start,
+        &[(0, 123, 1), (1, 11324, 1)],
+    );
+    let (code, novice) = Client::login(address, "mixnovice").await;
+    assert_eq!(code, 2, "mixnovice's login");
+    let mut novice = novice.unwrap();
+    novice
+        .until(Duration::from_secs(10), "mixnovice's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = novice.messages.len();
+    novice.send(use_item_on_item(11324, 1, 123, 0)).await;
+    novice
+        .until_pinging(Duration::from_secs(20), "the untrained mix", |c| {
+            said(c, from, "Nothing interesting happens.")
+        })
+        .await;
+    assert_eq!(
+        (
+            amount(&novice, 123),
+            amount(&novice, 11324),
+            amount(&novice, 11429)
+        ),
+        (1, 1, 0),
+        "nothing is mixed without the barbarian training"
+    );
+    novice.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let inventory = [
+        (0, 233, 1),
+        (1, 237, 1),
+        (2, 237, 1),
+        (3, 1939, 30),
+        (4, 249, 1),
+        (5, 249, 1),
+        (6, 123, 1),
+        (7, 11324, 1),
+        (8, 313, 25),
+    ];
+    write_save_with(players, "traceone", "grindman", start, &inventory, |save| {
+        save["skills"][15]["static"] = Value::String("19".into());
+        save["skills"][15]["dynamic"] = Value::String("19".into());
+        // The experience stays under the 175 an unfinished tutorial caps it at.
+        save["skills"][15]["experience"] = Value::String("0.0".into());
+        // Druidic Ritual (quest index 48) complete.
+        save["quests"]["questStages"] = serde_json::json!([{"questId": "48", "questStage": "100"}]);
+        // BarbarianTraining.attributeHerblore at 1: Otto has explained the mixes.
+        save.as_object_mut()
+            .unwrap()
+            .entry("attributes")
+            .or_insert_with(|| Value::Array(vec![]))
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"key": "barbtraining:herblore", "type": "int", "value": "1"}));
+    });
+    let (code, grind) = Client::login(address, "grindman").await;
+    assert_eq!(code, 2, "grindman's login");
+    let mut grind = grind.unwrap();
+    grind
+        .until(Duration::from_secs(10), "grindman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let from = grind.messages.len();
+
+    // Two horns on the pestle and mortar: the dialogue, and "All" asks for two.
+    let texts = grind.texts.len();
+    grind.send(use_item_on_item(237, 1, 233, 0)).await;
+    grind
+        .until_pinging(Duration::from_secs(20), "the grinding dialogue", |c| {
+            shown(c, texts, (309 << 16) | 6, "nicorn")
+        })
+        .await;
+    grind.send(continue_option(309, 3)).await;
+    grind
+        .until_pinging(Duration::from_secs(30), "two horns ground", |c| {
+            amount(c, 235) == 2
+        })
+        .await;
+    grind.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (
+            amount(&grind, 237),
+            amount(&grind, 235),
+            amount(&grind, 233)
+        ),
+        (0, 2, 1),
+        "both horns are dust and the pestle and mortar stays"
+    );
+
+    // 25 fishing bait, "Make 1": one reward grinds ten.
+    let texts = grind.texts.len();
+    grind.send(use_item_on_item(313, 8, 233, 0)).await;
+    grind
+        .until_pinging(Duration::from_secs(20), "the bait dialogue", |c| {
+            shown(c, texts, (309 << 16) | 6, "bait")
+        })
+        .await;
+    grind.send(continue_option(309, 6)).await;
+    grind
+        .until_pinging(Duration::from_secs(30), "ten bait ground", |c| {
+            amount(c, 12129) == 10
+        })
+        .await;
+    grind.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (amount(&grind, 313), amount(&grind, 12129)),
+        (15, 10),
+        "Make 1 grinds ten of the bait"
+    );
+    assert_eq!(
+        grind.skills.get(&15).map(|s| s.1),
+        Some(0),
+        "grinding is no experience"
+    );
+
+    // Two clean guams on 30 swamp tar: "All" asks for the two guams.
+    let texts = grind.texts.len();
+    let (guam, tar) = (slot_of(&grind, 249), slot_of(&grind, 1939));
+    grind.send(use_item_on_item(249, guam, 1939, tar)).await;
+    grind
+        .until_pinging(Duration::from_secs(20), "the tar dialogue", |c| {
+            shown(c, texts, (309 << 16) | 6, "tar")
+        })
+        .await;
+    grind.send(continue_option(309, 3)).await;
+    grind
+        .until_pinging(Duration::from_secs(40), "two guam tars", |c| {
+            amount(c, 10142) == 30 && count(c, from, "You add the guam to the swamp tar.") == 2
+        })
+        .await;
+    grind.pump(Duration::from_secs(3)).await;
+    assert_eq!(
+        (
+            amount(&grind, 249),
+            amount(&grind, 1939),
+            amount(&grind, 10142)
+        ),
+        (0, 0, 30),
+        "each guam takes 15 swamp tar and makes 15 guam tar"
+    );
+    assert_eq!(
+        grind.skills.get(&15).map(|s| s.1),
+        Some(60),
+        "two guam tars are 60 experience"
+    );
+
+    // Roe on an attack potion (2) with the training at 1: the mix and Otto's hint.
+    let texts = grind.texts.len();
+    let (roe, potion) = (slot_of(&grind, 11324), slot_of(&grind, 123));
+    grind.send(use_item_on_item(11324, roe, 123, potion)).await;
+    grind
+        .until_pinging(Duration::from_secs(20), "the attack mix", |c| {
+            amount(c, 11429) == 1 && said(c, from, "You combine your potion with the fish eggs.")
+        })
+        .await;
+    grind
+        .until_pinging(Duration::from_secs(10), "Otto's hint", |c| {
+            c.texts[texts..]
+                .iter()
+                .any(|(_, _, t)| t.contains("barbarian ways"))
+        })
+        .await;
+    assert_eq!(
+        (amount(&grind, 123), amount(&grind, 11324)),
+        (0, 0),
+        "the potion and the roe are used"
+    );
+    assert_eq!(
+        grind.skills.get(&15).map(|s| s.1),
+        Some(68),
+        "an attack mix is 8 experience"
+    );
+    eprintln!(
+        "grindman ground two unicorn horns and ten fishing bait, made two guam tars and an attack mix"
+    );
+    grind.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
 }
 

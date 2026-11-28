@@ -20,11 +20,11 @@ Scope: the pinned `content/global/skill/herblore/HerbCleanListener.kt`,
 The bodies are functions over `herblore::Host`; every call the original
 makes outside these classes is a required method with no default.
 
-Not ported: the rest of `content.global.skill.herblore`: grinding
-(`GrindItemPlugin`, `GrindingItem`), herb tar (`HerbTarPlugin`,
-`HerbTarPulse`, `Tars`), barbarian mixes (`BarbarianMixListener`,
-`BarbarianPotion`) and swamp toads (`SwampToadPlugin`). Drinking a potion
-is docs/consumables.md.
+Elsewhere: grinding (`GrindItemPlugin`, `GrindingItem`), herb tar
+(`HerbTarPlugin`, `HerbTarPulse`, `Tars`) and barbarian mixes
+(`BarbarianMixListener`, `BarbarianPotion`) are docs/herblore-tools.md.
+Not ported: swamp toads (`SwampToadPlugin`). Drinking a potion is
+docs/consumables.md.
 
 ## Evidence, and what it does not show
 

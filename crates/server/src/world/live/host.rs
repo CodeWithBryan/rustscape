@@ -1648,6 +1648,11 @@ impl driver::Host<P> for Live {
         if let Some(result) = self.herblore_pulse_body(pulse) {
             return result.map_err(fail);
         }
+        // GrindItemPlugin's pulse and HerbTarPulse
+        // (super::items::herblore_tools).
+        if let Some(result) = self.herblore_tool_pulse_body(pulse) {
+            return result.map_err(fail);
+        }
         // ProspectListener's message pulse (super::items::mining).
         if let Some(result) = self.prospect_pulse_body(pulse) {
             return result.map_err(fail);
