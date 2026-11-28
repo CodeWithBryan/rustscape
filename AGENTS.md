@@ -1142,7 +1142,10 @@ Java and Kotlin, while preserving observable gameplay and improving performance.
   BoneBuryEvent; docs/bone-burying.md), praying at altars
   (world/prayer_altar.rs, run live by world/live/items/altar.rs: the
   tribal statue never recharges because no quest is registered, and the
-  chaos altar 61's "check" is not installed; docs/prayer-altar.md) and Otto Godblessed's barbarian
+  chaos altar 61's "check" is not installed; docs/prayer-altar.md),
+  fletching logs with a knife (world/fletching_logs.rs, run live by
+  world/live/items/fletching.rs with the make-X skill dialogue; the rest
+  of fletching is not ported; docs/fletching-logs.md) and Otto Godblessed's barbarian
   training conversation (dialogue_dsl/otto.rs, run live by
   world/live/items/otto.rs; its spear topic always rejects because no
   quest is registered, and the two books cannot be read); of the

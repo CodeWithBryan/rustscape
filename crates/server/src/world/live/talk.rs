@@ -11,10 +11,11 @@
 //! The interpreter is made the first time a player's is asked for
 //! (`new DialogueInterpreter(player)` in the Player constructor) and dropped
 //! when the player leaves. The dialogue plugin registry (the static
-//! `DialogueInterpreter.PLUGINS`) holds no content plugin: dialogue content
-//! other than the banker conversation and the DSLs is not ported, so
-//! `open(key)` of an NPC answers false as the original does with nothing
-//! registered for that key.
+//! `DialogueInterpreter.PLUGINS`) holds SkillDialoguePlugin alone
+//! (super::items::fletching) and no NPC's plugin: dialogue content other
+//! than the banker conversation and the DSLs is not ported, so `open(key)`
+//! of an NPC answers false as the original does with nothing registered for
+//! that key.
 use super::{P, host::Live};
 use crate::{
     definitions::item::{Handle as Definition, Shared},
@@ -35,7 +36,7 @@ use std::{collections::HashMap, sync::Arc};
 /// The dialogue state of the live world.
 #[derive(Default)]
 pub struct TalkWorld {
-    /// `DialogueInterpreter.PLUGINS` (no content plugin registered).
+    /// `DialogueInterpreter.PLUGINS` (SkillDialoguePlugin alone).
     pub registry: d::Registry<Live>,
     /// Each player's interpreter, by node.
     pub interpreters: HashMap<usize, Interpreter<Live>>,

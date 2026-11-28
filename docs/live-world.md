@@ -1052,7 +1052,16 @@ stand-ins); this test checks the production binding end to end.
   more, Elidinis' statuette also raises hitpoints and the chaos altar 412
   queues its trap teleport; `hasRequirement` answers false, so the tribal
   statue never recharges, `PrayerPointsRechargeEvent` is skipped and the
-  chaos altar 61's "check" (Merlin's Crystal) is not installed. Barbarian fishing is installed (`items/barbarian.rs`, no
+  chaos altar 61's "check" (Merlin's Crystal) is not installed. Fletching
+  logs with a knife is installed (`items/fletching.rs` over
+  `world/fletching_logs.rs`, no JVM corpus, docs/fletching-logs.md):
+  LogCraftableListeners opens the make-X SkillDialogueHandler
+  (`dialogue_dsl/skill.rs`; SkillDialoguePlugin is registered in the
+  dialogue registry at boot, the first plugin there) and
+  CraftItemWithLogScript cuts a log every three ticks; the ogre crafts
+  read quest stages nothing here advances, and the rest of fletching
+  (stringing, arrows, bolts, darts, crossbows, gems, grapples) is not
+  ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
   content tick listener, and "use-rod", the bed's "search" and the knife

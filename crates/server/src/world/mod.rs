@@ -38,6 +38,7 @@ pub mod entity_regions;
 pub mod equipment_registers;
 pub mod familiars;
 pub mod firemaking;
+pub mod fletching_logs;
 pub mod force_movement;
 pub mod gathering;
 pub mod global_handlers;

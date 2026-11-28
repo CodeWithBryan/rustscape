@@ -82,6 +82,8 @@ pub enum Queued {
     BoneBury(i32, crate::inventory::item::Handle),
     /// PrayerAltarListener's script: the chaos altar's trap.
     AltarTrap,
+    /// CraftItemWithLogScript's script: the craft's index and the amount.
+    LogCraft(usize, i32),
 }
 impl NativeObject for Queued {}
 
@@ -415,6 +417,9 @@ impl Live {
                 }
                 Some(Queued::BoneBury(id, item)) => self.bone_bury_queued(&p, *id, item),
                 Some(Queued::AltarTrap) => self.altar_trap_queued(&p),
+                Some(Queued::LogCraft(craft, amount)) => {
+                    self.log_fletching_queued(&p, *craft, *amount, stage)
+                }
                 None => Err(refused("a queued script this world did not queue")),
             },
             Arguments::UseWith { .. } => Err(refused("use-with interaction scripts")),

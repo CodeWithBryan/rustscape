@@ -49,6 +49,7 @@ pub mod cooking;
 pub mod everyday;
 pub mod firemaking;
 pub mod fishing;
+pub mod fletching;
 pub mod milking;
 pub mod mining;
 pub mod otto;
