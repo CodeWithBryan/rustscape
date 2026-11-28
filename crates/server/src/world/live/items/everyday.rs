@@ -901,6 +901,7 @@ impl super::super::host::Live {
         let mut firemaking = false;
         let mut bones = false;
         let mut altar = false;
+        let mut log_fletching = false;
         use crate::world::gathering::barbarian;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
@@ -922,6 +923,9 @@ impl super::super::host::Live {
             }
             if name == crate::world::firemaking::LISTENER_CLASS {
                 firemaking = true;
+            }
+            if name == crate::world::fletching_logs::LISTENER_CLASS {
+                log_fletching = true;
             }
             if name == crate::world::prayer_altar::LISTENER_CLASS {
                 altar = true;
@@ -997,6 +1001,16 @@ impl super::super::host::Live {
         if firemaking {
             // FiremakingListener.defineListeners (super::firemaking).
             self.define_firemaking_listener()?;
+        }
+        if crate::startup::scan::section("scan.initializable")
+            .contains(&super::fletching::SKILL_DIALOGUE_PLUGIN)
+        {
+            // SkillDialoguePlugin.init() (super::fletching).
+            self.define_skill_dialogue_plugin()?;
+        }
+        if log_fletching {
+            // LogCraftableListeners.defineListeners (super::fletching).
+            self.define_log_fletching_listener()?;
         }
         if altar {
             // PrayerAltarListener.defineListeners (super::altar).
@@ -1091,6 +1105,9 @@ impl super::super::host::Live {
         }
         if f.value::<crate::world::cooking::Interaction>().is_some() {
             return Some(self.cooking_use(player, used, with));
+        }
+        if f.value::<super::fletching::KnifeOnLogs>().is_some() {
+            return Some(self.log_fletching_use(player, with).map_err(bind));
         }
         if f.value::<super::firemaking::TinderboxOnLogs>().is_some() {
             return Some(self.firemaking_use(player, None, with).map_err(bind));

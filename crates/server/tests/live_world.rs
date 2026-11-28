@@ -3908,6 +3908,77 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     eprintln!("prayaltar recharged 3 to 43 prayer points at the altar 36972 at {ALTAR:?}");
     pray.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // LogCraftableListeners: a knife on logs opens the four-option make-X
+    // dialogue (305). A shortbow needs level 5 and is refused with a
+    // dialogue; "Make 10" arrow shafts cuts the three logs, one every three
+    // ticks, 15 shafts and 5 experience each.
+    let inventory = [(0, 946, 1), (1, 1511, 1), (2, 1511, 1), (3, 1511, 1)];
+    write_save(&players, "traceone", "fletchlog", start, &inventory);
+    let (code, fletch) = Client::login(address, "fletchlog").await;
+    assert_eq!(code, 2, "fletchlog's login");
+    let mut fletch = fletch.unwrap();
+    fletch
+        .until(Duration::from_secs(10), "fletchlog's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let shown = |c: &Client, from: usize, pointer: i32, what: &str| {
+        c.texts[from..]
+            .iter()
+            .any(|(_, at, t)| *at == pointer && t.contains(what))
+    };
+    let read = |c: &Client, from: usize, what: &str| {
+        c.texts[from..].iter().any(|(_, _, t)| t.contains(what))
+    };
+    let texts = fletch.texts.len();
+    fletch.send(use_item_on_item(946, 0, 1511, 1)).await;
+    fletch
+        .until_pinging(Duration::from_secs(20), "the make-X dialogue", |c| {
+            shown(c, texts, (305 << 16) | 9, "Arrow shaft")
+                && shown(c, texts, (305 << 16) | 13, "Shortbow")
+                && shown(c, texts, (305 << 16) | 17, "Longbow")
+                && shown(c, texts, (305 << 16) | 21, "Wooden stock")
+        })
+        .await;
+    // "Make 1" of the second item (the interpreter hands its plugin the
+    // component less one).
+    let texts = fletch.texts.len();
+    fletch.send(continue_option(305, 13)).await;
+    fletch
+        .until_pinging(Duration::from_secs(20), "the level refusal", |c| {
+            read(c, texts, "You need a Fletching skill of 5 or above to")
+        })
+        .await;
+    assert_eq!(held(&fletch, 1511), 3, "no log was cut for the shortbow");
+    // "Make 10" of the first item.
+    let texts = fletch.texts.len();
+    let from = fletch.messages.len();
+    fletch.send(use_item_on_item(946, 0, 1511, 1)).await;
+    fletch
+        .until_pinging(Duration::from_secs(20), "the second make-X dialogue", |c| {
+            shown(c, texts, (305 << 16) | 9, "Arrow shaft")
+        })
+        .await;
+    fletch.send(continue_option(305, 7)).await;
+    fletch
+        .until_pinging(Duration::from_secs(40), "the three logs cut", |c| {
+            held(c, 1511) == 0 && c.skills.get(&9).is_some_and(|s| s.1 == 15)
+        })
+        .await;
+    let cuts = fletch.messages[from..]
+        .iter()
+        .filter(|(_, m)| m == "You carefully cut the wood into 15 arrow shafts.")
+        .count();
+    assert_eq!(cuts, 3, "one message a log");
+    let shafts = fletch.containers[&93]
+        .values()
+        .find(|(item, _)| *item == 52)
+        .map(|(_, amount)| *amount);
+    assert_eq!(shafts, Some(45), "the shafts stack");
+    eprintln!("fletchlog cut three logs into 45 arrow shafts, fletching experience 15");
+    fletch.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used
