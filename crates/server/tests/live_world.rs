@@ -4238,6 +4238,78 @@ async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path)
     );
     bolt.writer.close(1000, "logout").await.unwrap();
     tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // ThievingListeners: a man's "Pickpocket" option. A success gives the
+    // MAN table's three coins and 8 experience; a failure stuns the player
+    // and hits for 1. The chance at level 1 is 181/256, so the attempts
+    // are repeated until one succeeds. The man is the one who spawns in
+    // the castle courtyard (3222,3221); others in view stand behind walls.
+    let start = [3222, 3223, 0];
+    write_save(&players, "traceone", "pickman", start, &[]);
+    let (code, thief) = Client::login(address, "pickman").await;
+    assert_eq!(code, 2, "pickman's login");
+    let mut thief = thief.unwrap();
+    thief
+        .until(Duration::from_secs(10), "pickman's rebuild", |c| {
+            c.base.is_some() && !c.updates.is_empty()
+        })
+        .await;
+    let man = |c: &Client| {
+        let base = c.base?;
+        c.npcs
+            .actors
+            .iter()
+            .filter(|(_, n)| (1..=3).contains(&n.type_id))
+            .min_by_key(|(_, n)| {
+                let (dx, dy) = (base[0] + n.tile[0] - 3222, base[1] + n.tile[1] - 3221);
+                dx.abs().max(dy.abs())
+            })
+            .map(|(i, _)| *i as i32)
+    };
+    thief
+        .until_pinging(Duration::from_secs(15), "a man in view", |c| {
+            man(c).is_some()
+        })
+        .await;
+    // A click is repeated when nothing comes of it within twelve seconds:
+    // the man wanders, and a walk towards him can end short of him or at a
+    // wall ("I can't reach that.").
+    let (mut successes, mut failures, mut unanswered) = (0, 0, 0);
+    for _ in 0..16 {
+        let from = thief.messages.len();
+        let coins = amount(&thief, 995);
+        let index = man(&thief).expect("a man is still in view");
+        thief.send(npc_option3(index)).await;
+        let mut stunned = false;
+        for _ in 0..12 {
+            thief.pump(Duration::from_secs(1)).await;
+            stunned = said(&thief, from, "You have been stunned!");
+            if stunned || amount(&thief, 995) > coins {
+                break;
+            }
+        }
+        if amount(&thief, 995) > coins {
+            successes += 1;
+            assert_eq!(amount(&thief, 995), coins + 3, "a man's three coins");
+            break;
+        }
+        if stunned {
+            failures += 1;
+            // The stun's five ticks.
+            thief.pump(Duration::from_secs(4)).await;
+        } else {
+            unanswered += 1;
+        }
+    }
+    assert_eq!(successes, 1, "pickman never succeeded in sixteen clicks");
+    thief.pump(Duration::from_secs(2)).await;
+    let experience = thief.skills.get(&17).map(|s| s.1);
+    assert_eq!(experience, Some(8), "pickman's thieving experience");
+    eprintln!(
+        "pickman stole 3 coins from a man after {failures} failed attempts and {unanswered} unanswered clicks"
+    );
+    thief.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
 }
 
 /// CowMilkingPlugin: the dairy cow 8689's "Milk" option, then a bucket used

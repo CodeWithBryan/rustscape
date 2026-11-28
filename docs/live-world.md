@@ -1072,7 +1072,14 @@ stand-ins); this test checks the production binding end to end.
   same corpus, docs/fletching-ammo.md): broad bolts are always refused,
   and darts are refused unless the save already holds Tourist Trap at
   stage 100, which nothing here sets; ZogreFletchingListeners is not
-  ported. Barbarian fishing is installed (`items/barbarian.rs`, no
+  ported. Pickpocketing is installed (`items/pickpocket.rs` over
+  `world/thieving_pickpocket.rs`, docs/thieving-pickpocket.md; the
+  library is replayed against the JVM corpus `fixtures/thieving`, the
+  live binding is not): ThievingListeners' "pickpocket" option rolls the
+  18 Pickpockets tables, made on first use; the treasure trail manager
+  and SkillcapePerks are not ported, so `hasClue` is answered from the
+  containers and the smooth hands perk is never set; stalls, chests and
+  doors are not ported. Barbarian fishing is installed (`items/barbarian.rs`, no
   JVM corpus): SpotManager's five spots are made at boot and tick with
   the whole world right before their NPC kernel, the manager is a
   content tick listener, and "use-rod", the bed's "search" and the knife

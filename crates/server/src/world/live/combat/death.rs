@@ -239,9 +239,10 @@ impl PlayerLooter for Looting {
 }
 
 /// The roll's logging services.
-struct RollLog {
-    lines: Vec<String>,
-    skipped: Vec<&'static str>,
+#[derive(Default)]
+pub(in crate::world::live) struct RollLog {
+    pub lines: Vec<String>,
+    pub skipped: Vec<&'static str>,
 }
 impl tables::Host for RollLog {
     fn clue_scrolls(&self, _: tables::ClueLevel) -> Option<&[i32]> {

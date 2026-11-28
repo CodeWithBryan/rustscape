@@ -1,0 +1,81 @@
+{
+  "caseCount": 1018,
+  "constants": {
+    "sha256": "f4e687cd74099a0eb914ff0e98defe0c5f5703634dd7d6aa25ab4ac186b98459",
+    "version": "1.4.28"
+  },
+  "fixtureSha256": "d2ea4a716eeb8fc2c3c5e3e61cb2a40b2bb9ab3c4867a91f4f5b29d7ea7b88a2",
+  "format": 1,
+  "javaVersion": "openjdk version \"11.0.33.1\" 2026-11-17",
+  "jvmFlags": [
+    "-Xmx512m",
+    "-Dfile.encoding=UTF-8",
+    "-Duser.language=en",
+    "-Duser.country=US",
+    "-Duser.variant="
+  ],
+  "kinds": {
+    "forID": 217,
+    "pickpocket": 6330,
+    "registrations": 1,
+    "set": 4824,
+    "tables": 1
+  },
+  "kotlinCompiler": "1.8.20",
+  "scope": "Complete unchanged Pickpockets, ThievingListeners (the pickpocket listener and pickpocketRoll), WeightedItem and IntType, compiled with Kotlin 1.8.20/JDK 11 against the pinned ConstLib 1.4.28 artifact. RandomFunction.random(int,int), random(int) and getSkillSuccessChance, the Skills constants and WeightBasedTable's clue slot constants are pinned text spliced into adapter shells; RandomFunction.RANDOM returns the case's declared draws and randomDouble(min,max) the case's declared chance. WeightBasedTable is an adapter that keeps the entries each constant's table is given, in order, and records canRoll, excluding and roll with declared answers: the table's positions, weights, slots and inventory questions are the drop-tables corpus's, not this one's. Player (inCombat, sendMessage, lock), Skills (getLevel, addExperience), the animator, the equipment and inventory, ImpactHandler.manualHit, NPC (face, the attack animation), SkillcapePerks.isActive, TreasureTrailManager.hasClue, animate, playAudio, playHurtAudio and stun are recording adapters whose results come from declared case state; they are service inputs, not ports. The driver calls the one registered lambda with an NPC of the id a case names, not through InteractionListeners. No live world, combat, stun, audio, inventory, experience or treasure trail behaviour is established by this corpus.",
+  "sourceHashAlgorithm": "sha256, CR removed",
+  "sources": {
+    "oracle/auth/json.lock.json": "cac61b059b1d304ba52dbb6d3cb91bd4020621ddd738e2d233f7f455dacc2d81",
+    "oracle/bank/constants.lock.json": "0d7d2c08236ee3a39482fc4f116f7d5ad3848cad4b6bb52660fb12e2441bce0f",
+    "oracle/login/generate.py": "1e226a8f88e26b363136b88d8b184c4afb0dc61cedce265da260efd94cd14613",
+    "oracle/login/kotlin.lock.json": "f0db4475afc9a8b72c2b4a3609bc0fe04d6b00a0c43618304e5472d0e07c4700",
+    "oracle/thieving/adapters/content/global/activity/ttrail/TreasureTrailManager.java": "62a8433470c101b038d3bafba3e978e41eb3cb46ca13c099eced8e711a15e40a",
+    "oracle/thieving/adapters/content/global/skill/skillcapeperks/SkillcapePerks.kt": "afd78fb8e4f640cb0e6922088b50661ea28c7e0168ce3b2f03eb4373b7ca15c3",
+    "oracle/thieving/adapters/core/api/ContentAPI.kt": "f11fe078da132cba15f2c3a5210b1872442fbd1c8d8ba1bc2b9dba305d92a7f4",
+    "oracle/thieving/adapters/core/api/utils/WeightBasedTable.kt": "e6d6a0a709fb3a911b81de271a524cbd2e977346259bec7424227b4444698dcd",
+    "oracle/thieving/adapters/core/game/interaction/InteractionListener.kt": "27c625e1110a31b3e873b8545b655ff739e4cc763d1b48109185dac382db8246",
+    "oracle/thieving/adapters/core/game/node/Node.java": "0e45f7d97260432afeee4b1a31755dbc721b578bacdfdf39c3ecb9f23be50df3",
+    "oracle/thieving/adapters/core/game/node/entity/Entity.java": "d229b8ba605be5181fd6eb967cb5679c26676408fa46280a32164031eb09a2a6",
+    "oracle/thieving/adapters/core/game/node/entity/combat/ImpactHandler.java": "d323844c86822168dc91931a595618aebc96991b8b95b548dd2dc4aba981017b",
+    "oracle/thieving/adapters/core/game/node/entity/impl/Animator.java": "3cc2ec8302340be6379ce677b59a37bb370b5fd11a7947bad7d520ff01e36ea6",
+    "oracle/thieving/adapters/core/game/node/entity/npc/NPC.java": "ab11ffec291f99d8e493ca2cf7a800a2bcf47ef5c11ad008ec4781d8be74e26b",
+    "oracle/thieving/adapters/core/game/node/entity/player/Player.java": "c7580472735e39aa7f5812ceadc76fb9edf77f18700269ca3689b53a54524312",
+    "oracle/thieving/adapters/core/game/node/entity/skill/Skills.java": "b58bf190e3740fb16799beaa92c4b91f5fe9f9bb6fab1a15dcbd2eba71a74dd7",
+    "oracle/thieving/adapters/core/game/node/item/Item.java": "702ad419496f6f9b7673a38918e248206934717d42ad1b1df04fe49110e2dfc5",
+    "oracle/thieving/adapters/core/game/world/update/flag/context/Animation.java": "1803ef10d2cdcfe16c483a307cb71a11fee8c0ba4c3f535f938e0099238fd792",
+    "oracle/thieving/adapters/core/tools/RandomFunction.java": "70912c668b548d6fe758498b159df04c3bc8168d038b35f0df80828dffc280c9",
+    "oracle/thieving/adapters/oracle/Oracle.java": "bb3c1cd891ed00097f75eacf2db14588d86865b571016846952a7977d561a78c",
+    "oracle/thieving/adapters/oracle/W.java": "fe4a495e1d5e2a8a5fb4147185695c28e50f703b4043ad292f92dc4804aeaa7a",
+    "oracle/thieving/cases.py": "716f8abd95130530e8d7f265012b55e76f0b5e1d0dc9a218d01a47b0ac987b41",
+    "oracle/thieving/generate.py": "3efb2b750d975be1bd9a95cfdb39bae5a56733aabc564e9ae90f813514fcf313",
+    "reference/server/Server/src/main/content/global/activity/ttrail/TreasureTrailManager.java": "1aa42d2198fcec02879bc94b5bf145d7d961124f87af153e8102cbe2661f8b56",
+    "reference/server/Server/src/main/content/global/skill/skillcapeperks/SkillcapePerks.kt": "fd8e9fefc149b534a43e19e5a86ff8f24dab2dba273b0f1574d391ec051e940b",
+    "reference/server/Server/src/main/content/global/skill/thieving/Pickpockets.kt": "4481377447149f337baf3ac5b6c437c193361fe7e1d539eb16efb598cccf58d6",
+    "reference/server/Server/src/main/content/global/skill/thieving/ThievingListeners.kt": "457cc9f8deabf049119135f4f21b3bb5d828993c37d79adfd026575c6fc7cb9d",
+    "reference/server/Server/src/main/core/api/ContentAPI.kt": "b2cccf972a046d494c10c26d0e6d724b6fb7499d6d5e5c19c78e77f37153fd8c",
+    "reference/server/Server/src/main/core/api/utils/WeightBasedTable.kt": "e1aeaae3b92856c23e028cfc88e44de88947eea0fa0bb051b0741e743271a866",
+    "reference/server/Server/src/main/core/api/utils/WeightedItem.kt": "1f6f6b35829470e5df1ed0f302f6b5951766d197632486f3416d5ccb406c0347",
+    "reference/server/Server/src/main/core/game/interaction/IntType.kt": "b3f4424d59503eea383dbdaf77b80434eb406bcf9d1c0c4fe99dfc50fe40ff63",
+    "reference/server/Server/src/main/core/game/interaction/InteractionListener.kt": "ff2e1d89b88043e0755c1179ddf39586b1e9cd42812a220ad8c1215c1b16718b",
+    "reference/server/Server/src/main/core/game/node/entity/combat/ImpactHandler.java": "9ba865d0d25b1a3a0054d08bcdf33f567b46e27712aa929296d28c4c9f5ec68e",
+    "reference/server/Server/src/main/core/game/node/entity/impl/Animator.java": "e622371bc9cf9d25cb03d947fd12087bd4fdf130c40005def4ae940ea968bcb2",
+    "reference/server/Server/src/main/core/game/node/entity/skill/Skills.java": "b442b260cc591406dc903d46cd729db27976b9470413bc039d6766bd4fe1f0db",
+    "reference/server/Server/src/main/core/game/world/update/flag/context/Animation.java": "73320e2e4c356dccb6f446683d18dd5bfe1be8eee41eaba540e01acdb174aded",
+    "reference/server/Server/src/main/core/tools/RandomFunction.java": "054fb47b8718ce25da6fe35af85765f3cdea3b2056ef0e4d678435b230ad559e",
+    "upstream.lock.json": "189bfaec68d2b5b63a2dee940e54b162cd6208a5e0f9a915a6d8a93a8de19943"
+  },
+  "upstream": {
+    "client": {
+      "commit": "61b952d2b46132b9a5d696f4e0c4c0df75c7f6d2",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/rt4-client.git"
+    },
+    "format": 1,
+    "revision": 530,
+    "server": {
+      "commit": "9921b98d49308edd0489dd50ee98011d53914a57",
+      "license": "AGPL-3.0-only",
+      "url": "https://gitlab.com/2009scape/2009scape.git"
+    }
+  }
+}
