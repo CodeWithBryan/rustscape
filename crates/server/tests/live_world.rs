@@ -935,6 +935,7 @@ async fn drive(
                 "follow" => follow_scenario(address, saves).await,
                 "eat" => eat_scenario(address, saves).await,
                 "usewith" => use_with_scenario(address, saves).await,
+                "gather" => gather_scenario(address, saves).await,
                 "magic" => magic_scenario(address, saves).await,
                 "teleport" => teleport_scenario(address, saves).await,
                 "effects" => effects_scenario(address, saves).await,
@@ -990,6 +991,7 @@ async fn drive(
     follow_scenario(address, saves).await;
     eat_scenario(address, saves).await;
     use_with_scenario(address, saves).await;
+    gather_scenario(address, saves).await;
     magic_scenario(address, saves).await;
     teleport_scenario(address, saves).await;
     effects_scenario(address, saves).await;
@@ -3226,6 +3228,73 @@ async fn use_chop_scenario(address: std::net::SocketAddr, saves: &std::path::Pat
     assert_eq!(held(&chop, 1511), 1, "one log from one tree");
     eprintln!(
         "usechop chopped the tree 1276 at [3226, 3248, 0] with a bronze axe: walked {start:?} -> {:?}, woodcutting experience {before} -> {after}",
+        chop.position()
+    );
+    chop.writer.close(1000, "logout").await.unwrap();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+}
+
+/// The gathering listeners' interaction scripts, run by the player's
+/// ScriptProcessor (`world::live::scripts`): `chopdown` takes the "Chop
+/// down" option of the tree 1278 east of Lumbridge castle
+/// (WoodcuttingListener) with a bronze axe in the inventory.
+async fn gather_scenario(address: std::net::SocketAddr, saves: &std::path::Path) {
+    let players = saves.join("players");
+    let held = |c: &Client, id: i32| {
+        c.containers
+            .get(&93)
+            .map(|slots| slots.values().filter(|(item, _)| *item == id).count())
+            .unwrap_or(0)
+    };
+    let said =
+        |c: &Client, from: usize, line: &str| c.messages[from..].iter().any(|(_, m)| m == line);
+    let start = [3223, 3232, 0];
+    write_save(&players, "traceone", "chopdown", start, &[(0, 1351, 1)]);
+    let (code, chop) = Client::login(address, "chopdown").await;
+    assert_eq!(code, 2, "chopdown's login");
+    let mut chop = chop.unwrap();
+    chop.until(Duration::from_secs(10), "chopdown's rebuild", |c| {
+        c.base.is_some() && !c.updates.is_empty()
+    })
+    .await;
+    let from = chop.messages.len();
+    let before = chop.skills.get(&8).map_or(0, |s| s.1);
+    chop.send(scenery_option1(1278, 3225, 3232)).await;
+    chop.until_pinging(Duration::from_secs(20), "the first swing", |c| {
+        said(c, from, "You swing your axe at the tree...")
+    })
+    .await;
+    assert_ne!(chop.position(), start, "chopdown walked to the tree");
+    // Level 1 with a bronze axe: a roll every four ticks.
+    chop.until_pinging(Duration::from_secs(120), "the logs", |c| held(c, 1511) == 1)
+        .await;
+    assert!(
+        said(&chop, from, "You get some logs."),
+        "chopdown's messages: {:?}",
+        &chop.messages[from..]
+    );
+    let after = chop.skills.get(&8).map_or(0, |s| s.1);
+    assert!(
+        after > before,
+        "woodcutting experience rose ({before} -> {after})"
+    );
+    // A normal tree always falls: the script cleared itself, so no second
+    // log comes and nothing more is said. (The opening line itself can
+    // come twice: the script first runs within its distance of the walk's
+    // end, and restarts once the player has stepped there.)
+    let lines = chop.messages.len();
+    for _ in 0..40 {
+        chop.pump(Duration::from_millis(200)).await;
+    }
+    assert_eq!(held(&chop, 1511), 1, "one log from one tree");
+    assert_eq!(
+        chop.messages.len(),
+        lines,
+        "chopdown's messages after the tree fell: {:?}",
+        &chop.messages[from..]
+    );
+    eprintln!(
+        "chopdown chopped down the tree 1278 at [3225, 3232, 0] with a bronze axe: walked {start:?} -> {:?}, woodcutting experience {before} -> {after}",
         chop.position()
     );
     chop.writer.close(1000, "logout").await.unwrap();

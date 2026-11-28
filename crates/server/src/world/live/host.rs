@@ -126,6 +126,9 @@ pub struct Live {
     /// NPCs whose `Entity.tick` reached `timers.processTimers()` in the
     /// walking call that just returned ([`super::timers`]).
     pub npc_timers_due: Vec<Node>,
+    /// The stand-in the world holds while a player's tick has the canonical
+    /// state ([`super::scripts`]).
+    pub spare_state: Option<player_walk::State>,
 }
 
 pub fn fail(e: impl std::fmt::Debug) -> driver::Error {
@@ -173,6 +176,12 @@ impl Live {
             combat,
         };
         let result = f(state, &mut host);
+        self.after_walk(lines);
+        result
+    }
+    /// After a walking call: its log lines, the frames it queued and what
+    /// its services deferred.
+    pub(super) fn after_walk(&mut self, lines: Vec<String>) {
         for line in lines {
             self.inner.log_line(line);
         }
@@ -182,7 +191,6 @@ impl Live {
             }
         }
         self.run_deferred();
-        result
     }
     fn run_deferred(&mut self) {
         for deferred in std::mem::take(&mut self.deferred) {
@@ -1717,7 +1725,9 @@ impl driver::Host<P> for Live {
         // Entity.tick: scripts, skills.pulse(), the walking queue (and the
         // region move it asks for), then timers.processTimers() (its event
         // is the last of entity_before_masks), then updateMasks.prepare.
-        self.with_walk(|world| world.entity_before_masks(node))
+        // The script phases run with the whole world behind their bodies
+        // (super::scripts).
+        self.with_script_host(|world| world.entity_before_masks(node))
             .map_err(fail)?;
         self.process_timers_of(p).map_err(fail)?;
         // updateMasks.prepare polls the ImpactHandler's queue: the impacts

@@ -113,7 +113,8 @@ nothing a player can reach yet).
 - AxeOnTree starts the legacy `WoodcuttingSkillPulse`, not
   WoodcuttingListener's script: the two differ (docs/gathering.md), and an
   axe used on a tree gets the pulse's rules (a dialogue for a full
-  inventory, no instachop, no stump timer).
+  inventory, no instachop, no stump timer). The trees' own options run
+  the listener's script (docs/live-world.md).
 
 ## Live world
 

@@ -197,7 +197,7 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
         object: &Handle,
     ) -> Result<bool> {
         // InteractionListeners.run(id, SCENERY, option, player, node) of an
-        // `on` listener: the run itself (the weak scripts, the lock check,
+        // `on` listener or a defineInteraction script: the run itself (the weak scripts, the lock check,
         // the option, the walk and the arrival's lambda) needs the whole
         // world, so it is deferred to right after this packet's kernel
         // returns (`Live::scenery_listener_run`); its answer, false only
@@ -207,11 +207,30 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
         // listener registered the answer is false.
         let registry = self.walk.interactions.clone().ok_or(Error::Null)?;
         let text: Vec<u16> = option.as_deref().unwrap_or("null").encode_utf16().collect();
-        let kind = crate::world::interaction_listeners::Kind::Scenery.ordinal();
+        let scenery = crate::world::interaction_listeners::Kind::Scenery;
         let casing = super::global::RootCasing;
-        if registry.get(&casing, id, kind, &text).is_some()
-            || registry.get_generic(&casing, &text, kind).is_some()
-        {
+        let listener = registry
+            .get(&casing, id, scenery.ordinal(), &text)
+            .is_some()
+            || registry
+                .get_generic(&casing, &text, scenery.ordinal())
+                .is_some();
+        // defineInteraction's metadata: an interaction script installed in
+        // the player's ScriptProcessor and the walk to the object, made by
+        // the same deferred run. Only a handler this world runs
+        // (super::scripts: the gathering listeners'); the bank booths'
+        // stays refused by name.
+        let script = !listener
+            && match registry.metadata(&casing, id, scenery, &text) {
+                Some(meta) if Live::script_installed(&meta.read().function) => true,
+                Some(_) => {
+                    return Err(Error::Binding(
+                        "not ported in the live world: InteractionListeners' defineInteraction scripts for scenery other than the gathering listeners' (the bank booths' interaction scripts)".into(),
+                    ));
+                }
+                None => false,
+            };
+        if listener || script {
             let owner = state.retain_node(player).map_err(binding)?;
             let locks = state.locks(&owner).map_err(binding)?;
             let locked = locks
@@ -228,22 +247,6 @@ impl scenery_runtime::Bindings for WalkHost<'_> {
                 object: object.clone(),
             });
             return Ok(!locked);
-        }
-        // defineInteraction's metadata (the bank booths): an interaction
-        // script in the player's script queue, which is content script
-        // invocation (not ported here).
-        if registry
-            .metadata(
-                &casing,
-                id,
-                crate::world::interaction_listeners::Kind::Scenery,
-                &text,
-            )
-            .is_some()
-        {
-            return Err(Error::Binding(
-                "not ported in the live world: InteractionListeners' defineInteraction scripts for scenery (the bank booths' interaction scripts)".into(),
-            ));
         }
         self.not_ported.default_answer(
             "InteractionListeners for scenery (none registered for the option: false)",

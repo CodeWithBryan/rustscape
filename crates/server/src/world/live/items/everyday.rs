@@ -893,11 +893,16 @@ impl super::super::host::Live {
         let mut npc_registered = Vec::new();
         let mut object_registered = Vec::new();
         let mut cooking = false;
+        let mut woodcutting = false;
         for name in crate::startup::scan::section("scan.contentInterfaces") {
             if name == crate::world::cooking::CLASS {
                 // CookingRewrite.defineListeners (super::cooking).
                 crate::world::cooking::define(&registry).map_err(|e| format!("{name}: {e:?}"))?;
                 cooking = true;
+            }
+            if name == super::woodcutting::LISTENER_CLASS {
+                // WoodcuttingListener.defineListeners (super::woodcutting).
+                woodcutting = true;
             }
             if let Some(class) = item_on_npc::Class::named(name) {
                 item_on_npc::define(&registry, class).map_err(|e| format!("{name}: {e:?}"))?;
@@ -920,6 +925,11 @@ impl super::super::host::Live {
         self.round.everyday.npc_registered = npc_registered;
         self.round.with_object.registered = object_registered;
         self.round.cooking.registered = cooking;
+        if woodcutting {
+            // Metadata lives in its own map, so its place among the other
+            // classes' registrations is not observable.
+            self.define_woodcutting_listener();
+        }
         Ok(())
     }
     /// `player.pulseManager.run(pulse)` (STANDARD) of a content pulse: the
